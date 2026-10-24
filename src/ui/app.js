@@ -303,6 +303,7 @@ async function startJoin(raw) {
     const conn = await joinRoom(code);
     if (app.mode !== 'join') return conn.close();
     history.replaceState(null, '', `#${code}`);
+    store.set('lastJoin', code);
     useConn(conn);
   } catch (e) {
     app.mode = null;
@@ -323,6 +324,7 @@ function leave(msg = '') {
   Object.assign(app, { mode: null, conn: null, host: null, peer: null, me: null, view: null, meta: null, lobby: null, screen: 'menu', status: '', error: msg, chat: [], unread: 0 });
   app.ui = freshUI();
   app.joinCode = '';
+  store.del('lastJoin');
   history.replaceState(null, '', location.pathname);
   render();
 }
@@ -561,4 +563,6 @@ window.addEventListener('beforeunload', (e) => {
 app.ui = freshUI();
 app.joinCode = normalizeCode(location.hash.slice(1));
 render();
+// Davet linkiyle girmiş oyuncu sayfayı yenilerse aynı odaya kendiliğinden döner.
+if (app.joinCode && app.joinCode === store.get('lastJoin') && profile.name) startJoin(app.joinCode);
 window.__rant = app; // hata ayıklama için

@@ -1,6 +1,6 @@
 // Tahta: 8x8 ızgaranın kenarındaki 28 kare ve oyuncu taşları.
 import { BOARD, GROUPS, price, rentFor, fmt } from '../engine/index.js';
-import { html, esc, sleep } from './dom.js';
+import { html, raw, esc, sleep } from './dom.js';
 import { play } from './sound.js';
 
 const N = BOARD.length;
@@ -22,7 +22,7 @@ function cellStatic(sq, i) {
     const g = GROUPS[sq.group];
     return html`<div class="band"></div><div class="nm">${sq.name}</div><div class="city">${g.name}</div><div class="floors"></div><div class="pr"></div>`;
   }
-  if (sq.kind === 'transport') return html`<div class="ic">${sq.icon}</div><div class="nm">${sq.name}</div><div class="pr"></div>`;
+  if (sq.kind === 'transport') return html`<div class="ic">${sq.icon}</div><div class="nm">${raw(esc(sq.name).replace('HAVALİMANI', 'HAVA&shy;LİMANI'))}</div><div class="pr"></div>`;
   if (pos.side === 'c') return html`<div class="ic">${sq.icon}</div><div class="nm">${sq.name}</div><div class="city">${CORNER_HINT[sq.kind]}</div>`;
   return html`<div class="ic">${sq.icon}</div><div class="nm">${sq.name}</div><div class="city">2 kart çek</div>`;
 }
@@ -84,7 +84,7 @@ export class Tokens {
     this.cells = cells;
     this.els = new Map();
     this.pos = new Map();
-    window.addEventListener('resize', () => this.layoutAll());
+    new ResizeObserver(() => this.layoutAll()).observe(layer);
   }
 
   sync(players, active) {

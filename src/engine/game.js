@@ -384,7 +384,7 @@ function applyGundem(s, ctx, id) {
           n++;
         }
       }
-      s.gundem.detail = `${n} kaçak kat yasallaştı.`;
+      s.gundem.detail = n ? `${n} kaçak kat yasallaştı.` : 'Affedilecek kaçak kat yoktu.';
       break;
     }
     case 'operasyon': {
@@ -395,7 +395,7 @@ function applyGundem(s, ctx, id) {
           n++;
         }
       }
-      s.gundem.detail = `${n} kaçak kat yıkıldı.`;
+      s.gundem.detail = n ? `${n} kaçak kat yıkıldı.` : 'Yıkılacak kaçak kat yoktu, kepçeler boş döndü.';
       break;
     }
     case 'deprem':

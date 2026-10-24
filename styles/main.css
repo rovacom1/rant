@@ -183,7 +183,7 @@ input, select { font: inherit; }
 .cell.side-t { padding-bottom: calc(var(--size) / 48); }
 .cell.side-l { padding-right: calc(var(--size) / 48); }
 .cell.side-r { padding-left: calc(var(--size) / 48); }
-.cell .nm { font-weight: 700; font-size: 1.02em; word-break: break-word; }
+.cell .nm { font-weight: 700; font-size: 1.02em; overflow-wrap: anywhere; hyphens: manual; }
 .cell .city { font-size: 0.78em; color: var(--muted); }
 .cell .pr { font-size: 0.9em; font-weight: 600; color: var(--turq-d); }
 .cell .ic { font-size: 2.1em; line-height: 1; }
