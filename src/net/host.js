@@ -27,8 +27,10 @@ export class Host {
     this.clients = new Set();
     this.timer = null;
     this.waitSince = {};
+    // Koltuk kimliği tokenden türetilir; koltuğu yalnız aynı tokeni bilen geri alabilir.
+    this.secrets = {};
     if (saved) {
-      Object.assign(this, { seats: saved.seats, config: saved.config, game: saved.game, chat: saved.chat || [] });
+      Object.assign(this, { seats: saved.seats, config: saved.config, game: saved.game, chat: saved.chat || [], secrets: saved.secrets || {} });
       for (const s of this.seats) s.connected = !!s.bot;
     } else {
       this.seats = [];
@@ -40,7 +42,7 @@ export class Host {
   }
 
   snapshot() {
-    return { v: SAVE_VERSION, code: this.code, seats: this.seats, config: this.config, game: this.game, chat: this.chat.slice(-CHAT_KEEP), savedAt: Date.now() };
+    return { v: SAVE_VERSION, code: this.code, seats: this.seats, config: this.config, game: this.game, chat: this.chat.slice(-CHAT_KEEP), secrets: this.secrets, savedAt: Date.now() };
   }
 
   persist() {
@@ -120,7 +122,12 @@ export class Host {
 
   onHello(client, m) {
     if (m.v !== PROTOCOL) return this.send(client, { t: 'reject', reason: 'version' });
-    const id = idFromToken(m.token);
+    const token = String(m.token || '');
+    const id = idFromToken(token);
+    // Ev sahibi koltuğu yalnız aynı sayfadaki yerel bağlantıya; diğer koltuklar yalnız sahibinin tokenine açık.
+    if (id === this.hostId && !client.local) return this.send(client, { t: 'reject', reason: 'taken' });
+    if (token.length < 16 || (this.secrets[id] && this.secrets[id] !== token)) return this.send(client, { t: 'reject', reason: 'taken' });
+    this.secrets[id] = token;
     let seat = this.seatOf(id);
     if (!seat && !this.game) {
       if (this.seats.length >= MAX_SEATS) return this.send(client, { t: 'reject', reason: 'full' });
@@ -148,7 +155,7 @@ export class Host {
   }
 
   onLobby(client, m) {
-    if (client.playerId !== this.hostId) throw new E.GameError('Bunu yalnız odayı kuran yapabilir.');
+    if (!client.local || client.playerId !== this.hostId) throw new E.GameError('Bunu yalnız odayı kuran yapabilir.');
     switch (m.cmd) {
       case 'addBot': {
         if (this.game || this.seats.length >= MAX_SEATS) return;

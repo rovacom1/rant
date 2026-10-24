@@ -1,0 +1,30 @@
+# RANT Yol Haritası
+
+Otomatik geliştirme döngüsü her oturumda **Sıradaki** listesinin en üstündeki işaretsiz maddeyi alır.
+Liste 8 maddenin altına düşerse döngü yeni fikirler ekler (oyun eğlencesini artıran, basit tutulabilen işler).
+Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
+
+## Sıradaki
+
+- [ ] **Sıra sende bildirimi:** Sekme arkadayken tarayıcı masaüstü bildirimi (Notification API, izin bir kez istenir) ve ses seçeneği.
+- [ ] **Hedefi tahtadan seç:** Kart oynarken (Kamulaştırma, Tedbir, Müteahhit, Takas) geçerli kareler tahtada parlasın, kareye tıklayınca seçilsin.
+- [ ] **Tur özeti:** Her tur sonunda kısa bir kutu: bu turda en çok kazanan/kaybeden, el değiştiren mülkler.
+- [ ] **Para animasyonu:** Kira ve transferlerde oyuncudan oyuncuya uçan jeton; kat dikince karede küçük inşaat animasyonu.
+- [ ] **Oyun sonu grafiği:** Sonuç penceresinde tur tur net değer çizgisi (motor her tur sonu net değerleri kaydetsin).
+- [ ] **Bot zorluk seviyesi:** Lobide Kolay / Normal / Zor. Zor bot mülk-mülk takası önersin, ihalede daha akıllı teklif versin.
+- [ ] **Açık pazarlık:** Sırası olmayan oyuncular da birbirine teklif yapabilsin (aynı anda tek teklif kuralıyla).
+- [ ] **Mobil düzen:** 400-800 px genişlikte tahta ve panelin rahat kullanımı (alt sekmeli panel).
+- [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
+- [ ] **Yeni harita: İstanbul:** İlçelerden oluşan ikinci tahta; lobide harita seçimi (tahta verisi data.js'te haritaya göre).
+- [ ] **Yeni kartlar (denge simülasyonuyla):** "Kat Karşılığı" (rakibin arsasına onunla ortak kat), "Kredi Kartı" (şimdi 300 al, 2 tur sonra 360 öde), "Torpil" (ihalede ikinci en yüksek teklifle kazan).
+- [ ] **Yeni gündem kartları:** "Deprem" (en yüksek katlı mülk 1 kat kaybeder), "Arsa Spekülasyonu", "Altın Rekor".
+- [ ] **Ev sahibi devri:** Ev sahibi düşerse en eski oyuncu kayıttan oyunu devralsın (her oyuncuda son durum kopyası).
+- [ ] **PWA:** Masaüstüne kurulabilir uygulama (manifest + service worker); botlarla çevrimdışı oynama.
+- [ ] **Erişilebilirlik:** Klavyeyle tam oynanış, renk körleri için şehir desenleri, ekran okuyucu etiketleri.
+- [ ] **İsteğe bağlı sunucu:** P2P'nin çalışmadığı ağlar için aynı protokolle küçük bir WebSocket aktarıcısı (Cloudflare Workers + Durable Objects), varsayılan kapalı.
+
+## Tamamlananlar
+
+- [x] Oyun motoru, kurallar, kartlar, gündem, ihale, itiraz zinciri, pazarlık, borç/konkordato (v0.1.0)
+- [x] Sezgisel botlar ve denge simülasyonu (v0.1.0)
+- [x] Web arayüzü, lobi, P2P çok oyunculu, yeniden bağlanma, kayıttan devam (v0.1.0)

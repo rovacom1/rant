@@ -12,7 +12,7 @@ RANT'a özgü olanlar:
 
 | Mekanik | Ne yapar | Neden eğlenceli |
 |---|---|---|
-| **Zar Seçimi** | İki zar atılır; birini, diğerini ya da toplamını seçersin | Şans kalır ama her turda karar verirsin |
+| **Kestirme ve Taksi** | Zar toplamı kadar ilerlersin; kartla zarlardan birini seçer ya da 1-12 kare istediğin yere gidersin | Kirayı atlatma şansı değerli ve sınırlı kalır |
 | **Gündem** | Her tur başında herkesi etkileyen bir haber kartı açılır | Ortak kahkaha, her oyun farklı |
 | **Hamle kartları** | Elde tutulan aksiyon kartları (Kamulaştırma, İhtiyati Tedbir, Dava...) | Sıra sende olmasa da oyundasın |
 | **İtiraz zinciri** | Sana oynanan karta İtiraz, İtiraz'a karşı İtiraz | Monopoly Deal'deki "Hayır!" gerilimi |
@@ -83,7 +83,8 @@ Sahil grupları: Antalya, İzmir.
 1. **Tur başı** (ilk oyuncudan önce): Gündem kartı açılır ve uygulanır. Önceki turun geçici etkileri biter, Tedbir sayaçları 1 azalır.
 2. **Sıra başı**: 1 Hamle kartı çekersin. Kira Zammı etkin kaldıysa burada biter.
 3. **Zar öncesi**: Hamle kartı oynayabilir (turda en fazla 1), kat dikebilir, ipotek yapabilir, pazarlık teklif edebilirsin.
-4. **Zar**: İki zar atılır. Hareket için birini, diğerini ya da toplamını seçersin. Çift gelirse +1 kart.
+4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift gelirse +1 kart.
+   (İlk taslakta her turda zar seçimi vardı; simülasyonda oyuncular kirayı neredeyse hiç ödemediği için karta taşındı.)
 5. **Kareye geliş** (aşağıda).
 6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**.
 7. Turu bitirmek için: bekleyen karar yok, nakit >= 0, elde en fazla 6 kart.
@@ -118,7 +119,7 @@ Nakdi 0'dan fazla olan tüm oyuncular aynı anda gizli teklif verir (0 = pas). E
 - Sıranı bitirmeden nakdini 0'ın üstüne çıkarmalısın (kat sat, ipotek et, pazarlık yap). "Borcu Kapat" düğmesi bunu otomatik yapar: önce kaçak katlar, sonra ucuz katlar, sonra ucuz mülkler ipotek.
 - Satacak bir şey kalmadıysa **Konkordato**: nakit 0 olur, oyundan çıkmazsın, sonda konkordato başına 300 puan cezası.
 
-## 7. Hamle kartları (47)
+## 7. Hamle kartları (50)
 
 Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz, Dayın Çıktı) bu sınıra girmez.
 
@@ -126,7 +127,8 @@ Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz
 |---|---|---|---|
 | İtiraz | 6 | TEPKİ: Sana oynanan bir Hamle'yi iptal et. İtiraz'a karşı da oynanır. | - |
 | Dayın Çıktı | 4 | TEPKİ: Ödeyeceğin bir kirayı ödemezsin. | - |
-| Taksi | 4 | Zar atmadan önce: zar yerine 1-12 kare arasında istediğin kadar ilerle. | - |
+| Taksi | 3 | Zar atmadan önce: zar yerine 1-12 kare arasında istediğin kadar ilerle. | - |
+| Kestirme | 4 | Zar attıktan sonra: toplam yerine zarlardan birini seçip o kadar ilerle. | - |
 | Geri Vites | 2 | Zar atmadan önce: bu tur geri yönde ilerlersin (maaş yok). | - |
 | Kamulaştırma | 3 | Rakibin katsız, ipoteksiz, set dışı bir mülkünü fiyatını ona ödeyerek al. | İtiraz |
 | Zorla Takas | 3 | Katsız bir mülkünü rakibin katsız, set dışı bir mülküyle değiştir. | İtiraz |
@@ -172,17 +174,17 @@ Kartlardaki para miktarları Endeks ile ölçeklenir.
 
 ## 9. Gizli Hedefler (16)
 
-Başta herkese 2 hedef dağıtılır, 1'i seçilir. Oyun sonunda tutarsa bonus alınır.
+Başta herkese 2 hedef dağıtılır, 1'i seçilir. Oyun sonunda tutarsa bonus alınır. Eşikler bot simülasyonunda tutturma oranı %25-50 olacak şekilde ayarlandı.
 
 - 8 şehir hedefi: "<Şehir> Hakimi" — o şehrin tüm mülkleri sonda sende (2'li şehir +250, 3'lü şehir +300).
-- Kat Kat Üstüne: sonda en az 6 katın (kaçak dahil) var, +300.
+- Kat Kat Üstüne: sonda en az 7 katın (kaçak dahil) var, +300.
 - Ulaşım Baronu: iki ulaşım da sende, +250.
 - Nakit Kraldır: sonda en çok nakit sende (eşitlik dahil), +300.
-- Arsa Avcısı: sonda en az 7 mülkün var, +300.
-- Kaçak Ama Sağlam: sonda en az 3 kaçak katın ayakta, +350.
-- Hukuk Dünyası: oyun boyunca en az 4 hukuk kartı (Kamulaştırma, Tedbir, İhbar, Dava, İtiraz) oynadın, +300.
-- İhale Kralı: en az 3 ihale kazandın, +250.
-- Temiz Sicil: hiç ipotek yapmadın, konkordato yok, sonda en az 4 mülk, +250.
+- Arsa Avcısı: sonda en az 6 mülkün var, +300.
+- Kaçak Ama Sağlam: sonda en az 2 kaçak katın ayakta, +300.
+- Hukuk Dünyası: oyun boyunca en az 6 hukuk kartı (Kamulaştırma, Tedbir, İhbar, Dava, İtiraz) oynadın, +300.
+- İhale Kralı: en az 2 ihale kazandın, +250.
+- Temiz Sicil: hiç ipotek yapmadın, konkordato yok, sonda en az 5 mülk, +250.
 
 ## 10. Net Değer ve puan
 
@@ -196,6 +198,7 @@ Puan = Net Değer + tutan hedef bonusu - 300 x konkordato. Eşitlikte nakdi fazl
 - Diğer oyuncular PeerJS (WebRTC) ile doğrudan ev sahibine bağlanır. Eşleşme için PeerJS'in ücretsiz sunucusu, ağ engeline karşı PeerJS'in TURN sunucuları kullanılır.
 - Her oyuncu yalnız kendi görünümünü alır (başkalarının eli ve hedefi gizli). Zar ve desteler ev sahibindedir.
 - Ev sahibi sayfayı yenilerse oyun tarayıcı hafızasından geri yüklenir; oyuncular otomatik yeniden bağlanır.
+- Pazarlık teklifini yalnız sırası gelen oyuncu yapar (turda en fazla 3 teklif).
 - Bağlantısı kopan oyuncunun yerine bir süre sonra bot oynar; dönünce koltuk geri verilir.
 - Motor taşıma katmanından bağımsızdır; ileride bir WebSocket sunucusu aynı protokolle eklenebilir.
 

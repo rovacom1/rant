@@ -173,7 +173,10 @@ function onMsg(m) {
       }
       break;
     case 'reject':
-      leave(m.reason === 'version' ? 'Oyunun sürümü ev sahibininkiyle uyuşmuyor. İkiniz de sayfayı yenileyin (Ctrl+F5).' : 'Oda dolu (en fazla 6 kişi).');
+      leave(
+        { version: 'Oyunun sürümü ev sahibininkiyle uyuşmuyor. İkiniz de sayfayı yenileyin (Ctrl+F5).', taken: 'Bu koltuk başka bir tarayıcıya ait.', full: 'Oda dolu (en fazla 6 kişi).' }[m.reason] ||
+          'Odaya girilemedi.',
+      );
       break;
     case 'kicked':
       leave('Ev sahibi seni odadan çıkardı.');
