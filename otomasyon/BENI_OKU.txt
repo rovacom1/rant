@@ -1,0 +1,23 @@
+RANT - Kentsel Dönüşümün Kart Oyunu
+====================================
+
+OYNAMAK
+- "RANT - Oyna" kısayoluna tıkla (https://rovacom1.github.io/rant/).
+- Adını yaz, "Oda Kur" de, "Davet linkini kopyala" ile linki arkadaşlarına gönder.
+- Arkadaşların linke tıklayıp adını yazar ve "Katıl"a basar. Kurulum, hesap, sunucu yok.
+- Odayı kuran kişinin sekmesi açık kalmalı (oyun onun tarayıcısında çalışır).
+  Sayfa kapanırsa menüdeki "Devam et" ile kaldığın yerden sürer.
+- Eksik kişi varsa lobide "+ Bot ekle". Tek başına denemek için "Botlarla dene".
+
+OTOMATİK GELİŞTİRME
+- Claude masaüstü uygulaması açıkken oyun düzenli aralıklarla kendi kendine geliştirilir:
+  yol haritasından bir iş seçilir, testleri geçerse GitHub'a gönderilir ve site güncellenir.
+- Bilgisayar açılınca Claude uygulaması kendiliğinden başlar ve kaçırılan çalışma hemen yapılır.
+- Durdurmak/yeniden açmak için: "Otomatik Geliştirme Aç-Kapat" kısayolu.
+- Ne yapıldığını görmek için: "Geliştirme Günlüğü" ve "Yol Haritası" kısayolları.
+- Sıklığı değiştirmek ya da tamamen kaldırmak için Claude uygulamasında
+  Zamanlanmış Görevler > "RANT geliştirme döngüsü".
+
+DOSYALAR
+- Kaynak kod: C:\Dev\Rant ("Kaynak Kod" kısayolu)
+- Kurallar: C:\Dev\Rant\docs\TASARIM.md
