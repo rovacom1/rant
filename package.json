@@ -1,0 +1,16 @@
+{
+  "name": "rant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RANT: Türkiye temalı, internetten 4-5 kişilik emlak ve kart oyunu",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "sim": "node tools/sim.js",
+    "check": "node tools/check.js",
+    "dev": "node tools/serve.js 4188"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

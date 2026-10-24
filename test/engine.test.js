@@ -1,0 +1,331 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createGame, applyAction, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, GameError } from '../src/engine/index.js';
+import { makePlayers } from '../tools/simlib.js';
+import { started, act, actEv, give, strip, own } from './helpers.js';
+
+// Gündem kartının etkisini sıfırlayıp ekonomiyi öngörülebilir yapar.
+function calm(s) {
+  s.index = 100;
+  s.mods = {};
+  s.groupMult = {};
+  s.salary = 200;
+  for (const pl of s.players) pl.cash = 1500;
+  return s;
+}
+
+const taksi = (s, p, steps) => act(s, p, { type: 'playCard', uid: give(s, p, 'taksi'), target: { steps } });
+
+test('kurulum: el, hedef seçimi ve ilk tur', () => {
+  let s = createGame({ players: makePlayers(5), seed: 7 });
+  assert.equal(s.phase, 'setup');
+  assert.equal(s.pending.type, 'hedef');
+  for (const pl of s.players) {
+    assert.equal(pl.hand.length, 3);
+    assert.equal(pl.hedefChoices.length, 2);
+  }
+  assert.deepEqual(waitingFor(s), [0, 1, 2, 3, 4]);
+  for (let p = 0; p < 5; p++) s = act(s, p, { type: 'chooseHedef', hedef: s.players[p].hedefChoices[1] });
+  assert.equal(s.phase, 'play');
+  assert.equal(s.round, 1);
+  assert.ok(s.gundem.id);
+  assert.equal(s.turn.p, 0);
+  assert.equal(s.turn.step, 'preroll');
+  assert.ok(s.players[0].hand.length >= 4, 'sıra başında kart çekilir');
+});
+
+test('aynı tohum aynı oyunu üretir', () => {
+  const a = started(4, 99);
+  const b = started(4, 99);
+  assert.deepEqual(a, b);
+});
+
+test('başkasının hamlesi ve sıra dışı hamle reddedilir', () => {
+  const s = started();
+  assert.throws(() => applyAction(s, 1, { type: 'roll' }), GameError);
+  assert.throws(() => applyAction(s, 0, { type: 'endTurn' }), /Önce zar/);
+  assert.throws(() => applyAction(s, 0, { type: 'hackle' }), GameError);
+});
+
+test('zar: toplam kadar ilerler ve sıra serbest evreye geçer', () => {
+  let s = calm(started());
+  strip(s, 0, 'kestirme');
+  const from = s.players[0].pos;
+  const r = actEv(s, 0, { type: 'roll' });
+  s = r.state;
+  const [a, b] = s.turn.dice;
+  assert.equal(s.players[0].pos, (from + a + b) % BOARD.length);
+  assert.equal(s.turn.step, 'free');
+  assert.ok(r.events.some((e) => e.type === 'move'));
+});
+
+test('Kestirme: zarlardan biriyle ilerlenir', () => {
+  let s = calm(started());
+  const uid = give(s, 0, 'kestirme');
+  s = act(s, 0, { type: 'roll' });
+  assert.equal(s.turn.step, 'choose');
+  const die = s.turn.dice[1];
+  s = act(s, 0, { type: 'playCard', uid, target: { die: 1 } });
+  assert.equal(s.players[0].pos, die);
+});
+
+test('satın alma ve maaş', () => {
+  let s = calm(started());
+  s = taksi(s, 0, 1);
+  assert.equal(s.pending.type, 'buy');
+  s = act(s, 0, { type: 'buy' });
+  assert.equal(s.props[1].owner, 0);
+  assert.equal(s.players[0].cash, 1500 - 60);
+  // Turu bitirip başa geçince maaş
+  s.players[0].pos = 26;
+  s.turn = { ...s.turn, step: 'preroll', hamle: false };
+  s = taksi(s, 0, 3);
+  assert.equal(s.players[0].pos, 1);
+  assert.equal(s.players[0].cash, 1500 - 60 + 200);
+});
+
+test('kira: set, kat seviyesi, ipotek, tedbir ve gündem çarpanları', () => {
+  const s = calm(started());
+  own(s, 1, 22);
+  assert.equal(rentFor(s, 22), 30);
+  own(s, 1, 23, 24);
+  assert.equal(rentFor(s, 22), 60, 'tam set temel kirayı ikiye katlar');
+  s.props[22].kat = 2;
+  assert.equal(rentFor(s, 22), 420);
+  s.props[22].kacak = 1;
+  assert.equal(rentFor(s, 22), 900);
+  s.mods.turizm = true;
+  assert.equal(rentFor(s, 22), 1800);
+  s.mods = {};
+  s.index = 115;
+  assert.equal(rentFor(s, 22), 1035);
+  s.props[22].tedbir = 1;
+  assert.equal(rentFor(s, 22), 0);
+  s.props[23].ipotek = true;
+  assert.equal(rentFor(s, 23), 0);
+  own(s, 2, 10, 25);
+  s.index = 100;
+  assert.equal(rentFor(s, 10), 60);
+});
+
+test('kiraya gelen oyuncu öder; Kira Zammı ikiye katlar', () => {
+  let s = calm(started());
+  own(s, 1, 4);
+  s.players[1].kiraZammi = true;
+  strip(s, 0, 'dayi');
+  s = taksi(s, 0, 4);
+  assert.equal(s.players[0].cash, 1500 - 20);
+  assert.equal(s.players[1].cash, 1500 + 20);
+  assert.equal(s.players[1].kiraZammi, false, 'zam bir kez kullanılır');
+});
+
+test('Dayın Çıktı ile kira ödenmez', () => {
+  let s = calm(started());
+  own(s, 1, 4);
+  const dayi = give(s, 0, 'dayi');
+  s = taksi(s, 0, 4);
+  assert.equal(s.pending.type, 'rent');
+  s = act(s, 0, { type: 'react', uid: dayi });
+  assert.equal(s.players[0].cash, 1500);
+  assert.equal(s.pending, null);
+});
+
+test('gizli ihale: en yüksek teklif kazanır, eşitlikte sıradaki', () => {
+  let s = calm(started(4));
+  s = taksi(s, 0, 2);
+  s = act(s, 0, { type: 'decline' });
+  assert.equal(s.pending.type, 'auction');
+  const v = viewFor(s, 1);
+  s = act(s, 1, { type: 'bid', amount: 90 });
+  s = act(s, 2, { type: 'bid', amount: 120 });
+  s = act(s, 3, { type: 'bid', amount: 120 });
+  assert.equal(viewFor(s, 0).pending.bids[2], -1, 'başkasının teklifi gizli');
+  s = act(s, 0, { type: 'bid', amount: 0 });
+  assert.equal(s.pending, null);
+  assert.equal(s.props[2].owner, 2, 'eşitlikte sırası önce gelen kazanır');
+  assert.equal(s.players[2].cash, 1500 - 120);
+  assert.equal(s.players[2].stats.ihale, 1);
+  assert.equal(v.pending.type, 'auction');
+});
+
+test('İtiraz zinciri: itiraza karşı itiraz kartı geçirir', () => {
+  let s = calm(started());
+  own(s, 1, 4);
+  for (const p of [0, 1]) strip(s, p, 'itiraz');
+  const kam = give(s, 0, 'kamulastirma');
+  const it1 = give(s, 1, 'itiraz');
+  const it0 = give(s, 0, 'itiraz');
+  s = act(s, 0, { type: 'playCard', uid: kam, target: { sq: 4 } });
+  assert.equal(s.pending.type, 'react');
+  assert.deepEqual(waitingFor(s), [1]);
+  s = act(s, 1, { type: 'react', uid: it1 });
+  assert.deepEqual(waitingFor(s), [0], 'saldıran karşı itiraz edebilir');
+  s = act(s, 0, { type: 'react', uid: it0 });
+  assert.equal(s.pending, null);
+  assert.equal(s.props[4].owner, 0);
+  assert.equal(s.players[1].cash, 1500 + 100);
+  assert.equal(s.players[0].stats.hukuk, 2);
+});
+
+test('İtiraz kartı iptal eder; turda tek Hamle kuralı', () => {
+  let s = calm(started());
+  own(s, 1, 4);
+  strip(s, 0, 'itiraz');
+  const ted = give(s, 0, 'tedbir');
+  const it = give(s, 1, 'itiraz');
+  s = act(s, 0, { type: 'playCard', uid: ted, target: { sq: 4 } });
+  s = act(s, 1, { type: 'react', uid: it });
+  assert.equal(s.props[4].tedbir, 0);
+  assert.throws(() => applyAction(s, 0, { type: 'playCard', uid: give(s, 0, 'piyango') }), /zaten bir Hamle/);
+});
+
+test('Aidat Günü her rakipten ayrı ayrı alınır', () => {
+  let s = calm(started(4));
+  for (let p = 0; p < 4; p++) strip(s, p, 'itiraz');
+  const it = give(s, 2, 'itiraz');
+  s = act(s, 0, { type: 'playCard', uid: give(s, 0, 'aidat') });
+  assert.deepEqual(waitingFor(s), [2]);
+  s = act(s, 2, { type: 'react', uid: it });
+  assert.equal(s.players[0].cash, 1500 + 60);
+  assert.equal(s.players[2].cash, 1500);
+});
+
+test('kaçak kat, ihbar cezası ve imar affı', () => {
+  let s = calm(started());
+  own(s, 0, 19);
+  s = act(s, 0, { type: 'buildKacak', sq: 19 });
+  assert.equal(s.props[19].kacak, 1);
+  assert.equal(s.players[0].cash, 1500 - 75);
+  assert.equal(rentFor(s, 19), 130);
+  assert.throws(() => applyAction(s, 0, { type: 'build', sq: 19 }), /tüm mülkleri/);
+  // Rakip ihbar eder
+  s.turn = { ...s.turn, p: 1, hamle: false };
+  strip(s, 0, 'itiraz');
+  s = act(s, 1, { type: 'playCard', uid: give(s, 1, 'ihbar'), target: { player: 0 } });
+  assert.equal(s.props[19].kacak, 0);
+  assert.equal(s.players[0].cash, 1500 - 75 - 25);
+});
+
+test('yasal kat set ister; kat satışı yarı fiyat; ipotek', () => {
+  let s = calm(started());
+  own(s, 0, 1, 2);
+  s = act(s, 0, { type: 'build', sq: 1 });
+  s = act(s, 0, { type: 'build', sq: 1 });
+  assert.equal(s.props[1].kat, 2);
+  assert.equal(s.players[0].cash, 1400);
+  assert.throws(() => applyAction(s, 0, { type: 'mortgage', sq: 1 }), /katları/);
+  s = act(s, 0, { type: 'sellFloor', sq: 1 });
+  assert.equal(s.players[0].cash, 1425);
+  s = act(s, 0, { type: 'mortgage', sq: 2 });
+  assert.equal(s.players[0].cash, 1465);
+  assert.throws(() => applyAction(s, 0, { type: 'build', sq: 1 }), /ipotekli/);
+  s = act(s, 0, { type: 'unmortgage', sq: 2 });
+  assert.equal(s.players[0].cash, 1465 - 45);
+});
+
+test('borç: tur bitmez, Borcu Kapat satar ve ipotek eder, gerekirse konkordato', () => {
+  let s = calm(started());
+  strip(s, 0, 'kestirme');
+  own(s, 0, 1, 2);
+  s.props[1].kat = 1;
+  s = act(s, 0, { type: 'roll' });
+  while (s.pending) s = act(s, waitingFor(s)[0], defaultFor(s));
+  s.players[0].cash = -50;
+  assert.throws(() => applyAction(s, 0, { type: 'endTurn' }), /Borcun var/);
+  s = act(s, 0, { type: 'settleDebt' });
+  assert.equal(s.props[1].kat, 0);
+  assert.ok(s.props[1].ipotek, 'önce kat satılır, sonra en ucuz mülk ipotek edilir');
+  assert.ok(s.players[0].cash >= 0);
+  assert.equal(s.players[0].konkordato, 0);
+  s.players[0].cash = -5000;
+  s = act(s, 0, { type: 'settleDebt' });
+  assert.equal(s.players[0].cash, 0);
+  assert.equal(s.players[0].konkordato, 1);
+});
+
+function defaultFor(s) {
+  const pd = s.pending;
+  if (pd.type === 'buy') return { type: 'decline' };
+  if (pd.type === 'auction') return { type: 'bid', amount: 0 };
+  if (pd.type === 'rent' || pd.type === 'react') return { type: 'react', uid: null };
+  if (pd.type === 'tapu') return { type: 'tapuBuy', sq: null };
+  if (pd.type === 'zabita') return { type: 'zabitaTarget', target: pd.options[0] };
+  throw new Error(pd.type);
+}
+
+test('pazarlık: kabul, ret ve katlı mülk yasağı', () => {
+  let s = calm(started());
+  own(s, 1, 8);
+  own(s, 0, 9);
+  s = act(s, 0, { type: 'proposeTrade', to: 1, give: { cash: 200, props: [] }, take: { cash: 0, props: [8] } });
+  assert.deepEqual(waitingFor(s), [1]);
+  s = act(s, 1, { type: 'tradeRespond', accept: true });
+  assert.equal(s.props[8].owner, 0);
+  assert.equal(s.players[0].cash, 1300);
+  assert.equal(s.players[1].cash, 1700);
+  s = act(s, 0, { type: 'build', sq: 8 });
+  assert.throws(() => applyAction(s, 0, { type: 'proposeTrade', to: 1, give: { props: [8] }, take: { cash: 10 } }), /katsız/);
+  s = act(s, 0, { type: 'proposeTrade', to: 2, give: { cash: 10 }, take: {} });
+  s = act(s, 2, { type: 'tradeRespond', accept: false });
+  assert.equal(s.players[0].cash, 1300 - 100);
+});
+
+test('görünüm: başkasının eli ve hedefi gizli', () => {
+  const s = started(4);
+  const v = viewFor(s, 1);
+  assert.deepEqual(v.players[0].hand, []);
+  assert.equal(v.players[0].hedef, null);
+  assert.ok(v.players[0].handCount > 0);
+  assert.equal(v.players[1].hand.length, s.players[1].hand.length);
+  assert.ok(v.players[1].hedef);
+  assert.equal(typeof v.deck, 'number');
+  assert.equal(v.rng, 0);
+});
+
+test('el sınırı: fazla kart tur sonunda atılır', () => {
+  let s = calm(started());
+  strip(s, 0, 'kestirme');
+  const fill = ['dava', 'takas', 'ihbar', 'tedbir', 'aidat', 'piyango'];
+  for (let i = 0; s.players[0].hand.length < 9; i++) give(s, 0, fill[i % fill.length]);
+  s = act(s, 0, { type: 'roll' });
+  while (s.pending) s = act(s, waitingFor(s)[0], defaultFor(s));
+  const n = s.players[0].hand.length;
+  s = act(s, 0, { type: 'endTurn' });
+  assert.equal(s.pending.type, 'discard');
+  assert.equal(s.pending.count, n - 6);
+  s = act(s, 0, { type: 'discard', uids: s.players[0].hand.slice(0, n - 6) });
+  assert.equal(s.players[0].hand.length, 6);
+  assert.equal(s.turn.p, 1);
+});
+
+test('puan: hedef bonusu ve konkordato cezası', () => {
+  const s = calm(started(4));
+  own(s, 0, 1, 2);
+  s.players[0].hedef = 'sehir_erzurum';
+  s.players[0].konkordato = 1;
+  const sc = scoreOf(s, 0);
+  assert.equal(sc.hedefOk, true);
+  assert.equal(sc.total, netWorth(s, 0) + 250 - 300);
+  assert.equal(netWorth(s, 0), 1500 + price(s, 1) + price(s, 2));
+});
+
+test('oyun son turun sonunda biter ve sıralama üretir', () => {
+  let s = started(3, 5, { maxRounds: 2 });
+  let guard = 0;
+  while (s.phase !== 'over' && guard++ < 500) {
+    const p = waitingFor(s)[0];
+    const pd = s.pending;
+    let a;
+    if (pd) a = defaultFor(s);
+    else if (s.turn.step === 'preroll') a = { type: 'roll' };
+    else if (s.turn.step === 'choose') a = { type: 'move', steps: s.turn.dice[0] + s.turn.dice[1] };
+    else if (s.players[p].cash < 0) a = { type: 'settleDebt' };
+    else a = { type: 'endTurn' };
+    if (pd?.type === 'discard') a = { type: 'discard', uids: s.players[p].hand.slice(0, pd.count) };
+    s = act(s, p, a);
+  }
+  assert.equal(s.phase, 'over');
+  assert.equal(s.round, 2);
+  assert.equal(s.results.ranking.length, 3);
+  assert.ok(viewFor(s, 0).players[1].hedef, 'oyun sonunda hedefler açılır');
+});
