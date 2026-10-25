@@ -16,16 +16,11 @@ function calm(s) {
 
 const taksi = (s, p, steps) => act(s, p, { type: 'playCard', uid: give(s, p, 'taksi'), target: { steps } });
 
-test('kurulum: el, hedef seçimi ve ilk tur', () => {
-  let s = createGame({ players: makePlayers(5), seed: 7 });
-  assert.equal(s.phase, 'setup');
-  assert.equal(s.pending.type, 'hedef');
-  for (const pl of s.players) {
-    assert.equal(pl.hand.length, 3);
-    assert.equal(pl.hedefChoices.length, 2);
-  }
-  assert.deepEqual(waitingFor(s), [0, 1, 2, 3, 4]);
-  for (let p = 0; p < 5; p++) s = act(s, p, { type: 'chooseHedef', hedef: s.players[p].hedefChoices[1] });
+test('kurulum: el ve ilk tur, oyun hemen başlar', () => {
+  const s = createGame({ players: makePlayers(5), seed: 7 });
+  for (const pl of s.players.slice(1)) assert.equal(pl.hand.length, 3);
+  assert.equal(s.pending, null);
+  assert.deepEqual(waitingFor(s), [0]);
   assert.equal(s.phase, 'play');
   assert.equal(s.round, 1);
   assert.ok(s.gundem.id);
@@ -168,7 +163,6 @@ test('açık artırma: sırayla artır ya da çekil, son kalan kazanır', () => 
   assert.equal(s.pending, null, 'lider dışında herkes çekilince biter');
   assert.equal(s.props[2].owner, 0);
   assert.equal(s.players[0].cash, 1500 - 70);
-  assert.equal(s.players[0].stats.ihale, 1);
 });
 
 test('açık artırma: teklif yoksa sahipsiz kalır, süre dolunca çekilir, nakdi yetmeyen çekilir', () => {
@@ -203,7 +197,6 @@ test('İtiraz zinciri: itiraza karşı itiraz kartı geçirir', () => {
   assert.equal(s.pending, null);
   assert.equal(s.props[5].owner, 0);
   assert.equal(s.players[1].cash, 1500 + 100);
-  assert.equal(s.players[0].stats.hukuk, 2);
 });
 
 test('İtiraz kartı iptal eder; turda tek Hamle kuralı', () => {
@@ -309,14 +302,12 @@ test('pazarlık: kabul, ret ve katlı mülk yasağı', () => {
   assert.equal(s.players[0].cash, 1300 - 100);
 });
 
-test('görünüm: başkasının eli ve hedefi gizli', () => {
+test('görünüm: başkasının eli gizli', () => {
   const s = started(4);
   const v = viewFor(s, 1);
   assert.deepEqual(v.players[0].hand, []);
-  assert.equal(v.players[0].hedef, null);
   assert.ok(v.players[0].handCount > 0);
   assert.equal(v.players[1].hand.length, s.players[1].hand.length);
-  assert.ok(v.players[1].hedef);
   assert.equal(typeof v.deck, 'number');
   assert.equal(v.rng, 0);
 });
@@ -337,29 +328,13 @@ test('el sınırı: fazla kart tur sonunda atılır', () => {
   assert.equal(s.turn.p, 1);
 });
 
-test('puan: hedef bonusu ve konkordato cezası', () => {
+test('puan: net değerden konkordato cezası düşer', () => {
   const s = calm(started(4));
   own(s, 0, 1, 2);
-  s.players[0].hedef = 'sehir_corum';
   s.players[0].konkordato = 1;
   const sc = scoreOf(s, 0);
-  assert.equal(sc.hedefOk, true);
-  assert.equal(sc.total, netWorth(s, 0) + 250 - 300);
+  assert.equal(sc.total, netWorth(s, 0) - 300);
   assert.equal(netWorth(s, 0), 1500 + price(s, 1) + price(s, 2));
-});
-
-test('hedef eşikleri: 1 kaçak kat ve 7 hukuk kartı', () => {
-  const s = calm(started(4));
-  own(s, 0, 1);
-  s.players[0].hedef = 'kacakci';
-  assert.equal(scoreOf(s, 0).hedefOk, false);
-  s.props[1].kacak = 1;
-  assert.equal(scoreOf(s, 0).hedefOk, true);
-  s.players[0].hedef = 'hukukcu';
-  s.players[0].stats.hukuk = 6;
-  assert.equal(scoreOf(s, 0).hedefOk, false);
-  s.players[0].stats.hukuk = 7;
-  assert.equal(scoreOf(s, 0).hedefOk, true);
 });
 
 // Kart oynamadan, satın almadan sırayı ilerleten en basit hamle.
@@ -383,7 +358,7 @@ test('oyun son turun sonunda biter ve sıralama üretir', () => {
   assert.equal(s.phase, 'over');
   assert.equal(s.round, 2);
   assert.equal(s.results.ranking.length, 3);
-  assert.ok(viewFor(s, 0).players[1].hedef, 'oyun sonunda hedefler açılır');
+  assert.ok(viewFor(s, 0).players[1].hand, 'oyun sonunda eller açılır');
   assert.equal(s.worth.length, 3, 'oyun başı + her tur sonu net değer');
   assert.deepEqual(s.worth[0], [s.config.startCash, s.config.startCash, s.config.startCash]);
   assert.deepEqual(s.worth[2], s.players.map((_, p) => netWorth(s, p)));
@@ -468,9 +443,8 @@ test('SÜRPRİZ: hareket etkileri', () => {
   assert.notEqual(BOARD[r.after.players[0].pos].kind, 'surpriz');
 });
 
-test('masa ayarı: ihale kapalıysa alınmayan arsa sahipsiz kalır, İhale Kralı dağıtılmaz', () => {
+test('masa ayarı: ihale kapalıysa alınmayan arsa sahipsiz kalır', () => {
   let s = calm(started(4, 42, { rules: { ihale: false } }));
-  for (const pl of s.players) assert.ok(!pl.hedefChoices.includes('ihaleci') && pl.hedef !== 'ihaleci');
   s = taksi(s, 0, 2);
   assert.equal(s.pending.type, 'buy');
   s = act(s, 0, { type: 'decline' });
@@ -529,19 +503,9 @@ test('gündem dönemi oyunun son turunu aşmaz', () => {
   assert.equal(t.gundem.until, 5);
 });
 
-test('masa ayarı: hedef kapalıysa oyun hedef seçmeden başlar', () => {
-  const s = createGame({ players: makePlayers(4), seed: 3, config: { rules: { hedef: false } } });
-  assert.equal(s.phase, 'play');
-  assert.equal(s.pending, null);
-  assert.equal(s.turn.p, 0);
-  assert.equal(s.round, 1);
-  for (const pl of s.players) assert.equal(pl.hedef, null);
-  assert.equal(scoreOf(s, 0).hedefBonus, 0);
-});
-
 test('değer hedefi: hedefe ulaşılan tur tamamlanınca Seçim Günü gelir', () => {
   let s = started(4, 42, { targetScore: 2500 });
-  assert.equal(s.config.maxRounds, 30, 'hedef tutmazsa en geç 30. turda biter');
+  assert.equal(s.config.maxRounds, 30, 'değer hedefi tutmazsa en geç 30. turda biter');
   s.players[2].cash = 4000;
   let ev = null;
   let guard = 0;
@@ -587,6 +551,7 @@ test('bot seviyesi: zor bot eksik parçaya mülk + az para önerir, normal ve ko
   own(s, 1, 35, 16, 25); // İstanbul'un öbür yarısı + iki havalimanı (üçüncüsü ona daha değerli)
   s.players[0].cash = 700;
   s.turn.step = 'free';
+  s.mods = { durgunluk: true }; // kat dikilemez: bot kaçak kat yerine takası düşünür
   const zor = botAction(s, 0, 'zor');
   assert.equal(zor.type, 'proposeTrade');
   assert.equal(zor.to, 1);
@@ -603,7 +568,6 @@ test('bot seviyesi: zor bot artırmada en az artışla, kolay bot daha erken çe
   const s = started(4, 22);
   s.pending = { type: 'auction', sq: 28, order: [1, 2, 3], out: [], high: 100, leader: 2, turn: 1 };
   s.players[1].cash = 1500;
-  s.players[1].hedef = null; // İzmir hedefi değeri şişirmesin: değer = fiyat (300)
   assert.deepEqual(botAction(s, 1, 'zor'), { type: 'raise', amount: 110 });
   s.pending.high = 260;
   assert.equal(botAction(s, 1, 'kolay').type, 'pass');

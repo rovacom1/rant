@@ -1,11 +1,9 @@
 import { createGame, applyAction } from '../src/engine/index.js';
 import { makePlayers } from '../tools/simlib.js';
 
-// Herkes hedefini seçmiş, ilk oyuncunun sırası başlamış bir oyun.
+// İlk oyuncunun sırası başlamış bir oyun.
 export function started(n = 4, seed = 42, config = {}) {
-  let s = createGame({ players: makePlayers(n), seed, config });
-  for (let p = 0; p < n; p++) s = act(s, p, { type: 'chooseHedef', hedef: s.players[p].hedefChoices[0] });
-  return s;
+  return createGame({ players: makePlayers(n), seed, config });
 }
 
 export const act = (s, p, a) => applyAction(s, p, a).state;

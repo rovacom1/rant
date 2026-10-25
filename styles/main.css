@@ -488,12 +488,6 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .kart-ghost { position: fixed; z-index: 75; pointer-events: none; }
 .kart-ghost .kart { --w: 100%; width: 100%; height: 100%; font-size: inherit; }
 
-/* gizli hedef (elin üstünde) */
-.quest { border-radius: 12px; padding: 7px 10px; background: linear-gradient(150deg, #2a2016, #4a3417); color: #fff3d6; border: 2px solid #c9a24a; }
-.quest .q-n { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; font-family: var(--display); font-weight: 600; font-size: 14.5px; }
-.quest .q-k { font-family: var(--font); font-size: 10px; letter-spacing: 0.14em; color: #f7dc92; font-weight: 800; }
-.quest .q-ok { margin-left: auto; font-family: var(--font); color: #8ff0a8; font-size: 12px; font-weight: 700; }
-.quest .q-t { font-size: 12px; line-height: 1.35; color: #e9dcc0; margin-top: 2px; }
 
 /* başkasının oynadığı kart ortada gösterilir */
 /* fare üstündeyken kart durur ve büyür, tıklayınca kapanır; süre oyun hızına göre (--dur) */

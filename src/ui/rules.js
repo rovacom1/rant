@@ -32,7 +32,7 @@ export const RULES_HTML = `
 <h3>Borç ve Konkordato</h3>
 <p>Para eksiye düşebilir; sıranı bitirmeden kat satıp ipotek ederek borcunu kapatmalısın ("Borcu Kapat" bunu otomatik yapar). Satacak bir şeyin kalmazsa konkordato ilan edersin: borcun silinir, oyunda kalırsın, sonda 300 puan ceza.</p>
 <h3>Masa ayarları</h3>
-<p>Ev sahibi lobide açık artırmayı, SÜRPRİZ karelerini, gündem kartlarını ve gizli hedefleri açıp kapatabilir; oyunun hızını da seçer. Açık artırma kapalıysa alınmayan arsa sahipsiz kalır.</p>
+<p>Ev sahibi lobide açık artırmayı, SÜRPRİZ karelerini ve gündem kartlarını açıp kapatabilir; oyunun hızını da seçer. Açık artırma kapalıysa alınmayan arsa sahipsiz kalır.</p>
 <h3>Tahtadaki işaretler</h3>
 <ul>
 <li><b>Karenin iç kenarındaki şerit</b>: gri ise sahipsiz, renkliyse o oyuncunun. Şeritte <b>★</b>: şehrin tamamı tek kişide (tam set), arsa kirası 2 katı.</li>
@@ -42,6 +42,4 @@ export const RULES_HTML = `
 <li><b>Yeşil parlayan kart</b>: şu an oynanabilir; tahtaya sürükle ya da tıkla.</li>
 <li>Oyuncu panelinde <b>📜 mülk</b>, <b>kart</b> sayısı ve <b>değer</b> (nakit + mülk + katlar) yazar. Simgelerin üzerine gelince açıklaması çıkar.</li>
 </ul>
-<h3>Gizli hedef</h3>
-<p>Başta iki hedef kartından birini seçersin (ör. "Konya Hakimi", "Kaçak Ama Sağlam"). Kimse göremez; oyun sonunda tutarsa bonus alırsın.</p>
 </div>`;

@@ -21,7 +21,7 @@ test('kısa ve uzun oyun seçenekleri', () => {
 });
 
 test('masa ayarları kapalıyken de oyunlar tutarlı biter', () => {
-  const rules = { ihale: false, surpriz: false, gundem: false, hedef: false };
+  const rules = { ihale: false, surpriz: false, gundem: false };
   for (let g = 0; g < 15; g++) {
     const { state } = playBotGame(500 + g, 4, { rules });
     assert.equal(state.phase, 'over');

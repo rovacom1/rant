@@ -1,7 +1,7 @@
 // Oyun durum makinesi. applyAction(state, oyuncu, hamle) yeni state ve olay listesi döndürür.
-// Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste, hedef) içermez.
+// Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste) içermez.
 
-import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, HEDEF, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP } from './data.js';
+import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP } from './data.js';
 import { randInt, rollDie, shuffle } from './rng.js';
 import * as R from './rules.js';
 
@@ -120,7 +120,6 @@ function sellFloorAt(s, ctx, p, sq) {
 
 function mortgageAt(s, ctx, p, sq) {
   s.props[sq].ipotek = true;
-  s.players[p].stats.mortgaged = true;
   transfer(s, ctx, null, p, R.mortgageValue(s, sq), `İpotek: ${sqName(sq)}`);
 }
 
@@ -149,7 +148,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
     seq: 0,
     rng: seed >>> 0,
     config: cfg,
-    phase: 'setup',
+    phase: 'play',
     round: 0,
     index: 100,
     salary: cfg.salary,
@@ -184,11 +183,8 @@ export function createGame({ players, config = {}, seed = 1 }) {
       cash: cfg.startCash,
       pos: 0,
       hand: [],
-      hedef: null,
-      hedefChoices: [],
       konkordato: 0,
       kiraZammi: false,
-      stats: { hukuk: 0, ihale: 0, mortgaged: false },
     };
   });
   const copies = (defs) => Object.entries(defs).flatMap(([id, c]) => Array.from({ length: c.count }, (_, n) => `${id}:${n}`));
@@ -196,20 +192,9 @@ export function createGame({ players, config = {}, seed = 1 }) {
   s.gundemDeck = shuffle(s, copies(GUNDEM));
   const ctx = { events: [] };
   s.players.forEach((_, p) => drawCards(s, ctx, p, cfg.startHand, true));
-  if (!cfg.rules.hedef) {
-    say(s, ctx, 'Masa kuruldu. Bu masada gizli hedef yok, oyun başlıyor.');
-    s.phase = 'play';
-    startRound(s, ctx);
-    startTurn(s, ctx, 0);
-    return s;
-  }
-  // İhale kapalıysa İhale Kralı hedefi tutturulamaz, dağıtılmaz.
-  const hedefs = shuffle(s, Object.keys(HEDEF).filter((h) => cfg.rules.ihale || HEDEF[h].check.type !== 'ihale'));
-  s.players.forEach((pl, p) => {
-    pl.hedefChoices = hedefs.slice(p * 2, p * 2 + 2);
-  });
-  s.pending = { type: 'hedef', chosen: {} };
-  say(s, ctx, 'Masa kuruldu. Herkes gizli hedefini seçiyor.');
+  say(s, ctx, 'Masa kuruldu, oyun başlıyor.');
+  startRound(s, ctx);
+  startTurn(s, ctx, 0);
   return s;
 }
 
@@ -431,7 +416,6 @@ function resolveAuction(s, ctx) {
   }
   transfer(s, ctx, winner, null, pd.high, `İhale: ${sqName(pd.sq)}`, true);
   s.props[pd.sq].owner = winner;
-  s.players[winner].stats.ihale++;
   emit(s, ctx, { type: 'auction', sq: pd.sq, winner, text: `Açık artırma bitti: ${sqName(pd.sq)} → ${nm(s, winner)} (${fmt(pd.high)}).` });
 }
 
@@ -769,7 +753,6 @@ function playCard(s, p, a, ctx) {
   need(!block, block);
   discardCard(s, p, a.uid);
   s.turn.hamle = true;
-  if (c.hukuk) s.players[p].stats.hukuk++;
   emit(s, ctx, { type: 'card', p, card: id, target: t, text: cardText(s, p, id, t) });
   const card = { id, by: p, target: t };
   if (c.react) {
@@ -986,22 +969,6 @@ const TURN = {
 };
 
 const PENDING = {
-  hedef: {
-    chooseHedef(s, p, a, ctx) {
-      const pl = s.players[p];
-      need(pl.hedefChoices.includes(a.hedef), 'Bu hedef sende yok.');
-      pl.hedef = a.hedef;
-      pl.hedefChoices = [];
-      s.pending.chosen[p] = true;
-      say(s, ctx, `${pl.name} gizli hedefini seçti.`);
-      if (s.players.every((_, i) => s.pending.chosen[i])) {
-        s.pending = null;
-        s.phase = 'play';
-        startRound(s, ctx);
-        startTurn(s, ctx, 0);
-      }
-    },
-  },
   buy: {
     buy(s, p, a, ctx) {
       const sq = s.pending.sq;
@@ -1042,7 +1009,6 @@ const PENDING = {
       if (a.uid) {
         need(cardId(a.uid) === 'itiraz' && hasUid(s, p, a.uid), 'İtiraz kartın yok.');
         discardCard(s, p, a.uid);
-        s.players[p].stats.hukuk++;
         pd.chain++;
         emit(s, ctx, { type: 'card', p, card: 'itiraz', text: `${nm(s, p)}: İTİRAZ EDİYORUM!` });
         const other = p === pd.victim ? pd.card.by : pd.victim;
@@ -1114,8 +1080,6 @@ export function waitingFor(s) {
   const pd = s.pending;
   if (pd) {
     switch (pd.type) {
-      case 'hedef':
-        return s.players.map((_, i) => i).filter((i) => !pd.chosen[i]);
       case 'auction':
         return [pd.turn];
       case 'react':
@@ -1159,8 +1123,6 @@ export function defaultAction(s, seat) {
   const pl = s.players[seat];
   if (pd) {
     switch (pd.type) {
-      case 'hedef':
-        return { type: 'chooseHedef', hedef: pl.hedefChoices[0] };
       case 'buy':
         return { type: 'decline' };
       case 'auction':
@@ -1186,7 +1148,7 @@ export function defaultAction(s, seat) {
   return { type: 'endTurn' };
 }
 
-// Oyuncuya özel görünüm: başkalarının eli, hedefi ve deste sırası gizlenir.
+// Oyuncuya özel görünüm: başkalarının eli ve deste sırası gizlenir.
 export function viewFor(s, seat) {
   const over = s.phase === 'over';
   const v = {
@@ -1201,8 +1163,6 @@ export function viewFor(s, seat) {
       ...pl,
       handCount: pl.hand.length,
       hand: i === seat || over ? pl.hand : [],
-      hedef: i === seat || over ? pl.hedef : null,
-      hedefChoices: i === seat ? pl.hedefChoices : [],
     })),
   };
   return JSON.parse(JSON.stringify(v));

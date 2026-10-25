@@ -18,7 +18,6 @@ RANT'a özgü olanlar:
 | **İtiraz zinciri** | Sana oynanan karta İtiraz, İtiraz'a karşı İtiraz | Monopoly Deal'deki "Hayır!" gerilimi |
 | **Kaçak Kat** | Set olmadan, yarı fiyata kat; ama Zabıta ve İhbar ile yıkılabilir | Risk-ödül, İmar Affı kumarı |
 | **Açık artırma** | Almadığın arsa Monopoly'deki gibi açık artırmaya çıkar: sırayla artır ya da çekil | Herkes teklifi görür, pazarlık gerilimi |
-| **Gizli Hedef** | Başta 2 hedef kartından 1'ini seçersin, sonda açılır | Blöf, pazarlıkta gizli niyet |
 | **Enflasyon Endeksi** | Fiyatlar ve kiralar endeksle artar, nakit erir | Erken yatırımı ödüllendirir |
 | **Konkordato** | Batan oyuncu oyundan çıkmaz; borcu silinir, sonda ceza alır | Kimse 20. dakikada izleyici olmaz |
 | **Seçim Günü** | Oyun sabit tur sayısında (varsayılan 15) biter | Monopoly'nin bitmeyen oyun sorunu yok |
@@ -28,20 +27,19 @@ RANT'a özgü olanlar:
 - Oyuncu: 2-6 (denge 4-5 için ayarlı). Boş koltuklar botla doldurulabilir.
 - Süre: ev sahibi lobide oyunun nasıl biteceğini seçer:
   - **Tur sayısıyla**: 10, 15 (varsayılan) ya da 20 tur. 15 tur 5 kişiyle yaklaşık 35-45 dakika.
-  - **Değer hedefiyle**: 2.500, 3.500 ya da 5.000 ₺. Bir oyuncunun değeri (nakit + mülk + katlar, oyuncu panelinde görünen) hedefe ulaşınca o tur tamamlanır ve Seçim Günü gelir; herkes eşit sayıda oynamış olur. Gizli hedef bonusu ölçüme girmez (hedefler gizli kalsın diye), sıralamada sayılır. Bot simülasyonunda yaklaşık 9, 15 ve 22 tur sürer. Oyun en geç 30. turda biter.
-- Başlangıç: 1500 TL nakit, 3 Hamle kartı, 2 Hedef kartından 1'i seçilir.
+  - **Değer hedefiyle**: 2.500, 3.500 ya da 5.000 ₺. Bir oyuncunun değeri (nakit + mülk + katlar, oyuncu panelinde görünen) hedefe ulaşınca o tur tamamlanır ve Seçim Günü gelir; herkes eşit sayıda oynamış olur. Bot simülasyonunda yaklaşık 9, 15 ve 22 tur sürer. Oyun en geç 30. turda biter.
+- Başlangıç: 1500 TL nakit, 3 Hamle kartı.
 - Kazanan: Seçim Günü'nde (son turun sonunda) en yüksek **puan**a sahip oyuncu. Değer hedefine ilk ulaşan değil, Seçim Günü'nde puanı en yüksek olan kazanır.
 
 ### Masa ayarları
 
-Ev sahibi lobide dört kuralı açıp kapatabilir; hepsi varsayılan olarak açıktır. Oyun başlayınca değişmez.
+Ev sahibi lobide üç kuralı açıp kapatabilir; hepsi varsayılan olarak açıktır. Oyun başlayınca değişmez.
 
 | Ayar | Kapalıyken |
 |---|---|
-| Açık artırma | Alınmayan arsa artırmaya çıkmaz, sahipsiz kalır. İhale Kralı hedefi dağıtılmaz. |
+| Açık artırma | Alınmayan arsa artırmaya çıkmaz, sahipsiz kalır. |
 | SÜRPRİZ kareleri | SÜRPRİZ karesine gelince bir şey olmaz. |
 | Gündem kartları | Tur başında Gündem kartı açılmaz; turlar yalnız sayılır. |
-| Gizli hedefler | Hedef seçilmez, oyun hemen başlar; puanda hedef bonusu yoktur. |
 
 Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi ve canlandırmaları 1,4 / 1 / 0,6 katına çeker.
 
@@ -192,7 +190,6 @@ Kira oyunu sürüklemiyordu: kirayı atlatan kartlar çok, kart birikiyordu, bed
 | Bedava banka parası (maaşa oranı) | 2005 (%78) | 1290 (%47) |
 | Konkordato / oyun | 0,27 | 0,34 |
 | Oturma sırasına göre kazanma | %14-24 | %18-22 |
-| Gizli hedef tutma | %31 | %31 |
 
 Kalan bedava paranın çoğu gündemden geliyordu (Bayram, Seçim vaadi). Gündem 3 turda bir değişince bu da azaldı (bkz. §8).
 
@@ -251,32 +248,18 @@ SÜRPRİZ karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçili
 | Haciz Memuru | Nakdinin %10'u haczedilir. |
 | Vergi İadesi | Mülk başı 15 iade al. |
 
-## 9. Gizli Hedefler (16)
-
-Başta herkese 2 hedef dağıtılır, 1'i seçilir. Oyun sonunda tutarsa bonus alınır. Eşikler bot simülasyonunda her hedefin tutturma oranı %15-45 olacak şekilde ayarlandı.
-
-- 8 şehir hedefi: "<Şehir> Hakimi" — o şehrin tüm mülkleri sonda sende (2'li şehir +250, 3'lü şehir +300).
-- Kat Kat Üstüne: sonda en az 7 katın (kaçak dahil) var, +300.
-- Ulaşım Baronu: sonda en az 4 gar ya da havalimanı sende, +250.
-- Nakit Kraldır: sonda en çok nakit sende (eşitlik dahil), +300.
-- Arsa Avcısı: sonda en az 7 mülkün var, +300.
-- Kaçak Ama Sağlam: sonda en az 1 kaçak katın ayakta, +300.
-- Hukuk Dünyası: oyun boyunca en az 7 hukuk kartı (Kamulaştırma, Tedbir, İhbar, Dava, İtiraz) oynadın, +300.
-- İhale Kralı: en az 2 ihale kazandın, +250.
-- Temiz Sicil: hiç ipotek yapmadın, konkordato yok, sonda en az 6 mülk, +250.
-
-## 10. Net Değer ve puan
+## 9. Net Değer ve puan
 
 Net Değer = nakit + mülklerin güncel fiyatı (ipotekli ise yarısı) + yasal kat x kat fiyatı + kaçak kat x kat fiyatının yarısı.
-Puan = Net Değer + tutan hedef bonusu - 300 x konkordato. Eşitlikte nakdi fazla olan kazanır.
-Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tur tur net değer çizgisi gösterilir (hedef bonusu ve ceza çizgide yoktur, yalnız puanda).
+Puan = Net Değer - 300 x konkordato. Eşitlikte nakdi fazla olan kazanır.
+Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tur tur net değer çizgisi gösterilir (konkordato cezası çizgide yoktur, yalnız puanda).
 
-## 11. Çevrimiçi mimari
+## 10. Çevrimiçi mimari
 
 - Oyun statik bir sitedir (GitHub Pages). Oyun sunucusu yoktur.
 - Odayı kuran oyuncunun tarayıcısı **ev sahibidir**: oyun motoru orada çalışır, botları o yönetir, kuralları o doğrular.
 - Diğer oyuncular PeerJS (WebRTC) ile doğrudan ev sahibine bağlanır. Eşleşme için PeerJS'in ücretsiz sunucusu, ağ engeline karşı PeerJS'in TURN sunucuları kullanılır.
-- Her oyuncu yalnız kendi görünümünü alır (başkalarının eli ve hedefi gizli). Zar ve desteler ev sahibindedir.
+- Her oyuncu yalnız kendi görünümünü alır (başkalarının eli gizli). Zar ve desteler ev sahibindedir.
 - Ev sahibi sayfayı yenilerse oyun tarayıcı hafızasından geri yüklenir; oyuncular otomatik yeniden bağlanır.
 - Pazarlık teklifini yalnız sırası gelen oyuncu yapar (turda en fazla 3 teklif).
 - Bağlantısı kopan oyuncunun yerine bir süre sonra bot oynar; dönünce koltuk geri verilir.

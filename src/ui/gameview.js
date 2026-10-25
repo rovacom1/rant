@@ -13,7 +13,7 @@ import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
 import { coinFlights, arcPeak, COIN_GAP } from './coins.js';
 import { worthLines } from './chart.js';
 
-const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, GUNDEM_PERIOD, HEDEF, fmt, cardId } = E;
+const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, GUNDEM_PERIOD, fmt, cardId } = E;
 const N = BOARD.length;
 
 let els = null;
@@ -61,7 +61,6 @@ export function mountGame(root) {
         <div class="seats-panel" id="players"></div>
         <section class="hand-panel hidden" id="handPanel">
           <div class="hand-head">KARTLARIN<span class="hand-n" id="handN"></span><span class="spacer"></span><span class="deck-chip" id="deck" data-tip="Destede kalan kart"></span></div>
-          <div class="quest hidden" id="quest"></div>
           <div class="hand-grid" id="handGrid"></div>
         </section>
       </aside>
@@ -72,7 +71,7 @@ export function mountGame(root) {
   els = {
     round: g('tRound'), target: g('tTarget'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
     board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'),
-    players: g('players'), feed: g('feed'), handPanel: g('handPanel'), handN: g('handN'), handGrid: g('handGrid'), quest: g('quest'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
+    players: g('players'), feed: g('feed'), handPanel: g('handPanel'), handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
     modal: g('modal'), stage: g('stage'),
   };
   cells = buildBoard(els.board);
@@ -182,9 +181,7 @@ function gundemHTML(v) {
   if (!v.gundem) {
     const left = max - v.round;
     const road = v.finalRound || !left ? 'Son tur: Seçim Günü geliyor' : goal || `Seçime ${left} tur var`;
-    const t = v.round ? html`<div class="nb-k">${v.round}. TUR</div><div class="nb-t">${road}</div><div class="nb-x">Bu masada gündem kartları kapalı.</div>`
-      : html`<div class="nb-k">SEÇİM YOLU</div><div class="nb-t">${goal || `Seçime ${max} tur var`}</div><div class="nb-x">Herkes gizli hedefini seçiyor.</div>`;
-    return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div>${t}</div>${ring}</div>`;
+    return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div><div class="nb-k">${v.round}. TUR</div><div class="nb-t">${road}</div><div class="nb-x">Bu masada gündem kartları kapalı.</div></div>${ring}</div>`;
   }
   const g = GUNDEM[v.gundem.id];
   const modTip = (m) => Object.values(GUNDEM).find((x) => x.mod === m)?.text || '';
@@ -284,12 +281,6 @@ function buyCard(v, sq) {
     ${others.length ? html`<div class="bo">Şehrin diğer sahipleri: ${others.map((o) => html`<span class="dot" style="--c:${o.color}" title="${o.name}"></span>`)}</div>` : ''}</div>`;
 }
 
-function hedefCard(id, act) {
-  const h = HEDEF[id];
-  return html`<button class="targets-btn bigcard" style="text-align:left;cursor:pointer;max-width:320px" data-act="${act}" data-id="${id}">
-    <div class="ci">${h.icon}</div><div><div class="cn">${h.name}</div><div class="ct">${h.text}</div><div class="chip" style="margin-top:6px">+${h.bonus} puan</div></div></button>`;
-}
-
 function promptHTML(v) {
   const me = v.you;
   const pd = v.pending;
@@ -297,14 +288,6 @@ function promptHTML(v) {
     const w = P(v, v.results.ranking[0]);
     return html`<div class="who">🏆 ${av(w)} ${w.name} kazandı!</div><p>Seçim Günü geldi, sandıklar açıldı.</p>
       <div class="row center"><button class="btn primary big" data-act="results">Sonuçları Gör</button>${isHost() ? html`<button class="btn turq" data-act="newGame">Yeni Oyun</button>` : ''}</div>`;
-  }
-  if (v.phase === 'setup') {
-    if (me >= 0 && !pd.chosen[me]) {
-      return html`<h3>Gizli hedefini seç</h3><p>Kimse göremez. Oyun sonunda tutarsa bonus puan alırsın.</p>
-        <div class="row center">${P(v, me).hedefChoices.map((h) => hedefCard(h, 'hedef'))}</div>${timerHTML(v, [me])}`;
-    }
-    const rest = E.waitingFor(v).map((i) => P(v, i).name).join(', ');
-    return html`<h3>Hedefler seçiliyor…</h3><p>Bekleniyor: ${rest}</p>${timerHTML(v, E.waitingFor(v))}`;
   }
   if (app.ui.pick) {
     const c = CARDS[cardId(app.ui.pick.uid)];
@@ -471,12 +454,12 @@ function playersHTML(v) {
         <div class="s-av">${pl.avatar}</div>
         <div><div class="s-name">${pl.name} ${tags} ${flags}</div>
           <div class="s-meta"><span data-tip="Mülk sayısı (gar ve havalimanı dahil)">📜 ${E.propsOf(v, i).length} mülk</span><span class="s-backs" data-tip="Elindeki kart sayısı"><i></i>${pl.handCount} kart</span></div></div>
-        <div class="s-cash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}"><span data-tip="Nakit">${fmt(pl.cash)}</span><small data-tip="Net değer: nakit + mülk + katlar. Oyun sonu puanı buna gizli hedef bonusu eklenip konkordato cezası düşülerek bulunur">değer ${fmt(E.netWorth(v, i))}</small></div>${acts}</div>`;
+        <div class="s-cash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}"><span data-tip="Nakit">${fmt(pl.cash)}</span><small data-tip="Net değer: nakit + mülk + katlar. Oyun sonu puanı bundan konkordato cezası düşülerek bulunur">değer ${fmt(E.netWorth(v, i))}</small></div>${acts}</div>`;
     })
     .join('');
 }
 
-// Sağ sütundaki el, gizli hedef ve deste. İzleyicinin eli yoktur.
+// Sağ sütundaki el ve deste. İzleyicinin eli yoktur.
 function renderHand(v) {
   const me = v.you;
   els.handPanel.classList.toggle('hidden', me < 0);
@@ -485,9 +468,6 @@ function renderHand(v) {
   const discard = v.pending && v.pending.type === 'discard' && v.pending.p === me;
   hand.render(pl.hand, (u) => ({ playable: !discard && canPlay(v, u), selected: app.ui.selected.includes(u) }), app.ui.newCards || []);
   app.ui.newCards = [];
-  const h = pl.hedef && HEDEF[pl.hedef];
-  els.quest.classList.toggle('hidden', !h);
-  if (h) setHTML(els.quest, html`<div class="q-n">${h.icon} ${h.name}<span class="q-k">GİZLİ HEDEF · +${h.bonus}</span>${E.hedefMet(v, me, pl.hedef) ? html`<span class="q-ok">✓ tutuyor</span>` : ''}</div><div class="q-t">${h.text}</div>`);
   setHTML(els.handN, ` · ${pl.hand.length}`);
   setHTML(els.deck, html`<i></i>${v.deck}`);
 }
@@ -672,7 +652,7 @@ function playerDialog(v, p) {
   return html`<h2>${av(pl)} ${pl.name}</h2>
     <div class="row"><span class="chip">💵 ${fmt(pl.cash)}</span><span class="chip">Net değer ${fmt(E.netWorth(v, p))}</span><span class="chip">🂠 ${pl.handCount} kart</span>${pl.konkordato ? html`<span class="chip">Konkordato ×${pl.konkordato}</span>` : ''}</div>
     ${groups.length ? groups : html`<p class="muted">Mülkü yok.</p>`}
-    <p class="muted" style="font-size:12px">★ tamamlanmış şehir seti. Gizli hedefler oyun sonunda açılır.</p>`;
+    <p class="muted" style="font-size:12px">★ tamamlanmış şehir seti.</p>`;
 }
 
 function resultsDialog(v) {
@@ -680,17 +660,15 @@ function resultsDialog(v) {
   const rows = r.ranking.map((p, k) => {
     const sc = r.scores[p];
     const pl = P(v, p);
-    const h = pl.hedef && HEDEF[pl.hedef];
     return html`<div class="res ${k === 0 ? 'win' : ''}"><div class="rank">${['🥇', '🥈', '🥉'][k] || k + 1}</div>${av(pl)}
-      <div><b>${pl.name}</b><div class="rb">Nakit ${fmt(sc.nakit)} · Mülk ${fmt(sc.mulk)} · Kat ${fmt(sc.katlar)}${sc.ceza ? ` · Ceza -${fmt(sc.ceza)}` : ''}</div>
-      <div class="rb">${h ? html`${h.icon} ${h.name}: ${sc.hedefOk ? html`<b>tuttu +${sc.hedefBonus}</b>` : 'tutmadı'}` : ''}</div></div>
+      <div><b>${pl.name}</b><div class="rb">Nakit ${fmt(sc.nakit)} · Mülk ${fmt(sc.mulk)} · Kat ${fmt(sc.katlar)}${sc.ceza ? ` · Ceza -${fmt(sc.ceza)}` : ''}</div></div>
       <div class="rt money">${fmt(sc.total)}</div></div>`;
   });
   return html`<h2>🗳️ Seçim Günü sonuçları</h2><div class="results">${rows}</div>${worthChart(v)}
     ${isHost() ? html`<div class="row"><div class="grow"></div><button class="btn turq" data-act="newGame">Aynı masayla yeni oyun</button></div>` : ''}`;
 }
 
-// Tur tur net değer çizgisi (hedef bonusu ve ceza yok; kazananın çizgisi kalın).
+// Tur tur net değer çizgisi (konkordato cezası yok; kazananın çizgisi kalın).
 function worthChart(v) {
   const W = 420;
   const H = 150;

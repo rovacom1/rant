@@ -1,7 +1,7 @@
 // State'ten türetilen değerler: fiyatlar, kiralar, inşaat kuralları, net değer.
 // Buradaki fonksiyonlar state'i değiştirmez.
 
-import { BOARD, GROUPS, GROUP_SQUARES, TRANSPORT_SQUARES, MODE_SQUARES, TRANSPORT_RENT, OWNABLE, HEDEF } from './data.js';
+import { BOARD, GROUPS, GROUP_SQUARES, MODE_SQUARES, TRANSPORT_RENT, OWNABLE } from './data.js';
 
 export const round5 = (x) => Math.round(x / 5) * 5;
 export const fmt = (n) => `${n < 0 ? '-' : ''}${String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} ₺`;
@@ -117,44 +117,10 @@ export function netWorth(s, p) {
   return w.nakit + w.mulk + w.katlar;
 }
 
-export function hedefMet(s, p, hedefId) {
-  const h = HEDEF[hedefId];
-  if (!h) return false;
-  const pl = s.players[p];
-  const c = h.check;
-  switch (c.type) {
-    case 'group':
-      return ownsGroup(s, p, c.group);
-    case 'floors': {
-      const f = floorsOf(s, p);
-      return f.kat + f.kacak >= c.n;
-    }
-    case 'transport':
-      return TRANSPORT_SQUARES.filter((q) => s.props[q].owner === p).length >= c.n;
-    case 'mostCash':
-      return s.players.every((o) => o.cash <= pl.cash);
-    case 'props':
-      return propsOf(s, p).length >= c.n;
-    case 'kacak':
-      return floorsOf(s, p).kacak >= c.n;
-    case 'hukuk':
-      return pl.stats.hukuk >= c.n;
-    case 'ihale':
-      return pl.stats.ihale >= c.n;
-    case 'clean':
-      return !pl.stats.mortgaged && pl.konkordato === 0 && propsOf(s, p).length >= c.n;
-    default:
-      return false;
-  }
-}
-
 export function scoreOf(s, p) {
   const parts = netWorthParts(s, p);
-  const pl = s.players[p];
-  const hedefOk = pl.hedef ? hedefMet(s, p, pl.hedef) : false;
-  const hedefBonus = hedefOk ? HEDEF[pl.hedef].bonus : 0;
-  const ceza = pl.konkordato * s.config.konkordatoPenalty;
-  return { ...parts, hedefOk, hedefBonus, ceza, total: parts.nakit + parts.mulk + parts.katlar + hedefBonus - ceza };
+  const ceza = s.players[p].konkordato * s.config.konkordatoPenalty;
+  return { ...parts, ceza, total: parts.nakit + parts.mulk + parts.katlar - ceza };
 }
 
 export function hasLiquidAssets(s, p) {

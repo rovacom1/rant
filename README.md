@@ -1,6 +1,6 @@
 # RANT — Kentsel Dönüşümün Kart Oyunu
 
-Türkiye temalı, 4-5 kişilik (2-6), internetten oynanan bir emlak ve kart oyunu. Monopoly'nin tanıdık iskeleti üstüne kaçak kat, gizli ihale, itiraz zinciri, gündem kartları ve gizli hedefler.
+Türkiye temalı, 4-5 kişilik (2-6), internetten oynanan bir emlak ve kart oyunu. Monopoly'nin tanıdık iskeleti üstüne kaçak kat, açık artırma, itiraz zinciri ve gündem kartları.
 
 **Oyna:** https://rovacom1.github.io/rant/
 
@@ -8,11 +8,10 @@ Kurulum yok, hesap yok, sunucu yok. Biri "Oda Kur" der, davet linkini arkadaşla
 
 ## Neden farklı?
 
-- **Gündem:** Her tur bir haber kartı açılır: enflasyon, imar affı, turizm sezonu, deprem yönetmeliği...
+- **Gündem:** 3 turda bir haber kartı açılır ve 3 tur sürer: enflasyon, imar affı, turizm sezonu, deprem yönetmeliği...
 - **Kaçak kat:** Set tamamlamadan yarı fiyatına kat; ama İhbar, Zabıta ya da Belediye Operasyonu yıkar.
-- **Gizli ihale:** Almadığın arsaya herkes aynı anda gizli teklif verir.
+- **Açık artırma:** Almadığın arsa Monopoly'deki gibi artırmaya çıkar: sırayla artır ya da çekil.
 - **Hamle ve Tepki kartları:** Kamulaştırma, İhtiyati Tedbir, Dava Aç, Taksi, Dayın Çıktı... İtiraz'a karşı İtiraz.
-- **Gizli hedef:** Başta seçtiğin hedef sonda açılır ve bonus getirir.
 - **Endeks:** Fiyat ve kiralar enflasyonla artar, nakit erir.
 - **Konkordato:** Kimse batıp oyundan düşmez. Oyun 15 turda Seçim Günü ile biter.
 

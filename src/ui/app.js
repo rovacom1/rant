@@ -478,7 +478,6 @@ const A = {
     act({ type: 'discard', uids: app.ui.selected });
     app.ui.selected = [];
   },
-  hedef: (el) => act({ type: 'chooseHedef', hedef: el.dataset.id }),
   openCard(el) {
     const v = V();
     const uid = el.dataset.uid;

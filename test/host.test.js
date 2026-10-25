@@ -101,7 +101,7 @@ test('masa ayarlarını yalnız ev sahibi değiştirir, oyun onlarla kurulur', (
   ali.say({ t: 'lobby', cmd: 'config', rules: { ihale: false } });
   assert.equal(host.config.rules.ihale, true, 'misafir değiştiremez');
   me.say({ t: 'lobby', cmd: 'config', rules: { ihale: false, gundem: 'evet', bilinmeyen: false } });
-  assert.deepEqual(host.config.rules, { ihale: false, surpriz: true, gundem: true, hedef: true });
+  assert.deepEqual(host.config.rules, { ihale: false, surpriz: true, gundem: true });
   me.say({ t: 'lobby', cmd: 'start' });
   clearTimeout(host.timer);
   assert.equal(host.game.config.rules.ihale, false);
@@ -145,11 +145,14 @@ test('süreler toplam süreyle ve ev sahibinin saatiyle gönderilir', () => {
   me.say({ t: 'lobby', cmd: 'config', speed: 'slow' });
   me.say({ t: 'lobby', cmd: 'config', speed: 'turbo' });
   assert.equal(host.config.speed, 'slow', 'geçersiz hız yok sayılır');
-  me.say({ t: 'lobby', cmd: 'addBot' });
+  const ali = fakeConn();
+  host.attach(ali);
+  ali.say(hello('a'.repeat(32), 'Ali'));
   me.say({ t: 'lobby', cmd: 'start' });
   clearTimeout(host.timer);
   const m = host.meta();
+  const first = host.game.players[host.game.turn.p].id; // oturma sırası rastgele; iki koltuk da insan
   assert.equal(typeof m.now, 'number');
-  assert.equal(m.deadlines[host.hostId].span, 90000, 'hedef seçimi 90 sn');
-  assert.ok(m.deadlines[host.hostId].at >= m.now + 89000);
+  assert.equal(m.deadlines[first].span, 120000, 'sıra süresi 120 sn');
+  assert.ok(m.deadlines[first].at >= m.now + 119000);
 });

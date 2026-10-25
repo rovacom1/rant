@@ -1,7 +1,7 @@
 // Bot karar verici. Yalnız bir oyuncunun görebileceği bilgiyi kullanır:
 // kendi eli + herkese açık tahta. Oyunun zarını değil kendi küçük üretecini kullanır.
 
-import { BOARD, CARDS, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, HEDEF } from './data.js';
+import { BOARD, CARDS, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS } from './data.js';
 import { nextRandom } from './rng.js';
 import * as R from './rules.js';
 import { waitingFor, moveOptions, cardBlock, cardTargets, tradeBlock, hasCard, auctionStep } from './game.js';
@@ -33,7 +33,7 @@ export function propValue(s, p, sq) {
     // Havalimanı kirası her yeni havalimanıyla ikiye katlanır, gar kirası doğrusal artar.
     const mine = MODE_SQUARES[sqd.mode].filter((q) => q !== sq && s.props[q].owner === p).length;
     const step = sqd.mode === 'air' ? 0.4 : 0.25;
-    return v * (1.1 + step * mine) * (s.players[p].hedef === 'ulasim' ? 1.5 : 1);
+    return v * (1.1 + step * mine);
   }
   const group = GROUP_SQUARES[sqd.group].filter((q) => q !== sq);
   const ownedByMe = group.filter((q) => s.props[q].owner === p).length;
@@ -41,8 +41,6 @@ export function propValue(s, p, sq) {
   else if (ownedByMe > 0) v *= 1.4;
   const owners = new Set(group.map((q) => s.props[q].owner));
   if (owners.size === 1 && !owners.has(null) && !owners.has(p)) v *= 1.35; // rakibin setini engeller
-  const hedef = s.players[p].hedef && HEDEF[s.players[p].hedef].check;
-  if (hedef && hedef.type === 'group' && hedef.group === sqd.group) v *= group.length >= 2 ? 2.3 : 1.8; // üç mülklü şehir daha zor toplanır
   return v;
 }
 
@@ -118,9 +116,6 @@ function expectedRollScore(s, p, backward = s.turn.backward) {
   return total / 36;
 }
 
-// Botun hedef seçerken kullandığı kaba tutturma olasılıkları (şehir hedefleri ayrıca hesaplanır).
-const HEDEF_ODDS = { hukukcu: 0.45, temiz: 0.5, nakit: 0.3, katci: 0.35, ihaleci: 0.3, kacakci: 0.2, arsa: 0.3, ulasim: 0.2 };
-
 const CARD_KEEP = { kestirme: 50, itiraz: 90, dayi: 75, piyango: 150, aidat: 85, kamulastirma: 70, muteahhit: 80, taksi: 55, kiraZammi: 45, tedbir: 50, ihbar: 45, takas: 40, dava: 30, pazarlik: 45, geriVites: 10 };
 
 function cardPlay(s, p) {
@@ -192,8 +187,8 @@ function buildPlan(s, p, level) {
     .filter((q) => !R.buildBlock(s, p, q, false) && pl.cash - R.katCost(s, q) >= res)
     .sort((a, b) => R.level(s.props[a]) - R.level(s.props[b]) || GROUPS[BOARD[b].group].kat - GROUPS[BOARD[a].group].kat);
   if (legal.length && !(level === 'kolay' && noise(s, p, 9) < 0.5)) return { type: 'build', sq: legal[0] };
-  // Kaçak kat: biraz risk; hedefi kaçaksa daha cesur.
-  const kacakCap = level === 'kolay' ? 0 : pl.hedef === 'kacakci' ? 3 : 2;
+  // Kaçak kat: biraz risk.
+  const kacakCap = level === 'kolay' ? 0 : 2;
   if (R.floorsOf(s, p).kacak < kacakCap && !s.mods.durgunluk) {
     const kacak = mine
       .filter((q) => !R.buildBlock(s, p, q, true) && pl.cash - R.kacakCost(s, q) >= res * 1.6)
@@ -298,11 +293,6 @@ export function botAction(s, p, level = s.config.botLevel || 'normal') {
   const res = reserve(s, p);
   if (pd) {
     switch (pd.type) {
-      case 'hedef': {
-        const odds = (h) => HEDEF[h].bonus * (HEDEF_ODDS[h] ?? (GROUP_SQUARES[HEDEF[h].check.group].length >= 3 ? 0.15 : 0.25));
-        const [a, b] = pl.hedefChoices;
-        return { type: 'chooseHedef', hedef: b && odds(b) > odds(a) ? b : a };
-      }
       case 'buy': {
         const price = R.price(s, pd.sq);
         const v = propValue(s, p, pd.sq);

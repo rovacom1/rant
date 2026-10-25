@@ -12,7 +12,7 @@ export const DEFAULT_CONFIG = {
   konkordatoPenalty: 300,
   targetScore: 0, // 0: tur sayısıyla biter; >0: biri bu değere ulaşınca o tur sonunda biter
   // Masa ayarları: ev sahibi lobide açıp kapatır (docs/TASARIM.md 2. bölüm).
-  rules: { ihale: true, surpriz: true, gundem: true, hedef: true },
+  rules: { ihale: true, surpriz: true, gundem: true },
   botLevel: 'normal', // masadaki bütün botların seviyesi (BOT_LEVELS)
 };
 
@@ -22,7 +22,6 @@ export const RULE_LABELS = {
   ihale: { name: 'Açık artırma', icon: '🔨', off: 'Alınmayan arsa sahipsiz kalır.' },
   surpriz: { name: 'SÜRPRİZ kareleri', icon: '❓', off: 'SÜRPRİZ karesinde bir şey olmaz.' },
   gundem: { name: 'Gündem kartları', icon: '📰', off: 'Tur başında haber kartı açılmaz.' },
-  hedef: { name: 'Gizli hedefler', icon: '🎯', off: 'Hedef seçilmez, bonus yok.' },
 };
 
 export const ROUND_OPTIONS = [10, 15, 20];
@@ -140,20 +139,20 @@ export const AMOUNTS = {
 // when: preroll (zardan önce) | choose (zardan sonra, ilerlemeden önce) | buy (satın alma kararında) | yoksa serbest
 // react: true ise hedef İtiraz ile cevap verebilir.
 export const CARDS = {
-  itiraz: { name: 'İtiraz', icon: '✋', count: 6, type: 'tepki', hukuk: true, text: 'Sana oynanan bir Hamle kartını iptal et. İtiraz\'a karşı da oynanır.' },
+  itiraz: { name: 'İtiraz', icon: '✋', count: 6, type: 'tepki', text: 'Sana oynanan bir Hamle kartını iptal et. İtiraz\'a karşı da oynanır.' },
   dayi: { name: 'Dayın Çıktı', icon: '🧔', count: 2, type: 'tepki', text: 'Ödeyeceğin bir kirayı ödemezsin. "Bizim çocuk o, kira falan istemez."' },
   taksi: { name: 'Taksi', icon: '🚕', count: 2, type: 'hamle', when: 'preroll', target: 'steps', text: 'Zar atmak yerine 1-12 kare arasında istediğin kadar ilerle.' },
   kestirme: { name: 'Kestirme', icon: '🛵', count: 3, type: 'hamle', when: 'choose', target: 'die', text: 'Zar attıktan sonra oyna: toplam yerine zarlardan birini seçip o kadar ilerle.' },
   geriVites: { name: 'Geri Vites', icon: '↩️', count: 2, type: 'hamle', when: 'preroll', target: 'none', text: 'Bu tur zarla geri yönde ilerlersin. Başlangıç Noktası\'ndan geçersen maaş yok.' },
-  kamulastirma: { name: 'Kamulaştırma', icon: '🏛️', count: 3, type: 'hamle', target: 'opp-prop', react: true, hukuk: true, text: 'Rakibin katsız, ipoteksiz ve set dışı bir mülkünü, fiyatını ona ödeyerek al.' },
+  kamulastirma: { name: 'Kamulaştırma', icon: '🏛️', count: 3, type: 'hamle', target: 'opp-prop', react: true, text: 'Rakibin katsız, ipoteksiz ve set dışı bir mülkünü, fiyatını ona ödeyerek al.' },
   takas: { name: 'Zorla Takas', icon: '🔁', count: 3, type: 'hamle', target: 'swap', react: true, text: 'Katsız bir mülkünü rakibin katsız, set dışı bir mülküyle değiştir.' },
-  tedbir: { name: 'İhtiyati Tedbir', icon: '⚖️', count: 2, type: 'hamle', target: 'opp-prop', react: true, hukuk: true, text: 'Rakibin bir mülkü 2 tur boyunca kira alamaz, üstüne kat dikilemez.' },
-  ihbar: { name: 'İhbar', icon: '📢', count: 4, type: 'hamle', target: 'opp-player', react: true, hukuk: true, text: 'Bir rakibin tüm kaçak katları yıkılır, kat başı 25 ceza öder.' },
+  tedbir: { name: 'İhtiyati Tedbir', icon: '⚖️', count: 2, type: 'hamle', target: 'opp-prop', react: true, text: 'Rakibin bir mülkü 2 tur boyunca kira alamaz, üstüne kat dikilemez.' },
+  ihbar: { name: 'İhbar', icon: '📢', count: 4, type: 'hamle', target: 'opp-player', react: true, text: 'Bir rakibin tüm kaçak katları yıkılır, kat başı 25 ceza öder.' },
   kiraZammi: { name: 'Kira Zammı', icon: '📈', count: 3, type: 'hamle', target: 'none', text: 'Bir sonraki sıran gelene kadar tahsil edeceğin ilk kira 2 katı.' },
   muteahhit: { name: 'Müteahhit Dostu', icon: '👷', count: 3, type: 'hamle', target: 'self-prop', text: 'O şehirden en az 2 mülkün varsa birine bedava 1 yasal kat. Tam set şartı yok, ruhsatı dostun halletti.' },
   piyango: { name: 'Piyango', icon: '🎟️', count: 2, type: 'hamle', target: 'none', text: 'Yılbaşı biletin tuttu: bankadan 100 al.' },
   aidat: { name: 'Aidat Günü', icon: '🏢', count: 3, type: 'hamle', target: 'none', react: true, text: 'Diğer her oyuncu sana 30 aidat öder. Her biri ayrı İtiraz edebilir.' },
-  dava: { name: 'Dava Aç', icon: '👨‍⚖️', count: 3, type: 'hamle', target: 'opp-player', react: true, hukuk: true, text: 'Bir rakiple zar atarsın; büyük atan 100 alır. Eşitlikte davalı kazanır.' },
+  dava: { name: 'Dava Aç', icon: '👨‍⚖️', count: 3, type: 'hamle', target: 'opp-player', react: true, text: 'Bir rakiple zar atarsın; büyük atan 100 alır. Eşitlikte davalı kazanır.' },
   pazarlik: { name: 'Pazarlık Ustası', icon: '🤝', count: 3, type: 'hamle', when: 'buy', target: 'none', text: 'Satın alma kararı sırasında oyna: arsayı yarı fiyatına al.' },
 };
 
@@ -204,29 +203,6 @@ export const SURPRIZ = {
   bavul: { name: 'Kayıp Bavul', icon: '🧳', text: 'Elindeki rastgele 1 kart kayboldu.' },
   haciz: { name: 'Haciz Memuru', icon: '📋', text: 'Nakdinin %10\'u haczedildi.' },
   vergiIade: { name: 'Vergi İadesi', icon: '🧾', text: 'Mülk başı 15 iade aldın.' },
-};
-
-const cityHedef = (g) => {
-  const n = GROUP_SQUARES[g].length;
-  return {
-    name: `${GROUPS[g].name} Hakimi`,
-    icon: '🏙️',
-    bonus: n >= 3 ? 300 : 250,
-    text: `Oyun sonunda ${GROUPS[g].gen} tüm mülkleri sende olsun.`,
-    check: { type: 'group', group: g },
-  };
-};
-
-export const HEDEF = {
-  ...Object.fromEntries(Object.keys(GROUPS).map((g) => [`sehir_${g}`, cityHedef(g)])),
-  katci: { name: 'Kat Kat Üstüne', icon: '🏢', bonus: 300, text: 'Oyun sonunda en az 7 katın olsun (kaçak dahil).', check: { type: 'floors', n: 7 } },
-  ulasim: { name: 'Ulaşım Baronu', icon: '✈️', bonus: 250, text: 'Oyun sonunda en az 4 gar ya da havalimanı sende olsun.', check: { type: 'transport', n: 4 } },
-  nakit: { name: 'Nakit Kraldır', icon: '💸', bonus: 300, text: 'Oyun sonunda en çok nakit sende olsun (eşitlik dahil).', check: { type: 'mostCash' } },
-  arsa: { name: 'Arsa Avcısı', icon: '🗺️', bonus: 300, text: 'Oyun sonunda en az 7 mülkün olsun.', check: { type: 'props', n: 7 } },
-  kacakci: { name: 'Kaçak Ama Sağlam', icon: '🚧', bonus: 300, text: 'Oyun sonunda en az 1 kaçak katın ayakta olsun.', check: { type: 'kacak', n: 1 } },
-  hukukcu: { name: 'Hukuk Dünyası', icon: '📚', bonus: 300, text: 'Oyun boyunca en az 7 hukuk kartı oyna (Kamulaştırma, Tedbir, İhbar, Dava, İtiraz).', check: { type: 'hukuk', n: 7 } },
-  ihaleci: { name: 'İhale Kralı', icon: '🔨', bonus: 250, text: 'Oyun boyunca en az 2 ihale kazan.', check: { type: 'ihale', n: 2 } },
-  temiz: { name: 'Temiz Sicil', icon: '🧼', bonus: 250, text: 'Hiç ipotek yapma, konkordato ilan etme ve oyunu en az 6 mülkle bitir.', check: { type: 'clean', n: 6 } },
 };
 
 export const AVATARS = ['🦊', '🐻', '🐼', '🐸', '🐯', '🦁', '🐙', '🦉', '🐺', '🐮', '🐵', '🦄'];
