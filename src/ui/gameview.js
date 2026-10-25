@@ -46,6 +46,7 @@ export function mountGame(root) {
             <div id="gundem"></div>
             <div class="prompt" id="prompt"></div>
             <div class="dice off" id="dice"></div>
+            <div class="board-feed" id="feed" data-act="history" title="Tüm olaylar"></div>
           </div>
           <div class="tokens" id="tokens"></div>
           <div id="pop"></div>
@@ -54,10 +55,6 @@ export function mountGame(root) {
       </section>
       <aside class="side">
         <div class="seats-panel" id="players"></div>
-        <div class="feed">
-          <div class="feed-h">📜 Olaylar</div>
-          <div class="feed-list" id="feed"></div>
-        </div>
       </aside>
     </main>
   </div>
@@ -458,14 +455,13 @@ function feedItem(l) {
   return html`<div class="ev t-${l.type}"><span class="ev-i">${icon}</span><span>${l.text}</span></div>`;
 }
 
-function feedHTML() {
-  const rows = app.view.log.filter((l) => l.text && !FEED_HIDE.has(l.type) && !/\((Maaş|Kat|Kaçak kat)\)$/.test(l.text));
-  return rows.slice(-60).reverse().map(feedItem).join('');
-}
+const feedRows = () => app.view.log.filter((l) => l.text && !FEED_HIDE.has(l.type) && !/\((Maaş|Kat|Kaçak kat)\)$/.test(l.text));
+const feedHTML = () => feedRows().slice(-60).reverse().map(feedItem).join('');
 
+// Tahtanın ortasında son olaylar: en yenisi üstte, aşağı doğru solarak kaybolur. Tıklayınca tüm geçmiş açılır.
 export function renderFeed() {
   if (!els) return;
-  setHTML(els.feed, feedHTML());
+  setHTML(els.feed, feedRows().filter((l) => l.type !== 'gundem').slice(-6).reverse().map(feedItem).join(''));
 }
 
 // ---------- pencereler ----------
@@ -663,6 +659,9 @@ export function renderModal() {
       break;
     case 'rules':
       body = html`<h2>❓ Nasıl oynanır?</h2>${raw(RULES_HTML)}`;
+      break;
+    case 'history':
+      body = html`<h2>📜 Olay geçmişi</h2><div class="feed-list">${raw(feedHTML())}</div>`;
       break;
     default:
   }

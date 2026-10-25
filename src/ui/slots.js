@@ -1,13 +1,13 @@
 // Taşların karedeki yeri: kare adını kapatmasınlar diye karenin boş kenarında yan yana dizilirler. DOM yok.
 // Tüm değerler kare genişliğine/yüksekliğine oranla (0-1).
 
-export const TOKEN = 0.31; // taş çapı, kare genişliğine oranla
+export const TOKEN = 0.28; // taş çapı, kare genişliğine oranla
 
-// Taş sırasının dikey yeri. Resimli karelerde ad altta yazar, taşlar üstte durur;
-// mülk karelerinde şerit iç kenarda, ad ortada: taşlar şeritten uzak kenarda (üst sırada üstte, diğerlerinde altta).
+// Taş sırasının dikey yeri. İkonlu karelerde ad üstte, ikon altta (köşelerde tersi): taşlar ikonun üstünde durur;
+// mülk karelerinde şerit iç kenarda, ad şeride yaslı: taşlar dış kenarda (üst sırada üstte, diğerlerinde altta).
 export function laneY(side, art) {
-  if (art) return 0.3;
-  return side === 't' ? 0.15 : 0.85;
+  if (art) return side === 'c' ? 0.38 : 0.68;
+  return side === 't' ? 0.07 : 0.9;
 }
 
 // n taşın yan yana yerleri; sığmazlarsa kare genişliğini aşmadan üst üste biner.

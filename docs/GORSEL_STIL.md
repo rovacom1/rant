@@ -15,10 +15,11 @@ Use your image generation tool. Square 1:1 trading card illustration, artwork on
 
 - Sahne, kartın esprisini tek bakışta anlatmalı (ör. Dayın Çıktı: kasketli, tespihli bir dayının ev sahibini savuşturması).
 
-## Özel kare görselleri
+## Tahta kareleri
 
-- `assets/kare/<ad>.jpg` (300x300): maas, firsat, tapu, cay, zabita, yht (4 garda), havalimani (4 havalimanında) (+ secim, şimdilik kullanılmıyor). SÜRPRİZ karesinin resmi yok: CSS ile parlayan soru işareti (`.tile.q`).
-- Kredi tasarrufu için 8 kutucuk tek görselde 4x2 ızgara olarak üretildi, koyu aralıklar otomatik bulunup kesildi. Model istenmese de altlara İngilizce yazı basabiliyor; kesimde alt %22 atılıyor. Ham dosya: `tasks/gorsel-ham/kareler.png`.
+- Özel kareler (Maaş Günü, Fırsat, SÜRPRİZ, Tapu, Çay Ocağı, Zabıta) ve ulaşım (gar, havalimanı) resim değil, `src/ui/icons.js` içindeki elle çizilmiş SVG ikonlardır (64x64). Kullanıcı yapay zeka resimlerini kalabalık buldu (v0.6); istenen, orijinal Monopoly gibi tek bakışta okunan, kalın hatlı sade ikon.
+- Yeni ikon: tek nesne, 2-3 ana renk, koyu dış çizgi (1.6-2.4), hafif gradyan; açık ve koyu zeminde okunmalı.
+- Mülk kareleri: şehrin `color` ve `tint` renkleri buzlu camın arkasında bulanık görünür; iç kenarda plaka kodu rozeti (`GROUPS[g].plate`).
 
 ## Ses
 

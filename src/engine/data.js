@@ -13,16 +13,16 @@ export const DEFAULT_CONFIG = {
 
 export const ROUND_OPTIONS = [10, 15, 20];
 
-// gen: şehrin ilgi hali ("Konya'nın"), metinlerde kullanılır.
+// gen: şehrin ilgi hali ("Konya'nın"), metinlerde kullanılır. plate: tahtadaki rozet; tint: karenin buzlu camındaki ikinci renk.
 export const GROUPS = {
-  erzurum: { name: 'Erzurum', gen: "Erzurum'un", color: '#8d5b3e', kat: 50 },
-  trabzon: { name: 'Trabzon', gen: "Trabzon'un", color: '#3fa7d6', kat: 50 },
-  eskisehir: { name: 'Eskişehir', gen: "Eskişehir'in", color: '#b0569c', kat: 100 },
-  konya: { name: 'Konya', gen: "Konya'nın", color: '#ee8a1c', kat: 100 },
-  antalya: { name: 'Antalya', gen: "Antalya'nın", color: '#d93b3b', kat: 150, sahil: true },
-  ankara: { name: 'Ankara', gen: "Ankara'nın", color: '#e6b800', kat: 150 },
-  izmir: { name: 'İzmir', gen: "İzmir'in", color: '#2e9e5b', kat: 200, sahil: true },
-  istanbul: { name: 'İstanbul', gen: "İstanbul'un", color: '#24408e', kat: 200 },
+  erzurum: { name: 'Erzurum', gen: "Erzurum'un", color: '#8d5b3e', tint: '#dfe8f2', plate: '25', kat: 50 },
+  trabzon: { name: 'Trabzon', gen: "Trabzon'un", color: '#3fa7d6', tint: '#8c2346', plate: '61', kat: 50 },
+  eskisehir: { name: 'Eskişehir', gen: "Eskişehir'in", color: '#b0569c', tint: '#f2c94c', plate: '26', kat: 100 },
+  konya: { name: 'Konya', gen: "Konya'nın", color: '#ee8a1c', tint: '#1f9e5a', plate: '42', kat: 100 },
+  antalya: { name: 'Antalya', gen: "Antalya'nın", color: '#d93b3b', tint: '#f5c542', plate: '07', kat: 150, sahil: true },
+  ankara: { name: 'Ankara', gen: "Ankara'nın", color: '#e6b800', tint: '#1e3a8a', plate: '06', kat: 150 },
+  izmir: { name: 'İzmir', gen: "İzmir'in", color: '#2e9e5b', tint: '#3fb6d9', plate: '35', kat: 200, sahil: true },
+  istanbul: { name: 'İstanbul', gen: "İstanbul'un", color: '#24408e', tint: '#d1495b', plate: '34', kat: 200 },
 };
 
 const RENT_MULT = [1, 5, 14, 30, 40];

@@ -1,8 +1,9 @@
 // Tahta: 10x10 ızgaranın kenarındaki 36 kare, oyuncu taşları ve 3 boyutlu zarlar.
 // Karenin iç kenarındaki şerit sahipsizken gri, alınınca sahibinin rengi; karede fiyat/kira yazmaz (kareye tıklayınca açılır).
 import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
-import { html, sleep } from './dom.js';
+import { html, raw, sleep } from './dom.js';
 import { play } from './sound.js';
+import { icon } from './icons.js';
 import { TOKEN, laneY, tokenSlots } from './slots.js';
 
 // Izgara kenarı G kare; köşeler 0, K, 2K, 3K. Kare 0 sağ altta, sıra saat yönünde.
@@ -25,22 +26,27 @@ export function inkFor(hex) {
   return lum > 0.62 ? '#1b2233' : '#ffffff';
 }
 
-// Özel karelerin resmi (assets/kare); resim kareyi kaplar, adı alt kenarda yazar. SÜRPRİZ resim yerine CSS soru işareti.
-const ART = { start: 'maas', chance: 'firsat', tapu: 'tapu', cay: 'cay', zabita: 'zabita' };
-const artOf = (sq) => (sq.kind === 'transport' ? (sq.mode === 'air' ? 'havalimani' : 'yht') : ART[sq.kind]);
+// Mülk: şehir renkli buzlu cam, iç kenarda plaka rozeti. Diğer kareler: sade ikon ve ad (src/ui/icons.js).
+const iconOf = (sq) => (sq.kind === 'transport' ? sq.mode : sq.kind);
 
-function cellStatic(sq) {
-  if (sq.kind === 'prop') return html`<div class="band"></div><div class="nm">${sq.name}</div><div class="city">${GROUPS[sq.group].name}</div><div class="floors"></div>`;
-  const art = sq.kind === 'surpriz' ? html`<div class="tile q"></div>` : html`<div class="tile" style="background-image:url(assets/kare/${artOf(sq)}.jpg)"></div>`;
-  const tile = html`${art}<div class="tname">${sq.name}</div>`;
-  return sq.kind === 'transport' ? html`<div class="band"></div>${tile}` : tile;
+function cellStatic(sq, corner) {
+  if (sq.kind === 'prop') {
+    const g = GROUPS[sq.group];
+    return html`<div class="frost"></div><div class="band"></div><div class="plate" title="${g.name}">${g.plate}</div><div class="nm">${sq.name}</div><div class="city">${g.name}</div><div class="floors"></div>`;
+  }
+  const label = html`<div class="lbl">${sq.name}</div>`;
+  const ic = html`<div class="ic">${raw(icon(iconOf(sq)))}</div>`;
+  const body = corner ? html`${ic}${label}` : html`${label}${ic}`;
+  return sq.kind === 'transport' ? html`<div class="band"></div>${body}` : body;
 }
 
 export function buildBoard(boardEl) {
   const cells = BOARD.map((sq, i) => {
     const pos = cellPos(i);
-    const kind = `${sq.kind === 'prop' || sq.kind === 'transport' ? 'buyable' : 'special'}${sq.kind === 'prop' ? '' : ' has-art'}`;
-    return `<div class="cell ${pos.side === 'c' ? 'corner' : `side-${pos.side}`} ${kind}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}">${cellStatic(sq)}</div>`;
+    const corner = pos.side === 'c';
+    const kind = sq.kind === 'prop' || sq.kind === 'transport' ? `buyable k-${sq.kind}` : `special k-${sq.kind}`;
+    const vars = sq.kind === 'prop' ? `;--gc:${GROUPS[sq.group].color};--gt:${GROUPS[sq.group].tint}` : '';
+    return `<div class="cell ${corner ? 'corner' : `side-${pos.side}`} ${kind}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}${vars}">${cellStatic(sq, corner)}</div>`;
   }).join('');
   boardEl.insertAdjacentHTML('afterbegin', cells);
   return [...boardEl.querySelectorAll('.cell')];
@@ -61,7 +67,6 @@ export function updateBoard(cells, v, highlight, pick = null, open = null) {
     el.classList.toggle('mortgaged', ps.ipotek);
     el.classList.toggle('fullset', !!owner && inFullSet(v, i));
     el.style.setProperty('--pc', owner ? owner.color : '');
-    el.style.setProperty('--ink', owner ? inkFor(owner.color) : '');
     let badge = el.querySelector('.badge');
     if (ps.tedbir > 0) {
       if (!badge) {

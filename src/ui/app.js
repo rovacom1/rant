@@ -502,6 +502,7 @@ const A = {
     G.updateGame();
   },
   player: (el) => openDialog({ type: 'player', p: Number(el.dataset.p) }),
+  history: () => openDialog({ type: 'history' }),
   manage: () => openDialog({ type: 'manage' }),
   trade() {
     app.ui.trade = { to: null, give: { props: [] }, take: { props: [] } };
