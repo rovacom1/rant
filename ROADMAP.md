@@ -6,7 +6,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Hedef dengesi:** 36 karelik tahtada 200x5 simde hedefler %0 (İzmir Hakimi) ile %61 (Hukuk Dünyası) arasında; en kolay ve en zor 3-4 hedefin eşiklerini %15-45 aralığına çek.
 - [ ] **Para animasyonu:** Kira ve transferlerde oyuncudan oyuncuya uçan jeton; kat dikince karede küçük inşaat animasyonu.
 - [ ] **Oyun sonu grafiği:** Sonuç penceresinde tur tur net değer çizgisi (motor her tur sonu net değerleri kaydetsin).
 - [ ] **Bot zorluk seviyesi:** Lobide Kolay / Normal / Zor. Zor bot mülk-mülk takası önersin, ihalede daha akıllı teklif versin.
@@ -23,6 +22,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Hedef dengesi: Hukuk Dünyası 7 kart, Kaçak Ama Sağlam 1 kaçak kat; botlar hedef şehrine daha istekli (üç mülklü şehirde daha da); 3000 oyunluk simde her hedef %13-45 (önce %9-58) (v0.6.1)
 - [x] Monopoly tarzı sade SVG ikonlar (uçak, lokomotif, sandık, soru işareti, tapu, zabıta şapkası, çay bardağı, para kesesi), alınmamış mülklerde şehir renkli buzlu cam ve plaka rozeti, tahta ortasının altında solarak akan son olaylar ve tıklayınca tüm geçmiş; yan paneldeki olay listesi kaldırıldı (v0.6.0)
 - [x] Taşlar kare adını kapatmıyor: şeritten uzak kenarda (resimli karelerde üstte) yan yana dizilir, kare genişliğine göre boyutlanır; aynı karede çok taş varsa sığacak kadar üst üste biner. Kare vurgusunun nabız animasyonu düzeltildi (v0.5.1)
 - [x] 36 karelik 10x10 tahta: 4 havalimanı (her biri kirayı ikiye katlar), 4 gar (kira gar sayısıyla orantılı), 2 SÜRPRİZ karesi ve hemen uygulanan 15 etki, dönen soru işaretli kart animasyonu; hedef eşikleri yeni tahtaya göre ayarlandı (v0.5.0)
