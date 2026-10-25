@@ -242,7 +242,7 @@ function startTurn(s, ctx, p) {
   s.turn = { p, step: 'preroll', dice: null, hamle: false, backward: false, trades: 0 };
   s.players[p].kiraZammi = false;
   emit(s, ctx, { type: 'turn', p });
-  drawCards(s, ctx, p, 1, true);
+  if (s.players[p].hand.length < s.config.drawCap) drawCards(s, ctx, p, 1, true);
 }
 
 // Tur sonu özeti: net değer farkları ve el değiştiren mülkler (bankadan ilk satın alma sayılmaz).
@@ -681,6 +681,7 @@ export function cardBlock(s, p, id, t = {}) {
       return pl.kiraZammi ? 'Kira Zammı zaten etkin.' : null;
     case 'muteahhit':
       if (!ps || ps.owner !== p || BOARD[t.sq].kind !== 'prop') return 'Kendi mülklerinden birini seç.';
+      if (GROUP_SQUARES[BOARD[t.sq].group].filter((q) => s.props[q].owner === p).length < 2) return 'Müteahhit için o şehirden en az 2 mülkün olmalı.';
       if (s.mods.durgunluk) return 'Piyasa durgun: bu tur kat dikilemez.';
       if (ps.ipotek || ps.tedbir > 0) return 'İpotekli ya da tedbirli mülke kat dikilemez.';
       return R.level(ps) >= 4 ? 'Bu mülk en üst seviyede.' : null;
@@ -895,8 +896,9 @@ const TURN = {
     const d = [rollDie(s), rollDie(s)];
     s.turn.dice = d;
     s.turn.step = 'choose';
-    emit(s, ctx, { type: 'dice', p, dice: d, text: `${nm(s, p)} zar attı: ${d[0]} ve ${d[1]}${d[0] === d[1] ? ', çift! +1 kart' : ''}` });
-    if (d[0] === d[1]) drawCards(s, ctx, p, 1, true);
+    const bonus = d[0] === d[1] && s.players[p].hand.length < s.config.drawCap;
+    emit(s, ctx, { type: 'dice', p, dice: d, text: `${nm(s, p)} zar attı: ${d[0]} ve ${d[1]}${d[0] === d[1] ? (bonus ? ', çift! +1 kart' : ', çift') : ''}` });
+    if (bonus) drawCards(s, ctx, p, 1, true);
     // Kestirme kartı olan oyuncu zarı görüp karar verir; yoksa doğrudan ilerler.
     if (s.turn.hamle || !hasCard(s, p, 'kestirme')) travel(s, ctx, p, d[0] + d[1], s.turn.backward);
   },

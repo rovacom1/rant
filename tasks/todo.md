@@ -27,12 +27,12 @@ Tam plan ve ölçümler: kullanıcı onaylı plan (sohbet). Özet ve takip burad
 - [x] Testler
 
 ## Faz 4 — Kart ve para dengesi, Monopoly'ye yakın (v0.12.0)
-- [ ] Sıra başı ve çift zar kartı yalnız elde 5'ten az kartken
-- [ ] Dayı 4->2, Tedbir 3->2, Taksi 3->2, Kestirme 4->3; Piyango 150->100, 3->2
-- [ ] Set dışı mülkte kat kirası yarı; Müteahhit için şehirde en az 2 mülk
-- [ ] Monopoly kira cetveli
-- [ ] Bot Geri Vites kuralı
-- [ ] Sim önce/sonra tablosu (kira, konkordato, sıra adaleti, hedefler, değer hedefi süreleri)
+- [x] Sıra başı ve çift zar kartı yalnız elde 5'ten az kartken
+- [x] Dayı 4->2, Tedbir 3->2, Taksi 3->2, Kestirme 4->3; Piyango 150->100, 3->2
+- [x] Set dışı mülkte kat kirası yarı; Müteahhit için şehirde en az 2 mülk
+- [x] Monopoly kira cetveli (kira en az 5)
+- [x] Bot Geri Vites kuralı
+- [x] Sim önce/sonra tablosu (kira, konkordato, sıra adaleti, hedefler, değer hedefi süreleri)
 
 ## Faz 5 — Gündem
 - [ ] Mevcut sistemi anlat, yeni tasarımı kullanıcıyla konuş (kod yok)

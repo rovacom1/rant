@@ -4,7 +4,7 @@ export const RULES_HTML = `
 <p><b>RANT</b> bir emlak ve kart oyunu. Belirlenen tur sayısı dolunca ya da biri lobide seçilen <b>değer hedefine</b> ulaşıp o tur bitince <b>Seçim Günü</b> gelir; en yüksek puanı (nakit + mülkler + katlar + gizli hedef bonusu) toplayan kazanır. Kimse batıp oyundan çıkmaz.</p>
 <h3>Sıran geldiğinde</h3>
 <ul>
-<li>Otomatik 1 <b>Hamle kartı</b> çekersin. Turda en fazla 1 Hamle kartı oynayabilirsin.</li>
+<li>Elinde 5'ten az kart varsa 1 <b>Hamle kartı</b> çekersin. Turda en fazla 1 Hamle kartı oynayabilirsin.</li>
 <li><b>Zar at</b>, toplam kadar ilerle. Çift atarsan +1 kart. <b>Kestirme</b> kartın varsa zarlardan birini seçebilirsin.</li>
 <li>Sahipsiz arsaya gelince <b>satın al</b> ya da <b>açık artırmaya</b> çıkar: sırayla herkes ya teklifi artırır ya çekilir, son kalan kazanır.</li>
 <li>Başkasının mülküne gelince kira ödersin. <b>Dayın Çıktı</b> kartın varsa ödemezsin.</li>
@@ -13,7 +13,7 @@ export const RULES_HTML = `
 <h3>Kat ve kaçak kat</h3>
 <ul>
 <li><b>Yasal kat</b> için şehrin tüm mülkleri sende olmalı. Kat kirayı katlar (en fazla 4 seviye).</li>
-<li><b>Kaçak kat</b> set istemez, yarı fiyatına. Ama <b>İhbar</b> kartı, <b>Zabıta</b> karesi ya da <b>Belediye Operasyonu</b> yıkar. <b>İmar Affı</b> gelirse yasallaşır.</li>
+<li><b>Kaçak kat</b> set istemez, yarı fiyatına; ama set tamamlanmadan katların kirası yarıdır. <b>İhbar</b> kartı, <b>Zabıta</b> karesi ya da <b>Belediye Operasyonu</b> yıkar. <b>İmar Affı</b> gelirse yasallaşır.</li>
 </ul>
 <h3>Gar, havalimanı ve SÜRPRİZ</h3>
 <ul>

@@ -109,11 +109,11 @@ function bestSteps(s, p, options, backward) {
 }
 
 // Zar atınca beklenen skor (elde Kestirme varsa seçim hakkı dahil).
-function expectedRollScore(s, p) {
+function expectedRollScore(s, p, backward = s.turn.backward) {
   const choice = hasCard(s, p, 'kestirme');
   let total = 0;
   for (let a = 1; a <= 6; a++) {
-    for (let b = 1; b <= 6; b++) total += bestSteps(s, p, choice ? [a + b, a, b] : [a + b], s.turn.backward).score;
+    for (let b = 1; b <= 6; b++) total += bestSteps(s, p, choice ? [a + b, a, b] : [a + b], backward).score;
   }
   return total / 36;
 }
@@ -336,6 +336,9 @@ export function botAction(s, p) {
       const best = bestSteps(s, p, Array.from({ length: 12 }, (_, i) => i + 1), false);
       if (best.score > expectedRollScore(s, p) + 50) return { type: 'playCard', uid: taksi, target: { steps: best.steps } };
     }
+    // Geri Vites: önde pahalı kiralar varsa ve geri yön belirgin daha iyiyse (maaş kaçsa da) geri gider.
+    const [geri] = myCards(s, p, 'geriVites');
+    if (geri && !s.turn.hamle && !s.turn.backward && expectedRollScore(s, p, true) > expectedRollScore(s, p, false) + 40) return { type: 'playCard', uid: geri };
     return { type: 'roll' };
   }
   if (step === 'choose') {

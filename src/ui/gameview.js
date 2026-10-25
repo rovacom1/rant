@@ -214,7 +214,8 @@ function popHTML(v, sq) {
     const L = E.level(ps);
     const full = owner && E.ownsGroup(v, ps.owner, s.group);
     const list = [[full ? 'Arsa (tam set ★)' : 'Arsa', s.rents[0] * (full ? 2 : 1)], ['1 kat', s.rents[1]], ['2 kat', s.rents[2]], ['3 kat', s.rents[3]], ['4 kat', s.rents[4]]];
-    rows = list.map(([k, x], l) => html`<tr class="${owner && L === l ? 'cur' : ''}"><td>${k}</td><td>${fmt(scaled(v, sq, x))}</td></tr>`);
+    // Set tamamlanmadan katların kirası yarıdır; tablo bu mülkün şu anki durumuna göre.
+    rows = list.map(([k, x], l) => html`<tr class="${owner && L === l ? 'cur' : ''}"><td>${k}</td><td>${fmt(Math.max(5, scaled(v, sq, l > 0 && !full ? x / 2 : x)))}</td></tr>`);
   } else {
     const n = owner ? E.transportCount(v, ps.owner, s.mode) : 0;
     const label = E.TRANSPORT_LABEL[s.mode].toLowerCase();
@@ -223,7 +224,7 @@ function popHTML(v, sq) {
   const status = owner
     ? html`<span class="dot" style="--c:${owner.color}"></span> ${owner.name}${ps.ipotek ? ' · ipotekli' : ''}${ps.tedbir ? ` · tedbir ${ps.tedbir} tur` : ''}`
     : html`Sahipsiz · fiyatı <b>${fmt(E.price(v, sq))}</b>`;
-  const note = s.kind === 'prop' ? `Kat ${fmt(E.katCost(v, sq))}, kaçak kat ${fmt(E.kacakCost(v, sq))}. Kat sayısına kaçak kat da girer.` : TRANSPORT_NOTE[s.mode];
+  const note = s.kind === 'prop' ? `Kat ${fmt(E.katCost(v, sq))}, kaçak kat ${fmt(E.kacakCost(v, sq))}. Kat sayısına kaçak kat da girer.${owner && !E.ownsGroup(v, ps.owner, s.group) ? ' Set tamamlanmadığı için kat kiraları yarı.' : ''}` : TRANSPORT_NOTE[s.mode];
   const legend = [];
   if (s.kind === 'prop') {
     if (ps.kat || ps.kacak) legend.push(`Şu an: ${[ps.kat ? `${ps.kat} yasal kat 🏠` : '', ps.kacak ? '1 kaçak kat 🚧' : ''].filter(Boolean).join(' + ')}`);

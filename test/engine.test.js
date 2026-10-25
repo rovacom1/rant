@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, applyAction, defaultAction, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
+import { createGame, applyAction, defaultAction, cardBlock, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
 import { makePlayers } from '../tools/simlib.js';
 import { started, act, actEv, give, strip, own } from './helpers.js';
 
@@ -60,7 +60,7 @@ test('zar: toplam kadar ilerler ve sıra serbest evreye geçer', () => {
 });
 
 test('Kestirme: zarlardan biriyle ilerlenir', () => {
-  let s = calm(started());
+  let s = calm(started(4, 42, { rules: { surpriz: false } }));
   const uid = give(s, 0, 'kestirme');
   s = act(s, 0, { type: 'roll' });
   assert.equal(s.turn.step, 'choose');
@@ -87,11 +87,11 @@ test('satın alma ve maaş', () => {
 test('kira: set, kat seviyesi, ipotek, tedbir ve gündem çarpanları', () => {
   const s = calm(started());
   own(s, 1, 28);
-  assert.equal(rentFor(s, 28), 30);
+  assert.equal(rentFor(s, 28), 25, 'Monopoly cetveli 26, 5e yuvarlanır');
   own(s, 1, 30, 32);
-  assert.equal(rentFor(s, 28), 60, 'tam set temel kirayı ikiye katlar');
+  assert.equal(rentFor(s, 28), 50, 'tam set temel kirayı ikiye katlar');
   s.props[28].kat = 2;
-  assert.equal(rentFor(s, 28), 420);
+  assert.equal(rentFor(s, 28), 390);
   s.props[28].kacak = 1;
   assert.equal(rentFor(s, 28), 900);
   s.mods.turizm = true;
@@ -133,8 +133,8 @@ test('kiraya gelen oyuncu öder; Kira Zammı ikiye katlar', () => {
   s.players[1].kiraZammi = true;
   strip(s, 0, 'dayi');
   s = taksi(s, 0, 5);
-  assert.equal(s.players[0].cash, 1500 - 20);
-  assert.equal(s.players[1].cash, 1500 + 20);
+  assert.equal(s.players[0].cash, 1500 - 10, 'arsa kirası 6 -> 5, zamla 10');
+  assert.equal(s.players[1].cash, 1500 + 10);
   assert.equal(s.players[1].kiraZammi, false, 'zam bir kez kullanılır');
 });
 
@@ -235,7 +235,7 @@ test('kaçak kat, ihbar cezası ve imar affı', () => {
   s = act(s, 0, { type: 'buildKacak', sq: 24 });
   assert.equal(s.props[24].kacak, 1);
   assert.equal(s.players[0].cash, 1500 - 75);
-  assert.equal(rentFor(s, 24), 130);
+  assert.equal(rentFor(s, 24), 55, 'set dışı mülkte kat kirası yarı');
   assert.throws(() => applyAction(s, 0, { type: 'build', sq: 24 }), /tüm mülkleri/);
   // Rakip ihbar eder
   s.turn = { ...s.turn, p: 1, hamle: false };
@@ -529,4 +529,20 @@ test('günlükte kart olayları kartı ve oynayanı taşır', () => {
   const l = s.log.find((x) => x.type === 'card');
   assert.equal(l.card, 'piyango');
   assert.equal(l.p, 0);
+});
+
+test('denge: en az 5 kira, Müteahhit için şehirde 2 mülk, elde 5 kart varken sıra başı kartı gelmez', () => {
+  const s = calm(started());
+  own(s, 1, 1);
+  assert.equal(rentFor(s, 1), 5, 'İskilip arsa kirası 2, en az 5');
+  own(s, 0, 5);
+  assert.match(cardBlock(s, 0, 'muteahhit', { sq: 5 }), /en az 2/);
+  own(s, 0, 6);
+  assert.equal(cardBlock(s, 0, 'muteahhit', { sq: 5 }), null);
+  let t = calm(started(4, 42, { rules: { surpriz: false } }));
+  while (t.players[1].hand.length < 5) give(t, 1, 'itiraz');
+  let guard = 0;
+  while (t.turn.p === 0 && guard++ < 60) t = simpleStep(t).state;
+  assert.equal(t.turn.p, 1);
+  assert.equal(t.players[1].hand.length, 5, 'el 5 iken kart çekilmez');
 });

@@ -58,13 +58,16 @@ export function rentFor(s, sq) {
     if (s.mods.ulasimZam) mult *= 2;
   } else {
     const L = level(ps);
-    base = L === 0 ? sqd.rents[0] * (ownsGroup(s, ps.owner, sqd.group) ? 2 : 1) : sqd.rents[L];
+    // Tam sette arsa kirası 2 katı; set tamamlanmamışsa katların kirası yarıdır (Monopoly'de ev yalnız tam sette dikilir).
+    const full = ownsGroup(s, ps.owner, sqd.group);
+    base = L === 0 ? sqd.rents[0] * (full ? 2 : 1) : sqd.rents[L] * (full ? 1 : 0.5);
     mult *= groupMult(s, sq);
     if (s.mods.turizm && GROUPS[sqd.group].sahil) mult *= 2;
   }
   if (s.mods.kiraTavani) mult *= 0.5;
   if (s.mods.kiraArtisi) mult *= 1.5;
-  return round5(((base * s.index) / 100) * mult);
+  // Para 5'e yuvarlanır; Monopoly'nin 2-4 ₺'lik kiraları sıfıra düşmesin diye kira en az 5.
+  return Math.max(5, round5(((base * s.index) / 100) * mult));
 }
 
 // Engel varsa Türkçe sebep döndürür, yoksa null.

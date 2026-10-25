@@ -8,6 +8,7 @@ export const DEFAULT_CONFIG = {
   salary: 200,
   startHand: 3,
   handLimit: 6,
+  drawCap: 5, // sıra başı ve çift zar kartı yalnız elde bundan az kart varken gelir (kart birikmesin)
   konkordatoPenalty: 300,
   targetScore: 0, // 0: tur sayısıyla biter; >0: biri bu değere ulaşınca o tur sonunda biter
   // Masa ayarları: ev sahibi lobide açıp kapatır (docs/TASARIM.md 2. bölüm).
@@ -38,11 +39,11 @@ export const GROUPS = {
   istanbul: { name: 'İstanbul', gen: "İstanbul'un", color: '#24408e', tint: '#d1495b', kat: 200 },
 };
 
-const RENT_MULT = [1, 5, 14, 30, 40];
-const round5 = (x) => Math.round(x / 5) * 5;
-const rents = (base) => RENT_MULT.map((m, i) => (i === 0 ? base : round5(base * m)));
 
-const prop = (name, group, price, base) => ({ kind: 'prop', name, group, price, rents: rents(base) });
+
+
+// Kiralar Monopoly cetvelinden: aynı fiyattaki arsanın arsa kirası ve 1-4 ev kirası (otel yok, en fazla 4 kat).
+const prop = (name, group, price, rents) => ({ kind: 'prop', name, group, price, rents });
 
 const air = (name) => ({ kind: 'transport', mode: 'air', name, icon: '✈️', price: 200 });
 const rail = (name) => ({ kind: 'transport', mode: 'rail', name, icon: '🚂', price: 150 });
@@ -52,41 +53,41 @@ const FIRSAT_SQ = { kind: 'chance', name: 'FIRSAT', icon: '🎴' };
 // 10x10 tahta: köşeler 0, 9, 18, 27; her kenarda 5 mülk, 1 gar, 1 havalimanı, 1 FIRSAT/SÜRPRİZ.
 export const BOARD = [
   { kind: 'start', name: 'BAŞLANGIÇ NOKTASI', icon: '💰' },
-  prop('İskilip', 'corum', 60, 6),
-  prop('Osmancık', 'corum', 80, 8),
+  prop('İskilip', 'corum', 60, [2, 10, 30, 90, 160]),
+  prop('Osmancık', 'corum', 80, [4, 20, 60, 180, 320]),
   SURPRIZ_SQ,
   rail('DOĞU EKSPRESİ'),
-  prop('Ortahisar', 'trabzon', 100, 10),
-  prop('Akçaabat', 'trabzon', 100, 10),
+  prop('Ortahisar', 'trabzon', 100, [6, 30, 90, 270, 400]),
+  prop('Akçaabat', 'trabzon', 100, [6, 30, 90, 270, 400]),
   air('KAPADOKYA'),
-  prop('Uzungöl', 'trabzon', 120, 12),
+  prop('Uzungöl', 'trabzon', 120, [8, 40, 100, 300, 450]),
   { kind: 'tapu', name: 'TAPU DAİRESİ', icon: '📜' },
-  prop('İnegöl', 'bursa', 140, 14),
+  prop('İnegöl', 'bursa', 140, [10, 50, 150, 450, 625]),
   FIRSAT_SQ,
-  prop('Nilüfer', 'bursa', 160, 16),
+  prop('Nilüfer', 'bursa', 160, [12, 60, 180, 500, 700]),
   rail('KONYA GARI'),
-  prop('Karatay', 'konya', 180, 18),
-  prop('Meram', 'konya', 180, 18),
+  prop('Karatay', 'konya', 180, [14, 70, 200, 550, 750]),
+  prop('Meram', 'konya', 180, [14, 70, 200, 550, 750]),
   air('DALAMAN'),
-  prop('Selçuklu', 'konya', 200, 20),
+  prop('Selçuklu', 'konya', 200, [16, 80, 220, 600, 800]),
   { kind: 'cay', name: 'ÇAY OCAĞI', icon: '🫖' },
-  prop('Kaleiçi', 'antalya', 220, 22),
-  prop('Konyaaltı', 'antalya', 220, 22),
+  prop('Kaleiçi', 'antalya', 220, [18, 90, 250, 700, 875]),
+  prop('Konyaaltı', 'antalya', 220, [18, 90, 250, 700, 875]),
   SURPRIZ_SQ,
   rail('ANKARA GARI'),
-  prop('Lara', 'antalya', 240, 24),
-  prop('Kızılay', 'ankara', 260, 26),
+  prop('Lara', 'antalya', 240, [20, 100, 300, 750, 925]),
+  prop('Kızılay', 'ankara', 260, [22, 110, 330, 800, 975]),
   air('ESENBOĞA'),
-  prop('Çankaya', 'ankara', 280, 28),
+  prop('Çankaya', 'ankara', 280, [24, 120, 360, 850, 1025]),
   { kind: 'zabita', name: 'ZABITA', icon: '🚨' },
-  prop('Karşıyaka', 'izmir', 300, 30),
+  prop('Karşıyaka', 'izmir', 300, [26, 130, 390, 900, 1100]),
   FIRSAT_SQ,
-  prop('Bornova', 'izmir', 300, 30),
+  prop('Bornova', 'izmir', 300, [26, 130, 390, 900, 1100]),
   rail('HAYDARPAŞA'),
-  prop('Alsancak', 'izmir', 320, 32),
-  prop('Kadıköy', 'istanbul', 350, 35),
+  prop('Alsancak', 'izmir', 320, [28, 150, 450, 1000, 1200]),
+  prop('Kadıköy', 'istanbul', 350, [35, 175, 500, 1100, 1300]),
   air('SABİHA GÖKÇEN'),
-  prop('Bebek', 'istanbul', 400, 50),
+  prop('Bebek', 'istanbul', 400, [50, 200, 600, 1400, 1700]),
 ];
 
 // Kira, sahibinin aynı türden (ipoteksiz) kaç ulaşımı olduğuna göre: havalimanı her biri için ikiye katlanır, gar orantılı artar.
@@ -110,7 +111,7 @@ export const AMOUNTS = {
   cay: 25,
   zabitaFine: 25,
   ihbarFine: 25,
-  piyango: 150,
+  piyango: 100,
   aidat: 30,
   dava: 100,
   depremKat: 15,
@@ -137,17 +138,17 @@ export const AMOUNTS = {
 // react: true ise hedef İtiraz ile cevap verebilir.
 export const CARDS = {
   itiraz: { name: 'İtiraz', icon: '✋', count: 6, type: 'tepki', hukuk: true, text: 'Sana oynanan bir Hamle kartını iptal et. İtiraz\'a karşı da oynanır.' },
-  dayi: { name: 'Dayın Çıktı', icon: '🧔', count: 4, type: 'tepki', text: 'Ödeyeceğin bir kirayı ödemezsin. "Bizim çocuk o, kira falan istemez."' },
-  taksi: { name: 'Taksi', icon: '🚕', count: 3, type: 'hamle', when: 'preroll', target: 'steps', text: 'Zar atmak yerine 1-12 kare arasında istediğin kadar ilerle.' },
-  kestirme: { name: 'Kestirme', icon: '🛵', count: 4, type: 'hamle', when: 'choose', target: 'die', text: 'Zar attıktan sonra oyna: toplam yerine zarlardan birini seçip o kadar ilerle.' },
+  dayi: { name: 'Dayın Çıktı', icon: '🧔', count: 2, type: 'tepki', text: 'Ödeyeceğin bir kirayı ödemezsin. "Bizim çocuk o, kira falan istemez."' },
+  taksi: { name: 'Taksi', icon: '🚕', count: 2, type: 'hamle', when: 'preroll', target: 'steps', text: 'Zar atmak yerine 1-12 kare arasında istediğin kadar ilerle.' },
+  kestirme: { name: 'Kestirme', icon: '🛵', count: 3, type: 'hamle', when: 'choose', target: 'die', text: 'Zar attıktan sonra oyna: toplam yerine zarlardan birini seçip o kadar ilerle.' },
   geriVites: { name: 'Geri Vites', icon: '↩️', count: 2, type: 'hamle', when: 'preroll', target: 'none', text: 'Bu tur zarla geri yönde ilerlersin. Başlangıç Noktası\'ndan geçersen maaş yok.' },
   kamulastirma: { name: 'Kamulaştırma', icon: '🏛️', count: 3, type: 'hamle', target: 'opp-prop', react: true, hukuk: true, text: 'Rakibin katsız, ipoteksiz ve set dışı bir mülkünü, fiyatını ona ödeyerek al.' },
   takas: { name: 'Zorla Takas', icon: '🔁', count: 3, type: 'hamle', target: 'swap', react: true, text: 'Katsız bir mülkünü rakibin katsız, set dışı bir mülküyle değiştir.' },
-  tedbir: { name: 'İhtiyati Tedbir', icon: '⚖️', count: 3, type: 'hamle', target: 'opp-prop', react: true, hukuk: true, text: 'Rakibin bir mülkü 2 tur boyunca kira alamaz, üstüne kat dikilemez.' },
+  tedbir: { name: 'İhtiyati Tedbir', icon: '⚖️', count: 2, type: 'hamle', target: 'opp-prop', react: true, hukuk: true, text: 'Rakibin bir mülkü 2 tur boyunca kira alamaz, üstüne kat dikilemez.' },
   ihbar: { name: 'İhbar', icon: '📢', count: 4, type: 'hamle', target: 'opp-player', react: true, hukuk: true, text: 'Bir rakibin tüm kaçak katları yıkılır, kat başı 25 ceza öder.' },
   kiraZammi: { name: 'Kira Zammı', icon: '📈', count: 3, type: 'hamle', target: 'none', text: 'Bir sonraki sıran gelene kadar tahsil edeceğin ilk kira 2 katı.' },
-  muteahhit: { name: 'Müteahhit Dostu', icon: '👷', count: 3, type: 'hamle', target: 'self-prop', text: 'Bir mülküne bedava 1 yasal kat. Set şartı yok, ruhsatı dostun halletti.' },
-  piyango: { name: 'Piyango', icon: '🎟️', count: 3, type: 'hamle', target: 'none', text: 'Yılbaşı biletin tuttu: bankadan 150 al.' },
+  muteahhit: { name: 'Müteahhit Dostu', icon: '👷', count: 3, type: 'hamle', target: 'self-prop', text: 'O şehirden en az 2 mülkün varsa birine bedava 1 yasal kat. Tam set şartı yok, ruhsatı dostun halletti.' },
+  piyango: { name: 'Piyango', icon: '🎟️', count: 2, type: 'hamle', target: 'none', text: 'Yılbaşı biletin tuttu: bankadan 100 al.' },
   aidat: { name: 'Aidat Günü', icon: '🏢', count: 3, type: 'hamle', target: 'none', react: true, text: 'Diğer her oyuncu sana 30 aidat öder. Her biri ayrı İtiraz edebilir.' },
   dava: { name: 'Dava Aç', icon: '👨‍⚖️', count: 3, type: 'hamle', target: 'opp-player', react: true, hukuk: true, text: 'Bir rakiple zar atarsın; büyük atan 100 alır. Eşitlikte davalı kazanır.' },
   pazarlik: { name: 'Pazarlık Ustası', icon: '🤝', count: 3, type: 'hamle', when: 'buy', target: 'none', text: 'Satın alma kararı sırasında oyna: arsayı yarı fiyatına al.' },

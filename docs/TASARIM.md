@@ -94,10 +94,11 @@ Sahil grupları: Antalya, İzmir.
 
 ### Kira
 
-- Temel kira fiyatın yaklaşık %10'u (tablo: `src/engine/data.js`).
+- Kiralar **Monopoly cetvelinden** alınır: her mülk, Monopoly'de aynı fiyattaki arsanın arsa kirasını ve 1-4 ev kirasını kullanır (ör. İskilip 60: 2/10/30/90/160, Bebek 400: 50/200/600/1400/1700; tablo `src/engine/data.js`). Otel yok, en fazla 4 kat.
 - Seviye L = yasal kat + kaçak kat (en fazla 4).
-- L = 0: temel kira; şehrin tüm mülkleri aynı kişideyse **2 katı**.
-- L = 1..4: temel kira x 5 / 14 / 30 / 40 (5'e yuvarlanır).
+- L = 0: arsa kirası; şehrin tüm mülkleri aynı kişideyse **2 katı**.
+- L = 1..4: cetveldeki 1-4 ev kirası. Şehir seti tamamlanmamışsa (kaçak kat ya da Müteahhit katı) bu kira **yarıdır**.
+- Kira 5'e yuvarlanır ve en az 5'tir (Monopoly'nin 2-4'lük kiraları sıfıra düşmesin diye).
 - Havalimanı: kira sahibinin havalimanı sayısıyla **her biri için ikiye katlanır**: 1'i varsa 25, 2'si 50, 3'ü 100, 4'ü 200.
 - Gar: kira elindeki gar sayısıyla **orantılı** artar: gar başı 30 (1'i 30, 2'si 60, 3'ü 90, 4'ü 120).
 - Gar ve havalimanı ayrı sayılır; ipotekli olan sayılmaz. Bunlara kat dikilmez.
@@ -107,9 +108,9 @@ Sahil grupları: Antalya, İzmir.
 ## 4. Tur akışı
 
 1. **Tur başı** (ilk oyuncudan önce): Gündem kartı açılır ve uygulanır. Önceki turun geçici etkileri biter, Tedbir sayaçları 1 azalır.
-2. **Sıra başı**: 1 Hamle kartı çekersin. Kira Zammı etkin kaldıysa burada biter.
+2. **Sıra başı**: Elinde 5'ten az kart varsa 1 Hamle kartı çekersin (kart birikmesin). Kira Zammı etkin kaldıysa burada biter.
 3. **Zar öncesi**: Hamle kartı oynayabilir (turda en fazla 1), kat dikebilir, ipotek yapabilir, pazarlık teklif edebilirsin.
-4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift gelirse +1 kart.
+4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift gelirse, elinde 5'ten az kart varsa +1 kart.
    (İlk taslakta her turda zar seçimi vardı; simülasyonda oyuncular kirayı neredeyse hiç ödemediği için karta taşındı.)
 5. **Kareye geliş** (aşağıda).
 6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**.
@@ -153,29 +154,45 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 - Sıranı bitirmeden nakdini 0'ın üstüne çıkarmalısın (kat sat, ipotek et, pazarlık yap). "Borcu Kapat" düğmesi bunu otomatik yapar: önce kaçak katlar, sonra ucuz katlar, sonra ucuz mülkler ipotek.
 - Satacak bir şey kalmadıysa **Konkordato**: nakit 0 olur, oyundan çıkmazsın, sonda konkordato başına 300 puan cezası.
 
-## 7. Hamle kartları (50)
+## 7. Hamle kartları (44)
 
 Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz, Dayın Çıktı) bu sınıra girmez.
 
 | Kart | Adet | Etki | Karşı hamle |
 |---|---|---|---|
 | İtiraz | 6 | TEPKİ: Sana oynanan bir Hamle'yi iptal et. İtiraz'a karşı da oynanır. | - |
-| Dayın Çıktı | 4 | TEPKİ: Ödeyeceğin bir kirayı ödemezsin. | - |
-| Taksi | 3 | Zar atmadan önce: zar yerine 1-12 kare arasında istediğin kadar ilerle. | - |
-| Kestirme | 4 | Zar attıktan sonra: toplam yerine zarlardan birini seçip o kadar ilerle. | - |
+| Dayın Çıktı | 2 | TEPKİ: Ödeyeceğin bir kirayı ödemezsin. | - |
+| Taksi | 2 | Zar atmadan önce: zar yerine 1-12 kare arasında istediğin kadar ilerle. | - |
+| Kestirme | 3 | Zar attıktan sonra: toplam yerine zarlardan birini seçip o kadar ilerle. | - |
 | Geri Vites | 2 | Zar atmadan önce: bu tur geri yönde ilerlersin (maaş yok). | - |
 | Kamulaştırma | 3 | Rakibin katsız, ipoteksiz, set dışı bir mülkünü fiyatını ona ödeyerek al. | İtiraz |
 | Zorla Takas | 3 | Katsız bir mülkünü rakibin katsız, set dışı bir mülküyle değiştir. | İtiraz |
-| İhtiyati Tedbir | 3 | Rakibin bir mülkü 2 tur boyunca kira alamaz, kat dikilemez. | İtiraz |
+| İhtiyati Tedbir | 2 | Rakibin bir mülkü 2 tur boyunca kira alamaz, kat dikilemez. | İtiraz |
 | İhbar | 4 | Bir rakibin tüm kaçak katları yıkılır, kat başı 25 ceza. | İtiraz |
 | Kira Zammı | 3 | Bir sonraki sıran gelene kadar tahsil edeceğin ilk kira 2 katı. | - |
-| Müteahhit Dostu | 3 | Bir mülküne bedava 1 yasal kat (set şartı yok). | - |
-| Piyango | 3 | Bankadan 150 al. | - |
+| Müteahhit Dostu | 3 | O şehirden en az 2 mülkün varsa birine bedava 1 yasal kat (tam set şartı yok). | - |
+| Piyango | 2 | Bankadan 100 al. | - |
 | Aidat Günü | 3 | Diğer her oyuncu sana 30 öder. | Her hedef ayrı İtiraz edebilir |
 | Dava Aç | 3 | Bir rakiple zar atarsın; büyük atan 100 alır (eşitlikte davalı). | İtiraz |
 | Pazarlık Ustası | 3 | Satın alma kararı sırasında: arsayı yarı fiyata al. | - |
 
 Kartlardaki para miktarları Endeks ile ölçeklenir.
+
+### Denge ayarı (kullanıcı testi, 2026-10-25)
+
+Kira oyunu sürüklemiyordu: kirayı atlatan kartlar çok, kart birikiyordu, bedava para maaşın %78'iydi. Monopoly değerlerine yaklaştırıldı. 300 bot oyunu, 5 oyuncu:
+
+| Ölçüm | Önce | Sonra |
+|---|---|---|
+| Oyun başına kira ödemesi | 17,7 | 21,0 |
+| Dayın Çıktı ile silinen kira | %22 | %11 |
+| Elde ortalama kart / 6+ kartla başlayan sıra | 4,7 / %29 | 4,3 / %3 |
+| Bedava banka parası (maaşa oranı) | 2005 (%78) | 1290 (%47) |
+| Konkordato / oyun | 0,27 | 0,34 |
+| Oturma sırasına göre kazanma | %14-24 | %18-22 |
+| Gizli hedef tutma | %31 | %31 |
+
+Kalan bedava paranın çoğu gündemden gelir (Bayram, Seçim vaadi); gündem ayrıca ele alınacak.
 
 ## 8. Gündem kartları (29)
 
