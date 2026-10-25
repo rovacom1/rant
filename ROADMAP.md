@@ -7,7 +7,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 ## Sıradaki
 
 - [ ] **SÜRPRİZ ve gar görselleri:** Gemini kotası açılınca SÜRPRİZ karesine resimli kutucuk (şu an CSS soru işareti) ve garlara hızlı tren yerine klasik tren/gar görseli (docs/GORSEL_STIL.md kalıbıyla).
-- [ ] **Taşlar kare adını kapatmasın:** Taşları karenin kenarına yerleştir ya da küçült; birden çok taş varsa yan yana diz.
 - [ ] **Hedef dengesi:** 36 karelik tahtada 200x5 simde hedefler %0 (İzmir Hakimi) ile %61 (Hukuk Dünyası) arasında; en kolay ve en zor 3-4 hedefin eşiklerini %15-45 aralığına çek.
 - [ ] **Para animasyonu:** Kira ve transferlerde oyuncudan oyuncuya uçan jeton; kat dikince karede küçük inşaat animasyonu.
 - [ ] **Oyun sonu grafiği:** Sonuç penceresinde tur tur net değer çizgisi (motor her tur sonu net değerleri kaydetsin).
@@ -25,6 +24,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Taşlar kare adını kapatmıyor: şeritten uzak kenarda (resimli karelerde üstte) yan yana dizilir, kare genişliğine göre boyutlanır; aynı karede çok taş varsa sığacak kadar üst üste biner. Kare vurgusunun nabız animasyonu düzeltildi (v0.5.1)
 - [x] 36 karelik 10x10 tahta: 4 havalimanı (her biri kirayı ikiye katlar), 4 gar (kira gar sayısıyla orantılı), 2 SÜRPRİZ karesi ve hemen uygulanan 15 etki, dönen soru işaretli kart animasyonu; hedef eşikleri yeni tahtaya göre ayarlandı (v0.5.0)
 - [x] Kart yelpazesinde titremesiz üzerine gelme (fare konumuna göre seçim, komşular açılır), kart adı kartın üstünde, karede 🏠×N kat göstergesi, özel kareler için resimli kutucuklar, ceviz-altın tahta çerçevesi, karanlık mod, sohbet kaldırıldı, sade ve büyük yazılı olaylar paneli (v0.4.0)
 - [x] Hearthstone tarzı el (yelpaze, büyüme, sürükleyip oynama, desteden çekme, oynanan kartın ortada gösterilmesi), 16 kart görseli, yeni sağ panel, gündem barı ve haber kartı, ElevenLabs ses efektleri ve arka plan müziği, ses ayarları; tahtada şerit rengiyle sahiplik (v0.3.0)

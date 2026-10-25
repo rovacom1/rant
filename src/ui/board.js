@@ -3,6 +3,7 @@
 import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
 import { html, sleep } from './dom.js';
 import { play } from './sound.js';
+import { TOKEN, laneY, tokenSlots } from './slots.js';
 
 // Izgara kenarı G kare; köşeler 0, K, 2K, 3K. Kare 0 sağ altta, sıra saat yönünde.
 export const G = BOARD.length / 4 + 1;
@@ -119,16 +120,14 @@ export class Tokens {
       if (!groups.has(sq)) groups.set(sq, []);
       groups.get(sq).push(pl.id);
     }
+    this.layer.style.setProperty('--tk', `${this.cells[1].offsetWidth * TOKEN}px`);
     for (const [sq, ids] of groups) {
       const c = this.cells[sq];
-      const cx = c.offsetLeft + c.offsetWidth / 2;
-      const cy = c.offsetTop + c.offsetHeight / 2;
-      const r = ids.length > 1 ? c.offsetWidth * 0.22 : 0;
+      const slots = tokenSlots(ids.length, laneY(cellPos(sq).side, BOARD[sq].kind !== 'prop'));
       ids.forEach((id, k) => {
-        const a = (k / ids.length) * Math.PI * 2 - Math.PI / 2;
         const el = this.els.get(id);
-        el.style.left = `${cx + Math.cos(a) * r}px`;
-        el.style.top = `${cy + Math.sin(a) * r}px`;
+        el.style.left = `${c.offsetLeft + c.offsetWidth * slots[k].x}px`;
+        el.style.top = `${c.offsetTop + c.offsetHeight * slots[k].y}px`;
       });
     }
   }
