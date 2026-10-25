@@ -154,8 +154,8 @@ export const CARDS = {
   pazarlik: { name: 'Pazarlık Ustası', icon: '🤝', count: 3, type: 'hamle', when: 'buy', target: 'none', text: 'Satın alma kararı sırasında oyna: arsayı yarı fiyatına al.' },
 };
 
-// Gündem bir dönem boyunca geçerlidir: dönem GUNDEM_PERIOD tur sürer (1., 5., 9., 13. tur).
-export const GUNDEM_PERIOD = 4;
+// Gündem bir dönem boyunca geçerlidir: dönem GUNDEM_PERIOD tur sürer (1., 4., 7., 10., 13. tur).
+export const GUNDEM_PERIOD = 3;
 
 export const GUNDEM = {
   enflasyon: { name: 'Enflasyon Açıklandı', icon: '📊', count: 3, text: 'Endeks 15 puan arttı. Fiyatlar ve kiralar kalıcı olarak yükseldi.' },

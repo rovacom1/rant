@@ -13,7 +13,7 @@ RANT'a özgü olanlar:
 | Mekanik | Ne yapar | Neden eğlenceli |
 |---|---|---|
 | **Kestirme ve Taksi** | Zar toplamı kadar ilerlersin; kartla zarlardan birini seçer ya da 1-12 kare istediğin yere gidersin | Kirayı atlatma şansı değerli ve sınırlı kalır |
-| **Gündem** | 4 turda bir herkesi etkileyen bir haber kartı açılır; kuralları 4 tur sürer | Ortak kahkaha, her oyun farklı |
+| **Gündem** | 3 turda bir herkesi etkileyen bir haber kartı açılır; kuralları 3 tur sürer | Ortak kahkaha, her oyun farklı |
 | **Hamle kartları** | Elde tutulan aksiyon kartları (Kamulaştırma, İhtiyati Tedbir, Dava...) | Sıra sende olmasa da oyundasın |
 | **İtiraz zinciri** | Sana oynanan karta İtiraz, İtiraz'a karşı İtiraz | Monopoly Deal'deki "Hayır!" gerilimi |
 | **Kaçak Kat** | Set olmadan, yarı fiyata kat; ama Zabıta ve İhbar ile yıkılabilir | Risk-ödül, İmar Affı kumarı |
@@ -107,7 +107,7 @@ Sahil grupları: Antalya, İzmir.
 
 ## 4. Tur akışı
 
-1. **Tur başı** (ilk oyuncudan önce): 1., 5., 9. ve 13. turda yeni Gündem kartı açılır ve uygulanır; önceki gündemin dönem kuralları biter. Tedbir sayaçları her tur 1 azalır.
+1. **Tur başı** (ilk oyuncudan önce): 1., 4., 7., 10. ve 13. turda yeni Gündem kartı açılır ve uygulanır; önceki gündemin dönem kuralları biter. Tedbir sayaçları her tur 1 azalır.
 2. **Sıra başı**: Elinde 5'ten az kart varsa 1 Hamle kartı çekersin (kart birikmesin). Kira Zammı etkin kaldıysa burada biter.
 3. **Zar öncesi**: Hamle kartı oynayabilir (turda en fazla 1), kat dikebilir, ipotek yapabilir, pazarlık teklif edebilirsin.
 4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift gelirse, elinde 5'ten az kart varsa +1 kart.
@@ -192,13 +192,13 @@ Kira oyunu sürüklemiyordu: kirayı atlatan kartlar çok, kart birikiyordu, bed
 | Oturma sırasına göre kazanma | %14-24 | %18-22 |
 | Gizli hedef tutma | %31 | %31 |
 
-Kalan bedava paranın çoğu gündemden geliyordu (Bayram, Seçim vaadi). Gündem 4 turda bir değişince bu da azaldı (bkz. §8).
+Kalan bedava paranın çoğu gündemden geliyordu (Bayram, Seçim vaadi). Gündem 3 turda bir değişince bu da azaldı (bkz. §8).
 
 ## 8. Gündem kartları (29)
 
-Gündem bir **dönem** boyunca geçerlidir: dönem 4 tur sürer (tüm oyuncuların 4 kez oynaması). Kart 1., 5., 9. ve 13. turun başında açılır; 15 turluk oyunda 4 gündem görülür. Para, kat ve endeks kartları açıldıkları anda bir kez uygulanır. "Bu dönem" diye başlayan kurallar dönem bitene kadar, yani 4 tur boyunca geçerlidir. Haber kartı yalnız gündem değişince ekrana gelir; aradaki turlarda gündem çubuğu kaç tur kaldığını gösterir. Ev sahibi gündemi lobiden tümüyle kapatabilir.
+Gündem bir **dönem** boyunca geçerlidir: dönem 3 tur sürer (tüm oyuncuların 3 kez oynaması). Kart 1., 4., 7., 10. ve 13. turun başında açılır; 15 turluk oyunda 5 gündem görülür. Para, kat ve endeks kartları açıldıkları anda bir kez uygulanır. "Bu dönem" diye başlayan kurallar dönem bitene kadar, yani 3 tur boyunca geçerlidir. Haber kartı yalnız gündem değişince ekrana gelir; aradaki turlarda gündem çubuğu kaç tur kaldığını gösterir. Ev sahibi gündemi lobiden tümüyle kapatabilir.
 
-Ölçüm (300 bot oyunu, 5 kişi, her tur yerine 4 turda bir): oyun başına gündem 15 -> 4; oyun sonu Endeks ortalaması 123 -> 107; gündemden oyunculara giren para 715 -> 165, çıkan 559 -> 134; bedava banka parası maaşın %47'si -> %28'i; konkordato 0,33 -> 0,22. Bir dönem kuralının geçerli olduğu turların payı aynı kaldı (%31): kurallar daha seyrek gelir ama 4 kat uzun sürer.
+Ölçüm (300 bot oyunu, 5 kişi, her tur yerine 3 turda bir): oyun başına gündem 15 -> 5; oyun sonu Endeks ortalaması 123 -> 109; gündemden oyunculara giren para 715 -> 219, çıkan 559 -> 174; bedava banka parası maaşın %47'si -> %31'i; konkordato 0,33 (değişmedi). Bir dönem kuralının geçerli olduğu turların payı aynı kaldı (%31): kurallar daha seyrek gelir ama 3 kat uzun sürer.
 
 | Kart | Adet | Etki |
 |---|---|---|

@@ -496,9 +496,9 @@ test('masa ayarı: gündem kapalıysa tur başında kart açılmaz', () => {
   assert.ok(s.log.some((l) => l.type === 'round' && l.text.startsWith('— 1. tur —')));
 });
 
-test('gündem 4 turda bir değişir, dönem kuralları 4 tur sürer', () => {
+test('gündem 3 turda bir değişir, dönem kuralları 3 tur sürer', () => {
   let s = started(4, 11);
-  s.gundem = { id: 'turizm', detail: null, until: 4 };
+  s.gundem = { id: 'turizm', detail: null, until: 3 };
   s.mods = { turizm: true };
   const seen = {};
   let guard = 0;
@@ -507,26 +507,26 @@ test('gündem 4 turda bir değişir, dönem kuralları 4 tur sürer', () => {
     const seat = waitingFor(s)[0];
     s = applyAction(s, seat, botAction(s, seat)).state;
   }
-  assert.deepEqual([1, 2, 3, 4, 5, 6, 7, 8, 9].map((r) => seen[r].drawn), [1, 1, 1, 1, 2, 2, 2, 2, 3], 'yalnız 1., 5. ve 9. turda kart açılır');
-  for (const r of [2, 3, 4]) assert.equal(seen[r].turizm, true, `${r}. turda dönem kuralı sürer`);
-  assert.equal(seen[5].turizm, seen[5].id === 'turizm', 'yeni gündem eski kuralı bitirir');
-  assert.equal(seen[5].until, 8);
-  assert.equal(seen[9].until, 12);
-  assert.match(seen[2].head, /^— 2\. tur — Gündem sürüyor: Turizm Sezonu \(2 tur daha\)\.$/);
-  assert.match(seen[4].head, /\(son turu\)/);
-  assert.match(seen[5].head, /^— 5\. tur — Gündem: /);
+  assert.deepEqual([1, 2, 3, 4, 5, 6, 7, 8, 9].map((r) => seen[r].drawn), [1, 1, 1, 2, 2, 2, 3, 3, 3], 'yalnız 1., 4. ve 7. turda kart açılır');
+  for (const r of [2, 3]) assert.equal(seen[r].turizm, true, `${r}. turda dönem kuralı sürer`);
+  assert.equal(seen[4].turizm, seen[4].id === 'turizm', 'yeni gündem eski kuralı bitirir');
+  assert.equal(seen[4].until, 6);
+  assert.equal(seen[7].until, 9);
+  assert.match(seen[2].head, /^— 2\. tur — Gündem sürüyor: Turizm Sezonu \(1 tur daha\)\.$/);
+  assert.match(seen[3].head, /\(son turu\)/);
+  assert.match(seen[4].head, /^— 4\. tur — Gündem: /);
 });
 
 test('gündem dönemi oyunun son turunu aşmaz', () => {
-  const s = started(4, 5, { maxRounds: 6 });
-  assert.equal(s.gundem.until, 4);
+  const s = started(4, 5, { maxRounds: 5 });
+  assert.equal(s.gundem.until, 3);
   let t = s;
   let guard = 0;
-  while (t.phase === 'play' && t.round < 5 && guard++ < 20000) {
+  while (t.phase === 'play' && t.round < 4 && guard++ < 20000) {
     const seat = waitingFor(t)[0];
     t = applyAction(t, seat, botAction(t, seat)).state;
   }
-  assert.equal(t.gundem.until, 6);
+  assert.equal(t.gundem.until, 5);
 });
 
 test('masa ayarı: hedef kapalıysa oyun hedef seçmeden başlar', () => {
