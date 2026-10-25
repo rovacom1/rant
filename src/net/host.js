@@ -61,6 +61,21 @@ export class Host {
     return seat;
   }
 
+  // Lobiye bot oturtur; eklenemezse (oyun başladı ya da masa dolu) false.
+  addBot() {
+    if (this.game || this.seats.length >= MAX_SEATS) return false;
+    const names = new Set(this.seats.map((s) => s.name));
+    const avatars = new Set(this.seats.map((s) => s.avatar));
+    const n = this.seats.filter((s) => s.bot).length;
+    this.addSeat({
+      id: `bot${Date.now().toString(36)}${n}`,
+      name: E.BOT_NAMES.find((b) => !names.has(b)) || `Bot ${n + 1}`,
+      avatar: E.AVATARS.find((a) => !avatars.has(a)) || E.AVATARS[0],
+      bot: true,
+    });
+    return true;
+  }
+
   attach(conn, { local = false } = {}) {
     const client = { conn, playerId: null, lastSeen: Date.now(), local };
     this.clients.add(client);
@@ -157,19 +172,9 @@ export class Host {
   onLobby(client, m) {
     if (!client.local || client.playerId !== this.hostId) throw new E.GameError('Bunu yalnız odayı kuran yapabilir.');
     switch (m.cmd) {
-      case 'addBot': {
-        if (this.game || this.seats.length >= MAX_SEATS) return;
-        const names = new Set(this.seats.map((s) => s.name));
-        const avatars = new Set(this.seats.map((s) => s.avatar));
-        const n = this.seats.filter((s) => s.bot).length;
-        this.addSeat({
-          id: `bot${Date.now().toString(36)}${n}`,
-          name: E.BOT_NAMES.find((b) => !names.has(b)) || `Bot ${n + 1}`,
-          avatar: E.AVATARS.find((a) => !avatars.has(a)) || E.AVATARS[0],
-          bot: true,
-        });
+      case 'addBot':
+        if (!this.addBot()) return;
         break;
-      }
       case 'remove': {
         if (this.game || m.id === this.hostId) return;
         this.seats = this.seats.filter((s) => s.id !== m.id);

@@ -67,6 +67,20 @@ test('başkasının koltuğu farklı tokenle alınamaz, aynı tokenle geri dön�
   clearTimeout(host.timer);
 });
 
+test('botlarla dene: yerel masa doğrudan bot oturtur ve başlar', () => {
+  const host = new Host({ code: 'YEREL', hostToken: HOST_TOKEN, hostName: 'Ev', hostAvatar: '🦊' });
+  for (let i = 0; i < 3; i++) assert.equal(host.addBot(), true);
+  assert.equal(host.seats.length, 4);
+  assert.equal(new Set(host.seats.map((s) => s.name)).size, 4, 'bot adları farklı');
+  const me = fakeConn();
+  host.attach(me, { local: true });
+  me.say(hello(HOST_TOKEN, 'Ev'));
+  me.say({ t: 'lobby', cmd: 'start' });
+  assert.ok(host.game);
+  assert.equal(host.addBot(), false, 'oyun başlayınca bot eklenmez');
+  clearTimeout(host.timer);
+});
+
 test('oyunda geçersiz hamle istemciye hata olarak döner, durum bozulmaz', () => {
   const { host, me } = room();
   me.say({ t: 'lobby', cmd: 'addBot' });

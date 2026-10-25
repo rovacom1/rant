@@ -284,7 +284,7 @@ function startLocal(saved = null) {
   app.mode = 'local';
   app.error = '';
   const host = new Host({ code: 'YEREL', hostToken: profile.token, hostName: profile.name, hostAvatar: profile.avatar, save: (snap) => store.set(SAVE.local, snap), saved });
-  if (!saved) for (let i = 0; i < 3; i++) host.onLobby({ playerId: host.hostId }, { cmd: 'addBot' });
+  if (!saved) for (let i = 0; i < 3; i++) host.addBot();
   app.host = host;
   app.code = 'YEREL';
   attachLocal(host);
