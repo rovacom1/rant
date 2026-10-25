@@ -91,6 +91,7 @@ export class Hand {
       el.classList.toggle('hover', i === h);
       return k * step;
     });
+    this.el.classList.toggle('open', h >= 0);
   }
 
   // Fare elin hizasındaysa en yakın kart seçilir; kart yukarı kalksa da seçim titremez.

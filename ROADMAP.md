@@ -20,6 +20,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Daha büyük tahta: el ekranın altına gömüldü (boştayken kart adları görünür, fare gelince yükselir); 1920x945'te tahta 759'dan 833 px'e (v0.9.3)
 - [x] Oyun sonu grafiği: motor oyun başında ve her tur sonunda herkesin net değerini kaydeder; Seçim Günü sonuçlarında oyuncu renklerinde tur tur net değer çizgisi, kazananınki kalın (v0.9.2)
 - [x] Para animasyonu: kira, transfer ve banka ödemelerinde ödeyenden alana kavisli uçan altın jetonlar (tutarla 1-6 jeton, tahtanın ortası banka); kat dikilince kare sıçrar ve üstünden vinç yükselir; hareket azaltma tercihinde kapalı (v0.9.1)
 - [x] Oyun sonu seçimi: tur sayısı (10/15/20) ya da değer hedefi (2.500/3.500/5.000 ₺; ulaşılan tur tamamlanınca Seçim Günü, en geç 30. tur); üst çubukta hedef, gündem halkasında hedefe yakınlık (v0.9.0)
