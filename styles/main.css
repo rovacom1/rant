@@ -138,6 +138,16 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .seg button { border: 0; background: transparent; padding: 6px 12px; border-radius: 9px; font-weight: 600; cursor: pointer; color: var(--ink); }
 .seg button.on { background: var(--ink); color: #fff; }
 .seg button:disabled { cursor: default; }
+/* lobide masa ayarları: açık olan yeşil, kapalı olan soluk */
+.rules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.rule { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: 0; border-radius: 12px; cursor: pointer; text-align: left; font: inherit; font-weight: 700; color: #8a8f9b; background: #efe7d6; box-shadow: inset 0 0 0 1px #e0d4bb; transition: background-color 0.15s, color 0.15s; }
+.rule .ri { font-size: 18px; filter: grayscale(1); opacity: 0.55; }
+.rule .rn { flex: 1; }
+.rule .rs { font-size: 11.5px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: #d9cfbb; color: #6b6f7a; }
+.rule.on { color: var(--ink); background: #e4f4ea; box-shadow: inset 0 0 0 1px #9fd4b4; }
+.rule.on .ri { filter: none; opacity: 1; }
+.rule.on .rs { background: #2b9348; color: #fff; }
+.rule:disabled { cursor: default; }
 
 /* ---------- oyun ekranı ---------- */
 .game { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -641,6 +651,7 @@ body.dark .ring b { color: #f1f4fb; }
 body.dark .buycard, body.dark .moneybox { background: #232c46; color: #e9edf7; box-shadow: 0 0 0 1px #34405f; }
 body.dark .amount { color: #f1f4fb; }
 body.dark .btn.ghost { color: #e9edf7; box-shadow: inset 0 0 0 2px #3a4766; }
+body.dark .card-panel .btn.ghost { color: var(--ink); box-shadow: inset 0 0 0 2px var(--line); } /* lobi kartı karanlık temada da açık renk */
 body.dark .timer { background: #34405f; }
 body.dark .seat2 { background: rgba(30, 39, 65, 0.97); color: #e9edf7; }
 body.dark .seat2 .s-acts { border-top-color: #34405f; }

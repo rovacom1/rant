@@ -22,6 +22,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Lobide masa ayarları: gizli ihale, SÜRPRİZ kareleri, gündem kartları ve gizli hedefler açılıp kapanır (yalnız ev sahibi); karanlık temada lobi düğmeleri okunur (v0.8.0)
 - [x] Erzurum yerine Çorum (İskilip, Osmancık; kırmızı-siyah), Eskişehir yerine Bursa (İnegöl, Nilüfer; yeşil-beyaz); fiyat ve kiralar yerlerindeki eski semtlerle aynı (v0.7.0)
 - [x] Maaş Günü'nün adı Başlangıç Noktası; plaka rozeti kaldırıldı, her şehre iki renkli set çerçevesi; alınan karenin camı değişmez, yalnız şerit sahibin rengine döner; HD kareler (parlak kurdele şerit, ışık kenarı, gölge, cam parlaması ve ince doku); sığmayan semt adı bölünmeden küçülür (v0.6.2)
 - [x] Hedef dengesi: Hukuk Dünyası 7 kart, Kaçak Ama Sağlam 1 kaçak kat; botlar hedef şehrine daha istekli (üç mülklü şehirde daha da); 3000 oyunluk simde her hedef %13-45 (önce %9-58) (v0.6.1)

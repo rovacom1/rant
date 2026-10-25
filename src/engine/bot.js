@@ -68,7 +68,7 @@ function squareScore(s, p, sq, path) {
       score += 70;
       break;
     case 'surpriz':
-      score += 40;
+      score += s.config.rules.surpriz ? 40 : 0;
       break;
     case 'tapu':
       score += OWNABLE.some((q) => s.props[q].owner === null && R.price(s, q) <= pl.cash) ? 60 : 30;
@@ -287,6 +287,8 @@ export function botAction(s, p) {
         const [pazarlik] = myCards(s, p, 'pazarlik');
         if (pazarlik && !s.turn.hamle && pl.cash >= price / 2) return { type: 'playCard', uid: pazarlik };
         if (pl.cash >= price && (pl.cash - price >= res || v >= price * 2)) return { type: 'buy' };
+        // İhale yoksa arsa bir daha kolay gelmez: yedeğin yarısı kalıyorsa al.
+        if (!s.config.rules.ihale && pl.cash >= price && pl.cash - price >= res * 0.5) return { type: 'buy' };
         return { type: 'decline' };
       }
       case 'auction': {

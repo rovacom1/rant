@@ -31,6 +31,8 @@ export const RULES_HTML = `
 <p>Tur başında bir haber kartı açılır: enflasyon, imar affı, turizm sezonu, deprem yönetmeliği... <b>Endeks</b> yükseldikçe fiyat ve kiralar artar, nakit erir.</p>
 <h3>Borç ve Konkordato</h3>
 <p>Para eksiye düşebilir; sıranı bitirmeden kat satıp ipotek ederek borcunu kapatmalısın ("Borcu Kapat" bunu otomatik yapar). Satacak bir şeyin kalmazsa konkordato ilan edersin: borcun silinir, oyunda kalırsın, sonda 300 puan ceza.</p>
+<h3>Masa ayarları</h3>
+<p>Ev sahibi lobide gizli ihaleyi, SÜRPRİZ karelerini, gündem kartlarını ve gizli hedefleri açıp kapatabilir. Kapalı ihalede alınmayan arsa sahipsiz kalır.</p>
 <h3>Gizli hedef</h3>
 <p>Başta iki hedef kartından birini seçersin (ör. "Konya Hakimi", "Kaçak Ama Sağlam"). Kimse göremez; oyun sonunda tutarsa bonus alırsın.</p>
 </div>`;

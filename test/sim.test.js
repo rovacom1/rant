@@ -19,3 +19,14 @@ test('kısa ve uzun oyun seçenekleri', () => {
     assert.equal(state.round, maxRounds);
   }
 });
+
+test('masa ayarları kapalıyken de oyunlar tutarlı biter', () => {
+  const rules = { ihale: false, surpriz: false, gundem: false, hedef: false };
+  for (let g = 0; g < 15; g++) {
+    const { state } = playBotGame(500 + g, 4, { rules });
+    assert.equal(state.phase, 'over');
+    assert.equal(state.gundem, null);
+  }
+  const { state } = playBotGame(9, 5, { rules: { ihale: false } });
+  assert.equal(state.phase, 'over');
+});

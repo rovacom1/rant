@@ -144,7 +144,10 @@ function gundemHTML(v) {
   const max = v.config.maxRounds;
   const ring = (p, big, small) => html`<div class="ring" style="--p:${p}"><div><b>${big}</b><span>${small}</span></div></div>`;
   if (!v.gundem) {
-    return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div><div class="nb-k">SEÇİM YOLU</div><div class="nb-t">Seçime ${max} tur var</div><div class="nb-x">Herkes gizli hedefini seçiyor.</div></div>${ring(0, max, 'TUR')}</div>`;
+    const left = max - v.round;
+    const t = v.round ? html`<div class="nb-k">${v.round}. TUR</div><div class="nb-t">${left ? `Seçime ${left} tur var` : 'Son tur: Seçim Günü geliyor'}</div><div class="nb-x">Bu masada gündem kartları kapalı.</div>`
+      : html`<div class="nb-k">SEÇİM YOLU</div><div class="nb-t">Seçime ${max} tur var</div><div class="nb-x">Herkes gizli hedefini seçiyor.</div>`;
+    return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div>${t}</div>${ring(Math.round((v.round / max) * 100), v.round ? left || 'SON' : max, v.round && left ? 'TUR KALDI' : 'TUR')}</div>`;
   }
   const g = GUNDEM[v.gundem.id];
   const left = max - v.round;
@@ -295,15 +298,15 @@ function pendingHTML(v, pd) {
   const me = v.you;
   switch (pd.type) {
     case 'buy': {
-      if (pd.p !== me) return html`<div class="who">${av(P(v, pd.p))} ${P(v, pd.p).name}</div><p>${BOARD[pd.sq].name} için karar veriyor: alacak mı, ihaleye mi çıkaracak?</p>${timerHTML(v, [pd.p])}`;
+      if (pd.p !== me) return html`<div class="who">${av(P(v, pd.p))} ${P(v, pd.p).name}</div><p>${BOARD[pd.sq].name} için karar veriyor: ${v.config.rules.ihale ? 'alacak mı, ihaleye mi çıkaracak?' : 'alacak mı?'}</p>${timerHTML(v, [pd.p])}`;
       const cost = E.price(v, pd.sq);
       const cash = P(v, me).cash;
       const paz = P(v, me).hand.find((u) => cardId(u) === 'pazarlik');
       return html`${buyCard(v, pd.sq)}
         <div class="row center"><button class="btn green big" data-act="buy" data-primary ${cash < cost ? 'disabled' : ''}>Satın Al ${fmt(cost)}</button>
-        <button class="btn ghost" data-act="decline">🔨 İhaleye Çıkar</button>
+        <button class="btn ghost" data-act="decline">${v.config.rules.ihale ? '🔨 İhaleye Çıkar' : 'Alma'}</button>
         ${paz && !v.turn.hamle && cash >= Math.round(cost / 10) * 5 ? html`<button class="btn gold" data-act="pazarlik" data-uid="${paz}">🤝 Pazarlık Ustası: ${fmt(Math.round(cost / 10) * 5)}</button>` : ''}</div>
-        ${cash < cost ? html`<p class="reason">Nakdin yetmiyor; ihaleye çıkarabilirsin.</p>` : ''}${timerHTML(v, [me])}`;
+        ${cash < cost ? html`<p class="reason">${v.config.rules.ihale ? 'Nakdin yetmiyor; ihaleye çıkarabilirsin.' : 'Nakdin yetmiyor.'}</p>` : ''}${timerHTML(v, [me])}`;
     }
     case 'auction': {
       const done = Object.keys(pd.bids).length;
@@ -446,7 +449,7 @@ const FEED_ICON = { surpriz: '❓', collapse: '🏚️', card: '🃏', own: '�
 const FEED_HIDE = new Set(['dice', 'move', 'bid', 'draw', 'turn', 'trade', 'auctionStart']);
 
 function feedItem(l) {
-  if (l.type === 'gundem') {
+  if (l.type === 'gundem' || l.type === 'round') {
     const m = /Gündem: ([^.]+)\./.exec(l.text);
     return html`<div class="ev-round"><b>${l.r}. TUR</b>${m ? html`<span>${m[1]}</span>` : ''}</div>`;
   }
@@ -461,7 +464,7 @@ const feedHTML = () => feedRows().slice(-60).reverse().map(feedItem).join('');
 // Tahtanın ortasında son olaylar: en yenisi üstte, aşağı doğru solarak kaybolur. Tıklayınca tüm geçmiş açılır.
 export function renderFeed() {
   if (!els) return;
-  setHTML(els.feed, feedRows().filter((l) => l.type !== 'gundem').slice(-6).reverse().map(feedItem).join(''));
+  setHTML(els.feed, feedRows().filter((l) => l.type !== 'gundem' && l.type !== 'round').slice(-6).reverse().map(feedItem).join(''));
 }
 
 // ---------- pencereler ----------

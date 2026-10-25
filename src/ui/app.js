@@ -89,10 +89,20 @@ function lobbyHTML() {
       ${seg('cfgRounds', [[10, '10 tur'], [15, '15 tur'], [20, '20 tur']], L.config.maxRounds, 'Oyun uzunluğu')}
       ${seg('cfgTurn', [[60, '60 sn'], [120, '2 dk'], [180, '3 dk'], [0, 'Yok']], L.config.turnLimit, 'Sıra süresi (dolunca bot oynar)')}
     </div>
+    ${rulesHTML(L.config.rules || E.DEFAULT_CONFIG.rules, host)}
     ${app.error ? html`<div class="notice error">${app.error}</div>` : ''}
     ${host ? html`<button class="btn primary big" data-act="start" ${L.seats.length < 2 ? 'disabled' : ''}>Oyunu Başlat (${L.seats.length} oyuncu)</button>
       <div class="muted" style="font-size:12px">Oyun 4-5 kişi için ayarlı. Eksik koltukları botla doldurabilirsin.</div>` : html`<div class="notice">Ev sahibinin oyunu başlatması bekleniyor…</div>`}
   </div></div>${modalShell()}<div class="version">RANT ${APP_VERSION}</div>`;
+}
+
+// Masa ayarları: ev sahibi tıklayarak açar/kapatır, diğerleri yalnız görür.
+function rulesHTML(rules, host) {
+  const items = Object.entries(E.RULE_LABELS).map(
+    ([k, r]) => html`<button class="rule ${rules[k] ? 'on' : ''}" data-act="cfgRule" data-k="${k}" ${host ? '' : 'disabled'} title="${rules[k] ? 'Açık' : `Kapalı: ${r.off}`}">
+      <span class="ri">${r.icon}</span><span class="rn">${r.name}</span><span class="rs">${rules[k] ? 'Açık' : 'Kapalı'}</span></button>`,
+  );
+  return html`<div class="field">Masa ayarları${host ? '' : ' (ev sahibi seçer)'}<div class="rules-grid">${items}</div></div>`;
 }
 
 const modalShell = () => (app.ui.menuModal ? html`<div class="modal-back" data-act="backdrop"><div class="modal"><button class="x" data-act="close">✕</button><h2>❓ Nasıl oynanır?</h2>${raw(RULES_HTML)}</div></div>` : '');
@@ -404,6 +414,10 @@ const A = {
   removeSeat: (el) => send({ t: 'lobby', cmd: 'remove', id: el.dataset.id }),
   cfgRounds: (el) => send({ t: 'lobby', cmd: 'config', maxRounds: Number(el.dataset.v) }),
   cfgTurn: (el) => send({ t: 'lobby', cmd: 'config', turnLimit: Number(el.dataset.v) }),
+  cfgRule: (el) => {
+    const cur = (app.lobby.config.rules || E.DEFAULT_CONFIG.rules)[el.dataset.k];
+    send({ t: 'lobby', cmd: 'config', rules: { [el.dataset.k]: !cur } });
+  },
   start: () => send({ t: 'lobby', cmd: 'start' }),
   newGame: () => send({ t: 'lobby', cmd: 'newGame' }),
   copyLink,

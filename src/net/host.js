@@ -33,7 +33,7 @@ export class Host {
       for (const s of this.seats) s.connected = !!s.bot;
     } else {
       this.seats = [];
-      this.config = { maxRounds: 15, turnLimit: 120 };
+      this.config = { maxRounds: 15, turnLimit: 120, rules: { ...E.DEFAULT_CONFIG.rules } };
       this.game = null;
       this.addSeat({ id: this.hostId, name: cleanName(hostName), avatar: cleanAvatar(hostAvatar), bot: false });
     }
@@ -186,6 +186,9 @@ export class Host {
         if (this.game) return;
         if (E.ROUND_OPTIONS.includes(m.maxRounds)) this.config.maxRounds = m.maxRounds;
         if ([0, 60, 90, 120, 180].includes(m.turnLimit)) this.config.turnLimit = m.turnLimit;
+        if (m.rules && typeof m.rules === 'object') {
+          for (const k of Object.keys(E.DEFAULT_CONFIG.rules)) if (typeof m.rules[k] === 'boolean') this.config.rules[k] = m.rules[k];
+        }
         break;
       }
       case 'start': {
@@ -193,7 +196,7 @@ export class Host {
         if (this.seats.length < 2) throw new E.GameError('En az 2 oyuncu gerekir (bot ekleyebilirsin).');
         this.game = E.createGame({
           players: this.seats.map((s) => ({ id: s.id, name: s.name, avatar: s.avatar, color: s.color, bot: s.bot })),
-          config: { maxRounds: this.config.maxRounds },
+          config: { maxRounds: this.config.maxRounds, rules: { ...this.config.rules } },
           seed: E.randomSeed(),
         });
         this.waitSince = {};

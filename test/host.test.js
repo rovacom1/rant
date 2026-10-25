@@ -92,3 +92,17 @@ test('oyunda geçersiz hamle istemciye hata olarak döner, durum bozulmaz', () =
   assert.equal(host.game.seq, seq);
   clearTimeout(host.timer);
 });
+
+test('masa ayarlarını yalnız ev sahibi değiştirir, oyun onlarla kurulur', () => {
+  const { host, me } = room();
+  const ali = fakeConn();
+  host.attach(ali);
+  ali.say(hello('a'.repeat(32), 'Ali'));
+  ali.say({ t: 'lobby', cmd: 'config', rules: { ihale: false } });
+  assert.equal(host.config.rules.ihale, true, 'misafir değiştiremez');
+  me.say({ t: 'lobby', cmd: 'config', rules: { ihale: false, gundem: 'evet', bilinmeyen: false } });
+  assert.deepEqual(host.config.rules, { ihale: false, surpriz: true, gundem: true, hedef: true });
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  assert.equal(host.game.config.rules.ihale, false);
+});

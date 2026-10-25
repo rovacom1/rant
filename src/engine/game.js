@@ -141,7 +141,7 @@ function autoLiquidate(s, ctx, p) {
 
 export function createGame({ players, config = {}, seed = 1 }) {
   need(players.length >= 2 && players.length <= 6, 'Oyun 2-6 kişiyle oynanır.');
-  const cfg = { ...DEFAULT_CONFIG, ...config };
+  const cfg = { ...DEFAULT_CONFIG, ...config, rules: { ...DEFAULT_CONFIG.rules, ...config.rules } };
   const s = {
     v: RULES_VERSION,
     seq: 0,
@@ -192,7 +192,15 @@ export function createGame({ players, config = {}, seed = 1 }) {
   s.gundemDeck = shuffle(s, copies(GUNDEM));
   const ctx = { events: [] };
   s.players.forEach((_, p) => drawCards(s, ctx, p, cfg.startHand, true));
-  const hedefs = shuffle(s, Object.keys(HEDEF));
+  if (!cfg.rules.hedef) {
+    say(s, ctx, 'Masa kuruldu. Bu masada gizli hedef yok, oyun başlıyor.');
+    s.phase = 'play';
+    startRound(s, ctx);
+    startTurn(s, ctx, 0);
+    return s;
+  }
+  // İhale kapalıysa İhale Kralı hedefi tutturulamaz, dağıtılmaz.
+  const hedefs = shuffle(s, Object.keys(HEDEF).filter((h) => cfg.rules.ihale || HEDEF[h].check.type !== 'ihale'));
   s.players.forEach((pl, p) => {
     pl.hedefChoices = hedefs.slice(p * 2, p * 2 + 2);
   });
@@ -208,6 +216,11 @@ function startRound(s, ctx) {
   s.roundStart = { net: s.players.map((_, p) => R.netWorth(s, p)), owners: s.props.map((ps) => (ps ? ps.owner : null)) };
   s.mods = {};
   for (const ps of s.props) if (ps && ps.tedbir > 0) ps.tedbir--;
+  const last = s.round === s.config.maxRounds ? ' SON TUR: Seçim Günü geliyor!' : '';
+  if (!s.config.rules.gundem) {
+    s.gundem = null;
+    return emit(s, ctx, { type: 'round', round: s.round, text: `— ${s.round}. tur —${last}` });
+  }
   if (!s.gundemDeck.length) {
     s.gundemDeck = shuffle(s, s.gundemDiscard);
     s.gundemDiscard = [];
@@ -216,7 +229,6 @@ function startRound(s, ctx) {
   s.gundemDiscard.push(uid);
   const id = cardId(uid);
   s.gundem = { id, detail: null };
-  const last = s.round === s.config.maxRounds ? ' SON TUR: Seçim Günü geliyor!' : '';
   emit(s, ctx, { type: 'gundem', id, round: s.round, text: `— ${s.round}. tur — Gündem: ${GUNDEM[id].name}. ${GUNDEM[id].text}${last}` });
   applyGundem(s, ctx, id);
 }
@@ -305,6 +317,7 @@ function land(s, ctx, p) {
     case 'chance':
       return drawCards(s, ctx, p, 2);
     case 'surpriz':
+      if (!s.config.rules.surpriz) return say(s, ctx, 'Sürprizler bu masada kapalı.');
       return applySurpriz(s, ctx, p, pick(s, Object.keys(SURPRIZ)));
     case 'tapu': {
       const cash = s.players[p].cash;
@@ -948,14 +961,15 @@ const PENDING = {
     buy(s, p, a, ctx) {
       const sq = s.pending.sq;
       const cost = R.price(s, sq);
-      need(s.players[p].cash >= cost, 'Paran yetmiyor, ihaleye çıkarabilirsin.');
+      need(s.players[p].cash >= cost, s.config.rules.ihale ? 'Paran yetmiyor, ihaleye çıkarabilirsin.' : 'Paran yetmiyor.');
       s.pending = null;
       acquire(s, ctx, p, sq, cost, 'satın aldı:');
     },
     decline(s, p, a, ctx) {
       const sq = s.pending.sq;
       s.pending = null;
-      startAuction(s, ctx, sq);
+      if (s.config.rules.ihale) startAuction(s, ctx, sq);
+      else say(s, ctx, `${nm(s, p)} ${sqName(sq)} arsasını almadı, sahipsiz kaldı.`);
     },
     playCard,
   },

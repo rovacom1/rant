@@ -9,6 +9,15 @@ export const DEFAULT_CONFIG = {
   startHand: 3,
   handLimit: 6,
   konkordatoPenalty: 300,
+  // Masa ayarları: ev sahibi lobide açıp kapatır (docs/TASARIM.md 2. bölüm).
+  rules: { ihale: true, surpriz: true, gundem: true, hedef: true },
+};
+
+export const RULE_LABELS = {
+  ihale: { name: 'Gizli ihale', icon: '🔨', off: 'Alınmayan arsa sahipsiz kalır.' },
+  surpriz: { name: 'SÜRPRİZ kareleri', icon: '❓', off: 'SÜRPRİZ karesinde bir şey olmaz.' },
+  gundem: { name: 'Gündem kartları', icon: '📰', off: 'Tur başında haber kartı açılmaz.' },
+  hedef: { name: 'Gizli hedefler', icon: '🎯', off: 'Hedef seçilmez, bonus yok.' },
 };
 
 export const ROUND_OPTIONS = [10, 15, 20];

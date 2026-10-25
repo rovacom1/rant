@@ -443,3 +443,41 @@ test('SÜRPRİZ: hareket etkileri', () => {
   r = surprizWith('isinlan');
   assert.notEqual(BOARD[r.after.players[0].pos].kind, 'surpriz');
 });
+
+test('masa ayarı: ihale kapalıysa alınmayan arsa sahipsiz kalır, İhale Kralı dağıtılmaz', () => {
+  let s = calm(started(4, 42, { rules: { ihale: false } }));
+  for (const pl of s.players) assert.ok(!pl.hedefChoices.includes('ihaleci') && pl.hedef !== 'ihaleci');
+  s = taksi(s, 0, 2);
+  assert.equal(s.pending.type, 'buy');
+  s = act(s, 0, { type: 'decline' });
+  assert.equal(s.pending, null, 'ihale açılmaz');
+  assert.equal(s.props[2].owner, null);
+});
+
+test('masa ayarı: SÜRPRİZ kapalıysa karede bir şey olmaz', () => {
+  const s = calm(started(4, 42, { rules: { surpriz: false } }));
+  const cash = s.players[0].cash;
+  const r = applyAction(s, 0, { type: 'playCard', uid: give(s, 0, 'taksi'), target: { steps: 3 } });
+  assert.ok(!r.events.some((e) => e.type === 'surpriz'));
+  assert.equal(r.state.players[0].pos, 3);
+  assert.equal(r.state.players[0].cash, cash);
+});
+
+test('masa ayarı: gündem kapalıysa tur başında kart açılmaz', () => {
+  const s = started(4, 42, { rules: { gundem: false } });
+  assert.equal(s.gundem, null);
+  assert.equal(s.index, 100);
+  assert.equal(s.gundemDeck.length + s.gundemDiscard.length > 0, true);
+  assert.equal(s.gundemDiscard.length, 0, 'deste el değmeden durur');
+  assert.ok(s.log.some((l) => l.type === 'round' && l.text.startsWith('— 1. tur —')));
+});
+
+test('masa ayarı: hedef kapalıysa oyun hedef seçmeden başlar', () => {
+  const s = createGame({ players: makePlayers(4), seed: 3, config: { rules: { hedef: false } } });
+  assert.equal(s.phase, 'play');
+  assert.equal(s.pending, null);
+  assert.equal(s.turn.p, 0);
+  assert.equal(s.round, 1);
+  for (const pl of s.players) assert.equal(pl.hedef, null);
+  assert.equal(scoreOf(s, 0).hedefBonus, 0);
+});

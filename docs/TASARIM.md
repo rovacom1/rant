@@ -30,6 +30,17 @@ RANT'a özgü olanlar:
 - Başlangıç: 1500 TL nakit, 3 Hamle kartı, 2 Hedef kartından 1'i seçilir.
 - Kazanan: Seçim Günü'nde (son turun sonunda) en yüksek **puan**a sahip oyuncu.
 
+### Masa ayarları
+
+Ev sahibi lobide dört kuralı açıp kapatabilir; hepsi varsayılan olarak açıktır. Oyun başlayınca değişmez.
+
+| Ayar | Kapalıyken |
+|---|---|
+| Gizli ihale | Alınmayan arsa ihaleye çıkmaz, sahipsiz kalır. İhale Kralı hedefi dağıtılmaz. |
+| SÜRPRİZ kareleri | SÜRPRİZ karesine gelince bir şey olmaz. |
+| Gündem kartları | Tur başında Gündem kartı açılmaz; turlar yalnız sayılır. |
+| Gizli hedefler | Hedef seçilmez, oyun hemen başlar; puanda hedef bonusu yoktur. |
+
 ## 3. Tahta (36 kare)
 
 Kareler 0'dan 35'e dizilir, tahta 10x10 ızgaradır. Köşeler: 0, 9, 18, 27.
