@@ -9,6 +9,7 @@ import { app, act, send, isHost } from './state.js';
 import { RULES_HTML } from './rules.js';
 import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
 import { coinFlights, arcPeak, COIN_GAP } from './coins.js';
+import { worthLines } from './chart.js';
 
 const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, HEDEF, fmt, cardId } = E;
 const N = BOARD.length;
@@ -639,8 +640,23 @@ function resultsDialog(v) {
       <div class="rb">${h ? html`${h.icon} ${h.name}: ${sc.hedefOk ? html`<b>tuttu +${sc.hedefBonus}</b>` : 'tutmadı'}` : ''}</div></div>
       <div class="rt money">${fmt(sc.total)}</div></div>`;
   });
-  return html`<h2>🗳️ Seçim Günü sonuçları</h2><div class="results">${rows}</div>
+  return html`<h2>🗳️ Seçim Günü sonuçları</h2><div class="results">${rows}</div>${worthChart(v)}
     ${isHost() ? html`<div class="row"><div class="grow"></div><button class="btn turq" data-act="newGame">Aynı masayla yeni oyun</button></div>` : ''}`;
+}
+
+// Tur tur net değer çizgisi (hedef bonusu ve ceza yok; kazananın çizgisi kalın).
+function worthChart(v) {
+  const W = 420;
+  const H = 150;
+  const c = worthLines(v.worth, W, H);
+  if (!c) return '';
+  const win = v.results.ranking[0];
+  const order = [...c.lines.keys()].sort((a, b) => (a === win) - (b === win));
+  const lines = order.map((p) => html`<polyline points="${c.lines[p]}" style="--c:${P(v, p).color}" class="${p === win ? 'win' : ''}"><title>${P(v, p).name}</title></polyline>`);
+  return html`<div class="worth"><div class="worth-h">📈 Tur tur net değer <span class="muted">${fmt(c.hi)} en yüksek</span></div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Tur tur net değer grafiği">
+      <line x1="0" x2="${W}" y1="${c.zero}" y2="${c.zero}" class="zero"></line>${lines}</svg>
+    <div class="worth-x"><span>Başlangıç</span><span>${c.rounds}. tur</span></div></div>`;
 }
 
 export function renderModal() {

@@ -167,6 +167,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
     finalRound: null,
     roundStart: null,
     summary: null,
+    worth: [],
     log: [],
     results: null,
   };
@@ -216,6 +217,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
 function startRound(s, ctx) {
   s.round++;
   s.roundStart = { net: s.players.map((_, p) => R.netWorth(s, p)), owners: s.props.map((ps) => (ps ? ps.owner : null)) };
+  if (s.round === 1) s.worth = [s.roundStart.net];
   s.mods = {};
   for (const ps of s.props) if (ps && ps.tedbir > 0) ps.tedbir--;
   const last = s.round === s.config.maxRounds ? ' SON TUR: Seçim Günü geliyor!' : '';
@@ -255,6 +257,7 @@ function summarizeRound(s, ctx) {
   const worst = deltas.indexOf(Math.min(...deltas));
   const flat = deltas[best] === deltas[worst];
   s.summary = { round: s.round, deltas, best: flat ? null : best, worst: flat ? null : worst, changes };
+  (s.worth ||= []).push(s.players.map((_, p) => R.netWorth(s, p)));
   const sign = (x) => `${x > 0 ? '+' : ''}${fmt(x)}`;
   const parts = [flat ? 'Herkes yerinde saydı' : `En çok kazanan ${nm(s, best)} (${sign(deltas[best])}), en çok kaybeden ${nm(s, worst)} (${sign(deltas[worst])})`];
   if (changes.length) parts.push(`El değiştiren: ${changes.map((c) => `${sqName(c.sq)} (${nm(s, c.from)} → ${c.to === null ? 'Banka' : nm(s, c.to)})`).join(', ')}`);

@@ -238,6 +238,7 @@ Başta herkese 2 hedef dağıtılır, 1'i seçilir. Oyun sonunda tutarsa bonus a
 
 Net Değer = nakit + mülklerin güncel fiyatı (ipotekli ise yarısı) + yasal kat x kat fiyatı + kaçak kat x kat fiyatının yarısı.
 Puan = Net Değer + tutan hedef bonusu - 300 x konkordato. Eşitlikte nakdi fazla olan kazanır.
+Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tur tur net değer çizgisi gösterilir (hedef bonusu ve ceza çizgide yoktur, yalnız puanda).
 
 ## 11. Çevrimiçi mimari
 

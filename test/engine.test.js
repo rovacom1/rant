@@ -364,6 +364,10 @@ test('oyun son turun sonunda biter ve sıralama üretir', () => {
   assert.equal(s.round, 2);
   assert.equal(s.results.ranking.length, 3);
   assert.ok(viewFor(s, 0).players[1].hedef, 'oyun sonunda hedefler açılır');
+  assert.equal(s.worth.length, 3, 'oyun başı + her tur sonu net değer');
+  assert.deepEqual(s.worth[0], [s.config.startCash, s.config.startCash, s.config.startCash]);
+  assert.deepEqual(s.worth[2], s.players.map((_, p) => netWorth(s, p)));
+  assert.deepEqual(viewFor(s, 1).worth, s.worth);
 });
 
 test('tur özeti: net değer farkı ve el değiştiren mülkler', () => {
