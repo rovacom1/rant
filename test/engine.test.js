@@ -481,3 +481,20 @@ test('masa ayarı: hedef kapalıysa oyun hedef seçmeden başlar', () => {
   for (const pl of s.players) assert.equal(pl.hedef, null);
   assert.equal(scoreOf(s, 0).hedefBonus, 0);
 });
+
+test('değer hedefi: hedefe ulaşılan tur tamamlanınca Seçim Günü gelir', () => {
+  let s = started(4, 42, { targetScore: 2500 });
+  assert.equal(s.config.maxRounds, 30, 'hedef tutmazsa en geç 30. turda biter');
+  s.players[2].cash = 4000;
+  let ev = null;
+  let guard = 0;
+  while (s.phase !== 'over' && guard++ < 400) {
+    const r = simpleStep(s);
+    ev = r.events.find((e) => e.type === 'target') || ev;
+    s = r.state;
+  }
+  assert.equal(s.phase, 'over');
+  assert.equal(s.round, 1, 'tur yarıda kesilmez, herkes oynar');
+  assert.equal(s.finalRound, 1);
+  assert.equal(ev.p, 2);
+});

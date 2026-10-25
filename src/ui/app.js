@@ -86,7 +86,10 @@ function lobbyHTML() {
       <p class="muted" style="margin:0">Linki arkadaşlarına gönder. Açınca adını yazıp "Katıl"a basmaları yeter. Kurulum ya da sunucu yok.</p>` : html`<p class="muted" style="margin:0">Tek bilgisayarda botlara karşı oynarsın. Arkadaşlarla oynamak için menüden "Oda Kur".</p>`}
     <div class="seats">${seats}</div>
     <div class="row" style="gap:18px;align-items:flex-start">
-      ${seg('cfgRounds', [[10, '10 tur'], [15, '15 tur'], [20, '20 tur']], L.config.maxRounds, 'Oyun uzunluğu')}
+      ${seg('cfgEnd', [['rounds', 'Tur sayısı'], ['score', 'Değer hedefi']], L.config.endMode || 'rounds', 'Oyun sonu')}
+      ${L.config.endMode === 'score'
+        ? seg('cfgTarget', E.TARGET_OPTIONS.map((t) => [t, E.fmt(t)]), L.config.targetScore, 'Hedef değer (ulaşılan tur Seçim Günü olur)')
+        : seg('cfgRounds', [[10, '10 tur'], [15, '15 tur'], [20, '20 tur']], L.config.maxRounds, 'Oyun uzunluğu')}
       ${seg('cfgTurn', [[60, '60 sn'], [120, '2 dk'], [180, '3 dk'], [0, 'Yok']], L.config.turnLimit, 'Sıra süresi (dolunca bot oynar)')}
     </div>
     ${rulesHTML(L.config.rules || E.DEFAULT_CONFIG.rules, host)}
@@ -414,6 +417,8 @@ const A = {
   removeSeat: (el) => send({ t: 'lobby', cmd: 'remove', id: el.dataset.id }),
   cfgRounds: (el) => send({ t: 'lobby', cmd: 'config', maxRounds: Number(el.dataset.v) }),
   cfgTurn: (el) => send({ t: 'lobby', cmd: 'config', turnLimit: Number(el.dataset.v) }),
+  cfgEnd: (el) => send({ t: 'lobby', cmd: 'config', endMode: el.dataset.v }),
+  cfgTarget: (el) => send({ t: 'lobby', cmd: 'config', targetScore: Number(el.dataset.v) }),
   cfgRule: (el) => {
     const cur = (app.lobby.config.rules || E.DEFAULT_CONFIG.rules)[el.dataset.k];
     send({ t: 'lobby', cmd: 'config', rules: { [el.dataset.k]: !cur } });

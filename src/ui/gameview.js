@@ -28,6 +28,7 @@ export function mountGame(root) {
     <header class="topbar">
       <div class="mini-logo">RANT</div>
       <div class="stat">Tur<b id="tRound"></b></div>
+      <div class="stat hidden" id="tTarget">Hedef<b></b></div>
       <div class="stat">Endeks<b id="tIndex"></b></div>
       <div class="stat">Maaş<b id="tSalary"></b></div>
       <div class="spacer"></div>
@@ -61,7 +62,7 @@ export function mountGame(root) {
   <div id="modal"></div><div class="toasts" id="toasts"></div><div id="stage"></div><div id="audioPop"></div>`;
   const g = (id) => document.getElementById(id);
   els = {
-    round: g('tRound'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
+    round: g('tRound'), target: g('tTarget'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
     board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'),
     players: g('players'), feed: g('feed'), handDock: g('handDock'), quest: g('quest'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
     modal: g('modal'), stage: g('stage'),
@@ -126,7 +127,10 @@ const MOD_LABEL = {
 };
 
 function updateTopbar(v) {
-  els.round.textContent = v.round ? `${v.round}/${v.config.maxRounds}` : '-';
+  const goal = v.config.targetScore;
+  els.round.textContent = v.round ? (goal ? `${v.round}` : `${v.round}/${v.config.maxRounds}`) : '-';
+  els.target.classList.toggle('hidden', !goal);
+  if (goal) els.target.lastElementChild.textContent = fmt(goal);
   els.index.textContent = v.index;
   els.salary.textContent = fmt(v.salary);
   els.code.textContent = app.mode === 'local' ? '🤖 Yerel oyun' : `🔗 Oda ${app.code}`;
@@ -140,21 +144,36 @@ function updateTopbar(v) {
 
 // ---------- orta alan ----------
 
+const ringHTML = (p, big, small) => html`<div class="ring" style="--p:${p}"><div><b>${big}</b><span>${small}</span></div></div>`;
+
+// Bitişe ne kaldı: tur sayısında kalan tur, değer hedefinde en zengin oyuncunun hedefe yakınlığı.
+function progressRing(v) {
+  const max = v.config.maxRounds;
+  const goal = v.config.targetScore;
+  if (v.finalRound || (v.round && v.round >= max)) return ringHTML(100, 'SON', 'TUR');
+  if (goal) {
+    const pct = Math.min(99, Math.round((Math.max(...v.players.map((_, p) => E.netWorth(v, p))) / goal) * 100));
+    return ringHTML(pct, `%${pct}`, 'HEDEFE');
+  }
+  return v.round ? ringHTML(Math.round((v.round / max) * 100), max - v.round, 'TUR KALDI') : ringHTML(0, max, 'TUR');
+}
+
 function gundemHTML(v) {
   const max = v.config.maxRounds;
-  const ring = (p, big, small) => html`<div class="ring" style="--p:${p}"><div><b>${big}</b><span>${small}</span></div></div>`;
+  const goal = v.config.targetScore ? `İlk ${fmt(v.config.targetScore)} değer turu bitirir` : '';
+  const ring = progressRing(v);
   if (!v.gundem) {
     const left = max - v.round;
-    const t = v.round ? html`<div class="nb-k">${v.round}. TUR</div><div class="nb-t">${left ? `Seçime ${left} tur var` : 'Son tur: Seçim Günü geliyor'}</div><div class="nb-x">Bu masada gündem kartları kapalı.</div>`
-      : html`<div class="nb-k">SEÇİM YOLU</div><div class="nb-t">Seçime ${max} tur var</div><div class="nb-x">Herkes gizli hedefini seçiyor.</div>`;
-    return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div>${t}</div>${ring(Math.round((v.round / max) * 100), v.round ? left || 'SON' : max, v.round && left ? 'TUR KALDI' : 'TUR')}</div>`;
+    const road = v.finalRound || !left ? 'Son tur: Seçim Günü geliyor' : goal || `Seçime ${left} tur var`;
+    const t = v.round ? html`<div class="nb-k">${v.round}. TUR</div><div class="nb-t">${road}</div><div class="nb-x">Bu masada gündem kartları kapalı.</div>`
+      : html`<div class="nb-k">SEÇİM YOLU</div><div class="nb-t">${goal || `Seçime ${max} tur var`}</div><div class="nb-x">Herkes gizli hedefini seçiyor.</div>`;
+    return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div>${t}</div>${ring}</div>`;
   }
   const g = GUNDEM[v.gundem.id];
-  const left = max - v.round;
   const mods = Object.keys(v.mods).map((m) => html`<span class="chip">${MOD_LABEL[m] || m}</span>`);
   return html`<div class="news-bar"><div class="nb-ic">${g.icon}</div>
     <div><div class="nb-k">GÜNDEM · ${v.round}. TUR</div><div class="nb-t">${g.name}</div><div class="nb-x">${g.text}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</div>${mods.length ? html`<div class="nb-mods">${mods}</div>` : ''}</div>
-    ${ring(Math.round((v.round / max) * 100), left || 'SON', left ? 'TUR KALDI' : 'TUR')}</div>`;
+    ${ring}</div>`;
 }
 
 const SPECIAL_INFO = {
@@ -445,7 +464,7 @@ function renderAudioPop() {
 }
 
 // Olaylar: sade, büyük yazı; zar, yürüme, maaş gibi gürültü gizlenir. Her tur bir başlıkla ayrılır.
-const FEED_ICON = { surpriz: '❓', collapse: '🏚️', card: '🃏', own: '🏠', auction: '🔨', build: '🏗️', demolish: '🚜', konkordato: '⚠️', tradeDone: '🤝', over: '🏆', summary: '📊' };
+const FEED_ICON = { target: '🏁', surpriz: '❓', collapse: '🏚️', card: '🃏', own: '🏠', auction: '🔨', build: '🏗️', demolish: '🚜', konkordato: '⚠️', tradeDone: '🤝', over: '🏆', summary: '📊' };
 const FEED_HIDE = new Set(['dice', 'move', 'bid', 'draw', 'turn', 'trade', 'auctionStart']);
 
 function feedItem(l) {
@@ -875,6 +894,10 @@ export async function present(prev, v, events, fast) {
         break;
       case 'collapse':
         play('crash');
+        break;
+      case 'target':
+        play('news');
+        toast(`🏁 ${ev.text}`, 'good');
         break;
       case 'konkordato':
         play('crash');

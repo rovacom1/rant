@@ -1,7 +1,7 @@
 // Oyun durum makinesi. applyAction(state, oyuncu, hamle) yeni state ve olay listesi döndürür.
 // Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste, hedef) içermez.
 
-import { BOARD, CARDS, GUNDEM, SURPRIZ, HEDEF, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION } from './data.js';
+import { BOARD, CARDS, GUNDEM, SURPRIZ, HEDEF, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP } from './data.js';
 import { randInt, rollDie, shuffle } from './rng.js';
 import * as R from './rules.js';
 
@@ -142,6 +142,7 @@ function autoLiquidate(s, ctx, p) {
 export function createGame({ players, config = {}, seed = 1 }) {
   need(players.length >= 2 && players.length <= 6, 'Oyun 2-6 kişiyle oynanır.');
   const cfg = { ...DEFAULT_CONFIG, ...config, rules: { ...DEFAULT_CONFIG.rules, ...config.rules } };
+  if (cfg.targetScore) cfg.maxRounds = TARGET_ROUND_CAP;
   const s = {
     v: RULES_VERSION,
     seq: 0,
@@ -163,6 +164,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
     turn: null,
     pending: null,
     lastAuction: null,
+    finalRound: null,
     roundStart: null,
     summary: null,
     log: [],
@@ -259,11 +261,23 @@ function summarizeRound(s, ctx) {
   emit(s, ctx, { type: 'summary', round: s.round, text: `${s.round}. tur özeti: ${parts.join('. ')}.` });
 }
 
+// Değer hedefi: biri hedefe ulaşınca içinde bulunulan tur tamamlanır, sonra Seçim Günü (herkes eşit sayıda oynar).
+function checkTarget(s, ctx) {
+  const t = s.config.targetScore;
+  if (!t || s.finalRound) return;
+  const worth = s.players.map((_, p) => R.netWorth(s, p));
+  const p = worth.indexOf(Math.max(...worth));
+  if (worth[p] < t) return;
+  s.finalRound = s.round;
+  emit(s, ctx, { type: 'target', p, text: `${nm(s, p)} ${fmt(t)} değer hedefini geçti! Bu tur bitince Seçim Günü.` });
+}
+
 function finishTurn(s, ctx) {
+  checkTarget(s, ctx);
   const next = (s.turn.p + 1) % s.players.length;
   if (next === 0) {
     summarizeRound(s, ctx);
-    if (s.round >= s.config.maxRounds) return endGame(s, ctx);
+    if (s.round >= s.config.maxRounds || s.finalRound) return endGame(s, ctx);
     startRound(s, ctx);
   }
   startTurn(s, ctx, next);

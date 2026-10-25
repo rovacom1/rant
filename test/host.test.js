@@ -106,3 +106,16 @@ test('masa ayarlarını yalnız ev sahibi değiştirir, oyun onlarla kurulur', (
   clearTimeout(host.timer);
   assert.equal(host.game.config.rules.ihale, false);
 });
+
+test('oyun sonu: değer hedefi seçilir, geçersiz tutar reddedilir', () => {
+  const { host, me } = room();
+  me.say({ t: 'lobby', cmd: 'config', endMode: 'score', targetScore: 1234 });
+  assert.equal(host.config.endMode, 'score');
+  assert.equal(host.config.targetScore, 3500);
+  me.say({ t: 'lobby', cmd: 'config', targetScore: 5000 });
+  me.say({ t: 'lobby', cmd: 'addBot' });
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  assert.equal(host.game.config.targetScore, 5000);
+  assert.equal(host.game.config.maxRounds, 30);
+});

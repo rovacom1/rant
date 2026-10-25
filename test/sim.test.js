@@ -30,3 +30,11 @@ test('masa ayarları kapalıyken de oyunlar tutarlı biter', () => {
   const { state } = playBotGame(9, 5, { rules: { ihale: false } });
   assert.equal(state.phase, 'over');
 });
+
+test('değer hedefiyle oyunlar tutarlı biter', () => {
+  for (let g = 0; g < 10; g++) {
+    const { state } = playBotGame(800 + g, 5, { targetScore: 3500 });
+    assert.equal(state.phase, 'over');
+    assert.ok(state.finalRound === state.round || state.round === 30);
+  }
+});

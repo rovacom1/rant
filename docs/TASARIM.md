@@ -26,9 +26,11 @@ RANT'a özgü olanlar:
 ## 2. Temel bilgiler
 
 - Oyuncu: 2-6 (denge 4-5 için ayarlı). Boş koltuklar botla doldurulabilir.
-- Süre: 15 tur; 5 kişiyle yaklaşık 35-45 dakika. Kısa (10) ve uzun (20) seçenekleri var.
+- Süre: ev sahibi lobide oyunun nasıl biteceğini seçer:
+  - **Tur sayısıyla**: 10, 15 (varsayılan) ya da 20 tur. 15 tur 5 kişiyle yaklaşık 35-45 dakika.
+  - **Değer hedefiyle**: 2.500, 3.500 ya da 5.000 ₺. Bir oyuncunun değeri (nakit + mülk + katlar, oyuncu panelinde görünen) hedefe ulaşınca o tur tamamlanır ve Seçim Günü gelir; herkes eşit sayıda oynamış olur. Gizli hedef bonusu ölçüme girmez (hedefler gizli kalsın diye), sıralamada sayılır. Bot simülasyonunda yaklaşık 9, 15 ve 22 tur sürer. Oyun en geç 30. turda biter.
 - Başlangıç: 1500 TL nakit, 3 Hamle kartı, 2 Hedef kartından 1'i seçilir.
-- Kazanan: Seçim Günü'nde (son turun sonunda) en yüksek **puan**a sahip oyuncu.
+- Kazanan: Seçim Günü'nde (son turun sonunda) en yüksek **puan**a sahip oyuncu. Değer hedefine ilk ulaşan değil, Seçim Günü'nde puanı en yüksek olan kazanır.
 
 ### Masa ayarları
 
