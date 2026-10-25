@@ -132,6 +132,18 @@ test('oyun sonu: değer hedefi seçilir, geçersiz tutar reddedilir', () => {
   assert.equal(host.game.config.maxRounds, 30);
 });
 
+test('oyun sonu: son kalan (iflas) modu motora geçer', () => {
+  const { host, me } = room();
+  me.say({ t: 'lobby', cmd: 'config', endMode: 'iflas' });
+  assert.equal(host.config.endMode, 'iflas');
+  me.say({ t: 'lobby', cmd: 'addBot' });
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  assert.equal(host.game.config.iflas, true);
+  assert.equal(host.game.config.targetScore, 0);
+  assert.equal(host.game.config.maxRounds, 40);
+});
+
 test('tempo: bekleme süresi olayların canlandırma süresinden hesaplanır', () => {
   assert.equal(paceOf([]), 0);
   assert.equal(paceOf([{ type: 'dice' }, { type: 'move', path: [1, 2, 3] }]), 1250 + 600);

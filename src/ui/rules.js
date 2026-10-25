@@ -31,6 +31,7 @@ export const RULES_HTML = `
 <p>1., 4., 7., 10. ve 13. turun başında bir haber kartı açılır: enflasyon, imar affı, turizm sezonu, deprem yönetmeliği... Para ve kat etkileri hemen bir kez uygulanır; "Bu dönem" diye başlayan kurallar gündem değişene kadar, 3 tur boyunca geçerlidir. Üstteki gündem çubuğu kaç tur kaldığını gösterir. <b>Endeks</b> yükseldikçe fiyat ve kiralar artar, nakit erir.</p>
 <h3>Borç ve Konkordato</h3>
 <p>Para eksiye düşebilir; sıranı bitirmeden kat satıp ipotek ederek borcunu kapatmalısın ("Borcu Kapat" bunu otomatik yapar). Satacak bir şeyin kalmazsa konkordato ilan edersin: borcun silinir, oyunda kalırsın, sonda 300 puan ceza.</p>
+<p><b>Son kalan (iflas) modu:</b> konkordato yoktur; borcunu kapatamayan iflas eder, mülkleri bankaya döner ve oyundan çıkar. Tek oyuncu kalınca o kazanır. Oyun uzamasın diye kiralar her tur artar (10. turda 4,6 kat); en geç 40. turda ayakta kalanlardan puanı en yüksek olan kazanır.</p>
 <h3>Masa ayarları</h3>
 <p>Ev sahibi lobide açık artırmayı, SÜRPRİZ karelerini ve gündem kartlarını açıp kapatabilir; oyunun hızını da seçer. Açık artırma kapalıysa alınmayan arsa sahipsiz kalır.</p>
 <h3>Tahtadaki işaretler</h3>

@@ -14,6 +14,7 @@ Kurulum yok, hesap yok, sunucu yok. Biri "Oda Kur" der, davet linkini arkadaşla
 - **Hamle ve Tepki kartları:** Kamulaştırma, İhtiyati Tedbir, Dava Aç, Taksi, Dayın Çıktı... İtiraz'a karşı İtiraz.
 - **Endeks:** Fiyat ve kiralar enflasyonla artar, nakit erir.
 - **Konkordato:** Kimse batıp oyundan düşmez. Oyun 15 turda Seçim Günü ile biter.
+- **Oyun sonu seçimi:** tur sayısı, değer hedefi ya da Monopoly gibi son kalan (batan elenir, son kalan kazanır).
 
 Tüm kurallar: [docs/TASARIM.md](docs/TASARIM.md)
 

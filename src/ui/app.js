@@ -86,10 +86,12 @@ function lobbyHTML() {
       <p class="muted" style="margin:0">Linki arkadaşlarına gönder. Açınca adını yazıp "Katıl"a basmaları yeter. Kurulum ya da sunucu yok.</p>` : html`<p class="muted" style="margin:0">Tek bilgisayarda botlara karşı oynarsın. Arkadaşlarla oynamak için menüden "Oda Kur".</p>`}
     <div class="seats">${seats}</div>
     <div class="row" style="gap:18px;align-items:flex-start">
-      ${seg('cfgEnd', [['rounds', 'Tur sayısı'], ['score', 'Değer hedefi']], L.config.endMode || 'rounds', 'Oyun sonu')}
+      ${seg('cfgEnd', [['rounds', 'Tur sayısı'], ['score', 'Değer hedefi'], ['iflas', 'Son kalan']], L.config.endMode || 'rounds', 'Oyun sonu')}
       ${L.config.endMode === 'score'
         ? seg('cfgTarget', E.TARGET_OPTIONS.map((t) => [t, E.fmt(t)]), L.config.targetScore, 'Hedef değer (ulaşılan tur Seçim Günü olur)')
-        : seg('cfgRounds', [[10, '10 tur'], [15, '15 tur'], [20, '20 tur']], L.config.maxRounds, 'Oyun uzunluğu')}
+        : L.config.endMode === 'iflas'
+          ? html`<div class="field">Son kalan kazanır<div class="end-note">Borcunu kapatamayan iflas edip elenir. Kiralar her tur artar; en geç ${E.IFLAS_ROUND_CAP}. turda biter.</div></div>`
+          : seg('cfgRounds', [[10, '10 tur'], [15, '15 tur'], [20, '20 tur']], L.config.maxRounds, 'Oyun uzunluğu')}
       ${seg('cfgTurn', [[60, '60 sn'], [120, '2 dk'], [180, '3 dk'], [0, 'Yok']], L.config.turnLimit, 'Sıra süresi (dolunca bot oynar)')}
       ${seg('cfgSpeed', [['slow', 'Yavaş'], ['normal', 'Normal'], ['fast', 'Hızlı']], L.config.speed || 'normal', 'Oyun hızı')}
     </div>

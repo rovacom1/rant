@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, applyAction, defaultAction, botAction, cardBlock, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
+import { createGame, applyAction, defaultAction, botAction, cardBlock, cardTargets, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
 import { makePlayers } from '../tools/simlib.js';
 import { started, act, actEv, give, strip, own } from './helpers.js';
 
@@ -578,4 +578,67 @@ test('bot seviyesi masa ayarından gelir', () => {
   const s = started(4, 21, { botLevel: 'zor' });
   assert.equal(s.config.botLevel, 'zor');
   assert.equal(started(4, 21).config.botLevel, 'normal');
+});
+
+test('iflas modu: borcunu kapatamayan elenir, mülkü bankaya döner, sırası atlanır', () => {
+  let s = calm(started(3, 31, { iflas: true }));
+  assert.equal(s.config.maxRounds, 40);
+  own(s, 0, 1);
+  s.props[1].kacak = 1;
+  give(s, 0, 'dava');
+  s.players[0].cash = -2000;
+  s.turn.step = 'free';
+  const ev = actEv(s, 0, { type: 'settleDebt' });
+  s = ev.state;
+  assert.ok(ev.events.some((e) => e.type === 'iflas' && e.p === 0));
+  assert.equal(s.players[0].out, 1);
+  assert.equal(s.players[0].cash, 0);
+  assert.deepEqual(s.players[0].hand, []);
+  assert.deepEqual(s.props[1], { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 }, 'mülk katsız ve ipoteksiz bankaya döner');
+  assert.equal(s.turn.p, 1, 'iflas edenin sırası biter');
+  assert.ok(!cardTargets(s, 1, 'dava').some((t) => t.player === 0), 'elenen kartlara hedef olamaz');
+  s.turn.step = 'free';
+  s = act(s, 1, { type: 'endTurn' });
+  assert.equal(s.turn.p, 2);
+  const round = s.round;
+  s.turn.step = 'free';
+  s = act(s, 2, { type: 'endTurn' });
+  assert.equal(s.round, round + 1, 'tur elenen atlanarak başa döner');
+  assert.equal(s.turn.p, 1);
+});
+
+test('iflas modu: tek oyuncu kalınca oyun biter, sıralama elenme sırasına göre', () => {
+  let s = calm(started(3, 32, { iflas: true }));
+  s.players[0].cash = -100;
+  s.turn.step = 'free';
+  s = act(s, 0, { type: 'endTurn' });
+  assert.equal(s.phase, 'play');
+  s.players[1].cash = -100;
+  s.turn.step = 'free';
+  const r = actEv(s, 1, { type: 'endTurn' });
+  s = r.state;
+  assert.equal(s.phase, 'over');
+  assert.deepEqual(s.results.ranking, [2, 1, 0], 'son kalan, sonra son elenen');
+  assert.ok(r.events.some((e) => e.type === 'over' && e.text.includes('ayakta kalan')));
+});
+
+test('iflas modu: kira her tur çarpanla artar, diğer modlarda artmaz', () => {
+  const s = calm(started(3, 33, { iflas: true }));
+  own(s, 1, 35); // Bebek: arsa kirası 50
+  const base = rentFor(s, 35);
+  s.round = 11;
+  assert.equal(rentFor(s, 35), base * 5, '10 tur sonra çarpan 1 + 10 x 0,4 = 5');
+  const t = calm(started(3, 33));
+  own(t, 1, 35);
+  t.round = 11;
+  assert.equal(rentFor(t, 35), base);
+});
+
+test('iflas modu kapalıyken borçlu konkordato ilan eder, oyunda kalır', () => {
+  let s = calm(started(3, 34));
+  s.players[0].cash = -100;
+  s.turn.step = 'free';
+  s = act(s, 0, { type: 'endTurn' });
+  assert.equal(s.players[0].out, 0);
+  assert.equal(s.players[0].konkordato, 1);
 });

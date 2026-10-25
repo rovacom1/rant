@@ -19,7 +19,7 @@ RANT'a özgü olanlar:
 | **Kaçak Kat** | Set olmadan, yarı fiyata kat; ama Zabıta ve İhbar ile yıkılabilir | Risk-ödül, İmar Affı kumarı |
 | **Açık artırma** | Almadığın arsa Monopoly'deki gibi açık artırmaya çıkar: sırayla artır ya da çekil | Herkes teklifi görür, pazarlık gerilimi |
 | **Enflasyon Endeksi** | Fiyatlar ve kiralar endeksle artar, nakit erir | Erken yatırımı ödüllendirir |
-| **Konkordato** | Batan oyuncu oyundan çıkmaz; borcu silinir, sonda ceza alır | Kimse 20. dakikada izleyici olmaz |
+| **Konkordato** | Batan oyuncu oyundan çıkmaz; borcu silinir, sonda ceza alır (iflas modunda batan elenir) | Kimse 20. dakikada izleyici olmaz |
 | **Seçim Günü** | Oyun sabit tur sayısında (varsayılan 15) biter | Monopoly'nin bitmeyen oyun sorunu yok |
 
 ## 2. Temel bilgiler
@@ -28,8 +28,9 @@ RANT'a özgü olanlar:
 - Süre: ev sahibi lobide oyunun nasıl biteceğini seçer:
   - **Tur sayısıyla**: 10, 15 (varsayılan) ya da 20 tur. 15 tur 5 kişiyle yaklaşık 35-45 dakika.
   - **Değer hedefiyle**: 2.500, 3.500 ya da 5.000 ₺. Bir oyuncunun değeri (nakit + mülk + katlar, oyuncu panelinde görünen) hedefe ulaşınca o tur tamamlanır ve Seçim Günü gelir; herkes eşit sayıda oynamış olur. Bot simülasyonunda yaklaşık 9, 15 ve 22 tur sürer. Oyun en geç 30. turda biter.
+  - **Son kalan (iflas)**: Monopoly'deki gibi. Borcunu kapatamayan oyuncu konkordato yerine **iflas eder** ve oyundan çıkar (bkz. §6). Tek oyuncu kalınca oyun hemen biter, o kazanır. Oyun sonsuza uzamasın diye bu modda **kiralar her tur artar**: kira çarpanı 1. turda 1, sonra her tur 0,4 artar (5. tur 2,6; 10. tur 4,6; 20. tur 8,6 kat); çarpan üst çubukta görünür. Oyun en geç 40. turda biter; o zaman ayakta kalanlar arasında puanı en yüksek olan kazanır. Bot simülasyonunda (300 oyun) 5 kişiyle oyunların %96'sı, 4 kişiyle %98'i son kalanla biter, ortanca 25-26 tur. Çarpan olmadan yalnız %4'ü bitiyordu: maaş ve banka parası her tur herkesi zenginleştirdiğinden kimse batmıyordu.
 - Başlangıç: 1500 TL nakit, 3 Hamle kartı.
-- Kazanan: Seçim Günü'nde (son turun sonunda) en yüksek **puan**a sahip oyuncu. Değer hedefine ilk ulaşan değil, Seçim Günü'nde puanı en yüksek olan kazanır.
+- Kazanan: Seçim Günü'nde (son turun sonunda) en yüksek **puan**a sahip oyuncu. Değer hedefine ilk ulaşan değil, Seçim Günü'nde puanı en yüksek olan kazanır. İflas modunda kazanan son kalan oyuncudur.
 
 ### Masa ayarları
 
@@ -153,6 +154,7 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 - Eksi nakitle teklif veremez, kat dikemez, para isteyen kart oynayamazsın.
 - Sıranı bitirmeden nakdini 0'ın üstüne çıkarmalısın (kat sat, ipotek et, pazarlık yap). "Borcu Kapat" düğmesi bunu otomatik yapar: önce kaçak katlar, sonra ucuz katlar, sonra ucuz mülkler ipotek.
 - Satacak bir şey kalmadıysa **Konkordato**: nakit 0 olur, oyundan çıkmazsın, sonda konkordato başına 300 puan cezası.
+- **İflas modunda** konkordato yoktur; satacak bir şey kalmayan oyuncu **iflas eder**: mülkleri katsız ve ipoteksiz olarak bankaya döner (sahipsiz, yeniden satın alınabilir), elindeki kartlar desteye gider, oyundan çıkar. Elenen oyuncunun sırası atlanır; aidat, çay parası, gündem ve sürpriz ödemelerine katılmaz; kartlara, pazarlığa ve artırmaya hedef olamaz. Sıralama: ayakta kalanlar puana göre, sonra elenenler son elenenden ilk elenene.
 
 ## 7. Hamle kartları (44)
 

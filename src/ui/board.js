@@ -123,6 +123,7 @@ export class Tokens {
       el.title = pl.name;
       el.style.setProperty('--pc', pl.color);
       el.classList.toggle('active', i === active);
+      el.classList.toggle('out', !!pl.out); // iflas eden oyuncunun taşı tahtadan kalkar
       this.pos.set(pl.id, this.pos.get(pl.id) ?? pl.pos);
     });
     this.players = players;
@@ -137,6 +138,7 @@ export class Tokens {
     if (!this.players) return;
     const groups = new Map();
     for (const pl of this.players) {
+      if (pl.out) continue;
       const sq = this.pos.get(pl.id) ?? pl.pos;
       if (!groups.has(sq)) groups.set(sq, []);
       groups.get(sq).push(pl.id);

@@ -33,6 +33,7 @@ export function mountGame(root) {
       <div class="mini-logo">RANT</div>
       <div class="stat" data-tip="Kaçıncı turdayız (tur sayısıyla bitişte: toplam tur)">Tur<b id="tRound"></b></div>
       <div class="stat hidden" id="tTarget" data-tip="Biri bu değere ulaşınca o tur biter, Seçim Günü gelir">Hedef<b></b></div>
+      <div class="stat hidden" id="tKira" data-tip="Son kalan modunda kiralar her tur artar; bütün kiralar bu katsayıyla çarpılır">Kira<b></b></div>
       <div class="stat" data-tip="Fiyat ve kiraların çarpanı: 115 = her şey %15 pahalı. Enflasyon gündemiyle artar">Endeks<b id="tIndex"></b></div>
       <div class="stat" data-tip="Başlangıç Noktası'ndan geçince ya da gelince alınan para">Maaş<b id="tSalary"></b></div>
       <div class="spacer"></div>
@@ -69,7 +70,7 @@ export function mountGame(root) {
   <div id="modal"></div><div class="toasts" id="toasts"></div><div id="stage"></div><div id="audioPop"></div>`;
   const g = (id) => document.getElementById(id);
   els = {
-    round: g('tRound'), target: g('tTarget'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
+    round: g('tRound'), target: g('tTarget'), kira: g('tKira'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
     board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'),
     players: g('players'), feed: g('feed'), handPanel: g('handPanel'), handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
     modal: g('modal'), stage: g('stage'),
@@ -145,6 +146,8 @@ function updateTopbar(v) {
   els.round.textContent = v.round ? (goal ? `${v.round}` : `${v.round}/${v.config.maxRounds}`) : '-';
   els.target.classList.toggle('hidden', !goal);
   if (goal) els.target.lastElementChild.textContent = fmt(goal);
+  els.kira.classList.toggle('hidden', !v.config.iflas);
+  if (v.config.iflas) els.kira.lastElementChild.textContent = `×${E.iflasMult(v).toLocaleString('tr-TR', { maximumFractionDigits: 1 })}`;
   els.index.textContent = v.index;
   els.salary.textContent = fmt(v.salary);
   els.code.textContent = app.mode === 'local' ? '🤖 Yerel oyun' : `🔗 Oda ${app.code}`;
@@ -165,6 +168,11 @@ function progressRing(v) {
   const max = v.config.maxRounds;
   const goal = v.config.targetScore;
   if (v.finalRound || (v.round && v.round >= max)) return ringHTML(100, 'SON', 'TUR', 'Bu tur bitince Seçim Günü');
+  if (v.config.iflas) {
+    const alive = E.activePlayers(v).length;
+    const n = v.players.length;
+    return ringHTML(Math.round(((n - alive) / (n - 1)) * 100), `${alive}/${n}`, 'AYAKTA', `Son kalan kazanır. ${n - alive} oyuncu iflas etti; en geç ${max}. turda biter.`);
+  }
   if (goal) {
     const worth = v.players.map((_, p) => E.netWorth(v, p));
     const lead = worth.indexOf(Math.max(...worth));
@@ -180,7 +188,7 @@ function gundemHTML(v) {
   const ring = progressRing(v);
   if (!v.gundem) {
     const left = max - v.round;
-    const road = v.finalRound || !left ? 'Son tur: Seçim Günü geliyor' : goal || `Seçime ${left} tur var`;
+    const road = v.finalRound || !left ? 'Son tur: Seçim Günü geliyor' : v.config.iflas ? 'Son kalan kazanır' : goal || `Seçime ${left} tur var`;
     return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div><div class="nb-k">${v.round}. TUR</div><div class="nb-t">${road}</div><div class="nb-x">Bu masada gündem kartları kapalı.</div></div>${ring}</div>`;
   }
   const g = GUNDEM[v.gundem.id];
@@ -286,7 +294,8 @@ function promptHTML(v) {
   const pd = v.pending;
   if (v.phase === 'over') {
     const w = P(v, v.results.ranking[0]);
-    return html`<div class="who">🏆 ${av(w)} ${w.name} kazandı!</div><p>Seçim Günü geldi, sandıklar açıldı.</p>
+    const why = E.activePlayers(v).length === 1 ? 'Rakiplerin hepsi iflas etti.' : 'Seçim Günü geldi, sandıklar açıldı.';
+    return html`<div class="who">🏆 ${av(w)} ${w.name} kazandı!</div><p>${why}</p>
       <div class="row center"><button class="btn primary big" data-act="results">Sonuçları Gör</button>${isHost() ? html`<button class="btn turq" data-act="newGame">Yeni Oyun</button>` : ''}</div>`;
   }
   if (app.ui.pick) {
@@ -318,7 +327,7 @@ function promptHTML(v) {
   }
   // serbest evre
   if (pl.cash < 0) {
-    return html`<h3>Borçtasın: ${fmt(pl.cash)}</h3><p>Sıranı bitirmeden borcunu kapat.</p>
+    return html`<h3>Borçtasın: ${fmt(pl.cash)}</h3><p>Sıranı bitirmeden borcunu kapat.${v.config.iflas ? ' Kapatamazsan iflas edip oyundan çıkarsın.' : ''}</p>
       <div class="row center"><button class="btn primary big" data-act="settleDebt" data-primary>Borcu Kapat (otomatik)</button><button class="btn ghost" data-act="manage">Mülklerim</button></div>`;
   }
   const hints = [];
@@ -439,6 +448,12 @@ function playersHTML(v) {
   return v.players
     .map((pl, i) => {
       const turn = v.phase === 'play' && v.turn && v.turn.p === i;
+      if (pl.out) {
+        return html`<div class="seat2 out" style="--c:${pl.color}" data-act="player" data-p="${i}">
+          <div class="s-av">${pl.avatar}</div>
+          <div><div class="s-name">${pl.name} ${i === v.you ? html`<span class="s-tag me">SEN</span>` : ''}<span class="s-tag out">İFLAS</span></div>
+            <div class="s-meta">${pl.out}. elenen oyuncu</div></div></div>`;
+      }
       const flags = [
         pl.bot ? html`<span data-tip="Bot oynuyor">🤖</span>` : conn[pl.id] === false ? html`<span data-tip="Bağlantısı koptu, süre dolunca bot oynar">📴</span>` : '',
         pl.konkordato ? html`<span data-tip="Konkordato: oyun sonunda ${pl.konkordato * v.config.konkordatoPenalty} puan ceza">⚠️${pl.konkordato}</span>` : '',
@@ -482,7 +497,7 @@ function renderAudioPop() {
 }
 
 // Olaylar: sade, büyük yazı; zar, yürüme, maaş gibi gürültü gizlenir. Her tur bir başlıkla ayrılır.
-const FEED_ICON = { target: '🏁', surpriz: '❓', collapse: '🏚️', card: '🃏', own: '🏠', auction: '🔨', build: '🏗️', demolish: '🚜', konkordato: '⚠️', tradeDone: '🤝', over: '🏆', summary: '📊' };
+const FEED_ICON = { iflas: '💥', target: '🏁', surpriz: '❓', collapse: '🏚️', card: '🃏', own: '🏠', auction: '🔨', build: '🏗️', demolish: '🚜', konkordato: '⚠️', tradeDone: '🤝', over: '🏆', summary: '📊' };
 const FEED_HIDE = new Set(['dice', 'move', 'bid', 'draw', 'turn', 'trade', 'auctionStart']);
 
 function feedItem(l) {
@@ -660,11 +675,12 @@ function resultsDialog(v) {
   const rows = r.ranking.map((p, k) => {
     const sc = r.scores[p];
     const pl = P(v, p);
-    return html`<div class="res ${k === 0 ? 'win' : ''}"><div class="rank">${['🥇', '🥈', '🥉'][k] || k + 1}</div>${av(pl)}
-      <div><b>${pl.name}</b><div class="rb">Nakit ${fmt(sc.nakit)} · Mülk ${fmt(sc.mulk)} · Kat ${fmt(sc.katlar)}${sc.ceza ? ` · Ceza -${fmt(sc.ceza)}` : ''}</div></div>
-      <div class="rt money">${fmt(sc.total)}</div></div>`;
+    const detail = pl.out ? `İflas etti (${pl.out}. elenen)` : `Nakit ${fmt(sc.nakit)} · Mülk ${fmt(sc.mulk)} · Kat ${fmt(sc.katlar)}${sc.ceza ? ` · Ceza -${fmt(sc.ceza)}` : ''}`;
+    return html`<div class="res ${k === 0 ? 'win' : ''} ${pl.out ? 'out' : ''}"><div class="rank">${['🥇', '🥈', '🥉'][k] || k + 1}</div>${av(pl)}
+      <div><b>${pl.name}</b><div class="rb">${detail}</div></div>
+      <div class="rt money">${pl.out ? '💥' : fmt(sc.total)}</div></div>`;
   });
-  return html`<h2>🗳️ Seçim Günü sonuçları</h2><div class="results">${rows}</div>${worthChart(v)}
+  return html`<h2>${v.config.iflas ? '🏁 Oyun sonu' : '🗳️ Seçim Günü sonuçları'}</h2><div class="results">${rows}</div>${worthChart(v)}
     ${isHost() ? html`<div class="row"><div class="grow"></div><button class="btn turq" data-act="newGame">Aynı masayla yeni oyun</button></div>` : ''}`;
 }
 
@@ -1067,6 +1083,10 @@ export async function present(prev, v, events, fast) {
       case 'konkordato':
         play('crash');
         toast(`⚠️ ${P(v, ev.p).name} konkordato ilan etti!`, 'error');
+        break;
+      case 'iflas':
+        play('crash');
+        toast(`💥 ${P(v, ev.p).name} iflas etti, oyundan çıktı!`, 'error');
         break;
       case 'auction':
         if (ev.winner !== null) play('sold');

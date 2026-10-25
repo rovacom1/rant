@@ -44,6 +44,7 @@ export function paceOf(events) {
       case 'demolish':
       case 'collapse':
       case 'konkordato':
+      case 'iflas':
       case 'target':
         read = Math.max(read, 1200);
         break;
@@ -237,7 +238,7 @@ export class Host {
       case 'config': {
         if (this.game) return;
         if (E.ROUND_OPTIONS.includes(m.maxRounds)) this.config.maxRounds = m.maxRounds;
-        if (['rounds', 'score'].includes(m.endMode)) this.config.endMode = m.endMode;
+        if (['rounds', 'score', 'iflas'].includes(m.endMode)) this.config.endMode = m.endMode;
         if (E.TARGET_OPTIONS.includes(m.targetScore)) this.config.targetScore = m.targetScore;
         if ([0, 60, 90, 120, 180].includes(m.turnLimit)) this.config.turnLimit = m.turnLimit;
         if (Object.hasOwn(SPEEDS, m.speed)) this.config.speed = m.speed;
@@ -252,7 +253,7 @@ export class Host {
         if (this.seats.length < 2) throw new E.GameError('En az 2 oyuncu gerekir (bot ekleyebilirsin).');
         this.game = E.createGame({
           players: this.seats.map((s) => ({ id: s.id, name: s.name, avatar: s.avatar, color: s.color, bot: s.bot })),
-          config: { maxRounds: this.config.maxRounds, targetScore: this.config.endMode === 'score' ? this.config.targetScore : 0, rules: { ...this.config.rules }, botLevel: this.config.botLevel || 'normal' },
+          config: { maxRounds: this.config.maxRounds, targetScore: this.config.endMode === 'score' ? this.config.targetScore : 0, iflas: this.config.endMode === 'iflas', rules: { ...this.config.rules }, botLevel: this.config.botLevel || 'normal' },
           seed: E.randomSeed(),
         });
         this.waitSince = {};

@@ -72,7 +72,7 @@ function squareScore(s, p, sq, path) {
       score += OWNABLE.some((q) => s.props[q].owner === null && R.price(s, q) <= pl.cash) ? 60 : 30;
       break;
     case 'cay':
-      score += R.money(s, AMOUNTS.cay) * (s.players.length - 1);
+      score += R.money(s, AMOUNTS.cay) * (R.activePlayers(s).length - 1);
       break;
     case 'zabita':
       score += s.players.some((o, i) => i !== p && R.floorsOf(s, i).kacak > 0) ? 40 : 0;
@@ -136,7 +136,7 @@ function cardPlay(s, p) {
         consider(uid, {}, R.money(s, AMOUNTS.piyango));
         break;
       case 'aidat':
-        consider(uid, {}, R.money(s, AMOUNTS.aidat) * (s.players.length - 1));
+        consider(uid, {}, R.money(s, AMOUNTS.aidat) * (R.activePlayers(s).length - 1));
         break;
       case 'kiraZammi': {
         const mine = R.propsOf(s, p);

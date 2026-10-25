@@ -11,6 +11,8 @@ export const DEFAULT_CONFIG = {
   drawCap: 5, // sıra başı ve çift zar kartı yalnız elde bundan az kart varken gelir (kart birikmesin)
   konkordatoPenalty: 300,
   targetScore: 0, // 0: tur sayısıyla biter; >0: biri bu değere ulaşınca o tur sonunda biter
+  iflas: false, // true: borcunu kapatamayan konkordato yerine iflas edip elenir, son kalan kazanır
+  iflasKira: 0.4, // iflas modunda kira çarpanı her tur bu kadar artar (rules.js iflasMult)
   // Masa ayarları: ev sahibi lobide açıp kapatır (docs/TASARIM.md 2. bölüm).
   rules: { ihale: true, surpriz: true, gundem: true },
   botLevel: 'normal', // masadaki bütün botların seviyesi (BOT_LEVELS)
@@ -28,6 +30,8 @@ export const ROUND_OPTIONS = [10, 15, 20];
 // Değer hedefi seçenekleri (bot simülasyonunda yaklaşık 9, 15, 22 tur) ve hedef hiç tutmazsa en geç biteceği tur.
 export const TARGET_OPTIONS = [2500, 3500, 5000];
 export const TARGET_ROUND_CAP = 30;
+// İflas modunda tek oyuncu kalmazsa oyun en geç bu turda biter.
+export const IFLAS_ROUND_CAP = 40;
 
 // gen: şehrin ilgi hali ("Konya'nın"), metinlerde kullanılır. tint: karenin buzlu camındaki ikinci renk.
 export const GROUPS = {

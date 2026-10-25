@@ -40,6 +40,10 @@ export const inFullSet = (s, sq) => {
 };
 
 export const propsOf = (s, p) => OWNABLE.filter((q) => s.props[q].owner === p);
+// İflas modunda kira çarpanı her tur iflasKira kadar artar (1. tur 1, 10. tur 4,6 kat), oyun sonsuza uzamasın diye.
+export const iflasMult = (s) => (s.config.iflas ? 1 + Math.max(0, s.round - 1) * s.config.iflasKira : 1);
+// Oyunda kalan oyuncular (iflas modunda elenenler çıkar).
+export const activePlayers = (s) => s.players.map((_, i) => i).filter((i) => !s.players[i].out);
 
 // Oyuncunun bu türden (air | rail) ipoteksiz ulaşım sayısı.
 export function transportCount(s, p, mode) {
@@ -66,6 +70,7 @@ export function rentFor(s, sq) {
   }
   if (s.mods.kiraTavani) mult *= 0.5;
   if (s.mods.kiraArtisi) mult *= 1.5;
+  mult *= iflasMult(s);
   // Para 5'e yuvarlanır; Monopoly'nin 2-4 ₺'lik kiraları sıfıra düşmesin diye kira en az 5.
   return Math.max(5, round5(((base * s.index) / 100) * mult));
 }

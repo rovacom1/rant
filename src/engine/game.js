@@ -1,7 +1,7 @@
 // Oyun durum makinesi. applyAction(state, oyuncu, hamle) yeni state ve olay listesi döndürür.
 // Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste) içermez.
 
-import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP } from './data.js';
+import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP, IFLAS_ROUND_CAP } from './data.js';
 import { randInt, rollDie, shuffle } from './rng.js';
 import * as R from './rules.js';
 
@@ -36,7 +36,7 @@ function emit(s, ctx, ev) {
 const say = (s, ctx, text) => emit(s, ctx, { type: 'log', text });
 const nm = (s, p) => s.players[p].name;
 const sqName = (sq) => BOARD[sq].name;
-const others = (s, p) => s.players.map((_, i) => i).filter((i) => i !== p);
+const others = (s, p) => R.activePlayers(s).filter((i) => i !== p);
 
 export const hasCard = (s, p, id) => s.players[p].hand.some((u) => cardId(u) === id);
 const hasUid = (s, p, uid) => typeof uid === 'string' && s.players[p].hand.includes(uid);
@@ -95,6 +95,22 @@ function demolishKacak(s, ctx, victim, finePer, why) {
   if (finePer) transfer(s, ctx, victim, null, finePer * n, `${why} cezası`);
 }
 
+// Borcunu kapatamayan oyuncu: iflas modunda elenir, diğer modlarda konkordato ilan eder.
+function goBroke(s, ctx, p) {
+  return s.config.iflas ? iflas(s, ctx, p) : konkordato(s, ctx, p);
+}
+
+// İflas: mülkler katsız ve ipoteksiz bankaya döner, kartlar desteye gider, oyuncu oyundan çıkar.
+function iflas(s, ctx, p) {
+  const pl = s.players[p];
+  for (const q of R.propsOf(s, p)) Object.assign(s.props[q], { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 });
+  s.discard.push(...pl.hand);
+  pl.hand = [];
+  pl.cash = 0;
+  pl.out = s.players.filter((o) => o.out).length + 1; // kaçıncı elenen
+  emit(s, ctx, { type: 'iflas', p, text: `${nm(s, p)} iflas etti ve oyundan çekildi! Mülkleri bankaya döndü.` });
+}
+
 function konkordato(s, ctx, p) {
   s.players[p].cash = 0;
   s.players[p].konkordato++;
@@ -142,6 +158,7 @@ function autoLiquidate(s, ctx, p) {
 export function createGame({ players, config = {}, seed = 1 }) {
   need(players.length >= 2 && players.length <= 6, 'Oyun 2-6 kişiyle oynanır.');
   const cfg = { ...DEFAULT_CONFIG, ...config, rules: { ...DEFAULT_CONFIG.rules, ...config.rules } };
+  if (cfg.iflas) Object.assign(cfg, { targetScore: 0, maxRounds: IFLAS_ROUND_CAP });
   if (cfg.targetScore) cfg.maxRounds = TARGET_ROUND_CAP;
   const s = {
     v: RULES_VERSION,
@@ -184,6 +201,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
       pos: 0,
       hand: [],
       konkordato: 0,
+      out: 0, // iflas modunda kaçıncı elendiği; 0: oyunda
       kiraZammi: false,
     };
   });
@@ -268,8 +286,13 @@ function checkTarget(s, ctx) {
 
 function finishTurn(s, ctx) {
   checkTarget(s, ctx);
-  const next = (s.turn.p + 1) % s.players.length;
-  if (next === 0) {
+  const alive = R.activePlayers(s);
+  if (alive.length < 2) {
+    summarizeRound(s, ctx); // yarım kalan turun net değerleri de grafiğe girsin
+    return endGame(s, ctx);
+  }
+  const next = alive.find((i) => i > s.turn.p) ?? alive[0];
+  if (next <= s.turn.p) {
     summarizeRound(s, ctx);
     if (s.round >= s.config.maxRounds || s.finalRound) return endGame(s, ctx);
     startRound(s, ctx);
@@ -281,9 +304,13 @@ function endGame(s, ctx) {
   s.phase = 'over';
   s.pending = null;
   const scores = s.players.map((_, p) => ({ p, ...R.scoreOf(s, p) }));
-  const ranking = [...scores].sort((a, b) => b.total - a.total || b.nakit - a.nakit).map((x) => x.p);
+  // Ayakta kalanlar puana göre; elenenler son elenenden ilk elenene.
+  const out = (x) => s.players[x.p].out || Infinity;
+  const ranking = [...scores].sort((a, b) => out(b) - out(a) || b.total - a.total || b.nakit - a.nakit).map((x) => x.p);
   s.results = { scores, ranking };
-  emit(s, ctx, { type: 'over', text: `SEÇİM GÜNÜ! Kazanan: ${nm(s, ranking[0])} (${fmt(scores[ranking[0]].total)}).` });
+  const w = ranking[0];
+  const text = R.activePlayers(s).length === 1 ? `Herkes iflas etti, ayakta kalan ${nm(s, w)} kazandı!` : `SEÇİM GÜNÜ! Kazanan: ${nm(s, w)} (${fmt(scores[w].total)}).`;
+  emit(s, ctx, { type: 'over', text });
 }
 
 export function moveOptions(s) {
@@ -444,7 +471,7 @@ function applySurpriz(s, ctx, p, id) {
       for (const o of others(s, p)) transfer(s, ctx, p, o, amt('surHesap'), 'Kebap hesabı');
       return;
     case 'robin': {
-      const all = s.players.map((_, i) => i);
+      const all = R.activePlayers(s);
       const rich = all.reduce((a, b) => (s.players[b].cash > s.players[a].cash ? b : a));
       const poor = all.reduce((a, b) => (s.players[b].cash < s.players[a].cash ? b : a));
       if (s.players[rich].cash === s.players[poor].cash) return say(s, ctx, 'Herkesin nakdi eşit, Robin Hood eli boş döndü.');
@@ -520,7 +547,7 @@ function applySurpriz(s, ctx, p, id) {
 // ---------- Gündem ----------
 
 function applyGundem(s, ctx, id) {
-  const all = s.players.map((_, i) => i);
+  const all = R.activePlayers(s);
   const g = GUNDEM[id];
   if (g.mod) {
     s.mods[g.mod] = true;
@@ -614,7 +641,7 @@ function applyGundem(s, ctx, id) {
         const hand = s.players[p].hand;
         return hand.length ? hand.splice(randInt(s, hand.length), 1)[0] : null;
       });
-      gifts.forEach((uid, p) => uid && s.players[(p + 1) % all.length].hand.push(uid));
+      gifts.forEach((uid, i) => uid && s.players[all[(i + 1) % all.length]].hand.push(uid));
       break;
     }
     default:
@@ -632,7 +659,7 @@ const victimOf = (s, id, t) => {
 
 const isOwnable = (sq) => Number.isInteger(sq) && sq >= 0 && sq < N && s_ownable[sq];
 const s_ownable = BOARD.map((q) => q.kind === 'prop' || q.kind === 'transport');
-const isOpp = (s, p, o) => Number.isInteger(o) && o >= 0 && o < s.players.length && o !== p;
+const isOpp = (s, p, o) => Number.isInteger(o) && o >= 0 && o < s.players.length && o !== p && !s.players[o].out;
 
 // Kartın verilen hedefle oynanamama sebebi; oynanabiliyorsa null.
 export function cardBlock(s, p, id, t = {}) {
@@ -951,13 +978,16 @@ const TURN = {
     needManage(s);
     need(s.players[p].cash < 0, 'Borcun yok.');
     autoLiquidate(s, ctx, p);
-    if (s.players[p].cash < 0) konkordato(s, ctx, p);
+    if (s.players[p].cash >= 0) return;
+    goBroke(s, ctx, p);
+    if (s.players[p].out) finishTurn(s, ctx); // iflas eden oyuncunun sırası biter
   },
   endTurn(s, p, a, ctx) {
     need(s.turn.step === 'free', 'Önce zar atıp ilerlemelisin.');
     if (s.players[p].cash < 0) {
       need(!R.hasLiquidAssets(s, p), 'Borcun var: önce borcunu kapat (kat sat, ipotek et ya da "Borcu Kapat").');
-      konkordato(s, ctx, p);
+      goBroke(s, ctx, p);
+      if (s.players[p].out) return finishTurn(s, ctx);
     }
     const extra = s.players[p].hand.length - s.config.handLimit;
     if (extra > 0) {
