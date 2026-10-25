@@ -183,7 +183,7 @@ function cardPlay(s, p) {
   return best && { type: 'playCard', uid: best.uid, target: best.target };
 }
 
-function buildPlan(s, p) {
+function buildPlan(s, p, level) {
   const pl = s.players[p];
   const res = reserve(s, p);
   const mine = R.propsOf(s, p).filter((q) => BOARD[q].kind === 'prop');
@@ -191,9 +191,9 @@ function buildPlan(s, p) {
   const legal = mine
     .filter((q) => !R.buildBlock(s, p, q, false) && pl.cash - R.katCost(s, q) >= res)
     .sort((a, b) => R.level(s.props[a]) - R.level(s.props[b]) || GROUPS[BOARD[b].group].kat - GROUPS[BOARD[a].group].kat);
-  if (legal.length) return { type: 'build', sq: legal[0] };
+  if (legal.length && !(level === 'kolay' && noise(s, p, 9) < 0.5)) return { type: 'build', sq: legal[0] };
   // Kaçak kat: biraz risk; hedefi kaçaksa daha cesur.
-  const kacakCap = pl.hedef === 'kacakci' ? 3 : 2;
+  const kacakCap = level === 'kolay' ? 0 : pl.hedef === 'kacakci' ? 3 : 2;
   if (R.floorsOf(s, p).kacak < kacakCap && !s.mods.durgunluk) {
     const kacak = mine
       .filter((q) => !R.buildBlock(s, p, q, true) && pl.cash - R.kacakCost(s, q) >= res * 1.6)
@@ -205,9 +205,9 @@ function buildPlan(s, p) {
   return null;
 }
 
-// Rakibin elindeki tek eksik parçayı nakitle almayı dene (turda bir kez).
-function tradePlan(s, p) {
-  if (s.turn.trades) return null;
+// Rakibin elindeki tek eksik parçayı nakitle almayı dene (turda bir kez). Kolay bot pazarlık önermez.
+function tradePlan(s, p, level) {
+  if (s.turn.trades || level === 'kolay') return null;
   const pl = s.players[p];
   for (const g of Object.keys(GROUPS)) {
     const qs = GROUP_SQUARES[g];
@@ -216,12 +216,33 @@ function tradePlan(s, p) {
     const q = missing[0];
     const owner = s.props[q].owner;
     if (owner === null || R.level(s.props[q]) > 0) continue;
+    if (level === 'zor') {
+      const t = sharpOffer(s, p, owner, q);
+      if (t && !tradeBlock(s, p, t)) return { type: 'proposeTrade', ...t };
+      continue;
+    }
     const offer = R.round5(R.price(s, q) * 2.3);
     if (pl.cash - offer < reserve(s, p)) continue;
     const t = { to: owner, give: { cash: offer, props: [] }, take: { cash: 0, props: [q] } };
     if (!tradeBlock(s, p, t)) return { type: 'proposeTrade', ...t };
   }
   return null;
+}
+
+// Zor bot: karşı tarafın (bot ölçüsüyle) kabul edeceği en ucuz teklif. Önce yalnız para;
+// yetmezse ya da daha ucuzsa başka şehirden katsız bir mülkünü de koyar.
+function sharpOffer(s, p, owner, q) {
+  const spare = s.players[p].cash - reserve(s, p);
+  const swaps = [null, ...R.propsOf(s, p).filter((m) => BOARD[m].group !== BOARD[q].group && R.level(s.props[m]) === 0)];
+  let best = null;
+  for (const m of swaps) {
+    const t = { to: owner, give: { cash: 0, props: m === null ? [] : [m] }, take: { cash: 0, props: [q] } };
+    const short = R.money(s, 25) - tradeValue(s, owner, { from: p, ...t });
+    t.give.cash = Math.max(0, Math.ceil(short / 5) * 5);
+    const net = tradeValue(s, p, { from: p, ...t });
+    if (t.give.cash <= spare && net > R.money(s, 20) && (!best || net > best.net)) best = { t, net };
+  }
+  return best && best.t;
 }
 
 function tradeValue(s, p, pd) {
@@ -269,7 +290,8 @@ function reactValue(s, p, pd) {
   return harm;
 }
 
-export function botAction(s, p) {
+// level: 'kolay' | 'normal' | 'zor' (docs/TASARIM.md 2. bölüm); verilmezse masa ayarı.
+export function botAction(s, p, level = s.config.botLevel || 'normal') {
   if (!waitingFor(s).includes(p)) return null;
   const pl = s.players[p];
   const pd = s.pending;
@@ -286,18 +308,20 @@ export function botAction(s, p) {
         const v = propValue(s, p, pd.sq);
         const [pazarlik] = myCards(s, p, 'pazarlik');
         if (pazarlik && !s.turn.hamle && pl.cash >= price / 2) return { type: 'playCard', uid: pazarlik };
-        if (pl.cash >= price && (pl.cash - price >= res || v >= price * 2)) return { type: 'buy' };
+        if (pl.cash >= price && (pl.cash - price >= res || (v >= price * 2 && level !== 'kolay'))) return { type: 'buy' };
         // İhale yoksa arsa bir daha kolay gelmez: yedeğin yarısı kalıyorsa al.
         if (!s.config.rules.ihale && pl.cash >= price && pl.cash - price >= res * 0.5) return { type: 'buy' };
         return { type: 'decline' };
       }
       case 'auction': {
         // Değerine ve yedeğine göre bir tavan; tavanı aşmadan kalan payın üçte biri kadar artırır, aşılınca çekilir.
-        const v = propValue(s, p, pd.sq) * (0.75 + noise(s, p, 1) * 0.3);
+        // Zor bot tavanını şaşmaz ve en az artışla gider; kolay bot erken çekilir.
+        const sharp = level === 'zor';
+        const v = propValue(s, p, pd.sq) * (sharp ? 0.9 : (level === 'kolay' ? 0.55 : 0.75) + noise(s, p, 1) * 0.3);
         const cap = Math.min(v, pl.cash - res * 0.5, pl.cash);
         const min = pd.high + auctionStep(s);
         if (cap < min || v < R.price(s, pd.sq) * 0.25) return { type: 'pass' };
-        const bid = Math.min(Math.floor(cap / 5) * 5, Math.max(min, R.round5(pd.high + (cap - pd.high) / 3)));
+        const bid = sharp ? min : Math.min(Math.floor(cap / 5) * 5, Math.max(min, R.round5(pd.high + (cap - pd.high) / 3)));
         return bid >= min ? { type: 'raise', amount: bid } : { type: 'pass' };
       }
       case 'react': {
@@ -350,13 +374,14 @@ export function botAction(s, p) {
     return { type: 'move', steps: a + b };
   }
   if (pl.cash < 0) return R.hasLiquidAssets(s, p) ? { type: 'settleDebt' } : { type: 'endTurn' };
-  if (!s.turn.hamle) {
+  // Kolay bot kartlarının yarısını oynamayı unutur.
+  if (!s.turn.hamle && !(level === 'kolay' && noise(s, p, 7) < 0.5)) {
     const play = cardPlay(s, p);
     if (play && !cardBlock(s, p, cid(play.uid), play.target)) return play;
   }
-  const build = buildPlan(s, p);
+  const build = buildPlan(s, p, level);
   if (build) return build;
-  const trade = tradePlan(s, p);
+  const trade = tradePlan(s, p, level);
   if (trade) return trade;
   return { type: 'endTurn' };
 }

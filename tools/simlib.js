@@ -28,13 +28,14 @@ export function makePlayers(n) {
   return Array.from({ length: n }, (_, i) => ({ id: `bot${i}`, name: BOT_NAMES[i], avatar: AVATARS[i], color: PLAYER_COLORS[i], bot: true }));
 }
 
-export function playBotGame(seed, nPlayers = 5, config = {}, maxActions = 30000) {
+// levels: koltuk başına bot seviyesi (verilmeyen koltuk masa ayarını kullanır).
+export function playBotGame(seed, nPlayers = 5, config = {}, levels = [], maxActions = 30000) {
   let s = createGame({ players: makePlayers(nPlayers), seed, config });
   const counts = { actions: 0, cards: {}, trades: 0, tradesAccepted: 0, kacak: 0, builds: 0, auctions: 0, konkordato: 0, rentTotal: 0, rentMax: 0, rentCount: 0 };
   while (s.phase !== 'over') {
     if (counts.actions++ > maxActions) throw new Error(`oyun bitmedi (tohum ${seed})`);
     const seat = waitingFor(s)[0];
-    const action = botAction(s, seat);
+    const action = botAction(s, seat, levels[seat]);
     if (!action) throw new Error(`bot hamle bulamadı (tohum ${seed}, ${JSON.stringify(s.pending)})`);
     let res;
     try {

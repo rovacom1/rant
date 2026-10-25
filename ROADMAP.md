@@ -6,7 +6,9 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Bot zorluk seviyesi:** Lobide Kolay / Normal / Zor. Zor bot mülk-mülk takası önersin, ihalede daha akıllı teklif versin.
+- [ ] **Bot zorluk seviyesi (devam):** Motor tarafı bitti (v0.14.0, `config.botLevel`, Host `config` mesajında `botLevel`).
+  - [ ] Lobide Masa ayarlarına Kolay / Normal / Zor seçimi (yalnız ev sahibi), kurallar penceresinde bir satır; tarayıcıda iki temada dene.
+  - [ ] Zor bot 4 kişide belirgin güçlü değil (1000 oyunda %24, eşit şans %25; 5 kişide %25/%20). Kat dikme zamanlaması ya da kart oynama sırasıyla güçlendir.
 - [ ] **Açık pazarlık:** Sırası olmayan oyuncular da birbirine teklif yapabilsin (aynı anda tek teklif kuralıyla).
 - [ ] **Mobil düzen:** 400-800 px genişlikte tahta ve panelin rahat kullanımı (alt sekmeli panel). 10x10 tahtada kareler dar ekranda çok küçülüyor.
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
@@ -19,6 +21,8 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 - [ ] **İsteğe bağlı sunucu:** P2P'nin çalışmadığı ağlar için aynı protokolle küçük bir WebSocket aktarıcısı (Cloudflare Workers + Durable Objects), varsayılan kapalı.
 
 ## Tamamlananlar
+
+- [x] Bot seviyesi motoru: Kolay (pazarlık ve kaçak kat yok, kat ve kartı yarı yarıya unutur, artırmada erken çekilir) / Zor (eksik parçayı karşının kabul edeceği en ucuz teklifle ister, gerekirse mülk takası; artırmada en az artış); sim'de `node tools/sim.js N 5 zor` ile tek botu seviyeli oynatma. 1000 oyun, 5 kişi: zor %25, kolay %14, eşit şans %20 (v0.14.0)
 
 - [x] Monopoly'ye yakın denge: Monopoly kira cetveli, set dışı kat kirası yarı, kirayı atlatan kartlar azaldı, elde 5 kart varken kart gelmez, Piyango 100 (v0.12.0)
 - [x] Gündem 4 turda bir değişir, dönem kuralları 4 tur sürer; çubukta kalan tur (v0.13.0)

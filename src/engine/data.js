@@ -13,7 +13,10 @@ export const DEFAULT_CONFIG = {
   targetScore: 0, // 0: tur sayısıyla biter; >0: biri bu değere ulaşınca o tur sonunda biter
   // Masa ayarları: ev sahibi lobide açıp kapatır (docs/TASARIM.md 2. bölüm).
   rules: { ihale: true, surpriz: true, gundem: true, hedef: true },
+  botLevel: 'normal', // masadaki bütün botların seviyesi (BOT_LEVELS)
 };
+
+export const BOT_LEVELS = ['kolay', 'normal', 'zor'];
 
 export const RULE_LABELS = {
   ihale: { name: 'Açık artırma', icon: '🔨', off: 'Alınmayan arsa sahipsiz kalır.' },

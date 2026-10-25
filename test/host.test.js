@@ -107,6 +107,18 @@ test('masa ayarlarını yalnız ev sahibi değiştirir, oyun onlarla kurulur', (
   assert.equal(host.game.config.rules.ihale, false);
 });
 
+test('bot seviyesi: ev sahibi seçer, geçersiz değer reddedilir, oyuna geçer', () => {
+  const { host, me } = room();
+  assert.equal(host.config.botLevel, 'normal');
+  me.say({ t: 'lobby', cmd: 'config', botLevel: 'imkansiz' });
+  assert.equal(host.config.botLevel, 'normal');
+  me.say({ t: 'lobby', cmd: 'config', botLevel: 'zor' });
+  me.say({ t: 'lobby', cmd: 'addBot' });
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  assert.equal(host.game.config.botLevel, 'zor');
+});
+
 test('oyun sonu: değer hedefi seçilir, geçersiz tutar reddedilir', () => {
   const { host, me } = room();
   me.say({ t: 'lobby', cmd: 'config', endMode: 'score', targetScore: 1234 });

@@ -1,9 +1,12 @@
-// Denge raporu: node tools/sim.js [oyun sayısı] [oyuncu sayısı]
+// Denge raporu: node tools/sim.js [oyun sayısı] [oyuncu sayısı] [seviye]
+// Seviye verilirse (kolay/zor) her oyunda bir bot o seviyede oynar (koltuğu oyundan oyuna döner), diğerleri normal.
 import { playBotGame } from './simlib.js';
 import { HEDEF } from '../src/engine/index.js';
 
 const games = Number(process.argv[2] || 200);
 const players = Number(process.argv[3] || 5);
+const level = process.argv[4];
+let levelWins = 0;
 const t0 = Date.now();
 
 const winsBySeat = Array(players).fill(0);
@@ -17,9 +20,11 @@ const rentMaxes = [];
 const endCash = [];
 
 for (let g = 0; g < games; g++) {
-  const { state, counts } = playBotGame(1000 + g, players);
+  const levels = level ? Object.assign([], { [g % players]: level }) : [];
+  const { state, counts } = playBotGame(1000 + g, players, {}, levels);
   const { ranking, scores } = state.results;
   winsBySeat[ranking[0]]++;
+  if (level && ranking[0] === g % players) levelWins++;
   const sorted = scores.map((x) => x.total).sort((a, b) => b - a);
   totals.push(...sorted);
   spread.push(sorted[0] - sorted[sorted.length - 1]);
@@ -44,6 +49,7 @@ const per = (n) => (n / games).toFixed(1);
 console.log(`RANT denge raporu: ${games} oyun, ${players} bot, ${((Date.now() - t0) / 1000).toFixed(1)} sn`);
 console.log(`Ortalama hamle/oyun: ${per(agg.actions)}`);
 console.log(`Kazanma (oturma sırasına göre): ${winsBySeat.map((w, i) => `${i + 1}. ${Math.round((100 * w) / games)}%`).join('  ')}`);
+if (level) console.log(`${level} bot kazanma: %${Math.round((100 * levelWins) / games)} (eşit şans %${Math.round(100 / players)})`);
 console.log(`Ortalama puan: ${avg(totals)}  | Birinci-sonuncu farkı ort.: ${avg(spread)}`);
 console.log(`Oyun başına: yasal kat ${per(agg.builds)}, kaçak kat ${per(agg.kacak)}, ihale ${per(agg.auctions)}, pazarlık ${per(agg.trades)} (kabul ${per(agg.tradesAccepted)}), konkordato ${per(agg.konkordato)}`);
 console.log(`Kira: oyun başına ${per(agg.rentCount)} ödeme, ortalama ${Math.round(agg.rentTotal / agg.rentCount)}, oyundaki en büyük kira ort. ${avg(rentMaxes)} | Sondaki nakit ort. ${avg(endCash)}, en düşük %10: ${endCash.sort((a, b) => a - b)[Math.floor(endCash.length / 10)]}`);

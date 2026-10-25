@@ -38,3 +38,12 @@ test('değer hedefiyle oyunlar tutarlı biter', () => {
     assert.ok(state.finalRound === state.round || state.round === 30);
   }
 });
+
+test('kolay ve zor botlarla karışık masalar tutarlı biter', () => {
+  for (let g = 0; g < 10; g++) {
+    const { state } = playBotGame(900 + g, 5, {}, ['zor', 'kolay', 'normal', 'zor', 'kolay']);
+    assert.equal(state.phase, 'over');
+  }
+  const { state } = playBotGame(42, 4, { botLevel: 'zor' });
+  assert.equal(state.phase, 'over');
+});

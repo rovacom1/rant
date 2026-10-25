@@ -579,3 +579,39 @@ test('denge: en az 5 kira, Müteahhit için şehirde 2 mülk, elde 5 kart varken
   assert.equal(t.turn.p, 1);
   assert.equal(t.players[1].hand.length, 5, 'el 5 iken kart çekilmez');
 });
+
+test('bot seviyesi: zor bot eksik parçaya mülk + az para önerir, normal ve kolay önermez', () => {
+  const s = started(4, 21);
+  for (const p of [0, 1]) for (const uid of [...s.players[p].hand]) strip(s, p, uid.split(':')[0]);
+  own(s, 0, 33, 7); // İstanbul'un yarısı + bir havalimanı
+  own(s, 1, 35, 16, 25); // İstanbul'un öbür yarısı + iki havalimanı (üçüncüsü ona daha değerli)
+  s.players[0].cash = 700;
+  s.turn.step = 'free';
+  const zor = botAction(s, 0, 'zor');
+  assert.equal(zor.type, 'proposeTrade');
+  assert.equal(zor.to, 1);
+  assert.deepEqual(zor.give.props, [7], 'karşı tarafa daha değerli olan mülkü koyar');
+  assert.deepEqual(zor.take.props, [35]);
+  assert.ok(zor.give.cash > 0 && zor.give.cash < 600, `para tek başına yetmezdi: ${zor.give.cash}`);
+  const t = act(s, 0, zor);
+  assert.deepEqual(botAction(t, 1, 'normal'), { type: 'tradeRespond', accept: true }, 'karşı bot kabul eder');
+  assert.equal(botAction(s, 0, 'normal').type, 'endTurn');
+  assert.equal(botAction(s, 0, 'kolay').type, 'endTurn');
+});
+
+test('bot seviyesi: zor bot artırmada en az artışla, kolay bot daha erken çekilir', () => {
+  const s = started(4, 22);
+  s.pending = { type: 'auction', sq: 28, order: [1, 2, 3], out: [], high: 100, leader: 2, turn: 1 };
+  s.players[1].cash = 1500;
+  s.players[1].hedef = null; // İzmir hedefi değeri şişirmesin: değer = fiyat (300)
+  assert.deepEqual(botAction(s, 1, 'zor'), { type: 'raise', amount: 110 });
+  s.pending.high = 260;
+  assert.equal(botAction(s, 1, 'kolay').type, 'pass');
+  assert.equal(botAction(s, 1, 'zor').type, 'raise');
+});
+
+test('bot seviyesi masa ayarından gelir', () => {
+  const s = started(4, 21, { botLevel: 'zor' });
+  assert.equal(s.config.botLevel, 'zor');
+  assert.equal(started(4, 21).config.botLevel, 'normal');
+});
