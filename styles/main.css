@@ -208,6 +208,8 @@ input, select { font: inherit; }
 .cell.side-b .badge, .cell.side-r .badge { bottom: 2px; left: 3px; }
 .cell.side-t .badge, .cell.side-l .badge { top: 2px; right: 3px; }
 .cell.hl { box-shadow: inset 0 0 0 3px var(--gold), 0 0 18px rgba(237, 174, 73, 0.8); z-index: 3; animation: pulse 1.2s infinite; }
+.board.picking .cell:not(.pick) { opacity: 0.45; }
+.cell.pick { box-shadow: inset 0 0 0 3px var(--turq), 0 0 16px color-mix(in srgb, var(--turq) 70%, transparent); z-index: 3; transform: scale(1.04); }
 @keyframes pulse { 50% { box-shadow: inset 0 0 0 3px var(--gold), 0 0 4px rgba(237, 174, 73, 0.3); } }
 
 .board-center {

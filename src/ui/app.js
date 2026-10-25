@@ -8,12 +8,13 @@ import { play, toggleMute } from './sound.js';
 import { toggleNotify, watchTurn } from './notify.js';
 import { app, profile, send, act, isHost } from './state.js';
 import * as G from './gameview.js';
+import { pickClick } from './pick.js';
 import { RULES_HTML } from './rules.js';
 
 const root = document.getElementById('app');
 const SAVE = { host: 'save.host', local: 'save.local' };
 const SAVE_MAX_AGE = 3 * 24 * 3600 * 1000;
-const freshUI = () => ({ tab: 'log', dialog: null, selected: [], binds: {}, trade: null, swapMine: null, seenOver: false });
+const freshUI = () => ({ tab: 'log', dialog: null, selected: [], binds: {}, trade: null, swapMine: null, pick: null, seenOver: false });
 
 function savedGame(kind) {
   const s = store.get(SAVE[kind]);
@@ -473,7 +474,28 @@ const A = {
     app.ui.swapMine = Number(el.dataset.sq);
     G.renderModal();
   },
-  square: (el) => openDialog({ type: 'square', sq: Number(el.dataset.sq) }),
+  square(el) {
+    const sq = Number(el.dataset.sq);
+    if (!app.ui.pick) return openDialog({ type: 'square', sq });
+    const r = pickClick(V(), app.ui.pick.uid, app.ui.swapMine, sq);
+    if (!r) return G.toast('Bu kare seçilemez; parlayan karelerden birini seç.', 'error');
+    if (r.swapMine !== undefined) app.ui.swapMine = r.swapMine;
+    else {
+      act({ type: 'playCard', uid: app.ui.pick.uid, target: r.play });
+      app.ui.pick = null;
+    }
+    G.updateGame();
+  },
+  pickBoard(el) {
+    app.ui.pick = { uid: el.dataset.uid };
+    app.ui.swapMine = null;
+    app.ui.dialog = null;
+    G.updateGame();
+  },
+  pickCancel() {
+    app.ui.pick = null;
+    G.updateGame();
+  },
   player: (el) => openDialog({ type: 'player', p: Number(el.dataset.p) }),
   manage: () => openDialog({ type: 'manage' }),
   trade() {
@@ -539,6 +561,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('keydown', (e) => {
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
   if (e.key === 'Escape' && (app.ui.dialog || app.ui.menuModal)) return closeDialog();
+  if (e.key === 'Escape' && app.ui.pick) return A.pickCancel();
   if (e.key === 'Enter' && typing) {
     if (document.activeElement.dataset.bind === 'bid') return A.bid();
     if (document.activeElement.id === 'codeInput') return A.join();

@@ -38,11 +38,14 @@ export function buildBoard(boardEl) {
   return [...boardEl.querySelectorAll('.cell')];
 }
 
-export function updateBoard(cells, v, highlight) {
+// pick: tahtadan hedef seçilirken parlayacak kareler (yoksa null).
+export function updateBoard(cells, v, highlight, pick = null) {
+  cells[0].parentElement.classList.toggle('picking', !!pick);
   cells.forEach((el, i) => {
     const sq = BOARD[i];
     const ps = v.props[i];
     el.classList.toggle('hl', highlight === i);
+    el.classList.toggle('pick', !!pick && pick.includes(i));
     if (!ps) return;
     const owner = ps.owner === null ? null : v.players[ps.owner];
     el.classList.toggle('owned', !!owner);

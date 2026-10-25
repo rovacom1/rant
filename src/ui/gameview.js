@@ -6,6 +6,7 @@ import { isNotifyOn, notifySupported } from './notify.js';
 import { buildBoard, updateBoard, Tokens, rollDice, dieHTML } from './board.js';
 import { app, act, send, isHost } from './state.js';
 import { RULES_HTML } from './rules.js';
+import { isBoardPickable, pickSquares } from './pick.js';
 
 const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, HEDEF, fmt, cardId } = E;
 const N = BOARD.length;
@@ -223,6 +224,12 @@ function promptHTML(v) {
     }
     const rest = E.waitingFor(v).map((i) => P(v, i).name).join(', ');
     return html`<h3>Hedefler seçiliyor…</h3><p>Bekleniyor: ${rest}</p>`;
+  }
+  if (app.ui.pick) {
+    const c = CARDS[cardId(app.ui.pick.uid)];
+    const step = c.target === 'swap' ? (app.ui.swapMine === null ? ' 1) Vereceğin mülkü seç.' : ` 2) ${BOARD[app.ui.swapMine].name} karşılığı alacağın mülkü seç.`) : '';
+    return html`<h3>${c.icon} ${c.name}</h3><p>Parlayan karelerden birine tıkla.${step}</p>
+      <button class="btn" data-act="pickCancel">Vazgeç</button>`;
   }
   if (pd) return pendingHTML(v, pd);
   const t = v.turn;
@@ -478,7 +485,8 @@ function cardDialog(v, uid) {
     default:
       body = html`<div class="row center"><button class="btn primary big" data-act="play" data-uid="${uid}" data-t="{}">Oyna</button></div>`;
   }
-  return html`<h2>Kart oyna</h2>${big}${body}`;
+  const fromBoard = isBoardPickable(uid) ? html`<div class="row center"><button class="btn turq" data-act="pickBoard" data-uid="${uid}">🎯 Tahtadan seç</button></div>` : '';
+  return html`<h2>Kart oyna</h2>${big}${body}${fromBoard}`;
 }
 
 function propActions(v, sq) {
@@ -657,7 +665,8 @@ export function updateGame() {
   const v = app.view;
   if (!v || !els) return;
   updateTopbar(v);
-  updateBoard(cells, v, highlightOf(v));
+  if (app.ui.pick && !(v.players[v.you]?.hand.includes(app.ui.pick.uid) && canPlay(v, app.ui.pick.uid))) app.ui.pick = null;
+  updateBoard(cells, v, highlightOf(v), app.ui.pick && pickSquares(v, app.ui.pick.uid, app.ui.swapMine));
   tokens.sync(v.players, v.turn ? v.turn.p : -1);
   if (!animating) tokens.settle(v.players);
   setHTML(els.gundem, gundemHTML(v));

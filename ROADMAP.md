@@ -6,7 +6,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Hedefi tahtadan seç:** Kart oynarken (Kamulaştırma, Tedbir, Müteahhit, Takas) geçerli kareler tahtada parlasın, kareye tıklayınca seçilsin.
 - [ ] **Tur özeti:** Her tur sonunda kısa bir kutu: bu turda en çok kazanan/kaybeden, el değiştiren mülkler.
 - [ ] **Para animasyonu:** Kira ve transferlerde oyuncudan oyuncuya uçan jeton; kat dikince karede küçük inşaat animasyonu.
 - [ ] **Oyun sonu grafiği:** Sonuç penceresinde tur tur net değer çizgisi (motor her tur sonu net değerleri kaydetsin).
@@ -28,3 +27,4 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 - [x] Sezgisel botlar ve denge simülasyonu (v0.1.0)
 - [x] Web arayüzü, lobi, P2P çok oyunculu, yeniden bağlanma, kayıttan devam (v0.1.0)
 - [x] Sıra sende bildirimi: üst çubukta 🔔 düğmesi, sekme arkadayken masaüstü bildirimi; ses mevcut 🔊 düğmesiyle (v0.1.1)
+- [x] Hedefi tahtadan seç: mülk hedefli kartlarda "🎯 Tahtadan seç", geçerli kareler parlar, Takas iki adımlı, Esc/Vazgeç ile çıkış (v0.1.3)
