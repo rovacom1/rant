@@ -6,7 +6,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Oyun sonu grafiği:** Sonuç penceresinde tur tur net değer çizgisi (motor her tur sonu net değerleri kaydetsin).
 - [ ] **Bot zorluk seviyesi:** Lobide Kolay / Normal / Zor. Zor bot mülk-mülk takası önersin, ihalede daha akıllı teklif versin.
 - [ ] **Açık pazarlık:** Sırası olmayan oyuncular da birbirine teklif yapabilsin (aynı anda tek teklif kuralıyla).
 - [ ] **Mobil düzen:** 400-800 px genişlikte tahta ve panelin rahat kullanımı (alt sekmeli panel). 10x10 tahtada kareler dar ekranda çok küçülüyor.
@@ -21,6 +20,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Oyun sonu grafiği: motor oyun başında ve her tur sonunda herkesin net değerini kaydeder; Seçim Günü sonuçlarında oyuncu renklerinde tur tur net değer çizgisi, kazananınki kalın (v0.9.2)
 - [x] Para animasyonu: kira, transfer ve banka ödemelerinde ödeyenden alana kavisli uçan altın jetonlar (tutarla 1-6 jeton, tahtanın ortası banka); kat dikilince kare sıçrar ve üstünden vinç yükselir; hareket azaltma tercihinde kapalı (v0.9.1)
 - [x] Oyun sonu seçimi: tur sayısı (10/15/20) ya da değer hedefi (2.500/3.500/5.000 ₺; ulaşılan tur tamamlanınca Seçim Günü, en geç 30. tur); üst çubukta hedef, gündem halkasında hedefe yakınlık (v0.9.0)
 - [x] Lobide masa ayarları: gizli ihale, SÜRPRİZ kareleri, gündem kartları ve gizli hedefler açılıp kapanır (yalnız ev sahibi); karanlık temada lobi düğmeleri okunur (v0.8.0)
