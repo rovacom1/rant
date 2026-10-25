@@ -6,7 +6,7 @@ import { isNotifyOn, notifySupported } from './notify.js';
 import { buildBoard, updateBoard, Tokens, Dice, inkFor, cellPos } from './board.js';
 import { app, act, send, isHost } from './state.js';
 import { RULES_HTML } from './rules.js';
-import { isBoardPickable, pickSquares } from './pick.js';
+import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
 
 const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, HEDEF, fmt, cardId } = E;
 const N = BOARD.length;
@@ -185,7 +185,8 @@ function popHTML(v, sq) {
     ? html`<span class="dot" style="--c:${owner.color}"></span> ${owner.name}${ps.ipotek ? ' · ipotekli' : ''}${ps.tedbir ? ` · tedbir ${ps.tedbir} tur` : ''}`
     : html`Sahipsiz · fiyatı <b>${fmt(E.price(v, sq))}</b>`;
   const note = s.kind === 'prop' ? `Tam sette arsa kirası 2 katı. Kat ${fmt(E.katCost(v, sq))}, kaçak ${fmt(E.kacakCost(v, sq))}.` : 'İkisi aynı kişideyse kira artar.';
-  const acts = propActions(v, sq);
+  const acts = [...propActions(v, sq)];
+  if (tapuSquares(v)?.includes(sq)) acts.push(html`<button class="btn tiny turq" data-act="tapuBuy" data-sq="${sq}">📜 Tapudan al</button>`);
   return html`<div class="ph" style="${head}"><b>${s.name}</b><span>${cityOf(sq)}</span>${close}</div>
     <div class="po">${status}</div><table>${rows}</table><div class="pn">${note}</div>${acts.length ? html`<div class="pa">${acts}</div>` : ''}`;
 }
@@ -336,10 +337,7 @@ function pendingHTML(v, pd) {
     }
     case 'tapu': {
       if (pd.p !== me) return html`<p>${P(v, pd.p).name} Tapu Dairesi'nde arsa bakıyor…</p>`;
-      const cash = P(v, me).cash;
-      const opts = E.OWNABLE.filter((q) => v.props[q].owner === null);
-      return html`<h3>📜 Tapu Dairesi</h3><p>Sahipsiz herhangi bir arsayı fiyatına alabilirsin.</p>
-        <div class="targets" style="width:100%">${opts.map((q) => html`<button data-act="tapuBuy" data-sq="${q}" ${E.price(v, q) > cash ? 'disabled' : ''}>${sqChip(q)}<b>${fmt(E.price(v, q))}</b></button>`)}</div>
+      return html`<h3>📜 Tapu Dairesi</h3><p>Parlayan arsalardan birine tıkla, fiyatını gör ve tapudan al.</p>
         <button class="btn ghost" data-act="tapuBuy" data-sq="">Bir şey alma</button>`;
     }
     case 'zabita': {
@@ -685,7 +683,7 @@ export function updateGame() {
   updateTopbar(v);
   if (app.ui.pick && !(v.players[v.you]?.hand.includes(app.ui.pick.uid) && canPlay(v, app.ui.pick.uid))) app.ui.pick = null;
   if (app.ui.pick) app.ui.popSq = null;
-  updateBoard(cells, v, highlightOf(v), app.ui.pick && pickSquares(v, app.ui.pick.uid, app.ui.swapMine), app.ui.popSq);
+  updateBoard(cells, v, highlightOf(v), app.ui.pick ? pickSquares(v, app.ui.pick.uid, app.ui.swapMine) : tapuSquares(v), app.ui.popSq);
   tokens.sync(v.players, v.turn ? v.turn.p : -1);
   if (!animating) tokens.settle(v.players);
   setHTML(els.gundem, gundemHTML(v));

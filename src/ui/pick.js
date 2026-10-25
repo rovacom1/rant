@@ -1,6 +1,6 @@
 // Tahtadan hedef seçme: mülk hedefli kartlarda (Kamulaştırma, Tedbir, Müteahhit, Takas)
 // hangi karelerin parlayacağını ve bir kareye tıklamanın ne yapacağını hesaplar. DOM yok.
-import { CARDS, cardId, cardTargets } from '../engine/index.js';
+import { CARDS, OWNABLE, cardId, cardTargets, price } from '../engine/index.js';
 
 const KINDS = ['opp-prop', 'self-prop', 'swap'];
 
@@ -26,4 +26,12 @@ export function pickClick(v, uid, swapMine, sq) {
   if (targets.some((t) => t.mine === sq)) return { swapMine: sq };
   const t = targets.find((x) => x.mine === swapMine && x.theirs === sq);
   return t ? { play: t } : null;
+}
+
+// Tapu Dairesi sırası sendeyse parana yeten sahipsiz kareler parlar; değilse null.
+export function tapuSquares(v) {
+  const pd = v.pending;
+  if (!pd || pd.type !== 'tapu' || pd.p !== v.you) return null;
+  const cash = v.players[v.you].cash;
+  return OWNABLE.filter((q) => v.props[q].owner === null && price(v, q) <= cash);
 }

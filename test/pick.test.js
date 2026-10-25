@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BOARD, GROUPS } from '../src/engine/index.js';
-import { isBoardPickable, pickSquares, pickClick } from '../src/ui/pick.js';
+import { BOARD, GROUPS, OWNABLE, price } from '../src/engine/index.js';
+import { isBoardPickable, pickSquares, pickClick, tapuSquares } from '../src/ui/pick.js';
 import { started, give, own } from './helpers.js';
 
 // Her şehirden ilk mülk: tek başına set tamamlamaz.
@@ -39,4 +39,18 @@ test('Zorla Takas: once kendi mulkun, sonra rakibinki', () => {
   assert.deepEqual(pickClick(v, uid, null, a), { swapMine: a });
   assert.deepEqual(pickSquares(v, uid, a).sort(), [b, c].sort());
   assert.deepEqual(pickClick(v, uid, a, c), { play: { mine: a, theirs: c } });
+});
+
+test('Tapu Dairesi: yalniz sirasi gelen oyuncuda parasi yeten sahipsiz kareler parlar', () => {
+  const s = started();
+  own(s, 1, a);
+  s.pending = { type: 'tapu', p: 0 };
+  const cheap = Math.min(...OWNABLE.filter((q) => q !== a).map((q) => price(s, q)));
+  s.players[0].cash = cheap;
+  const sq = tapuSquares(view(s));
+  assert.ok(sq.length > 0 && !sq.includes(a), 'sahipli kare parlamaz');
+  assert.ok(sq.every((q) => price(s, q) <= cheap), 'pahali kare parlamaz');
+  assert.equal(tapuSquares({ ...s, you: 1 }), null, 'baskasinin tapusu');
+  s.pending = null;
+  assert.equal(tapuSquares(view(s)), null);
 });
