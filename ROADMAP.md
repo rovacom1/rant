@@ -6,7 +6,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Sıra sende bildirimi:** Sekme arkadayken tarayıcı masaüstü bildirimi (Notification API, izin bir kez istenir) ve ses seçeneği.
 - [ ] **Hedefi tahtadan seç:** Kart oynarken (Kamulaştırma, Tedbir, Müteahhit, Takas) geçerli kareler tahtada parlasın, kareye tıklayınca seçilsin.
 - [ ] **Tur özeti:** Her tur sonunda kısa bir kutu: bu turda en çok kazanan/kaybeden, el değiştiren mülkler.
 - [ ] **Para animasyonu:** Kira ve transferlerde oyuncudan oyuncuya uçan jeton; kat dikince karede küçük inşaat animasyonu.
@@ -28,3 +27,4 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 - [x] Oyun motoru, kurallar, kartlar, gündem, ihale, itiraz zinciri, pazarlık, borç/konkordato (v0.1.0)
 - [x] Sezgisel botlar ve denge simülasyonu (v0.1.0)
 - [x] Web arayüzü, lobi, P2P çok oyunculu, yeniden bağlanma, kayıttan devam (v0.1.0)
+- [x] Sıra sende bildirimi: üst çubukta 🔔 düğmesi, sekme arkadayken masaüstü bildirimi; ses mevcut 🔊 düğmesiyle (v0.1.1)

@@ -5,6 +5,7 @@ import { localPair, openRoom, joinRoom, randomCode, normalizeCode } from '../net
 import { APP_VERSION, PROTOCOL, SAVE_VERSION } from '../version.js';
 import { html, raw, $, store, sleep } from './dom.js';
 import { play, toggleMute } from './sound.js';
+import { toggleNotify, watchTurn } from './notify.js';
 import { app, profile, send, act, isHost } from './state.js';
 import * as G from './gameview.js';
 import { RULES_HTML } from './rules.js';
@@ -416,6 +417,12 @@ const A = {
     toggleMute();
     G.updateGame();
   },
+  async notify() {
+    const on = await toggleNotify();
+    if (!on && Notification.permission === 'denied') G.toast('Bildirim izni tarayıcıda kapalı; adres çubuğundaki kilit simgesinden açabilirsin.', 'error');
+    else G.toast(on ? '🔔 Sıra sana gelince bildirim gelecek.' : '🔕 Bildirimler kapandı.', on ? 'good' : '');
+    G.updateGame();
+  },
 
   roll: () => act({ type: 'roll' }),
   moveSum: () => act({ type: 'move', steps: V().turn.dice[0] + V().turn.dice[1] }),
@@ -546,11 +553,12 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Sıra sendeyken sekme arkadaysa başlık yanıp söner.
+// Sıra sendeyken sekme arkadaysa başlık yanıp söner; bildirim açıksa masaüstü bildirimi de gelir.
 setInterval(() => {
   G.tickTimers();
   const v = app.view;
-  const mine = v && v.phase !== 'over' && v.you >= 0 && E.waitingFor(v).includes(v.you);
+  const mine = !!(v && v.phase !== 'over' && v.you >= 0 && E.waitingFor(v).includes(v.you));
+  watchTurn(mine, 'Masaya dön, seni bekliyorlar.');
   document.title = document.hidden && mine ? (document.title.startsWith('🔔') ? 'RANT' : '🔔 Sıra sende! — RANT') : 'RANT — Kentsel Dönüşümün Kart Oyunu';
 }, 1000);
 

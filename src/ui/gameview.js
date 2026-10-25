@@ -2,6 +2,7 @@
 import * as E from '../engine/index.js';
 import { html, raw, esc, $, setHTML, sleep } from './dom.js';
 import { play, isMuted } from './sound.js';
+import { isNotifyOn, notifySupported } from './notify.js';
 import { buildBoard, updateBoard, Tokens, rollDice, dieHTML } from './board.js';
 import { app, act, send, isHost } from './state.js';
 import { RULES_HTML } from './rules.js';
@@ -31,7 +32,8 @@ export function mountGame(root) {
       <span class="conn" id="tConn"></span>
       <button class="iconbtn" data-act="copyLink" id="tCode" title="Davet linkini kopyala"></button>
       <button class="iconbtn" data-act="rules">❓ Kurallar</button>
-      <button class="iconbtn" data-act="mute" id="tMute"></button>
+      <button class="iconbtn" data-act="mute" id="tMute" title="Ses"></button>
+      <button class="iconbtn${notifySupported() ? '' : ' hidden'}" data-act="notify" id="tNotify" title="Sekme arkadayken sıra sana gelince masaüstü bildirimi"></button>
       <button class="iconbtn" data-act="leave">Çık</button>
     </header>
     <main class="table">
@@ -61,7 +63,7 @@ export function mountGame(root) {
   <div id="modal"></div><div class="toasts" id="toasts"></div><div id="stage"></div>`;
   const g = (id) => document.getElementById(id);
   els = {
-    round: g('tRound'), index: g('tIndex'), salary: g('tSalary'), mods: g('tMods'), conn: g('tConn'), code: g('tCode'), mute: g('tMute'),
+    round: g('tRound'), index: g('tIndex'), salary: g('tSalary'), mods: g('tMods'), conn: g('tConn'), code: g('tCode'), mute: g('tMute'), notify: g('tNotify'),
     board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), ticker: g('ticker'), tokens: g('tokens'),
     players: g('players'), me: g('mePanel'), feed: g('feed'), chatForm: g('chatForm'), chatInput: g('chatInput'), quick: g('quick'),
     tabLog: g('tabLog'), tabChat: g('tabChat'), modal: g('modal'), stage: g('stage'),
@@ -132,6 +134,7 @@ function updateTopbar(v) {
   setHTML(els.mods, Object.keys(v.mods).map((m) => html`<span class="chip">${MOD_LABEL[m] || m}</span>`).join(''));
   els.code.textContent = app.mode === 'local' ? '🤖 Yerel oyun' : `🔗 Oda ${app.code}`;
   els.mute.textContent = isMuted() ? '🔇' : '🔊';
+  els.notify.textContent = isNotifyOn() ? '🔔' : '🔕';
   const st = app.status;
   els.conn.textContent = st === 'reconnecting' ? '⚠ Bağlantı koptu, yeniden bağlanılıyor…' : st === 'online' ? '● Bağlı' : '';
   els.conn.classList.toggle('bad', st === 'reconnecting');
