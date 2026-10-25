@@ -6,7 +6,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Tapu Dairesi'ni tahtadan seç:** Uzun liste yerine sahipsiz kareler tahtada parlasın, tıklayınca alınsın (pick.js düzeniyle).
 - [ ] **Taşlar kare adını kapatmasın:** Taşları karenin kenarına yerleştir ya da küçült; birden çok taş varsa yan yana diz.
 - [ ] **Hedef dengesi:** 300 oyunluk simde hedefler %5 (Trabzon Hakimi) ile %62 (Hukuk Dünyası) arasında; en kolay ve en zor 3-4 hedefin eşiklerini %15-45 aralığına çek.
 - [ ] **Para animasyonu:** Kira ve transferlerde oyuncudan oyuncuya uçan jeton; kat dikince karede küçük inşaat animasyonu.
@@ -33,3 +32,4 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 - [x] Hedefi tahtadan seç: mülk hedefli kartlarda "🎯 Tahtadan seç", geçerli kareler parlar, Takas iki adımlı, Esc/Vazgeç ile çıkış (v0.1.3)
 - [x] Bakım 1: ölü kod (squareLabel) silindi, denge kontrolü (300 oyun: sıra en çok %22, hedef %29, kira 18.6/oyun), PeerJS 1.5.5 güncel ve CDN erişilebilir (v0.1.4)
 - [x] Tur özeti: her tur sonunda olay akışına özet satırı (en çok kazanan/kaybeden, el değiştiren mülkler); sonraki turun "Son dakika" kartında "N. turun özeti" kutusu (v0.1.5)
+- [x] Tapu Dairesi tahtadan: parası yeten sahipsiz kareler parlar, kareye tıklayınca bilgi penceresinde "📜 Tapudan al"; uzun liste kaldırıldı (v0.2.1)
