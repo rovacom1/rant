@@ -13,7 +13,7 @@
 - Sesler ve müzik `assets/ses` altında; ayarı sağ üstteki ses penceresinden (müzik ve efektler ayrı).
 - Para seçimi (pazarlık, ihale) elle yazarak değil, oyuncu rengindeki kaydırma çubuğuyla yapılır.
 - Yazı tipleri: başlık/düğme/sayı Fredoka, metin Nunito. Zarlar 3 boyutlu döner.
-- Özel kareler ve ulaşım, Monopoly tahtası gibi sade SVG ikonlarla çizilir (`src/ui/icons.js`); kare resmi kullanılmaz. Mülkler alınmamışken şehrin iki rengini gösteren buzlu cam, iç kenarda plaka rozeti; alınınca sahibin rengine bürünür. Son olaylar tahtanın ortasının altında akar. Katlar karede 🏠×N, kaçak kat 🚧 olarak yazar.
+- Özel kareler ve ulaşım, Monopoly tahtası gibi sade SVG ikonlarla çizilir (`src/ui/icons.js`); kare resmi kullanılmaz. Mülkler şehrin iki rengini gösteren buzlu cam ve aynı renklerde set çerçevesiyle çizilir (Trabzon bordo-mavi gibi). Alınınca cam ve çerçeve değişmez; sahibi yalnız iç kenardaki parlak şerit gösterir. Plaka rozeti ve semt fotoğrafı denendi, kullanıcı istemedi. Son olaylar tahtanın ortasının altında akar. Katlar karede 🏠×N, kaçak kat 🚧 olarak yazar.
 - Sohbet yok (kullanıcı kaldırttı). Olaylar paneli sade ve büyük yazılı: zar, yürüme, maaş gibi gürültü gösterilmez; her tur bir başlıkla ayrılır.
 - Tahtanın karanlık modu var (sağ üstte 🌙/☀️); yeni arayüz parçaları iki temada da denenmeli.
 

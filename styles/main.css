@@ -174,37 +174,45 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
   font-size: calc(var(--size) / 74); line-height: 1.12; padding: 3px; gap: 2px;
   transition: box-shadow 0.15s, transform 0.15s, background-color 0.4s, color 0.4s;
 }
-/* Alınabilir kareler: iç kenardaki şerit sahipsizken gri, alınınca sahibinin rengi */
+/* Alınabilir kareler: iç kenarda kenardan biraz içeride parlak bir kurdele; sahipsizken gümüş gri, alınınca sahibinin rengi */
 .cell.buyable { background: #fffdf7; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-.cell .band { position: absolute; background: #c4c2bc; transition: background-color 0.4s; }
-.cell.owned .band { background: var(--pc); }
-.cell.side-b .band { top: 0; left: 0; right: 0; height: 20%; }
-.cell.side-t .band { bottom: 0; left: 0; right: 0; height: 20%; }
-.cell.side-l .band { top: 0; bottom: 0; right: 0; width: 20%; }
-.cell.side-r .band { top: 0; bottom: 0; left: 0; width: 20%; }
-.cell.side-b { padding-top: calc(var(--size) / 44); }
-.cell.side-t { padding-bottom: calc(var(--size) / 44); }
-.cell.side-l { padding-right: calc(var(--size) / 44); }
-.cell.side-r { padding-left: calc(var(--size) / 44); }
+.cell .band {
+  --bd: 180deg; position: absolute; z-index: 1; border-radius: 5px; transition: background 0.4s, box-shadow 0.4s;
+  background: linear-gradient(var(--bd), #f5f3ee, #d6d3ca 55%, #c3c0b6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.13), 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.cell.owned .band {
+  background: linear-gradient(var(--bd), color-mix(in srgb, var(--pc) 52%, #fff), var(--pc) 50%, color-mix(in srgb, var(--pc) 78%, #000));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 0 0 1px color-mix(in srgb, var(--pc) 68%, #000), 0 1px 5px color-mix(in srgb, var(--pc) 55%, transparent);
+}
+.cell.side-b .band { top: 3px; left: 3px; right: 3px; height: 14%; }
+.cell.side-t .band { bottom: 3px; left: 3px; right: 3px; height: 14%; }
+.cell.side-l .band { top: 3px; bottom: 3px; right: 3px; width: 14%; --bd: 90deg; }
+.cell.side-r .band { top: 3px; bottom: 3px; left: 3px; width: 14%; --bd: 90deg; }
+.cell.fullset .band::after { content: '★'; position: absolute; inset: 0; display: grid; place-items: center; line-height: 1; font-size: 0.9em; color: #fff; text-shadow: 0 0 4px rgba(255, 255, 255, 0.8), 0 1px 1px rgba(0, 0, 0, 0.45); }
+.cell.side-b { padding-top: calc(var(--size) / 52); }
+.cell.side-t { padding-bottom: calc(var(--size) / 52); }
+.cell.side-l { padding-right: calc(var(--size) / 52); }
+.cell.side-r { padding-left: calc(var(--size) / 52); }
 .cell .city { color: var(--muted); }
-.cell.special { background: #fffaf0; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
-.cell.corner { background: linear-gradient(145deg, #fff6df, #f1e2bf); box-shadow: inset 0 0 0 1px var(--line); }
-.cell:hover { box-shadow: inset 0 0 0 2px var(--ink); z-index: 2; }
-.cell.open { box-shadow: inset 0 0 0 3px var(--ink); z-index: 3; }
-.cell .nm { font-family: var(--display); font-weight: 600; font-size: 1.08em; overflow-wrap: anywhere; hyphens: manual; }
-.cell.side-l .nm, .cell.side-r .nm { font-size: 0.92em; } /* yan sütunda şerit yer kaplar: "Odunpazarı" bölünmesin */
-.cell .city { font-size: 0.78em; font-weight: 600; }
+.cell.special { background: linear-gradient(160deg, #fffdf6, #f2e9d5); color: var(--ink); }
+.cell.corner { background: linear-gradient(145deg, #fff7e2, #ecd8ae); }
+
+.cell .nm { font-family: var(--display); font-weight: 600; font-size: 1.08em; white-space: nowrap; }
+.cell.side-l .nm, .cell.side-r .nm { font-size: 0.92em; } /* yan sütunda şerit yer kaplar; sığmayan ad board.js fitNames ile küçülür */
+.cell .city { font-size: 0.66em; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
 .cell.corner .nm { font-size: 1.02em; }
 .floors { display: flex; gap: 3px; justify-content: center; min-height: 1.3em; }
+.floors:empty { display: none; } /* katsız karede ad şeride yaklaşır, dış kenar taşlara kalır */
 .floors b { font-family: var(--display); font-weight: 600; font-size: 1em; line-height: 1.25; padding: 0 0.35em; border-radius: 0.5em; background: #fff3d1; color: #6b4a00; box-shadow: inset 0 0 0 1px #edd393; white-space: nowrap; }
 .floors b.k { background: #ffe0d6; box-shadow: inset 0 0 0 1px #f2b3a1; }
 .cell.mortgaged { opacity: 0.75; }
 .cell.mortgaged .band { background: repeating-linear-gradient(135deg, var(--pc) 0 5px, color-mix(in srgb, var(--pc) 35%, #fff) 5px 10px); }
 .cell.mortgaged::before { content: '🔒'; position: absolute; top: 2px; left: 4px; font-size: 0.95em; z-index: 3; }
 .cell .badge { position: absolute; bottom: 2px; left: 3px; font-size: 1.1em; z-index: 3; }
-.cell.hl { box-shadow: inset 0 0 0 3px var(--gold), 0 0 18px rgba(237, 174, 73, 0.8); z-index: 3; animation: pulse 1.2s infinite; }
+.cell.hl { box-shadow: 0 0 0 3px var(--gold), 0 0 18px rgba(237, 174, 73, 0.8) !important; z-index: 3; animation: pulse 1.2s infinite; }
 .board.picking .cell:not(.pick) { opacity: 0.45; }
-@keyframes pulse { 50% { box-shadow: inset 0 0 0 3px var(--gold), 0 0 4px rgba(237, 174, 73, 0.3); } }
+@keyframes pulse { 50% { box-shadow: 0 0 0 3px var(--gold), 0 0 4px rgba(237, 174, 73, 0.3); } }
 
 /* kare bilgi penceresi */
 .pop {
@@ -570,12 +578,15 @@ body.dark .surp .sx { color: #c9d1e3; }
 /* tahta çerçevesi: koyu ceviz, altın çizgi */
 .board {
   background: linear-gradient(145deg, #4a3422, #2a1c11 55%, #3b2918);
-  padding: 9px; gap: 3px; border-radius: 20px;
+  padding: 9px; gap: 4px; border-radius: 20px; -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 0 0 2px #c9a24a, inset 0 0 0 5px #2a1c11, inset 0 0 0 6px rgba(201, 162, 74, 0.5);
 }
-.cell { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.08); }
-.cell.buyable { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 0 0 1px rgba(0, 0, 0, 0.1); }
-.cell:hover { transform: translateY(-1px); }
+/* HD kare: ince ışık kenarı, keskin koyu dış hat ve tahtaya düşen yumuşak gölge */
+.cell, .cell.buyable { border-radius: 9px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 0 0 1px rgba(30, 18, 8, 0.5), 0 2px 6px rgba(0, 0, 0, 0.35); }
+.cell:hover { transform: translateY(-2px); z-index: 2; box-shadow: 0 0 0 2px rgba(237, 174, 73, 0.95), 0 8px 16px rgba(0, 0, 0, 0.4); }
+.cell.open { z-index: 3; box-shadow: 0 0 0 3px var(--gold), 0 8px 18px rgba(0, 0, 0, 0.45); }
+/* cam parlaması: özel karelerde ve ulaşımda ikonun altında kalır */
+.cell.special::after, .cell.k-transport::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(125deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 42%); }
 
 /* tahta ortası: hafif filigran */
 .board-center { position: relative; }
@@ -600,12 +611,17 @@ body.dark .surp .sx { color: #c9d1e3; }
 /* ================= Karanlık mod ================= */
 body.dark { --line: #344061; --muted: #9aa5bf; }
 body.dark .board { background: linear-gradient(145deg, #1a2238, #0e1424 55%, #18203a); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 2px #8f7a45, inset 0 0 0 5px #0e1424, inset 0 0 0 6px rgba(143, 122, 69, 0.5); }
-body.dark .cell.buyable { background: #232c46; color: #e9edf7; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 0 0 1px rgba(0, 0, 0, 0.3); }
+body.dark .cell.buyable { background: #232c46; color: #e9edf7; }
+body.dark .cell, body.dark .cell.buyable { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.45); }
 body.dark .cell .city { color: #8f9ab4; }
-body.dark .cell .band { background: #4a5168; }
-body.dark .cell.owned .band { background: var(--pc); }
-body.dark .cell:hover { box-shadow: inset 0 0 0 2px #e9edf7; }
-body.dark .cell.open { box-shadow: inset 0 0 0 3px #e9edf7; }
+body.dark .cell .band { background: linear-gradient(var(--bd), #646d88, #485069 55%, #3b4259); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.4); }
+body.dark .cell.owned .band {
+  background: linear-gradient(var(--bd), color-mix(in srgb, var(--pc) 58%, #fff), var(--pc) 50%, color-mix(in srgb, var(--pc) 75%, #000));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 0 0 1px color-mix(in srgb, var(--pc) 60%, #000), 0 0 9px color-mix(in srgb, var(--pc) 60%, transparent);
+}
+body.dark .cell.mortgaged .band { background: repeating-linear-gradient(135deg, var(--pc) 0 5px, color-mix(in srgb, var(--pc) 35%, #1c2440) 5px 10px); }
+body.dark .cell:hover { box-shadow: 0 0 0 2px rgba(237, 174, 73, 0.95), 0 8px 16px rgba(0, 0, 0, 0.55); }
+body.dark .cell.open { box-shadow: 0 0 0 3px var(--gold), 0 8px 18px rgba(0, 0, 0, 0.6); }
 body.dark .floors b { background: rgba(255, 214, 120, 0.16); color: #ffd98a; box-shadow: inset 0 0 0 1px rgba(255, 214, 120, 0.35); }
 body.dark .floors b.k { background: rgba(255, 140, 110, 0.16); color: #ffb3a0; box-shadow: inset 0 0 0 1px rgba(255, 140, 110, 0.35); }
 body.dark .board-center {
@@ -654,18 +670,21 @@ body.dark .pop .po, body.dark .pop .pn { color: #aab3c8; }
 @media (max-width: 640px) { .cdlg { flex-direction: column; align-items: center; } }
 
 /* ================= Tahta kareleri (v0.6) ================= */
-/* Mülk: alınmamışken şehrin renkleri buzlu camın arkasından görünür; alınınca cam kalkar, kare sahibinin rengine bürünür. */
-.cell.k-prop { overflow: visible; background: transparent; }
-.cell .frost { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; background: #fbf6ea; transition: background-color 0.4s; }
+:root { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+/* Mülk: şehrin renkleri buzlu camın arkasından görünür ve alınınca da değişmez; sahibi yalnız iç kenardaki şerit gösterir. */
+/* set çerçevesi: aynı şehrin kareleri şehrin iki rengiyle çerçevelenir (ör. Trabzon bordo-mavi); cam çerçevenin içinde kalır */
+.cell.k-prop, body.dark .cell.k-prop { border: 2px solid transparent; background: linear-gradient(135deg, var(--gc) 0 47%, var(--gt) 53% 100%) border-box; }
+.cell .frost { position: absolute; inset: 0; border-radius: 7px; overflow: hidden; background: #fbf6ea; transition: background-color 0.4s; }
 .cell .frost::before {
-  content: ''; position: absolute; inset: -30%; opacity: 0.8; filter: blur(9px); transition: opacity 0.4s;
+  content: ''; position: absolute; inset: -30%; opacity: 0.85; filter: blur(7px) saturate(1.15); transition: opacity 0.4s;
   background: radial-gradient(circle at 28% 32%, var(--gc) 0 22%, transparent 48%), radial-gradient(circle at 74% 70%, var(--gt) 0 20%, transparent 46%),
     radial-gradient(circle at 82% 16%, var(--gc) 0 10%, transparent 30%);
 }
 .cell .frost::after {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.18) 55%, rgba(255, 255, 255, 0.4));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 40%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.14) 55%, rgba(255, 255, 255, 0.34)), var(--grain);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75), inset 0 1px 0 #fff;
 }
 .cell.k-prop .nm, .cell.k-prop .city, .cell.k-prop .floors { position: relative; z-index: 1; }
 .cell.k-prop .nm { text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
@@ -674,25 +693,6 @@ body.dark .pop .po, body.dark .pop .pn { color: #aab3c8; }
 .cell.k-prop.side-b, .cell.k-prop.side-l, .cell.k-prop.side-r { justify-content: flex-start; }
 .cell.k-prop.side-t { justify-content: flex-end; }
 .cell.k-prop.side-l, .cell.k-prop.side-r { padding-top: 7%; }
-.cell.k-prop.owned .frost { background: color-mix(in srgb, var(--pc) 16%, #fffdf7); }
-.cell.k-prop.owned .frost::before { opacity: 0.1; }
-.cell.k-prop.side-b .band { border-radius: 8px 8px 0 0; }
-.cell.k-prop.side-t .band { border-radius: 0 0 8px 8px; }
-.cell.k-prop.side-l .band { border-radius: 0 8px 8px 0; }
-.cell.k-prop.side-r .band { border-radius: 8px 0 0 8px; }
-
-/* şehir rozeti: plaka kodu, iç kenardan tahta ortasına taşar; tam sette altın halka */
-.cell .plate {
-  position: absolute; z-index: 4; width: 2.15em; height: 2.15em; border-radius: 50%; display: grid; place-items: center; pointer-events: none;
-  background: var(--gc); color: #fff; font-family: var(--display); font-weight: 700; font-size: 0.9em; line-height: 1;
-  box-shadow: 0 0 0 2px #fff, 0 2px 5px rgba(0, 0, 0, 0.35); text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
-}
-.cell.side-b .plate { top: 0; left: 50%; transform: translate(-50%, -55%); }
-.cell.side-t .plate { bottom: 0; left: 50%; transform: translate(-50%, 55%); }
-.cell.side-l .plate { right: 0; top: 50%; transform: translate(55%, -50%); }
-.cell.side-r .plate { left: 0; top: 50%; transform: translate(-55%, -50%); }
-.cell.fullset .plate { box-shadow: 0 0 0 2px var(--gold), 0 0 10px var(--gold), 0 2px 5px rgba(0, 0, 0, 0.35); }
-
 /* özel kareler ve ulaşım: ad ve sade ikon */
 .cell .lbl { position: relative; z-index: 1; font-family: var(--display); font-weight: 700; font-size: 0.95em; line-height: 1.05; overflow-wrap: anywhere; }
 .cell .ic { position: relative; z-index: 1; flex: 1; min-height: 0; width: 100%; display: grid; place-items: center; }
@@ -703,8 +703,7 @@ body.dark .pop .po, body.dark .pop .pn { color: #aab3c8; }
 .cell.corner .lbl { font-size: 1.05em; }
 .cell.k-transport .lbl { font-size: 0.78em; letter-spacing: -0.01em; overflow-wrap: normal; }
 .cell.k-transport.side-l .lbl, .cell.k-transport.side-r .lbl { font-size: 0.7em; }
-.cell.k-transport { background: linear-gradient(160deg, #f6f8fc, #e4e9f2); }
-.cell.k-transport.owned { background: color-mix(in srgb, var(--pc) 14%, #f6f8fc); }
+.cell.k-transport { background: linear-gradient(160deg, #f9fbfe, #dfe6f1); }
 .cell.k-chance .lbl { color: #e07b12; }
 .cell.k-surpriz .lbl { color: #d63384; }
 .cell.k-surpriz .ic .ico { animation: qBob 2.8s ease-in-out infinite; }
@@ -725,14 +724,14 @@ body.dark .pop .po, body.dark .pop .pn { color: #aab3c8; }
 body.dark .cell .frost { background: #1c2440; }
 body.dark .cell .frost::before { opacity: 0.5; }
 body.dark .cell .frost::after {
-  background: linear-gradient(160deg, rgba(44, 55, 88, 0.55), rgba(20, 26, 46, 0.32) 55%, rgba(30, 38, 64, 0.5));
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 40%),
+    linear-gradient(160deg, rgba(44, 55, 88, 0.55), rgba(20, 26, 46, 0.3) 55%, rgba(30, 38, 64, 0.5)), var(--grain);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 body.dark .cell.k-prop .nm { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
-body.dark .cell.k-prop.owned .frost { background: color-mix(in srgb, var(--pc) 30%, #1c2440); }
-body.dark .cell.special, body.dark .cell.corner { background: linear-gradient(160deg, #27314f, #1b2338); color: #e9edf7; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+body.dark .cell.special, body.dark .cell.corner { background: linear-gradient(160deg, #2a3454, #1a2136); color: #e9edf7; }
+body.dark .cell.special::after, body.dark .cell.k-transport::after { background: linear-gradient(125deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 42%); }
 body.dark .cell.k-transport { background: linear-gradient(160deg, #2a3555, #1f2840); }
-body.dark .cell.k-transport.owned { background: color-mix(in srgb, var(--pc) 26%, #1f2840); }
 body.dark .cell.k-chance .lbl { color: #ffb347; }
 body.dark .cell.k-surpriz .lbl { color: #ff8ac6; }
 body.dark .board-feed .ev { color: #d4dbea; }

@@ -4,7 +4,7 @@ import { TOKEN, laneY, tokenSlots } from '../src/ui/slots.js';
 
 test('taslar kare adini kapatmayan kenarda durur', () => {
   assert.equal(laneY('b', false), 0.9); // alt sira: serit ve ad ustte, taslar altta
-  assert.equal(laneY('t', false), 0.07); // ust sira: serit ve ad altta, taslar ustte
+  assert.equal(laneY('t', false), 0.03); // ust sira: serit ve ad altta, taslar ustte
   assert.equal(laneY('l', false), 0.9);
   assert.equal(laneY('b', true), 0.68); // ikonlu karede ad ustte, taslar ikonun uzerinde
   assert.equal(laneY('c', true), 0.38); // koselerde ikon ustte, ad altta

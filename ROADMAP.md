@@ -22,6 +22,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Maaş Günü'nün adı Başlangıç Noktası; plaka rozeti kaldırıldı, her şehre iki renkli set çerçevesi; alınan karenin camı değişmez, yalnız şerit sahibin rengine döner; HD kareler (parlak kurdele şerit, ışık kenarı, gölge, cam parlaması ve ince doku); sığmayan semt adı bölünmeden küçülür (v0.6.2)
 - [x] Hedef dengesi: Hukuk Dünyası 7 kart, Kaçak Ama Sağlam 1 kaçak kat; botlar hedef şehrine daha istekli (üç mülklü şehirde daha da); 3000 oyunluk simde her hedef %13-45 (önce %9-58) (v0.6.1)
 - [x] Monopoly tarzı sade SVG ikonlar (uçak, lokomotif, sandık, soru işareti, tapu, zabıta şapkası, çay bardağı, para kesesi), alınmamış mülklerde şehir renkli buzlu cam ve plaka rozeti, tahta ortasının altında solarak akan son olaylar ve tıklayınca tüm geçmiş; yan paneldeki olay listesi kaldırıldı (v0.6.0)
 - [x] Taşlar kare adını kapatmıyor: şeritten uzak kenarda (resimli karelerde üstte) yan yana dizilir, kare genişliğine göre boyutlanır; aynı karede çok taş varsa sığacak kadar üst üste biner. Kare vurgusunun nabız animasyonu düzeltildi (v0.5.1)

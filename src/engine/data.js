@@ -13,16 +13,16 @@ export const DEFAULT_CONFIG = {
 
 export const ROUND_OPTIONS = [10, 15, 20];
 
-// gen: şehrin ilgi hali ("Konya'nın"), metinlerde kullanılır. plate: tahtadaki rozet; tint: karenin buzlu camındaki ikinci renk.
+// gen: şehrin ilgi hali ("Konya'nın"), metinlerde kullanılır. tint: karenin buzlu camındaki ikinci renk.
 export const GROUPS = {
-  erzurum: { name: 'Erzurum', gen: "Erzurum'un", color: '#8d5b3e', tint: '#dfe8f2', plate: '25', kat: 50 },
-  trabzon: { name: 'Trabzon', gen: "Trabzon'un", color: '#3fa7d6', tint: '#8c2346', plate: '61', kat: 50 },
-  eskisehir: { name: 'Eskişehir', gen: "Eskişehir'in", color: '#b0569c', tint: '#f2c94c', plate: '26', kat: 100 },
-  konya: { name: 'Konya', gen: "Konya'nın", color: '#ee8a1c', tint: '#1f9e5a', plate: '42', kat: 100 },
-  antalya: { name: 'Antalya', gen: "Antalya'nın", color: '#d93b3b', tint: '#f5c542', plate: '07', kat: 150, sahil: true },
-  ankara: { name: 'Ankara', gen: "Ankara'nın", color: '#e6b800', tint: '#1e3a8a', plate: '06', kat: 150 },
-  izmir: { name: 'İzmir', gen: "İzmir'in", color: '#2e9e5b', tint: '#3fb6d9', plate: '35', kat: 200, sahil: true },
-  istanbul: { name: 'İstanbul', gen: "İstanbul'un", color: '#24408e', tint: '#d1495b', plate: '34', kat: 200 },
+  erzurum: { name: 'Erzurum', gen: "Erzurum'un", color: '#8d5b3e', tint: '#dfe8f2', kat: 50 },
+  trabzon: { name: 'Trabzon', gen: "Trabzon'un", color: '#3fa7d6', tint: '#8c2346', kat: 50 },
+  eskisehir: { name: 'Eskişehir', gen: "Eskişehir'in", color: '#b0569c', tint: '#f2c94c', kat: 100 },
+  konya: { name: 'Konya', gen: "Konya'nın", color: '#ee8a1c', tint: '#1f9e5a', kat: 100 },
+  antalya: { name: 'Antalya', gen: "Antalya'nın", color: '#d93b3b', tint: '#f5c542', kat: 150, sahil: true },
+  ankara: { name: 'Ankara', gen: "Ankara'nın", color: '#e6b800', tint: '#1e3a8a', kat: 150 },
+  izmir: { name: 'İzmir', gen: "İzmir'in", color: '#2e9e5b', tint: '#3fb6d9', kat: 200, sahil: true },
+  istanbul: { name: 'İstanbul', gen: "İstanbul'un", color: '#24408e', tint: '#d1495b', kat: 200 },
 };
 
 const RENT_MULT = [1, 5, 14, 30, 40];
@@ -38,7 +38,7 @@ const FIRSAT_SQ = { kind: 'chance', name: 'FIRSAT', icon: '🎴' };
 
 // 10x10 tahta: köşeler 0, 9, 18, 27; her kenarda 5 mülk, 1 gar, 1 havalimanı, 1 FIRSAT/SÜRPRİZ.
 export const BOARD = [
-  { kind: 'start', name: 'MAAŞ GÜNÜ', icon: '💰' },
+  { kind: 'start', name: 'BAŞLANGIÇ NOKTASI', icon: '💰' },
   prop('Yakutiye', 'erzurum', 60, 6),
   prop('Palandöken', 'erzurum', 80, 8),
   SURPRIZ_SQ,
@@ -127,7 +127,7 @@ export const CARDS = {
   dayi: { name: 'Dayın Çıktı', icon: '🧔', count: 4, type: 'tepki', text: 'Ödeyeceğin bir kirayı ödemezsin. "Bizim çocuk o, kira falan istemez."' },
   taksi: { name: 'Taksi', icon: '🚕', count: 3, type: 'hamle', when: 'preroll', target: 'steps', text: 'Zar atmak yerine 1-12 kare arasında istediğin kadar ilerle.' },
   kestirme: { name: 'Kestirme', icon: '🛵', count: 4, type: 'hamle', when: 'choose', target: 'die', text: 'Zar attıktan sonra oyna: toplam yerine zarlardan birini seçip o kadar ilerle.' },
-  geriVites: { name: 'Geri Vites', icon: '↩️', count: 2, type: 'hamle', when: 'preroll', target: 'none', text: 'Bu tur zarla geri yönde ilerlersin. Maaş Günü\'nden geçersen maaş yok.' },
+  geriVites: { name: 'Geri Vites', icon: '↩️', count: 2, type: 'hamle', when: 'preroll', target: 'none', text: 'Bu tur zarla geri yönde ilerlersin. Başlangıç Noktası\'ndan geçersen maaş yok.' },
   kamulastirma: { name: 'Kamulaştırma', icon: '🏛️', count: 3, type: 'hamle', target: 'opp-prop', react: true, hukuk: true, text: 'Rakibin katsız, ipoteksiz ve set dışı bir mülkünü, fiyatını ona ödeyerek al.' },
   takas: { name: 'Zorla Takas', icon: '🔁', count: 3, type: 'hamle', target: 'swap', react: true, text: 'Katsız bir mülkünü rakibin katsız, set dışı bir mülküyle değiştir.' },
   tedbir: { name: 'İhtiyati Tedbir', icon: '⚖️', count: 3, type: 'hamle', target: 'opp-prop', react: true, hukuk: true, text: 'Rakibin bir mülkü 2 tur boyunca kira alamaz, üstüne kat dikilemez.' },
@@ -156,7 +156,7 @@ export const GUNDEM = {
   kentsel: { name: 'Kentsel Dönüşüm', icon: '🏗️', count: 1, text: 'Rastgele bir şehirde sahipli her mülke bedava 1 yasal kat.' },
   secimVaadi: { name: 'Seçim Vaadi', icon: '📣', count: 1, text: 'Net değeri en düşük oyuncuya 250 destek.' },
   rantVergisi: { name: 'Rant Vergisi', icon: '🧐', count: 1, text: 'Net değeri en yüksek oyuncu 200 öder.' },
-  grev: { name: 'Bankacılar Grevde', icon: '🪧', count: 1, mod: 'grev', text: 'Bu tur Maaş Günü ödemesi yok.' },
+  grev: { name: 'Bankacılar Grevde', icon: '🪧', count: 1, mod: 'grev', text: 'Bu tur Başlangıç Noktası\'nda maaş ödenmez.' },
   durgunluk: { name: 'Piyasa Durgun', icon: '🥶', count: 1, mod: 'durgunluk', text: 'Bu tur kimse kat dikemez.' },
   kampanya: { name: 'Konut Kampanyası', icon: '🏷️', count: 1, mod: 'kampanya', text: 'Bu tur kat fiyatları yarı fiyatına.' },
   faizIndirimi: { name: 'Faiz İndirimi', icon: '📉', count: 1, mod: 'faizIndirimi', text: 'Bu tur ipotek kaldırmak yarı fiyatına.' },

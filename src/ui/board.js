@@ -26,13 +26,13 @@ export function inkFor(hex) {
   return lum > 0.62 ? '#1b2233' : '#ffffff';
 }
 
-// Mülk: şehir renkli buzlu cam, iç kenarda plaka rozeti. Diğer kareler: sade ikon ve ad (src/ui/icons.js).
+// Mülk: şehir renkli buzlu cam. Diğer kareler: sade ikon ve ad (src/ui/icons.js).
 const iconOf = (sq) => (sq.kind === 'transport' ? sq.mode : sq.kind);
 
 function cellStatic(sq, corner) {
   if (sq.kind === 'prop') {
     const g = GROUPS[sq.group];
-    return html`<div class="frost"></div><div class="band"></div><div class="plate" title="${g.name}">${g.plate}</div><div class="nm">${sq.name}</div><div class="city">${g.name}</div><div class="floors"></div>`;
+    return html`<div class="frost"></div><div class="band"></div><div class="nm">${sq.name}</div><div class="city">${g.name}</div><div class="floors"></div>`;
   }
   const label = html`<div class="lbl">${sq.name}</div>`;
   const ic = html`<div class="ic">${raw(icon(iconOf(sq)))}</div>`;
@@ -49,7 +49,21 @@ export function buildBoard(boardEl) {
     return `<div class="cell ${corner ? 'corner' : `side-${pos.side}`} ${kind}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}${vars}">${cellStatic(sq, corner)}</div>`;
   }).join('');
   boardEl.insertAdjacentHTML('afterbegin', cells);
+  const fit = () => fitNames(boardEl);
+  new ResizeObserver(fit).observe(boardEl);
+  document.fonts?.ready.then(fit);
   return [...boardEl.querySelectorAll('.cell')];
+}
+
+// Uzun semt adı (ör. Odunpazarı) kareye sığmazsa kelime ortasından bölünmez, yazısı küçülür.
+function fitNames(boardEl) {
+  for (const n of boardEl.querySelectorAll('.cell .nm')) {
+    n.style.fontSize = '';
+    const c = n.parentElement;
+    const cs = getComputedStyle(c);
+    const room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    if (n.offsetWidth > room) n.style.fontSize = `${((parseFloat(getComputedStyle(n).fontSize) * room) / n.offsetWidth).toFixed(2)}px`;
+  }
 }
 
 // pick: tahtadan hedef seçilirken parlayacak kareler (yoksa null). open: bilgi penceresi açık kare.

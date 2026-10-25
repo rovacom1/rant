@@ -7,7 +7,7 @@ export const TOKEN = 0.28; // taş çapı, kare genişliğine oranla
 // mülk karelerinde şerit iç kenarda, ad şeride yaslı: taşlar dış kenarda (üst sırada üstte, diğerlerinde altta).
 export function laneY(side, art) {
   if (art) return side === 'c' ? 0.38 : 0.68;
-  return side === 't' ? 0.07 : 0.9;
+  return side === 't' ? 0.03 : 0.9;
 }
 
 // n taşın yan yana yerleri; sığmazlarsa kare genişliğini aşmadan üst üste biner.

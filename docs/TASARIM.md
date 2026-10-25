@@ -37,7 +37,7 @@ Her kenarda 5 mülk, 1 gar, 1 havalimanı ve 1 FIRSAT ya da SÜRPRİZ karesi var
 
 | # | Kare | Tür | Fiyat |
 |---|---|---|---|
-| 0 | MAAŞ GÜNÜ | köşe | geçince ya da gelince maaş |
+| 0 | BAŞLANGIÇ NOKTASI | köşe | geçince ya da gelince maaş |
 | 1 | Yakutiye (Erzurum) | mülk | 60 |
 | 2 | Palandöken (Erzurum) | mülk | 80 |
 | 3 | SÜRPRİZ | sürpriz | rastgele etki, hemen uygulanır |
@@ -108,7 +108,7 @@ Sahil grupları: Antalya, İzmir.
 - **Kendi mülkün**: bir şey olmaz.
 - **FIRSAT**: 2 Hamle kartı çek.
 - **SÜRPRİZ**: Rastgele bir Sürpriz etkisi açılır ve **hemen** uygulanır, seçim yapılmaz (bkz. bölüm 8b).
-- **MAAŞ GÜNÜ**: İleri yönde geçince ya da gelince maaş (200; Asgari Ücret zammıyla artar).
+- **BAŞLANGIÇ NOKTASI**: İleri yönde geçince ya da gelince maaş (200; Asgari Ücret zammıyla artar).
 - **TAPU DAİRESİ**: Tahtadaki sahipsiz herhangi bir mülkü fiyatına alabilirsin. Alacak yoksa 1 kart.
 - **ÇAY OCAĞI**: Diğer her oyuncu sana 25 çay parası öder (nakdi yettiği kadar).
 - **ZABITA**: Kaçak katı olan bir rakibi seç; tüm kaçak katları yıkılır, kat başı 25 ceza öder.
@@ -199,7 +199,7 @@ SÜRPRİZ karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçili
 | Duvarda Çatlak | En yüksek katlı mülkünden 1 kat çöker (önce kaçak kat). |
 | Belediyeden Jest | Rastgele bir mülküne bedava 1 yasal kat. Uygun mülk yoksa 50 teselli. |
 | Dededen Kalma Tarla | Sahipsiz en ucuz mülk bedavaya senin olur. Sahipsiz mülk yoksa 100 al. |
-| Bedava Uçak Bileti | İleri yöndeki ilk havalimanına uçarsın (Maaş Günü'nden geçersen maaş), o kareye gelmiş sayılırsın. |
+| Bedava Uçak Bileti | İleri yöndeki ilk havalimanına uçarsın (Başlangıç Noktası'ndan geçersen maaş), o kareye gelmiş sayılırsın. |
 | Işınlanma | Rastgele bir kareye ışınlanırsın (maaş yok), o kareye gelmiş sayılırsın. SÜRPRİZ karelerine ışınlanılmaz. |
 | Ters Köşe | Rastgele bir rakiple yerini değiştirirsin; ikiniz için de kare etkisi işlemez. |
 | Kapkaç | Rastgele bir rakibin elinden rastgele bir kart kaparsın. Kimsenin kartı yoksa 1 kart çek. |
