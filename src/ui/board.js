@@ -1,5 +1,5 @@
 // Tahta: 8x8 ızgaranın kenarındaki 28 kare, oyuncu taşları ve 3 boyutlu zarlar.
-// Sahipsiz mülkler gri, sahipli mülkler sahibinin rengine boyanır; karede fiyat/kira yazmaz (kareye tıklayınca açılır).
+// Karenin iç kenarındaki şerit sahipsizken gri, alınınca sahibinin rengi; karede fiyat/kira yazmaz (kareye tıklayınca açılır).
 import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
 import { html, raw, esc, sleep } from './dom.js';
 import { play } from './sound.js';
@@ -21,9 +21,10 @@ export function inkFor(hex) {
 }
 
 function cellStatic(sq) {
-  if (sq.kind === 'prop') return html`<div class="nm">${sq.name}</div><div class="city">${GROUPS[sq.group].name}</div><div class="floors"></div>`;
-  const name = esc(sq.name).replace('HAVALİMANI', 'HAVA&shy;LİMANI');
-  return html`<div class="ic">${sq.icon}</div><div class="nm">${raw(name)}</div>`;
+  if (sq.kind === 'prop') return html`<div class="band"></div><div class="nm">${sq.name}</div><div class="city">${GROUPS[sq.group].name}</div><div class="floors"></div>`;
+  const name = raw(esc(sq.name).replace('HAVALİMANI', 'HAVA&shy;LİMANI'));
+  if (sq.kind === 'transport') return html`<div class="band"></div><div class="ic">${sq.icon}</div><div class="nm">${name}</div>`;
+  return html`<div class="ic">${sq.icon}</div><div class="nm">${name}</div>`;
 }
 
 export function buildBoard(boardEl) {

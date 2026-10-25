@@ -11,3 +11,4 @@ Her hatadan sonra buraya kısa bir kural yaz; oturum başında oku.
 - **Zamanlanmış oturumda tarayıcı önizlemesi açılamayabilir:** Otomatik oturum izin alamazsa arayüz değişikliği yalnız testlerle doğrulanır; günlüğe yaz ki elle denensin.
 - **Kaydırma çubuğu sürüklenirken öğe yeniden çizilmemeli (2026-10-25):** Değer HTML metnine girerse her harekette pencere yeniden çizilir ve sürükleme kopar. Değeri `data-show` öğesine doğrudan yaz, HTML'e koyma; aralık girişinde boş değer tarayıcıda ortaya düşer, varsayılanı '0' yap.
 - **Genel sınıf adları çakışır:** Pazarlıktaki `.pick` etiket stili, tahtadan seçmedeki `.cell.pick` karelerine de uygulanıyordu. Yeni sınıf eklerken `grep` ile aynı adın başka yerde kullanılmadığını kontrol et.
+- **CSS değişkenindeki göreli url() stil dosyasına göre çözülür (2026-10-25):** `style="--art:url(assets/...)"` ile verilen resim `styles/assets/...` olarak arandı ve görünmedi. Resmi doğrudan `background-image` ile öğeye ver.

@@ -1,7 +1,8 @@
 // Oyun ekranı: tahta, orta alan, yan panel, pencereler ve olay efektleri.
 import * as E from '../engine/index.js';
 import { html, raw, esc, $, setHTML, sleep } from './dom.js';
-import { play, isMuted } from './sound.js';
+import { play, isMuted, getAudio, startMusic, stopMusic } from './sound.js';
+import { Hand, cardFace, flyToCenter } from './hand.js';
 import { isNotifyOn, notifySupported } from './notify.js';
 import { buildBoard, updateBoard, Tokens, Dice, inkFor, cellPos } from './board.js';
 import { app, act, send, isHost } from './state.js';
@@ -15,6 +16,7 @@ let els = null;
 let cells = null;
 let tokens = null;
 let dice = null;
+let hand = null;
 let animating = false;
 
 // ---------- iskelet ----------
@@ -29,12 +31,11 @@ export function mountGame(root) {
       <div class="stat">Tur<b id="tRound"></b></div>
       <div class="stat">Endeks<b id="tIndex"></b></div>
       <div class="stat">Maaş<b id="tSalary"></b></div>
-      <div class="mods" id="tMods"></div>
       <div class="spacer"></div>
       <span class="conn" id="tConn"></span>
       <button class="iconbtn" data-act="copyLink" id="tCode" title="Davet linkini kopyala"></button>
       <button class="iconbtn" data-act="rules">❓ Kurallar</button>
-      <button class="iconbtn" data-act="mute" id="tMute" title="Ses"></button>
+      <button class="iconbtn" data-act="audio" id="tAudio" title="Müzik ve ses ayarları"></button>
       <button class="iconbtn${notifySupported() ? '' : ' hidden'}" data-act="notify" id="tNotify" title="Sekme arkadayken sıra sana gelince masaüstü bildirimi"></button>
       <button class="iconbtn" data-act="leave">Çık</button>
     </header>
@@ -49,11 +50,11 @@ export function mountGame(root) {
           <div class="tokens" id="tokens"></div>
           <div id="pop"></div>
         </div>
+        <div class="hand-dock" id="handDock"><div class="quest hidden" id="quest"></div><div class="deck" id="deck"></div></div>
       </section>
       <aside class="side">
-        <div class="panel players" id="players"></div>
-        <div class="panel me-panel" id="mePanel"></div>
-        <div class="panel feed">
+        <div class="seats-panel" id="players"></div>
+        <div class="feed">
           <div class="tabs"><button data-act="tab" data-tab="log" id="tabLog">Olaylar</button><button data-act="tab" data-tab="chat" id="tabChat">Sohbet</button></div>
           <div class="feed-list" id="feed"></div>
           <form class="chat-form hidden" id="chatForm"><input class="input" id="chatInput" maxlength="200" placeholder="Masaya bir şey yaz…" autocomplete="off"><button class="btn small turq">Gönder</button></form>
@@ -62,17 +63,19 @@ export function mountGame(root) {
       </aside>
     </main>
   </div>
-  <div id="modal"></div><div class="toasts" id="toasts"></div><div id="stage"></div>`;
+  <div id="modal"></div><div class="toasts" id="toasts"></div><div id="stage"></div><div id="audioPop"></div>`;
   const g = (id) => document.getElementById(id);
   els = {
-    round: g('tRound'), index: g('tIndex'), salary: g('tSalary'), mods: g('tMods'), conn: g('tConn'), code: g('tCode'), mute: g('tMute'), notify: g('tNotify'),
+    round: g('tRound'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
     board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'),
-    players: g('players'), me: g('mePanel'), feed: g('feed'), chatForm: g('chatForm'), chatInput: g('chatInput'), quick: g('quick'),
+    players: g('players'), feed: g('feed'), handDock: g('handDock'), quest: g('quest'), deck: g('deck'), audioPop: g('audioPop'), chatForm: g('chatForm'), chatInput: g('chatInput'), quick: g('quick'),
     tabLog: g('tabLog'), tabChat: g('tabChat'), modal: g('modal'), stage: g('stage'),
   };
   cells = buildBoard(els.board);
   tokens = new Tokens(els.tokens, cells);
   dice = new Dice(els.dice);
+  hand = new Hand(els.handDock);
+  startMusic();
   els.chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const t = els.chatInput.value.trim();
@@ -84,6 +87,7 @@ export function mountGame(root) {
 export const gameMounted = () => !!els && document.body.contains(els.board);
 export const unmountGame = () => {
   els = null;
+  stopMusic();
 };
 
 // ---------- yardımcılar ----------
@@ -125,6 +129,8 @@ function timerHTML(v, ids) {
 
 // ---------- üst çubuk ----------
 
+export { canPlay };
+
 const MOD_LABEL = {
   turizm: '🏖️ Turizm', ulasimZam: '🎫 Ulaşım x3', kiraTavani: '🧯 Kira yarı', kiraArtisi: '🔥 Kira x1,5', grev: '🪧 Maaş yok',
   durgunluk: '🥶 Kat yok', kampanya: '🏷️ Kat yarı fiyat', faizIndirimi: '📉 İpotek indirimi', zabitaIzinde: '🏝️ Zabıta izinde',
@@ -134,9 +140,8 @@ function updateTopbar(v) {
   els.round.textContent = v.round ? `${v.round}/${v.config.maxRounds}` : '-';
   els.index.textContent = v.index;
   els.salary.textContent = fmt(v.salary);
-  setHTML(els.mods, Object.keys(v.mods).map((m) => html`<span class="chip">${MOD_LABEL[m] || m}</span>`).join(''));
   els.code.textContent = app.mode === 'local' ? '🤖 Yerel oyun' : `🔗 Oda ${app.code}`;
-  els.mute.textContent = isMuted() ? '🔇' : '🔊';
+  els.audio.textContent = isMuted() ? '🔇' : '🔊';
   els.notify.textContent = isNotifyOn() ? '🔔' : '🔕';
   const st = app.status;
   els.conn.textContent = st === 'reconnecting' ? '⚠ Bağlantı koptu, yeniden bağlanılıyor…' : st === 'online' ? '● Bağlı' : '';
@@ -146,13 +151,17 @@ function updateTopbar(v) {
 // ---------- orta alan ----------
 
 function gundemHTML(v) {
+  const max = v.config.maxRounds;
+  const ring = (p, big, small) => html`<div class="ring" style="--p:${p}"><div><b>${big}</b><span>${small}</span></div></div>`;
   if (!v.gundem) {
-    return html`<div class="gundem-card"><div class="gi">🗳️</div><div><div class="gt">Seçime ${v.config.maxRounds} tur var</div><div class="gx">Herkes gizli hedefini seçiyor.</div></div></div>`;
+    return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div><div class="nb-k">SEÇİM YOLU</div><div class="nb-t">Seçime ${max} tur var</div><div class="nb-x">Herkes gizli hedefini seçiyor.</div></div>${ring(0, max, 'TUR')}</div>`;
   }
   const g = GUNDEM[v.gundem.id];
-  const left = v.config.maxRounds - v.round;
-  return html`<div class="gundem-card"><div class="gi">${g.icon}</div><div><div class="gt">${g.name}</div><div class="gx">${g.text}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</div></div>
-    <div class="round">${left ? `Seçime ${left} tur` : 'SON TUR'}<b>${v.round}/${v.config.maxRounds}</b></div></div>`;
+  const left = max - v.round;
+  const mods = Object.keys(v.mods).map((m) => html`<span class="chip">${MOD_LABEL[m] || m}</span>`);
+  return html`<div class="news-bar"><div class="nb-ic">${g.icon}</div>
+    <div><div class="nb-k">GÜNDEM · ${v.round}. TUR</div><div class="nb-t">${g.name}</div><div class="nb-x">${g.text}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</div>${mods.length ? html`<div class="nb-mods">${mods}</div>` : ''}</div>
+    ${ring(Math.round((v.round / max) * 100), left || 'SON', left ? 'TUR KALDI' : 'TUR')}</div>`;
 }
 
 const SPECIAL_INFO = {
@@ -322,7 +331,7 @@ function pendingHTML(v, pd) {
       const attacker = P(v, c.by);
       const victim = P(v, pd.victim);
       const what = c.target && c.target.sq !== undefined ? ` (${BOARD[c.target.sq].name})` : c.target && c.target.theirs !== undefined ? ` (${BOARD[c.target.mine].name} ↔ ${BOARD[c.target.theirs].name})` : '';
-      const desc = html`<div class="bigcard" style="max-width:420px"><div class="ci">${card.icon}</div><div><div class="cn">${card.name}${what}</div><div class="ct">${attacker.name} → ${victim.name}${pd.chain ? ` · ${pd.chain} itiraz` : ''}</div></div></div>`;
+      const desc = html`<div class="react-card">${cardFace(c.id)}<div><b>${attacker.name} → ${victim.name}</b><div class="muted">${card.name}${what}${pd.chain ? ` · ${pd.chain} itiraz` : ''}</div></div></div>`;
       if (pd.responder !== me) return html`${desc}<p>${P(v, pd.responder).name} itiraz edecek mi?</p>${timerHTML(v, [pd.responder])}`;
       const it = P(v, me).hand.find((u) => cardId(u) === 'itiraz');
       const counter = me === c.by;
@@ -386,44 +395,55 @@ function slider(bind, max, color, step = 10) {
 function playersHTML(v) {
   const waiting = new Set(E.waitingFor(v));
   const conn = (app.meta && app.meta.connected) || {};
+  const manage = canManage(v);
   return v.players
     .map((pl, i) => {
-      const props = E.propsOf(v, i);
-      const nw = E.netWorth(v, i);
+      const turn = v.phase === 'play' && v.turn && v.turn.p === i;
       const flags = [
-        pl.bot ? '🤖' : conn[pl.id] === false ? '📴' : '',
-        pl.konkordato ? `⚠️×${pl.konkordato}` : '',
-        pl.kiraZammi ? '📈' : '',
-        waiting.has(i) && v.phase !== 'over' ? html`<span class="wait">⏳</span>` : '',
+        pl.bot ? html`<span title="Bot">🤖</span>` : conn[pl.id] === false ? html`<span title="Bağlantısı koptu">📴</span>` : '',
+        pl.konkordato ? html`<span title="Konkordato">⚠️${pl.konkordato}</span>` : '',
+        pl.kiraZammi ? html`<span title="Kira Zammı etkin">📈</span>` : '',
+        waiting.has(i) && !turn && v.phase !== 'over' ? html`<span class="s-wait" title="Bekleniyor"></span>` : '',
       ];
-      return html`<div class="pl ${v.turn && v.turn.p === i ? 'turn' : ''} ${i === v.you ? 'me' : ''}" data-act="player" data-p="${i}">
-        ${av(pl)}<div><div class="pname">${pl.name} ${flags}</div>
-        <div class="psub"><span title="Mülk sayısı">🏠 ${props.length}</span><span title="Kart sayısı">🂠 ${pl.handCount}</span></div></div>
-        <div class="pcash money ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}" title="Net değer ${fmt(nw)}">${fmt(pl.cash)}</div></div>`;
+      const tags = [i === v.you ? html`<span class="s-tag me">SEN</span>` : '', turn ? html`<span class="s-tag">SIRADA</span>` : ''];
+      const acts =
+        i === v.you
+          ? html`<div class="s-acts"><button class="btn small ghost" data-act="manage">🏠 Mülklerim</button><button class="btn small turq" data-act="trade" ${manage ? '' : 'disabled'} title="Sıra sendeyken pazarlık teklif edebilirsin">🤝 Pazarlık</button></div>`
+          : '';
+      return html`<div class="seat2 ${turn ? 'turn' : ''}" style="--c:${pl.color}" data-act="player" data-p="${i}">
+        <div class="s-av">${pl.avatar}</div>
+        <div><div class="s-name">${pl.name} ${tags} ${flags}</div>
+          <div class="s-meta"><span title="Mülk sayısı">🏠 ${E.propsOf(v, i).length}</span><span class="s-backs" title="${pl.handCount} kart">${raw('<i></i>'.repeat(Math.min(pl.handCount, 8)))}</span></div></div>
+        <div class="s-cash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${fmt(pl.cash)}<small>değer ${fmt(E.netWorth(v, i))}</small></div>${acts}</div>`;
     })
     .join('');
 }
 
-function meHTML(v) {
+// Ekranın altındaki el, gizli hedef kartı ve deste.
+function renderHand(v) {
   const me = v.you;
-  if (me < 0) return html`<div class="muted">İzleyici olarak bakıyorsun.</div>`;
+  if (me < 0) {
+    hand.render([], () => ({}));
+    els.quest.classList.add('hidden');
+    return;
+  }
   const pl = P(v, me);
   const discard = v.pending && v.pending.type === 'discard' && v.pending.p === me;
-  const hand = pl.hand
-    .map((u) => {
-      const c = CARDS[cardId(u)];
-      const cls = [c.type === 'tepki' ? 'tepki' : '', canPlay(v, u) ? 'playable' : '', app.ui.selected.includes(u) ? 'sel' : '', app.ui.newCards?.includes(u) ? 'new' : ''].join(' ');
-      return html`<div class="hcard ${cls}" data-act="openCard" data-uid="${u}" title="${c.text}"><div class="ci">${c.icon}</div><div class="cn">${c.name}</div><div class="ct">${c.type === 'tepki' ? 'TEPKİ' : 'HAMLE'}</div></div>`;
-    })
-    .join('');
+  hand.render(pl.hand, (u) => ({ playable: !discard && canPlay(v, u), selected: app.ui.selected.includes(u) }), app.ui.newCards || []);
+  app.ui.newCards = [];
   const h = pl.hedef && HEDEF[pl.hedef];
-  const hedefOk = h && E.hedefMet(v, me, pl.hedef);
-  const manage = canManage(v);
-  return html`<div class="me-head"><h4>Elin (${pl.hand.length}/${v.config.handLimit})${discard ? ' — atılacakları seç' : ''}</h4><div class="grow"></div>
-      <button class="btn small ghost" data-act="manage">🏠 Mülklerim</button>
-      <button class="btn small turq" data-act="trade" ${manage ? '' : 'disabled'} title="Sıra sendeyken pazarlık teklif edebilirsin">🤝 Pazarlık</button></div>
-    <div class="hand">${raw(hand) || html`<span class="muted">Elinde kart yok.</span>`}</div>
-    ${h ? html`<div class="hedef-box" title="${h.text}"><span class="hi">${h.icon}</span><b>${h.name}</b><span class="muted">+${h.bonus}</span><div class="grow"></div>${hedefOk ? html`<span class="chip ok">✓ tutuyor</span>` : ''}</div>` : ''}`;
+  els.quest.classList.toggle('hidden', !h);
+  if (h) setHTML(els.quest, html`<div class="q-k">GİZLİ HEDEF</div><div class="q-n">${h.icon} ${h.name}</div><div class="q-t">${h.text} (+${h.bonus} puan)</div>${E.hedefMet(v, me, pl.hedef) ? html`<div class="q-ok">✓ şu an tutuyor</div>` : ''}`);
+  setHTML(els.deck, html`<i></i><i></i><i></i><b title="Destede kalan kart">${v.deck}</b>`);
+}
+
+function renderAudioPop() {
+  if (!app.ui.audioOpen) return setHTML(els.audioPop, '');
+  const a = getAudio();
+  const row = (k, label, color) =>
+    html`<div class="audio-row"><label><input type="checkbox" data-act="audioToggle" data-k="${k}" ${a[`${k}On`] ? 'checked' : ''}> ${label}</label><span class="muted small" data-audio-show="${k}">%${Math.round(a[k] * 100)}</span>
+      <input type="range" class="slider" min="0" max="100" step="5" value="${Math.round(a[k] * 100)}" data-audio="${k}" style="--c:${color}"></div>`;
+  setHTML(els.audioPop, html`<div class="audio-pop"><h4>🎵 Ses ayarları</h4>${row('music', '🎶 Müzik', '#00798c')}${row('sfx', '🔔 Efektler', '#d1495b')}</div>`);
 }
 
 function feedHTML() {
@@ -458,14 +478,13 @@ function cardDialog(v, uid) {
   const c = CARDS[id];
   const me = v.you;
   const playable = canPlay(v, uid);
-  const big = html`<div class="bigcard ${c.type === 'tepki' ? 'tepki' : ''}"><div class="ci">${c.icon}</div><div><div class="cn">${c.name}</div><div class="ct">${c.text}</div>
-    <div class="chip" style="margin-top:6px">${c.type === 'tepki' ? 'TEPKİ: gerektiğinde sana sorulur' : { preroll: 'Zar atmadan önce', choose: 'Zar attıktan sonra', buy: 'Satın alma kararında' }[c.when] || 'Sıran sendeyken'}</div></div></div>`;
+  const big = cardFace(id, 'big');
   if (!playable) {
     let why = 'Bu kart şu an oynanamaz.';
     if (c.type === 'tepki') why = 'Bu bir tepki kartı; zamanı gelince sana sorulacak.';
     else if (v.turn && v.turn.p === me && v.turn.hamle) why = 'Bu tur zaten bir Hamle kartı oynadın.';
     else if (v.turn && v.turn.p === me && !v.pending && E.cardTargets(v, me, id).length === 0) why = 'Bu kart için uygun hedef yok.';
-    return html`<h2>Kart</h2>${big}<p class="reason">${why}</p>`;
+    return html`<div class="cdlg">${big}<div class="cdlg-r"><h2>${c.name}</h2><p class="reason">${why}</p></div></div>`;
   }
   const targets = E.cardTargets(v, me, id);
   const play = (t, label) => html`<button data-act="play" data-uid="${uid}" data-t="${JSON.stringify(t)}">${label}</button>`;
@@ -499,7 +518,7 @@ function cardDialog(v, uid) {
       body = html`<div class="row center"><button class="btn primary big" data-act="play" data-uid="${uid}" data-t="{}">Oyna</button></div>`;
   }
   const fromBoard = isBoardPickable(uid) ? html`<div class="row center"><button class="btn turq" data-act="pickBoard" data-uid="${uid}">🎯 Tahtadan seç</button></div>` : '';
-  return html`<h2>Kart oyna</h2>${big}${body}${fromBoard}`;
+  return html`<div class="cdlg">${big}<div class="cdlg-r"><h2>${c.name}</h2>${body}${fromBoard}</div></div>`;
 }
 
 function propActions(v, sq) {
@@ -691,7 +710,8 @@ export function updateGame() {
   if (!animating) dice.show(v.pending || !v.turn ? null : v.turn.dice);
   renderPop(v);
   setHTML(els.players, playersHTML(v));
-  setHTML(els.me, meHTML(v));
+  renderHand(v);
+  renderAudioPop();
   renderFeed();
   renderModal();
   tickTimers();
@@ -765,6 +785,37 @@ function summaryHTML(v, sm) {
   return rows.length ? html`<div class="recap"><div class="rk">${sm.round}. TURUN ÖZETİ</div>${rows}</div>` : '';
 }
 
+function boardCenter() {
+  const r = els.board.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+// Oynadığım kart elden tahtanın ortasına uçar.
+function flyMine(prev, v, id) {
+  const me = v.you;
+  const before = prev && prev.players[me] ? prev.players[me].hand : [];
+  const uid = before.find((u) => cardId(u) === id && !v.players[me].hand.includes(u));
+  const from = uid && hand.rectOf(uid);
+  if (from) flyToCenter(cardFace(id), from, boardCenter());
+}
+
+// Başkasının oynadığı kart ortada büyük gösterilir.
+function revealCard(v, ev, tries = 0) {
+  // Tur başı haber kartı ekrandaysa onun kapanmasını bekle (üst üste binmesin).
+  if (els && els.stage.firstChild && tries < 10) return setTimeout(() => revealCard(v, ev, tries + 1), 500);
+  if (!els) return;
+  document.querySelectorAll('.reveal').forEach((r) => r.remove());
+  const c = boardCenter();
+  const el = document.createElement('div');
+  el.className = 'reveal';
+  el.style.left = `${c.x}px`;
+  el.style.top = `${c.y}px`;
+  const pl = P(v, ev.p);
+  el.innerHTML = String(html`<div class="who">${av(pl, 'sm')} ${pl.name} oynadı</div>${cardFace(ev.card, 'big')}`);
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2100);
+}
+
 export function confetti() {
   const colors = ['#d1495b', '#edae49', '#00798c', '#2f9e66', '#24408e', '#fff'];
   for (let i = 0; i < 90; i++) {
@@ -786,7 +837,9 @@ export async function present(prev, v, events, fast) {
     switch (ev.type) {
       case 'card':
         play(ev.card === 'itiraz' ? 'itiraz' : 'card');
-        if (ev.p !== me) toast(`${CARDS[ev.card].icon} ${ev.text}`, 'card');
+        if (fast) break;
+        if (ev.p === me) flyMine(prev, v, ev.card);
+        else revealCard(v, ev);
         break;
       case 'money':
         if (!fast) {
@@ -808,6 +861,7 @@ export async function present(prev, v, events, fast) {
         toast(`⚠️ ${P(v, ev.p).name} konkordato ilan etti!`, 'error');
         break;
       case 'auction':
+        if (ev.winner !== null) play('sold');
         if (ev.winner !== null) toast(`🔨 ${BOARD[ev.sq].name} → ${P(v, ev.winner).name}`, 'good');
         break;
       case 'tradeDone':

@@ -1,100 +1,182 @@
-// Sesler WebAudio ile anında üretilir; dosya yok.
+// Ses: assets/ses altındaki kayıtlar WebAudio ile çalınır; arka planda yumuşak geçişli döngü müzik.
+// Müzik ve efektlerin ayrı ses düzeyi ve aç/kapa ayarı var (tarayıcıda saklanır).
+// Dosya yüklenemezse çok kısık, yumuşak sentez seslere düşülür.
 import { store } from './dom.js';
 
-let ctx = null;
-let muted = store.get('muted', false);
+const FILE = { dice: 'zar', step: 'adim', coin: 'para', pay: 'odeme', card: 'kart', turn: 'sira', news: 'gundem', itiraz: 'tokmak', build: 'insaat', crash: 'yikim', win: 'zafer', chat: 'mesaj', sold: 'ihale', error: 'adim' };
+const LEVEL = { step: 0.3, chat: 0.6, error: 0.45, pay: 0.7, card: 0.8 };
+// Her sesin en fazla çalma süresi (sn); sonunda yumuşak kapanır.
+const MAX_LEN = { step: 0.28, chat: 0.6, card: 1.1, coin: 1.4, pay: 1.2, dice: 1.6, turn: 1.6, itiraz: 1.3, build: 1.3, sold: 1.8, crash: 1.8, news: 2.6, win: 3.6, error: 0.3 };
+const TARGET_RMS = 0.11;
+const XFADE = 3; // müzik döngüsünde geçiş süresi (sn)
 
-const ac = () => {
+const cfg = { music: 0.35, sfx: 0.75, musicOn: true, sfxOn: true, ...store.get('audio', {}) };
+let ctx = null;
+let sfxGain = null;
+let musicGain = null;
+const buffers = {};
+let musicBuf = null;
+let inGame = false;
+let current = null;
+let loopTimer = null;
+
+function ac() {
   if (!ctx) {
     const C = window.AudioContext || window.webkitAudioContext;
     if (!C) return null;
     ctx = new C();
+    sfxGain = ctx.createGain();
+    musicGain = ctx.createGain();
+    sfxGain.connect(ctx.destination);
+    musicGain.connect(ctx.destination);
+    applyVolumes();
+    load();
   }
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
-};
-
-function tone(freq, dur, { type = 'sine', vol = 0.15, at = 0, slide = 0 } = {}) {
-  const a = ac();
-  if (!a) return;
-  const t = a.currentTime + at;
-  const o = a.createOscillator();
-  const g = a.createGain();
-  o.type = type;
-  o.frequency.setValueAtTime(freq, t);
-  if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g).connect(a.destination);
-  o.start(t);
-  o.stop(t + dur + 0.02);
 }
 
-function noise(dur, { vol = 0.12, at = 0, freq = 1800 } = {}) {
-  const a = ac();
-  if (!a) return;
-  const t = a.currentTime + at;
-  const buf = a.createBuffer(1, Math.ceil(a.sampleRate * dur), a.sampleRate);
+async function fetchBuf(name) {
+  const r = await fetch(`assets/ses/${name}.mp3`);
+  if (!r.ok) throw new Error(name);
+  return ctx.decodeAudioData(await r.arrayBuffer());
+}
+
+// Baştaki sessizliği atlar, sesi ortak bir düzeye getirir.
+function prep(buf) {
   const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-  const src = a.createBufferSource();
-  src.buffer = buf;
-  const f = a.createBiquadFilter();
-  f.type = 'bandpass';
-  f.frequency.value = freq;
-  const g = a.createGain();
-  g.gain.value = vol;
-  src.connect(f).connect(g).connect(a.destination);
-  src.start(t);
+  let start = 0;
+  while (start < d.length && Math.abs(d[start]) < 0.008) start++;
+  const end = Math.min(d.length, start + buf.sampleRate * 1.5);
+  let sum = 0;
+  let n = 0;
+  let peak = 0.01;
+  for (let i = start; i < end; i += 4) {
+    sum += d[i] * d[i];
+    peak = Math.max(peak, Math.abs(d[i]));
+    n++;
+  }
+  const rms = Math.sqrt(sum / Math.max(1, n)) || TARGET_RMS;
+  // Ortalama düzeye çek ama tepe değeri 0.9'u geçmesin (cızırtı olmasın).
+  return { buf, offset: start / buf.sampleRate, gain: Math.min(3, Math.max(0.15, Math.min(TARGET_RMS / rms, 0.9 / peak))) };
 }
 
-const SOUNDS = {
-  dice: () => {
-    for (let i = 0; i < 5; i++) noise(0.05, { at: i * 0.07, freq: 2500 + i * 300, vol: 0.18 });
-  },
-  step: () => tone(520, 0.05, { type: 'triangle', vol: 0.05 }),
-  coin: () => {
-    tone(988, 0.08, { type: 'square', vol: 0.05 });
-    tone(1319, 0.18, { type: 'square', vol: 0.05, at: 0.07 });
-  },
-  pay: () => tone(440, 0.22, { type: 'triangle', vol: 0.09, slide: 0.6 }),
-  card: () => noise(0.12, { freq: 4000, vol: 0.1 }),
-  turn: () => {
-    tone(659, 0.18, { vol: 0.12 });
-    tone(880, 0.3, { vol: 0.12, at: 0.14 });
-  },
-  news: () => {
-    [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, { type: 'triangle', vol: 0.1, at: i * 0.09 }));
-  },
-  itiraz: () => {
-    tone(160, 0.35, { type: 'sawtooth', vol: 0.09 });
-    tone(150, 0.35, { type: 'square', vol: 0.05, at: 0.05 });
-  },
-  build: () => {
-    tone(300, 0.06, { type: 'square', vol: 0.06 });
-    tone(300, 0.06, { type: 'square', vol: 0.06, at: 0.12 });
-  },
-  crash: () => noise(0.5, { freq: 400, vol: 0.25 }),
-  win: () => {
-    [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.25, { type: 'triangle', vol: 0.12, at: i * 0.12 }));
-  },
-  chat: () => tone(1200, 0.06, { vol: 0.05 }),
-  error: () => tone(220, 0.15, { type: 'square', vol: 0.06 }),
-};
+function load() {
+  for (const f of new Set(Object.values(FILE))) {
+    fetchBuf(f)
+      .then((b) => (buffers[f] = prep(b)))
+      .catch(() => {});
+  }
+  fetchBuf('muzik')
+    .then((b) => {
+      musicBuf = b;
+      if (inGame && cfg.musicOn) startLoop(false);
+    })
+    .catch(() => {});
+}
+
+function applyVolumes() {
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  sfxGain.gain.setTargetAtTime(cfg.sfxOn ? cfg.sfx : 0, t, 0.05);
+  musicGain.gain.setTargetAtTime(cfg.musicOn ? cfg.music * 0.55 : 0, t, 0.15);
+}
+
+function synth(name) {
+  const t = ctx.currentTime;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  const f = { coin: 1320, turn: 784, win: 1047, error: 220 }[name] || 600;
+  o.type = 'sine';
+  o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.05, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+  o.connect(g).connect(sfxGain);
+  o.start(t);
+  o.stop(t + 0.3);
+}
 
 export function play(name) {
-  if (muted) return;
+  if (!cfg.sfxOn || !cfg.sfx) return;
+  const a = ac();
+  if (!a) return;
   try {
-    SOUNDS[name]?.();
+    const b = buffers[FILE[name]];
+    if (!b) return synth(name);
+    const src = a.createBufferSource();
+    src.buffer = b.buf;
+    const g = a.createGain();
+    const vol = b.gain * (LEVEL[name] ?? 1);
+    const len = Math.min(MAX_LEN[name] || 2, b.buf.duration - b.offset);
+    const t = a.currentTime;
+    g.gain.setValueAtTime(vol, t);
+    g.gain.setValueAtTime(vol, t + Math.max(0, len - 0.12));
+    g.gain.linearRampToValueAtTime(0, t + len);
+    src.connect(g).connect(sfxGain);
+    src.start(t, b.offset);
+    src.stop(t + len + 0.02);
   } catch {}
 }
 
-export const isMuted = () => muted;
-export function toggleMute() {
-  muted = !muted;
-  store.set('muted', muted);
-  return muted;
+// ---- müzik ----
+
+function startLoop(fadeIn) {
+  if (!ctx || !musicBuf) return;
+  const src = ctx.createBufferSource();
+  src.buffer = musicBuf;
+  const g = ctx.createGain();
+  const now = ctx.currentTime;
+  const dur = musicBuf.duration;
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(1, now + (fadeIn ? XFADE : 2));
+  g.gain.setValueAtTime(1, now + dur - XFADE);
+  g.gain.linearRampToValueAtTime(0, now + dur);
+  src.connect(g).connect(musicGain);
+  src.start(now);
+  current = { src, g };
+  clearTimeout(loopTimer);
+  loopTimer = setTimeout(() => inGame && cfg.musicOn && startLoop(true), Math.max(1, dur - XFADE) * 1000);
+}
+
+function stopLoop() {
+  clearTimeout(loopTimer);
+  if (current && ctx) {
+    const { src, g } = current;
+    const t = ctx.currentTime;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.linearRampToValueAtTime(0, t + 0.8);
+    src.stop(t + 0.9);
+  }
+  current = null;
+}
+
+export function startMusic() {
+  if (inGame) return;
+  inGame = true;
+  if (cfg.musicOn && ac()) startLoop(false);
+}
+
+export function stopMusic() {
+  if (!inGame) return;
+  inGame = false;
+  stopLoop();
+}
+
+// ---- ayarlar ----
+
+export const getAudio = () => ({ ...cfg });
+export const isMuted = () => !(cfg.musicOn && cfg.music) && !(cfg.sfxOn && cfg.sfx);
+
+export function setAudio(patch) {
+  const wasMusic = cfg.musicOn;
+  Object.assign(cfg, patch);
+  store.set('audio', cfg);
+  applyVolumes();
+  if (!inGame) return;
+  if (cfg.musicOn && !wasMusic && ac()) startLoop(true);
+  if (!cfg.musicOn && wasMusic) stopLoop();
 }
 
 // İlk tıklamada ses bağlamını aç (tarayıcı kuralı).

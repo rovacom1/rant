@@ -4,11 +4,11 @@ import { Host } from '../net/host.js';
 import { localPair, openRoom, joinRoom, randomCode, normalizeCode } from '../net/transport.js';
 import { APP_VERSION, PROTOCOL, SAVE_VERSION } from '../version.js';
 import { html, raw, $, store, sleep } from './dom.js';
-import { play, toggleMute } from './sound.js';
+import { play, setAudio } from './sound.js';
 import { toggleNotify, watchTurn } from './notify.js';
 import { app, profile, send, act, isHost } from './state.js';
 import * as G from './gameview.js';
-import { pickClick } from './pick.js';
+import { pickClick, isBoardPickable } from './pick.js';
 import { RULES_HTML } from './rules.js';
 
 const root = document.getElementById('app');
@@ -420,8 +420,12 @@ const A = {
     if (app.mode !== 'host' && playing && !confirm('Oyundan çıkılsın mı? Aynı linkle geri dönebilirsin.')) return;
     leave();
   },
-  mute() {
-    toggleMute();
+  audio() {
+    app.ui.audioOpen = !app.ui.audioOpen;
+    G.updateGame();
+  },
+  audioToggle(el) {
+    setAudio({ [`${el.dataset.k}On`]: el.checked });
     G.updateGame();
   },
   async notify() {
@@ -550,7 +554,24 @@ const A = {
   quick: (el) => send({ t: 'chat', text: el.dataset.text }),
 };
 
+// Elden gelen kart olayları: tıklayınca ayrıntı, yukarı sürükleyip bırakınca oyna.
+document.addEventListener('rant:card', (e) => {
+  const v = V();
+  if (!v) return;
+  const { uid, how } = e.detail;
+  if (how === 'click' || (v.pending && v.pending.type === 'discard')) return A.openCard({ dataset: { uid } });
+  if (!G.canPlay(v, uid)) return;
+  const target = E.CARDS[E.cardId(uid)].target;
+  if (target === 'none') return act({ type: 'playCard', uid, target: {} });
+  if (isBoardPickable(uid)) return A.pickBoard({ dataset: { uid } });
+  A.openCard({ dataset: { uid } });
+});
+
 document.addEventListener('click', (e) => {
+  if (app.ui.audioOpen && !e.target.closest('.audio-pop, #tAudio')) {
+    app.ui.audioOpen = false;
+    G.updateGame();
+  }
   // Kira penceresi dışına tıklanınca kapanır.
   if (app.ui.popSq !== null && app.ui.popSq !== undefined && !e.target.closest('.pop, .cell')) closePop();
   const el = e.target.closest('[data-act]');
@@ -562,6 +583,13 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('input', (e) => {
+  const k = e.target.dataset && e.target.dataset.audio;
+  if (k) {
+    setAudio({ [k]: Number(e.target.value) / 100 });
+    const show = document.querySelector(`[data-audio-show="${k}"]`);
+    if (show) show.textContent = `%${e.target.value}`;
+    return;
+  }
   if (G.bindsInput(e)) return;
   if (e.target.id === 'nameInput') {
     profile.name = e.target.value.trim().slice(0, 16);

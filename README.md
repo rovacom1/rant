@@ -42,3 +42,9 @@ npm run dev       # http://127.0.0.1:4188
 ```
 
 Yol haritası: [ROADMAP.md](ROADMAP.md) · Geliştirme günlüğü: [GELISTIRME_GUNLUGU.md](GELISTIRME_GUNLUGU.md)
+
+## Emeği geçenler
+
+- Kart görselleri: Google Gemini (Nano Banana) ile üretildi.
+- Ses efektleri ve müzik: ElevenLabs ile üretildi.
+- Yazı tipleri: Fredoka ve Nunito (Google Fonts).

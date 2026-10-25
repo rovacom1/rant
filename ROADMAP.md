@@ -24,6 +24,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Hearthstone tarzı el (yelpaze, büyüme, sürükleyip oynama, desteden çekme, oynanan kartın ortada gösterilmesi), 16 kart görseli, yeni sağ panel, gündem barı ve haber kartı, ElevenLabs ses efektleri ve arka plan müziği, ses ayarları; tahtada şerit rengiyle sahiplik (v0.3.0)
 - [x] Kullanıcı geri bildirimiyle sade arayüz: Fredoka + Nunito yazı tipi, 3 boyutlu zar, gri/oyuncu rengi tahta, karelerde fiyat-kira yok (tıklayınca kira penceresi), pazarlık ve ihalede kaydırma çubuğu (v0.2.0)
 - [x] Oyun motoru, kurallar, kartlar, gündem, ihale, itiraz zinciri, pazarlık, borç/konkordato (v0.1.0)
 - [x] Sezgisel botlar ve denge simülasyonu (v0.1.0)

@@ -8,7 +8,9 @@
 ## Arayüz ilkeleri (kullanıcı geri bildirimi, 2026-10-25)
 - Ekranda az yazı ve sayı. Yeni bilgi önce bir tıklamanın arkasına (küçük pencere, ipucu) konur.
 - Karelerde fiyat ve kira yazmaz; kareye tıklayınca kaç katta kaç kira olduğunu gösteren küçük pencere açılır.
-- Sahiplik oyuncu rengiyle gösterilir: sahipsiz kare gri, alınan kare sahibinin rengine boyanır. Şehir renk şeritleri kullanılmaz.
+- Sahiplik karenin iç kenarındaki şeritle gösterilir: şerit sahipsizken gri, alınınca sahibinin rengi. Karenin zemini değişmez, şehir renkleri kullanılmaz.
+- Elde kartlar ekranın altında Hearthstone tarzı yelpazedir: üstüne gelince büyür, yukarı sürüklenip bırakılınca oynanır. Her kartın resmi var (`assets/kart`); yeni kart eklenirse `docs/GORSEL_STIL.md`'deki komutla aynı tarzda görsel üretilir.
+- Sesler ve müzik `assets/ses` altında; ayarı sağ üstteki ses penceresinden (müzik ve efektler ayrı).
 - Para seçimi (pazarlık, ihale) elle yazarak değil, oyuncu rengindeki kaydırma çubuğuyla yapılır.
 - Yazı tipleri: başlık/düğme/sayı Fredoka, metin Nunito. Zarlar 3 boyutlu döner.
 

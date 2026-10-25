@@ -6,3 +6,4 @@ otomasyon/*.lock
 *.log
 otomasyon/DURDUR
 otomasyon/*.exe
+tasks/gorsel-ham/
