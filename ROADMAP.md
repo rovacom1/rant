@@ -6,7 +6,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Para animasyonu:** Kira ve transferlerde oyuncudan oyuncuya uçan jeton; kat dikince karede küçük inşaat animasyonu.
 - [ ] **Oyun sonu grafiği:** Sonuç penceresinde tur tur net değer çizgisi (motor her tur sonu net değerleri kaydetsin).
 - [ ] **Bot zorluk seviyesi:** Lobide Kolay / Normal / Zor. Zor bot mülk-mülk takası önersin, ihalede daha akıllı teklif versin.
 - [ ] **Açık pazarlık:** Sırası olmayan oyuncular da birbirine teklif yapabilsin (aynı anda tek teklif kuralıyla).
@@ -22,6 +21,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Para animasyonu: kira, transfer ve banka ödemelerinde ödeyenden alana kavisli uçan altın jetonlar (tutarla 1-6 jeton, tahtanın ortası banka); kat dikilince kare sıçrar ve üstünden vinç yükselir; hareket azaltma tercihinde kapalı (v0.9.1)
 - [x] Oyun sonu seçimi: tur sayısı (10/15/20) ya da değer hedefi (2.500/3.500/5.000 ₺; ulaşılan tur tamamlanınca Seçim Günü, en geç 30. tur); üst çubukta hedef, gündem halkasında hedefe yakınlık (v0.9.0)
 - [x] Lobide masa ayarları: gizli ihale, SÜRPRİZ kareleri, gündem kartları ve gizli hedefler açılıp kapanır (yalnız ev sahibi); karanlık temada lobi düğmeleri okunur (v0.8.0)
 - [x] Erzurum yerine Çorum (İskilip, Osmancık; kırmızı-siyah), Eskişehir yerine Bursa (İnegöl, Nilüfer; yeşil-beyaz); fiyat ve kiralar yerlerindeki eski semtlerle aynı (v0.7.0)

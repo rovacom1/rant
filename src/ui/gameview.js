@@ -8,6 +8,7 @@ import { buildBoard, updateBoard, Tokens, Dice, inkFor, cellPos } from './board.
 import { app, act, send, isHost } from './state.js';
 import { RULES_HTML } from './rules.js';
 import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
+import { coinFlights, arcPeak, COIN_GAP } from './coins.js';
 
 const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, HEDEF, fmt, cardId } = E;
 const N = BOARD.length;
@@ -781,6 +782,55 @@ function floatMoney(p, delta) {
   setTimeout(() => el.remove(), 1500);
 }
 
+const FLIGHT_MS = 650;
+const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Oyuncunun para kutusu ya da banka (tahtanın ortası) ekrandaki merkez noktası.
+function moneyPoint(p) {
+  const el = p === null ? els && els.board : document.querySelector(`[data-cash="${p}"]`);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+// Kira ve transferlerde ödeyenden alana kavis çizerek uçan jetonlar.
+function flyCoins({ from, to, amount, n, delay }) {
+  const a = moneyPoint(from);
+  const b = moneyPoint(to);
+  setTimeout(() => from !== null && floatMoney(from, -amount), delay);
+  setTimeout(() => to !== null && floatMoney(to, amount), delay + (a && b && !calm() ? FLIGHT_MS + (n - 1) * COIN_GAP : 0));
+  if (!a || !b || calm()) return;
+  const m = arcPeak(a, b);
+  const at = (q, s) => `translate(${q.x}px, ${q.y}px) translate(-50%, -50%) scale(${s})`;
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('div');
+    el.className = 'coin';
+    document.body.appendChild(el);
+    const k = el.animate([
+      { transform: at(a, 0.6), opacity: 0 },
+      { transform: at(m, 1.15), opacity: 1, offset: 0.5 },
+      { transform: at(b, 0.8), opacity: 1, offset: 0.92 },
+      { transform: at(b, 0.4), opacity: 0 },
+    ], { duration: FLIGHT_MS, delay: delay + i * COIN_GAP, easing: 'ease-in-out', fill: 'both' });
+    k.onfinish = () => el.remove();
+  }
+}
+
+// Kat dikilince karede kısa bir inşaat sıçraması ve vinç.
+function buildFx(sq) {
+  const cell = cells && cells[sq];
+  if (!cell || calm()) return;
+  cell.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12) translateY(-4%)', offset: 0.35 }, { transform: 'scale(0.97)', offset: 0.7 }, { transform: 'scale(1)' }], { duration: 650, easing: 'ease-out' });
+  const r = cell.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'buildfx';
+  el.textContent = '🏗️';
+  el.style.left = `${r.left + r.width / 2}px`;
+  el.style.top = `${r.top + r.height / 2}px`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
 function showNews(v, ev) {
   const g = GUNDEM[ev.id];
   const detail = v.gundem && v.gundem.id === ev.id ? v.gundem.detail : '';
@@ -869,6 +919,7 @@ export function confetti() {
 // Sunucudan gelen bir durum güncellemesini canlandırıp çizer.
 export async function present(prev, v, events, fast) {
   const me = v.you;
+  if (!fast) for (const f of coinFlights(events)) flyCoins(f);
   for (const ev of events) {
     switch (ev.type) {
       case 'card':
@@ -878,15 +929,12 @@ export async function present(prev, v, events, fast) {
         else revealCard(v, ev);
         break;
       case 'money':
-        if (!fast) {
-          if (ev.from !== null) floatMoney(ev.from, -ev.amount);
-          if (ev.to !== null) floatMoney(ev.to, ev.amount);
-        }
         if (ev.to === me) play('coin');
         else if (ev.from === me) play('pay');
         break;
       case 'build':
         play('build');
+        if (!fast) buildFx(ev.sq);
         break;
       case 'demolish':
         play('crash');

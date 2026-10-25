@@ -371,6 +371,9 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .float.plus { color: #22a65a; }
 .float.minus { color: var(--accent); }
 @keyframes floatUp { to { transform: translateY(-46px); opacity: 0; } }
+.coin { position: fixed; left: 0; top: 0; z-index: 71; width: 22px; height: 22px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle at 35% 30%, #fff6c8, #f4c542 45%, #c98a12 100%); border: 2px solid #a86f08; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 0 0 3px rgba(255, 240, 180, 0.45); }
+.buildfx { position: fixed; z-index: 70; font-size: 26px; pointer-events: none; transform: translate(-50%, -50%); animation: buildUp 1.2s ease-out forwards; }
+@keyframes buildUp { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 25% { opacity: 1; transform: translate(-50%, -80%) scale(1.15); } 70% { opacity: 1; transform: translate(-50%, -110%) scale(1) rotate(-6deg); } 100% { opacity: 0; transform: translate(-50%, -150%) scale(0.9); } }
 .confetti { position: fixed; top: -10px; width: 9px; height: 14px; z-index: 80; pointer-events: none; animation: fall linear forwards; }
 @keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
 
