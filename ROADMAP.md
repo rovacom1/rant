@@ -6,6 +6,8 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
+- [ ] **Tapu Dairesi'ni tahtadan seç:** Uzun liste yerine sahipsiz kareler tahtada parlasın, tıklayınca alınsın (pick.js düzeniyle).
+- [ ] **Taşlar kare adını kapatmasın:** Taşları karenin kenarına yerleştir ya da küçült; birden çok taş varsa yan yana diz.
 - [ ] **Hedef dengesi:** 300 oyunluk simde hedefler %5 (Trabzon Hakimi) ile %62 (Hukuk Dünyası) arasında; en kolay ve en zor 3-4 hedefin eşiklerini %15-45 aralığına çek.
 - [ ] **Para animasyonu:** Kira ve transferlerde oyuncudan oyuncuya uçan jeton; kat dikince karede küçük inşaat animasyonu.
 - [ ] **Oyun sonu grafiği:** Sonuç penceresinde tur tur net değer çizgisi (motor her tur sonu net değerleri kaydetsin).
@@ -23,6 +25,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Kullanıcı geri bildirimiyle sade arayüz: Fredoka + Nunito yazı tipi, 3 boyutlu zar, gri/oyuncu rengi tahta, karelerde fiyat-kira yok (tıklayınca kira penceresi), pazarlık ve ihalede kaydırma çubuğu (v0.2.0)
 - [x] Oyun motoru, kurallar, kartlar, gündem, ihale, itiraz zinciri, pazarlık, borç/konkordato (v0.1.0)
 - [x] Sezgisel botlar ve denge simülasyonu (v0.1.0)
 - [x] Web arayüzü, lobi, P2P çok oyunculu, yeniden bağlanma, kayıttan devam (v0.1.0)

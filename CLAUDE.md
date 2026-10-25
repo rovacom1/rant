@@ -5,6 +5,13 @@
 - Arkadaşlar farklı şehirlerden, kendi bilgisayarlarından oynar. Kurulum ve hesap istemeyen akış kutsaldır: link aç, adını yaz, katıl.
 - Kurallar `docs/TASARIM.md`'de. Kural değişirse önce orayı güncelle, sonra kodu.
 
+## Arayüz ilkeleri (kullanıcı geri bildirimi, 2026-10-25)
+- Ekranda az yazı ve sayı. Yeni bilgi önce bir tıklamanın arkasına (küçük pencere, ipucu) konur.
+- Karelerde fiyat ve kira yazmaz; kareye tıklayınca kaç katta kaç kira olduğunu gösteren küçük pencere açılır.
+- Sahiplik oyuncu rengiyle gösterilir: sahipsiz kare gri, alınan kare sahibinin rengine boyanır. Şehir renk şeritleri kullanılmaz.
+- Para seçimi (pazarlık, ihale) elle yazarak değil, oyuncu rengindeki kaydırma çubuğuyla yapılır.
+- Yazı tipleri: başlık/düğme/sayı Fredoka, metin Nunito. Zarlar 3 boyutlu döner.
+
 ## Mimari
 - Derleme adımı yok, npm bağımlılığı yok. Tarayıcıda ES modülleri; testler `node:test`.
 - `src/engine/` saf ve deterministik: DOM yok, `Math.random` yok (rng state'te). Olaylar (events) asla gizli bilgi taşımaz.

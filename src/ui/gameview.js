@@ -3,7 +3,7 @@ import * as E from '../engine/index.js';
 import { html, raw, esc, $, setHTML, sleep } from './dom.js';
 import { play, isMuted } from './sound.js';
 import { isNotifyOn, notifySupported } from './notify.js';
-import { buildBoard, updateBoard, Tokens, rollDice, dieHTML } from './board.js';
+import { buildBoard, updateBoard, Tokens, Dice, inkFor, cellPos } from './board.js';
 import { app, act, send, isHost } from './state.js';
 import { RULES_HTML } from './rules.js';
 import { isBoardPickable, pickSquares } from './pick.js';
@@ -14,6 +14,7 @@ const N = BOARD.length;
 let els = null;
 let cells = null;
 let tokens = null;
+let dice = null;
 let animating = false;
 
 // ---------- iskelet ----------
@@ -43,10 +44,10 @@ export function mountGame(root) {
           <div class="board-center">
             <div id="gundem"></div>
             <div class="prompt" id="prompt"></div>
-            <div class="dice" id="dice"></div>
-            <div class="ticker" id="ticker"></div>
+            <div class="dice off" id="dice"></div>
           </div>
           <div class="tokens" id="tokens"></div>
+          <div id="pop"></div>
         </div>
       </section>
       <aside class="side">
@@ -65,12 +66,13 @@ export function mountGame(root) {
   const g = (id) => document.getElementById(id);
   els = {
     round: g('tRound'), index: g('tIndex'), salary: g('tSalary'), mods: g('tMods'), conn: g('tConn'), code: g('tCode'), mute: g('tMute'), notify: g('tNotify'),
-    board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), ticker: g('ticker'), tokens: g('tokens'),
+    board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'),
     players: g('players'), me: g('mePanel'), feed: g('feed'), chatForm: g('chatForm'), chatInput: g('chatInput'), quick: g('quick'),
     tabLog: g('tabLog'), tabChat: g('tabChat'), modal: g('modal'), stage: g('stage'),
   };
   cells = buildBoard(els.board);
   tokens = new Tokens(els.tokens, cells);
+  dice = new Dice(els.dice);
   els.chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const t = els.chatInput.value.trim();
@@ -89,10 +91,10 @@ export const unmountGame = () => {
 const P = (v, i) => v.players[i];
 const who = (v, i) => (i === v.you ? 'Sen' : P(v, i).name);
 const av = (pl, cls = '') => html`<span class="av ${cls}" style="--c:${pl.color}">${pl.avatar}</span>`;
-const sqChip = (sq) => {
-  const s = BOARD[sq];
-  return html`<span class="chip"><span class="dot" style="--c:${s.group ? GROUPS[s.group].color : '#555'}"></span>${s.name}</span>`;
-};
+const cityOf = (sq) => (BOARD[sq].group ? GROUPS[BOARD[sq].group].name : 'Ulaşım');
+const sqChip = (sq) => html`<span class="chip">${BOARD[sq].name}<small class="muted">${cityOf(sq)}</small></span>`;
+// Endeks ve şehir çarpanıyla ölçeklenmiş tutar (kira tablosu için).
+const scaled = (v, sq, x) => Math.round((x * (v.index / 100) * (BOARD[sq].group ? v.groupMult[BOARD[sq].group] || 1 : 1)) / 5) * 5;
 const destOf = (v, steps, backward) => (v.players[v.you].pos + (backward ? -steps : steps) + N * 2) % N;
 const myTurnFree = (v) => v.phase === 'play' && !v.pending && v.turn && v.turn.p === v.you;
 export const canManage = (v) => myTurnFree(v) && ['preroll', 'free'].includes(v.turn.step);
@@ -153,54 +155,74 @@ function gundemHTML(v) {
     <div class="round">${left ? `Seçime ${left} tur` : 'SON TUR'}<b>${v.round}/${v.config.maxRounds}</b></div></div>`;
 }
 
-function deedHTML(v, sq) {
+const SPECIAL_INFO = {
+  start: 'Buradan geçince ya da buraya gelince maaş alırsın.',
+  chance: 'Buraya gelince 2 Hamle kartı çekersin.',
+  tapu: 'Tahtadaki sahipsiz herhangi bir arsayı fiyatına alabilirsin.',
+  cay: 'Diğer herkes sana çay parası öder.',
+  zabita: 'Kaçak katı olan bir rakibi ihbar edersin: kaçakları yıkılır.',
+};
+
+// Kareye tıklayınca açılan küçük bilgi penceresi: kaç katta kaç kira.
+function popHTML(v, sq) {
   const s = BOARD[sq];
   const ps = v.props[sq];
-  const gc = s.group ? GROUPS[s.group].color : '#1b2233';
-  const owner = ps && ps.owner !== null ? P(v, ps.owner) : null;
-  let rows = '';
+  const close = html`<button class="x" data-act="popClose" title="Kapat">✕</button>`;
+  if (!ps) return html`<div class="ph" style="--pc:#1b2233;--ink:#fff"><b>${s.icon} ${s.name}</b>${close}</div><div class="pn" style="padding-top:9px">${SPECIAL_INFO[s.kind]}</div>`;
+  const owner = ps.owner === null ? null : P(v, ps.owner);
+  const head = owner ? `--pc:${owner.color};--ink:${inkFor(owner.color)}` : '--pc:#8a8d96;--ink:#fff';
+  let rows;
   if (s.kind === 'prop') {
-    const mult = v.index / 100;
-    const r5 = (x) => Math.round((x * mult * (v.groupMult[s.group] || 1)) / 5) * 5;
     const L = E.level(ps);
     const full = owner && E.ownsGroup(v, ps.owner, s.group);
-    rows = [
-      [`Temel kira${full ? ' (tam set x2)' : ''}`, r5(s.rents[0] * (full ? 2 : 1)), L === 0],
-      ['1 kat', r5(s.rents[1]), L === 1],
-      ['2 kat', r5(s.rents[2]), L === 2],
-      ['3 kat', r5(s.rents[3]), L === 3],
-      ['4 kat', r5(s.rents[4]), L === 4],
-    ]
-      .map(([k, val, cur]) => html`<tr class="${cur && owner ? 'cur' : ''}"><td>${k}</td><td>${fmt(val)}</td></tr>`)
-      .join('');
-    rows += html`<tr><td>Kat fiyatı / kaçak</td><td>${fmt(E.katCost(v, sq))} / ${fmt(E.kacakCost(v, sq))}</td></tr>`;
-  } else if (s.kind === 'transport') {
-    rows = html`<tr><td>1 ulaşım</td><td>${fmt(E.money(v, 25))}</td></tr><tr><td>2 ulaşım</td><td>${fmt(E.money(v, 60))}</td></tr>`;
+    const list = [[full ? 'Arsa (tam set)' : 'Arsa', s.rents[0] * (full ? 2 : 1)], ['1 kat', s.rents[1]], ['2 kat', s.rents[2]], ['3 kat', s.rents[3]], ['4 kat', s.rents[4]]];
+    rows = list.map(([k, x], l) => html`<tr class="${owner && L === l ? 'cur' : ''}"><td>${k}</td><td>${fmt(scaled(v, sq, x))}</td></tr>`);
+  } else {
+    const n = owner ? E.transportCount(v, ps.owner) : 0;
+    rows = [['1 ulaşım', 25], ['2 ulaşım', 60]].map(([k, x], l) => html`<tr class="${n === l + 1 ? 'cur' : ''}"><td>${k}</td><td>${fmt(E.money(v, x))}</td></tr>`);
   }
-  const status = [];
-  if (owner) status.push(`Sahibi: ${owner.name}`);
-  if (ps?.ipotek) status.push('İpotekli');
-  if (ps?.tedbir) status.push(`İhtiyati tedbir: ${ps.tedbir} tur`);
-  if (ps?.kacak) status.push('Kaçak kat var');
-  const now = ps && owner && !ps.ipotek ? `Şu anki kira: ${fmt(E.rentFor(v, sq))}` : '';
-  return html`<div class="deed" style="--gc:${gc}"><div class="dh"><div class="city">${s.group ? GROUPS[s.group].name : s.kind === 'transport' ? 'Ulaşım' : ''}</div><div class="nm">${s.icon || ''} ${s.name}</div></div>
-    <table><tr><td>Fiyat</td><td>${fmt(E.price(v, sq))}</td></tr>${raw(rows)}<tr><td>İpotek değeri</td><td>${fmt(E.mortgageValue(v, sq))}</td></tr></table>
-    ${status.length || now ? html`<div class="dnote">${[...status, now].filter(Boolean).join(' · ')}</div>` : ''}</div>`;
+  const status = owner
+    ? html`<span class="dot" style="--c:${owner.color}"></span> ${owner.name}${ps.ipotek ? ' · ipotekli' : ''}${ps.tedbir ? ` · tedbir ${ps.tedbir} tur` : ''}`
+    : html`Sahipsiz · fiyatı <b>${fmt(E.price(v, sq))}</b>`;
+  const note = s.kind === 'prop' ? `Tam sette arsa kirası 2 katı. Kat ${fmt(E.katCost(v, sq))}, kaçak ${fmt(E.kacakCost(v, sq))}.` : 'İkisi aynı kişideyse kira artar.';
+  const acts = propActions(v, sq);
+  return html`<div class="ph" style="${head}"><b>${s.name}</b><span>${cityOf(sq)}</span>${close}</div>
+    <div class="po">${status}</div><table>${rows}</table><div class="pn">${note}</div>${acts.length ? html`<div class="pa">${acts}</div>` : ''}`;
 }
 
-// Satın alma ve ihale istemi için kısa tapu kartı.
-function miniDeed(v, sq) {
+function renderPop(v) {
+  const sq = app.ui.popSq;
+  if (sq === null || sq === undefined) {
+    setHTML(els.pop, '');
+    els.pop.className = '';
+    return;
+  }
+  setHTML(els.pop, popHTML(v, sq));
+  els.pop.className = 'pop';
+  const c = cells[sq];
+  const pw = els.pop.offsetWidth;
+  const ph = els.pop.offsetHeight;
+  const bw = els.board.clientWidth;
+  const bh = els.board.clientHeight;
+  const side = cellPos(sq).side;
+  // Pencere karenin tahta ortasına bakan tarafında açılır.
+  const toward = (pos, size, len, total) => (pos < total / 2 ? pos + size + 6 : pos - len - 6);
+  let x = c.offsetLeft + c.offsetWidth / 2 - pw / 2;
+  let y = c.offsetTop + c.offsetHeight / 2 - ph / 2;
+  if (side === 'b' || side === 't' || side === 'c') y = toward(c.offsetTop, c.offsetHeight, ph, bh);
+  if (side === 'l' || side === 'r' || side === 'c') x = toward(c.offsetLeft, c.offsetWidth, pw, bw);
+  els.pop.style.left = `${Math.max(6, Math.min(bw - pw - 6, x))}px`;
+  els.pop.style.top = `${Math.max(6, Math.min(bh - ph - 6, y))}px`;
+}
+
+// Satın alma ve ihale istemi için sade kart: ad, şehir, temel kira, şehirdeki diğer sahipler.
+function buyCard(v, sq) {
   const s = BOARD[sq];
-  const gc = s.group ? GROUPS[s.group].color : '#1b2233';
-  const r5 = (x) => Math.round((x * (v.index / 100) * (s.group ? v.groupMult[s.group] || 1 : 1)) / 5) * 5;
-  const rent =
-    s.kind === 'transport'
-      ? `Kira: ${fmt(r5(25))} (1 ulaşım) / ${fmt(r5(60))} (2 ulaşım)`
-      : `Kira: ${fmt(r5(s.rents[0]))} → katlarla ${s.rents.slice(1).map((x) => r5(x)).join(' / ')} · Kat ${fmt(E.katCost(v, sq))} (kaçak ${fmt(E.kacakCost(v, sq))})`;
-  const g = s.group ? GROUP_SQUARES[s.group] : [];
-  const owners = g.filter((q) => q !== sq && v.props[q].owner !== null).map((q) => `${BOARD[q].name}: ${P(v, v.props[q].owner).name}`);
-  return html`<div class="deed mini" style="--gc:${gc}"><div class="dh"><div class="city">${s.group ? GROUPS[s.group].name : 'Ulaşım'}</div><div class="nm">${s.icon || ''} ${s.name} · ${fmt(E.price(v, sq))}</div></div>
-    <div class="dnote">${rent}${owners.length ? html`<br>Şehirdeki diğerleri: ${owners.join(', ')}` : ''}</div></div>`;
+  const others = s.group ? GROUP_SQUARES[s.group].filter((q) => q !== sq && v.props[q].owner !== null).map((q) => P(v, v.props[q].owner)) : [];
+  const rent = s.kind === 'transport' ? E.money(v, 25) : scaled(v, sq, s.rents[0]);
+  return html`<div class="buycard"><div class="bn">${s.icon || ''} ${s.name}</div><div class="bc">${cityOf(sq)}</div>
+    <div class="bp">Kira ${fmt(rent)}${s.kind === 'prop' ? ', katlarla artar' : ''}</div>
+    ${others.length ? html`<div class="bo">Şehrin diğer sahipleri: ${others.map((o) => html`<span class="dot" style="--c:${o.color}" title="${o.name}"></span>`)}</div>` : ''}</div>`;
 }
 
 function hedefCard(id, act) {
@@ -240,8 +262,7 @@ function promptHTML(v) {
   }
   const pl = P(v, me);
   if (t.step === 'preroll') {
-    return html`<h3>Sıra sende!</h3>
-      <p>${t.backward ? 'Geri vitestesin: bu tur geri gideceksin. ' : ''}Zar atmadan önce kart oynayabilir, kat dikebilir ya da pazarlık yapabilirsin.</p>
+    return html`<h3>Sıra sende!</h3>${t.backward ? html`<p>↩️ Geri vitestesin, bu tur geri gideceksin.</p>` : ''}
       <button class="btn primary big" data-act="roll" data-primary>🎲 Zar At</button>${timerHTML(v, [me])}`;
   }
   if (t.step === 'choose') {
@@ -255,13 +276,13 @@ function promptHTML(v) {
   }
   // serbest evre
   if (pl.cash < 0) {
-    return html`<h3>Borçtasın: ${fmt(pl.cash)}</h3><p>Sıranı bitirmeden borcunu kapatmalısın. Kat satabilir, ipotek edebilir, pazarlık yapabilirsin.</p>
+    return html`<h3>Borçtasın: ${fmt(pl.cash)}</h3><p>Sıranı bitirmeden borcunu kapat.</p>
       <div class="row center"><button class="btn primary big" data-act="settleDebt" data-primary>Borcu Kapat (otomatik)</button><button class="btn ghost" data-act="manage">Mülklerim</button></div>`;
   }
   const hints = [];
-  if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push('Parlayan kartlarını oynayabilirsin.');
-  if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false) || !E.buildBlock(v, me, q, true))) hints.push('Mülklerine kat dikebilirsin.');
-  return html`<h3>${BOARD[pl.pos].icon || ''} ${BOARD[pl.pos].name}</h3><p>${hints.join(' ') || 'İşin bittiyse turu bitir.'}</p>
+  if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push('kart oynayabilir');
+  if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false) || !E.buildBlock(v, me, q, true))) hints.push('kat dikebilirsin');
+  return html`<h3>${BOARD[pl.pos].icon || ''} ${BOARD[pl.pos].name}</h3>${hints.length ? html`<p>İstersen ${hints.join(' ya da ')}.</p>` : ''}
     <div class="row center"><button class="btn primary big" data-act="endTurn" data-primary>Turu Bitir ➜</button></div>${timerHTML(v, [me])}`;
 }
 
@@ -273,7 +294,7 @@ function pendingHTML(v, pd) {
       const cost = E.price(v, pd.sq);
       const cash = P(v, me).cash;
       const paz = P(v, me).hand.find((u) => cardId(u) === 'pazarlik');
-      return html`<div style="width:min(380px,100%)">${miniDeed(v, pd.sq)}</div>
+      return html`${buyCard(v, pd.sq)}
         <div class="row center"><button class="btn green big" data-act="buy" data-primary ${cash < cost ? 'disabled' : ''}>Satın Al ${fmt(cost)}</button>
         <button class="btn ghost" data-act="decline">🔨 İhaleye Çıkar</button>
         ${paz && !v.turn.hamle && cash >= Math.round(cost / 10) * 5 ? html`<button class="btn gold" data-act="pazarlik" data-uid="${paz}">🤝 Pazarlık Ustası: ${fmt(Math.round(cost / 10) * 5)}</button>` : ''}</div>
@@ -283,16 +304,16 @@ function pendingHTML(v, pd) {
       const done = Object.keys(pd.bids).length;
       const mine = pd.bids[me];
       const eligible = pd.eligible.includes(me);
-      const head = html`<h3>🔨 Gizli ihale: ${BOARD[pd.sq].name}</h3><p>Liste fiyatı ${fmt(E.price(v, pd.sq))}. Herkes aynı anda gizli teklif verir. (${done}/${pd.eligible.length} teklif geldi)</p>`;
+      const head = html`<h3>🔨 Gizli ihale</h3><p>Liste fiyatı ${fmt(E.price(v, pd.sq))} · ${done}/${pd.eligible.length} teklif geldi</p>`;
       if (!eligible) return html`${head}<p>Nakdin olmadığı için bu ihaleye katılamıyorsun.</p>${timerHTML(v, E.waitingFor(v))}`;
       if (mine !== undefined && mine !== -1) return html`${head}<p><b>Teklifin: ${mine > 0 ? fmt(mine) : 'pas'}</b> — diğerleri bekleniyor.</p>${timerHTML(v, E.waitingFor(v))}`;
       const cash = P(v, me).cash;
-      const quick = [0.5, 0.8, 1, 1.3].map((f) => Math.min(cash, Math.round((E.price(v, pd.sq) * f) / 5) * 5));
-      return html`${head}<div style="width:min(380px,100%)">${miniDeed(v, pd.sq)}</div>
-        <div class="row center"><input class="input" style="width:140px" type="number" min="0" step="5" max="${cash}" data-bind="bid" placeholder="Teklif ₺">
-        <button class="btn primary" data-act="bid" data-primary>Teklif Ver</button><button class="btn ghost" data-act="bidPass">Pas</button></div>
-        <div class="row center">${[...new Set(quick)].map((q) => html`<button class="btn tiny gold" data-act="bidQuick" data-amt="${q}">${fmt(q)}</button>`)}</div>
-        <div class="muted" style="font-size:12px">Nakdin: ${fmt(cash)}</div>${timerHTML(v, [me])}`;
+      const quick = [0.5, 1, 1.5].map((f) => Math.min(cash, Math.round((E.price(v, pd.sq) * f) / 5) * 5));
+      return html`${head}${buyCard(v, pd.sq)}
+        <div class="moneybox"><div class="row"><span class="muted">Teklifin</span><div class="grow"></div><b class="amount" data-show="bid"></b></div>
+        ${slider('bid', cash, P(v, me).color, 5)}
+        <div class="row center">${[...new Set(quick)].map((q) => html`<button class="btn tiny ghost" data-act="bidQuick" data-amt="${q}">${fmt(q)}</button>`)}<button class="btn tiny ghost" data-act="bidQuick" data-amt="${cash}">Hepsi</button></div></div>
+        <div class="row center"><button class="btn primary big" data-act="bid" data-primary>Teklif Ver</button><button class="btn ghost" data-act="bidPass">Pas</button></div>${timerHTML(v, [me])}`;
     }
     case 'react': {
       const c = pd.card;
@@ -355,17 +376,11 @@ function tradeDesc(v, pd) {
     <div class="trade-col"><h4>${P(v, pd.to).name} verir</h4><div class="row">${take.length ? take : html`<span class="muted">hiçbir şey</span>`}</div></div></div>`;
 }
 
-function diceHTML(v) {
-  const d = v.turn && v.turn.dice;
-  return d ? d.map((x, i) => dieHTML(x, i ? 'red' : '')).join('') : '';
-}
-
-function tickerHTML(v) {
-  return v.log
-    .slice(-3)
-    .reverse()
-    .map((l) => html`<div>${l.text}</div>`)
-    .join('');
+// Kaydırma çubuğu: değer app.ui.binds[bind] içinde, yanındaki [data-show] canlı güncellenir.
+function slider(bind, max, color, step = 10) {
+  const top = Math.max(0, max);
+  return html`<input type="range" class="slider" min="0" max="${top}" step="${step}" data-bind="${bind}" style="--c:${color}" ${top ? '' : 'disabled'}>
+    <div class="row slider-scale"><span>0</span><div class="grow"></div><span>${fmt(top)}</span></div>`;
 }
 
 // ---------- yan panel ----------
@@ -375,7 +390,7 @@ function playersHTML(v) {
   const conn = (app.meta && app.meta.connected) || {};
   return v.players
     .map((pl, i) => {
-      const props = E.propsOf(v, i).sort((a, b) => a - b);
+      const props = E.propsOf(v, i);
       const nw = E.netWorth(v, i);
       const flags = [
         pl.bot ? '🤖' : conn[pl.id] === false ? '📴' : '',
@@ -385,8 +400,8 @@ function playersHTML(v) {
       ];
       return html`<div class="pl ${v.turn && v.turn.p === i ? 'turn' : ''} ${i === v.you ? 'me' : ''}" data-act="player" data-p="${i}">
         ${av(pl)}<div><div class="pname">${pl.name} ${flags}</div>
-        <div class="psub"><span>🂠 ${pl.handCount}</span><div class="props-mini">${props.map((q) => html`<i class="${v.props[q].ipotek ? 'm' : ''}" style="--gc:${BOARD[q].group ? GROUPS[BOARD[q].group].color : '#555'}" title="${BOARD[q].name}"></i>`)}</div></div></div>
-        <div class="pcash money ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${fmt(pl.cash)}<small>Değer ${fmt(nw)}</small></div></div>`;
+        <div class="psub"><span title="Mülk sayısı">🏠 ${props.length}</span><span title="Kart sayısı">🂠 ${pl.handCount}</span></div></div>
+        <div class="pcash money ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}" title="Net değer ${fmt(nw)}">${fmt(pl.cash)}</div></div>`;
     })
     .join('');
 }
@@ -410,7 +425,7 @@ function meHTML(v) {
       <button class="btn small ghost" data-act="manage">🏠 Mülklerim</button>
       <button class="btn small turq" data-act="trade" ${manage ? '' : 'disabled'} title="Sıra sendeyken pazarlık teklif edebilirsin">🤝 Pazarlık</button></div>
     <div class="hand">${raw(hand) || html`<span class="muted">Elinde kart yok.</span>`}</div>
-    ${h ? html`<div class="hedef-box"><span class="hi">${h.icon}</span><div><b>Gizli hedef: ${h.name}</b> (+${h.bonus})<div class="muted">${h.text}</div></div><div class="grow"></div>${hedefOk ? html`<span class="chip" style="background:#cdeed9">✓ şu an tutuyor</span>` : ''}</div>` : ''}`;
+    ${h ? html`<div class="hedef-box" title="${h.text}"><span class="hi">${h.icon}</span><b>${h.name}</b><span class="muted">+${h.bonus}</span><div class="grow"></div>${hedefOk ? html`<span class="chip ok">✓ tutuyor</span>` : ''}</div>` : ''}`;
 }
 
 function feedHTML() {
@@ -525,23 +540,35 @@ function tradeDialog(v) {
   const t = app.ui.trade;
   const opps = v.players.map((_, i) => i).filter((i) => i !== me);
   if (t.to === null || !opps.includes(t.to)) t.to = opps[0];
-  const list = (owner, side) =>
-    E.propsOf(v, owner)
-      .sort((a, b) => a - b)
-      .map((q) => {
-        const ok = E.level(v.props[q]) === 0;
-        return html`<label class="pick ${ok ? '' : 'off'}"><input type="checkbox" data-act="tradePick" data-side="${side}" data-sq="${q}" ${t[side].props.includes(q) ? 'checked' : ''} ${ok ? '' : 'disabled'}>${sqChip(q)}${ok ? '' : html`<span class="muted">katlı</span>`}</label>`;
-      });
-  const offer = tradeOffer();
-  const block = E.tradeBlock(v, me, offer);
-  return html`<h2>🤝 Pazarlık teklifi</h2>
-    <div class="seg">${opps.map((i) => html`<button class="${t.to === i ? 'on' : ''}" data-act="tradeTo" data-p="${i}">${P(v, i).avatar} ${P(v, i).name}</button>`)}</div>
-    <div class="trade-cols">
-      <div class="trade-col"><h4>Sen veriyorsun</h4>${list(me, 'give')}<label class="field">Para<input class="input" type="number" min="0" step="5" data-bind="tradeGive" placeholder="0"></label></div>
-      <div class="trade-col"><h4>${P(v, t.to).name} veriyor</h4>${list(t.to, 'take')}<label class="field">Para<input class="input" type="number" min="0" step="5" data-bind="tradeTake" placeholder="0"></label></div>
-    </div>
-    ${block ? html`<p class="reason">${block}</p>` : ''}
+  const chips = (owner, side) => {
+    const qs = E.propsOf(v, owner).sort((a, b) => a - b);
+    if (!qs.length) return html`<div class="muted small">Mülk yok</div>`;
+    return html`<div class="tchips">${qs.map((q) => {
+      const ok = E.level(v.props[q]) === 0;
+      return html`<button class="tchip ${t[side].props.includes(q) ? 'on' : ''}" data-act="tradePick" data-side="${side}" data-sq="${q}" ${ok ? '' : 'disabled'} title="${ok ? '' : 'Katlı mülk takas edilemez'}">${BOARD[q].name}<small>${cityOf(q)}</small></button>`;
+    })}</div>`;
+  };
+  const col = (i, label, side, bind) => {
+    const pl = P(v, i);
+    return html`<div class="trade-col" style="--c:${pl.color}"><h4>${av(pl, 'sm')} ${label}</h4>${chips(i, side)}
+      <div class="moneybox"><div class="row"><span class="muted">Para</span><div class="grow"></div><b class="amount" data-show="${bind}"></b></div>${slider(bind, pl.cash, pl.color)}</div></div>`;
+  };
+  const block = E.tradeBlock(v, me, tradeOffer());
+  return html`<h2>🤝 Pazarlık</h2>
+    <div class="tpartners">${opps.map((i) => html`<button class="tpartner ${t.to === i ? 'on' : ''}" data-act="tradeTo" data-p="${i}" style="--c:${P(v, i).color}">${av(P(v, i), 'sm')} ${P(v, i).name}</button>`)}</div>
+    <div class="trade-cols">${col(me, 'Sen veriyorsun', 'give', 'tradeGive')}${col(t.to, `${P(v, t.to).name} veriyor`, 'take', 'tradeTake')}</div>
+    <p class="reason" data-trade-reason>${block || ''}</p>
     <div class="row"><div class="grow"></div><button class="btn ghost" data-act="close">Vazgeç</button><button class="btn primary" data-act="sendTrade" ${block ? 'disabled' : ''}>Teklifi Gönder</button></div>`;
+}
+
+// Kaydırma çubuğu oynarken pencereyi yeniden çizmeden uyarıyı ve düğmeyi günceller.
+function refreshTrade() {
+  const v = app.view;
+  const block = E.tradeBlock(v, v.you, tradeOffer());
+  const reason = els.modal.querySelector('[data-trade-reason]');
+  const btn = els.modal.querySelector('[data-act="sendTrade"]');
+  if (reason) reason.textContent = block || '';
+  if (btn) btn.disabled = !!block;
 }
 
 export function tradeOffer() {
@@ -566,16 +593,6 @@ function playerDialog(v, p) {
     <div class="row"><span class="chip">💵 ${fmt(pl.cash)}</span><span class="chip">Net değer ${fmt(E.netWorth(v, p))}</span><span class="chip">🂠 ${pl.handCount} kart</span>${pl.konkordato ? html`<span class="chip">Konkordato ×${pl.konkordato}</span>` : ''}</div>
     ${groups.length ? groups : html`<p class="muted">Mülkü yok.</p>`}
     <p class="muted" style="font-size:12px">★ tamamlanmış şehir seti. Gizli hedefler oyun sonunda açılır.</p>`;
-}
-
-function squareDialog(v, sq) {
-  const s = BOARD[sq];
-  if (!v.props[sq]) {
-    const info = { start: 'Buradan geçince ya da buraya gelince maaş alırsın.', chance: 'Buraya gelince 2 Hamle kartı çekersin.', tapu: 'Buraya gelince tahtadaki sahipsiz herhangi bir arsayı fiyatına alabilirsin.', cay: 'Buraya gelince diğer herkes sana çay parası öder.', zabita: 'Buraya gelince kaçak katı olan bir rakibi ihbar edersin.' }[s.kind];
-    return html`<h2>${s.icon} ${s.name}</h2><p>${info}</p>`;
-  }
-  const acts = propActions(v, sq);
-  return html`${deedHTML(v, sq)}${acts.length ? html`<div class="row">${acts}</div>` : ''}`;
 }
 
 function resultsDialog(v) {
@@ -626,9 +643,6 @@ export function renderModal() {
     case 'player':
       body = playerDialog(v, d.p);
       break;
-    case 'square':
-      body = squareDialog(v, d.sq);
-      break;
     case 'results':
       body = resultsDialog(v);
       wide = true;
@@ -645,11 +659,15 @@ export function renderModal() {
 function renderKeep(el, content) {
   const focused = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.bind : null;
   setHTML(el, content);
+  app.ui.binds ||= {};
   for (const inp of el.querySelectorAll('[data-bind]')) {
-    const val = app.ui.binds?.[inp.dataset.bind];
+    const key = inp.dataset.bind;
+    let val = app.ui.binds[key];
+    if (inp.type === 'range' && (val === undefined || val === '')) val = app.ui.binds[key] = '0';
     if (val !== undefined && inp.value !== String(val)) inp.value = val;
-    if (focused && inp.dataset.bind === focused && document.activeElement !== inp) inp.focus();
+    if (focused && key === focused && document.activeElement !== inp) inp.focus();
   }
+  for (const out of el.querySelectorAll('[data-show]')) out.textContent = fmt(Number(app.ui.binds[out.dataset.show]) || 0);
 }
 
 // ---------- ana çizim ----------
@@ -666,13 +684,14 @@ export function updateGame() {
   if (!v || !els) return;
   updateTopbar(v);
   if (app.ui.pick && !(v.players[v.you]?.hand.includes(app.ui.pick.uid) && canPlay(v, app.ui.pick.uid))) app.ui.pick = null;
-  updateBoard(cells, v, highlightOf(v), app.ui.pick && pickSquares(v, app.ui.pick.uid, app.ui.swapMine));
+  if (app.ui.pick) app.ui.popSq = null;
+  updateBoard(cells, v, highlightOf(v), app.ui.pick && pickSquares(v, app.ui.pick.uid, app.ui.swapMine), app.ui.popSq);
   tokens.sync(v.players, v.turn ? v.turn.p : -1);
   if (!animating) tokens.settle(v.players);
   setHTML(els.gundem, gundemHTML(v));
   renderKeep(els.prompt, promptHTML(v));
-  if (!animating) setHTML(els.dice, v.pending ? '' : diceHTML(v));
-  setHTML(els.ticker, tickerHTML(v));
+  if (!animating) dice.show(v.pending || !v.turn ? null : v.turn.dice);
+  renderPop(v);
   setHTML(els.players, playersHTML(v));
   setHTML(els.me, meHTML(v));
   renderFeed();
@@ -818,13 +837,12 @@ export async function present(prev, v, events, fast) {
   }
   const myHandBefore = prev && prev.players[me] ? prev.players[me].hand : [];
   app.ui.newCards = me >= 0 ? v.players[me].hand.filter((u) => !myHandBefore.includes(u)) : [];
-  const dice = events.find((e) => e.type === 'dice' || e.type === 'dava');
+  const thrown = events.find((e) => e.type === 'dice' || e.type === 'dava');
   const moves = events.filter((e) => e.type === 'move');
-  if ((dice || moves.length) && prev && els) {
+  if ((thrown || moves.length) && prev && els) {
     animating = true;
     try {
-      if (dice) await rollDice(els.dice, dice.dice, fast);
-      els.dice._last = null;
+      if (thrown) await dice.roll(thrown.dice, fast);
       for (const m of moves) await tokens.walk(P(v, m.p).id, m.path, fast);
     } finally {
       animating = false;
@@ -838,6 +856,7 @@ export function bindsInput(e) {
   if (!el.dataset || !el.dataset.bind) return false;
   app.ui.binds ||= {};
   app.ui.binds[el.dataset.bind] = el.value;
-  if (app.ui.dialog && app.ui.dialog.type === 'trade') renderModal();
+  for (const out of document.querySelectorAll(`[data-show="${el.dataset.bind}"]`)) out.textContent = fmt(Number(el.value) || 0);
+  if (app.ui.dialog && app.ui.dialog.type === 'trade') refreshTrade();
   return true;
 }

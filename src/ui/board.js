@@ -1,9 +1,8 @@
-// Tahta: 8x8 ızgaranın kenarındaki 28 kare ve oyuncu taşları.
-import { BOARD, GROUPS, price, rentFor, fmt } from '../engine/index.js';
+// Tahta: 8x8 ızgaranın kenarındaki 28 kare, oyuncu taşları ve 3 boyutlu zarlar.
+// Sahipsiz mülkler gri, sahipli mülkler sahibinin rengine boyanır; karede fiyat/kira yazmaz (kareye tıklayınca açılır).
+import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
 import { html, raw, esc, sleep } from './dom.js';
 import { play } from './sound.js';
-
-const N = BOARD.length;
 
 export function cellPos(i) {
   if (i <= 7) return { row: 8, col: 8 - i, side: i === 0 || i === 7 ? 'c' : 'b' };
@@ -14,53 +13,45 @@ export function cellPos(i) {
   return { row: i - 20, col: 8, side: 'r' };
 }
 
-const CORNER_HINT = { start: 'Geçince maaş', tapu: 'Sahipsiz arsa al', cay: 'Herkesten çay parası', zabita: 'Kaçak ihbar et' };
+// Açık renkli oyuncuda koyu yazı, koyu renkli oyuncuda beyaz yazı.
+export function inkFor(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.62 ? '#1b2233' : '#ffffff';
+}
 
-function cellStatic(sq, i) {
-  const pos = cellPos(i);
-  if (sq.kind === 'prop') {
-    const g = GROUPS[sq.group];
-    return html`<div class="band"></div><div class="nm">${sq.name}</div><div class="city">${g.name}</div><div class="floors"></div><div class="pr"></div>`;
-  }
-  if (sq.kind === 'transport') return html`<div class="ic">${sq.icon}</div><div class="nm">${raw(esc(sq.name).replace('HAVALİMANI', 'HAVA&shy;LİMANI'))}</div><div class="pr"></div>`;
-  if (pos.side === 'c') return html`<div class="ic">${sq.icon}</div><div class="nm">${sq.name}</div><div class="city">${CORNER_HINT[sq.kind]}</div>`;
-  return html`<div class="ic">${sq.icon}</div><div class="nm">${sq.name}</div><div class="city">2 kart çek</div>`;
+function cellStatic(sq) {
+  if (sq.kind === 'prop') return html`<div class="nm">${sq.name}</div><div class="city">${GROUPS[sq.group].name}</div><div class="floors"></div>`;
+  const name = esc(sq.name).replace('HAVALİMANI', 'HAVA&shy;LİMANI');
+  return html`<div class="ic">${sq.icon}</div><div class="nm">${raw(name)}</div>`;
 }
 
 export function buildBoard(boardEl) {
   const cells = BOARD.map((sq, i) => {
     const pos = cellPos(i);
-    const side = pos.side === 'c' ? 'corner' : `side-${pos.side}`;
-    const gc = sq.group ? `--gc:${GROUPS[sq.group].color};` : '';
-    return `<div class="cell ${side}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col};${gc}">${cellStatic(sq, i)}</div>`;
+    const kind = sq.kind === 'prop' || sq.kind === 'transport' ? 'buyable' : 'special';
+    return `<div class="cell ${pos.side === 'c' ? 'corner' : `side-${pos.side}`} ${kind}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}">${cellStatic(sq)}</div>`;
   }).join('');
   boardEl.insertAdjacentHTML('afterbegin', cells);
   return [...boardEl.querySelectorAll('.cell')];
 }
 
-// pick: tahtadan hedef seçilirken parlayacak kareler (yoksa null).
-export function updateBoard(cells, v, highlight, pick = null) {
+// pick: tahtadan hedef seçilirken parlayacak kareler (yoksa null). open: bilgi penceresi açık kare.
+export function updateBoard(cells, v, highlight, pick = null, open = null) {
   cells[0].parentElement.classList.toggle('picking', !!pick);
   cells.forEach((el, i) => {
     const sq = BOARD[i];
     const ps = v.props[i];
     el.classList.toggle('hl', highlight === i);
     el.classList.toggle('pick', !!pick && pick.includes(i));
+    el.classList.toggle('open', open === i);
     if (!ps) return;
     const owner = ps.owner === null ? null : v.players[ps.owner];
     el.classList.toggle('owned', !!owner);
     el.classList.toggle('mortgaged', ps.ipotek);
-    el.style.setProperty('--pc', owner ? owner.color : 'transparent');
-    let ownerEl = el.querySelector('.owner');
-    if (owner) {
-      if (!ownerEl) {
-        ownerEl = document.createElement('div');
-        ownerEl.className = 'owner';
-        el.appendChild(ownerEl);
-      }
-      ownerEl.textContent = owner.avatar;
-      ownerEl.title = owner.name;
-    } else if (ownerEl) ownerEl.remove();
+    el.classList.toggle('fullset', !!owner && inFullSet(v, i));
+    el.style.setProperty('--pc', owner ? owner.color : '');
+    el.style.setProperty('--ink', owner ? inkFor(owner.color) : '');
     let badge = el.querySelector('.badge');
     if (ps.tedbir > 0) {
       if (!badge) {
@@ -72,10 +63,8 @@ export function updateBoard(cells, v, highlight, pick = null) {
       badge.title = `İhtiyati tedbir (${ps.tedbir} tur)`;
     } else if (badge) badge.remove();
     const floors = el.querySelector('.floors');
-    if (floors) floors.innerHTML = '<i></i>'.repeat(ps.kat) + '<i class="k" title="Kaçak kat"></i>'.repeat(ps.kacak);
-    const pr = el.querySelector('.pr');
-    if (pr) pr.textContent = owner ? (ps.ipotek ? '' : `Kira ${fmt(rentFor(v, i))}`) : fmt(price(v, i));
-    el.title = `${sq.name}${sq.group ? ` (${GROUPS[sq.group].name})` : ''}${owner ? ` — ${owner.name}` : ''}`;
+    if (floors) floors.innerHTML = '<i></i>'.repeat(ps.kat) + '<i class="k"></i>'.repeat(ps.kacak);
+    el.title = `${sq.name}${owner ? ` — ${owner.name}` : ' — sahipsiz'}${ps.ipotek ? ' (ipotekli)' : ''}`;
   });
 }
 
@@ -157,22 +146,59 @@ export class Tokens {
   }
 }
 
-// ---- zar ----
+// ---- 3 boyutlu zar ----
 
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-export const dieHTML = (n, cls = '') => `<div class="die ${cls}">${Array.from({ length: 9 }, (_, i) => `<i class="${PIPS[n]?.includes(i) ? 'on' : ''}"></i>`).join('')}</div>`;
+// Küpün o yüzü öne bakması için gereken dönüş (derece): [x, y].
+const FACE_ROT = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
+const face = (n) => `<div class="face f${n}">${Array.from({ length: 9 }, (_, i) => `<i class="${PIPS[n].includes(i) ? 'on' : ''}"></i>`).join('')}</div>`;
 
-export async function rollDice(el, dice, fast) {
-  if (!el) return;
-  if (fast) {
-    el.innerHTML = dice.map((d, i) => dieHTML(d, i ? 'red' : '')).join('');
-    return;
+export class Dice {
+  constructor(el) {
+    this.el = el;
+    this.turns = [
+      [0, 0],
+      [0, 0],
+    ];
+    el.innerHTML = [0, 1]
+      .map((i) => `<div class="die3d ${i ? 'red' : ''}"><div class="cube">${[1, 2, 3, 4, 5, 6].map(face).join('')}</div><div class="dshadow"></div></div>`)
+      .join('');
+    this.cubes = [...el.querySelectorAll('.cube')];
+    this.wraps = [...el.querySelectorAll('.die3d')];
+    this.values = null;
   }
-  play('dice');
-  for (let k = 0; k < 7; k++) {
-    el.innerHTML = dice.map((_, i) => dieHTML(1 + Math.floor(Math.random() * 6), `rolling ${i ? 'red' : ''}`)).join('');
-    await sleep(70);
+
+  orient(i, value, animate) {
+    const [x, y] = FACE_ROT[value];
+    const c = this.cubes[i];
+    c.style.transition = animate ? '' : 'none';
+    c.style.transform = `rotateX(${x + this.turns[i][0] * 360}deg) rotateY(${y + this.turns[i][1] * 360}deg)`;
   }
-  el.innerHTML = dice.map((d, i) => dieHTML(d, i ? 'red' : '')).join('');
-  await sleep(250);
+
+  // Anlık gösterim (null: gizle).
+  show(values) {
+    this.el.classList.toggle('off', !values);
+    const key = values ? values.join() : '';
+    if (!values || key === this.values) return;
+    this.values = key;
+    values.forEach((v, i) => this.orient(i, v, false));
+  }
+
+  async roll(values, fast) {
+    if (fast) return this.show(values);
+    this.el.classList.remove('off');
+    this.values = values.join();
+    play('dice');
+    values.forEach((v, i) => {
+      this.turns[i][0] += 2 + Math.floor(Math.random() * 2);
+      this.turns[i][1] += 1 + Math.floor(Math.random() * 2);
+      const w = this.wraps[i];
+      w.classList.remove('throw');
+      this.cubes[i].style.transition = 'none';
+      void w.offsetWidth;
+      w.classList.add('throw');
+      this.orient(i, v, true);
+    });
+    await sleep(1250);
+  }
 }

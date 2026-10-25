@@ -163,5 +163,5 @@ export const HEDEF = {
 };
 
 export const AVATARS = ['🦊', '🐻', '🐼', '🐸', '🐯', '🦁', '🐙', '🦉', '🐺', '🐮', '🐵', '🦄'];
-export const PLAYER_COLORS = ['#e4572e', '#2e86ab', '#7a9e3b', '#8e44ad', '#f2a541', '#17a398'];
+export const PLAYER_COLORS = ['#e63946', '#1e6fd9', '#2b9348', '#8e44ad', '#f39c12', '#e84393'];
 export const BOT_NAMES = ['Hacı Müteahhit', 'Emlakçı Nuri', 'Kooperatif Sevim', 'Tapucu Rıza', 'Arsa Kemal', 'Rezidans Bülent'];

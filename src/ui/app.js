@@ -14,7 +14,7 @@ import { RULES_HTML } from './rules.js';
 const root = document.getElementById('app');
 const SAVE = { host: 'save.host', local: 'save.local' };
 const SAVE_MAX_AGE = 3 * 24 * 3600 * 1000;
-const freshUI = () => ({ tab: 'log', dialog: null, selected: [], binds: {}, trade: null, swapMine: null, pick: null, seenOver: false });
+const freshUI = () => ({ tab: 'log', dialog: null, selected: [], binds: {}, trade: null, swapMine: null, pick: null, popSq: null, seenOver: false });
 
 function savedGame(kind) {
   const s = store.get(SAVE[kind]);
@@ -373,7 +373,13 @@ const closeDialog = () => {
 };
 const openDialog = (d) => {
   app.ui.dialog = d;
-  G.renderModal();
+  app.ui.popSq = null;
+  G.updateGame();
+};
+const closePop = () => {
+  if (app.ui.popSq === null || app.ui.popSq === undefined) return;
+  app.ui.popSq = null;
+  G.updateGame();
 };
 
 const A = {
@@ -434,10 +440,8 @@ const A = {
   decline: () => act({ type: 'decline' }),
   pazarlik: (el) => act({ type: 'playCard', uid: el.dataset.uid }),
   bid() {
-    const n = Math.floor(Number(app.ui.binds.bid));
-    if (!(n >= 0) || app.ui.binds.bid === '' || app.ui.binds.bid === undefined) return G.toast('Önce bir teklif yaz.', 'error');
-    act({ type: 'bid', amount: n });
-    app.ui.binds.bid = '';
+    act({ type: 'bid', amount: Math.max(0, Math.floor(Number(app.ui.binds.bid) || 0)) });
+    app.ui.binds.bid = '0';
   },
   bidPass: () => act({ type: 'bid', amount: 0 }),
   bidQuick(el) {
@@ -476,7 +480,10 @@ const A = {
   },
   square(el) {
     const sq = Number(el.dataset.sq);
-    if (!app.ui.pick) return openDialog({ type: 'square', sq });
+    if (!app.ui.pick) {
+      app.ui.popSq = app.ui.popSq === sq ? null : sq;
+      return G.updateGame();
+    }
     const r = pickClick(V(), app.ui.pick.uid, app.ui.swapMine, sq);
     if (!r) return G.toast('Bu kare seçilemez; parlayan karelerden birini seç.', 'error');
     if (r.swapMine !== undefined) app.ui.swapMine = r.swapMine;
@@ -492,6 +499,7 @@ const A = {
     app.ui.dialog = null;
     G.updateGame();
   },
+  popClose: closePop,
   pickCancel() {
     app.ui.pick = null;
     G.updateGame();
@@ -500,13 +508,14 @@ const A = {
   manage: () => openDialog({ type: 'manage' }),
   trade() {
     app.ui.trade = { to: null, give: { props: [] }, take: { props: [] } };
-    app.ui.binds.tradeGive = '';
-    app.ui.binds.tradeTake = '';
+    app.ui.binds.tradeGive = '0';
+    app.ui.binds.tradeTake = '0';
     openDialog({ type: 'trade' });
   },
   tradeTo(el) {
     app.ui.trade.to = Number(el.dataset.p);
     app.ui.trade.take.props = [];
+    app.ui.binds.tradeTake = '0';
     G.renderModal();
   },
   tradePick(el) {
@@ -542,6 +551,8 @@ const A = {
 };
 
 document.addEventListener('click', (e) => {
+  // Kira penceresi dışına tıklanınca kapanır.
+  if (app.ui.popSq !== null && app.ui.popSq !== undefined && !e.target.closest('.pop, .cell')) closePop();
   const el = e.target.closest('[data-act]');
   if (!el || el.disabled) return;
   const fn = A[el.dataset.act];
@@ -562,6 +573,7 @@ document.addEventListener('keydown', (e) => {
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
   if (e.key === 'Escape' && (app.ui.dialog || app.ui.menuModal)) return closeDialog();
   if (e.key === 'Escape' && app.ui.pick) return A.pickCancel();
+  if (e.key === 'Escape' && app.ui.popSq !== null && app.ui.popSq !== undefined) return closePop();
   if (e.key === 'Enter' && typing) {
     if (document.activeElement.dataset.bind === 'bid') return A.bid();
     if (document.activeElement.id === 'codeInput') return A.join();
