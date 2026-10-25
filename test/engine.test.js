@@ -309,23 +309,49 @@ test('puan: hedef bonusu ve konkordato cezası', () => {
   assert.equal(netWorth(s, 0), 1500 + price(s, 1) + price(s, 2));
 });
 
+// Kart oynamadan, satın almadan sırayı ilerleten en basit hamle.
+function simpleStep(s) {
+  const p = waitingFor(s)[0];
+  const pd = s.pending;
+  let a;
+  if (pd?.type === 'discard') a = { type: 'discard', uids: s.players[p].hand.slice(0, pd.count) };
+  else if (pd) a = defaultFor(s);
+  else if (s.turn.step === 'preroll') a = { type: 'roll' };
+  else if (s.turn.step === 'choose') a = { type: 'move', steps: s.turn.dice[0] + s.turn.dice[1] };
+  else if (s.players[p].cash < 0) a = { type: 'settleDebt' };
+  else a = { type: 'endTurn' };
+  return actEv(s, p, a);
+}
+
 test('oyun son turun sonunda biter ve sıralama üretir', () => {
   let s = started(3, 5, { maxRounds: 2 });
   let guard = 0;
-  while (s.phase !== 'over' && guard++ < 500) {
-    const p = waitingFor(s)[0];
-    const pd = s.pending;
-    let a;
-    if (pd) a = defaultFor(s);
-    else if (s.turn.step === 'preroll') a = { type: 'roll' };
-    else if (s.turn.step === 'choose') a = { type: 'move', steps: s.turn.dice[0] + s.turn.dice[1] };
-    else if (s.players[p].cash < 0) a = { type: 'settleDebt' };
-    else a = { type: 'endTurn' };
-    if (pd?.type === 'discard') a = { type: 'discard', uids: s.players[p].hand.slice(0, pd.count) };
-    s = act(s, p, a);
-  }
+  while (s.phase !== 'over' && guard++ < 500) s = simpleStep(s).state;
   assert.equal(s.phase, 'over');
   assert.equal(s.round, 2);
   assert.equal(s.results.ranking.length, 3);
   assert.ok(viewFor(s, 0).players[1].hedef, 'oyun sonunda hedefler açılır');
+});
+
+test('tur özeti: net değer farkı ve el değiştiren mülkler', () => {
+  let s = started(3, 5);
+  own(s, 0, 8);
+  s.roundStart.owners[8] = 0;
+  s.roundStart.net[0] = netWorth(s, 0);
+  own(s, 1, 8);
+  let ev = null;
+  let guard = 0;
+  while (s.round === 1 && guard++ < 200) {
+    const r = simpleStep(s);
+    ev = r.events.find((e) => e.type === 'summary') || ev;
+    s = r.state;
+  }
+  assert.ok(ev, 'tur sonunda özet olayı yayınlanır');
+  assert.match(ev.text, /^1\. tur özeti: /);
+  assert.equal(s.summary.round, 1);
+  assert.deepEqual(s.summary.changes, [{ sq: 8, from: 0, to: 1 }]);
+  assert.ok(ev.text.includes(`${BOARD[8].name} (${s.players[0].name} → ${s.players[1].name})`));
+  const top = Math.max(...s.summary.deltas);
+  assert.equal(s.summary.deltas[s.summary.best], top);
+  assert.ok(s.summary.deltas[0] < 0, 'mülkünü kaybeden net değer kaybeder');
 });

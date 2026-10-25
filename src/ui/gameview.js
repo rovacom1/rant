@@ -729,9 +729,23 @@ function floatMoney(p, delta) {
 function showNews(v, ev) {
   const g = GUNDEM[ev.id];
   const detail = v.gundem && v.gundem.id === ev.id ? v.gundem.detail : '';
-  els.stage.innerHTML = html`<div class="stage" data-act="closeStage"><div class="news"><div class="kicker">${ev.round}. TUR · SON DAKİKA</div><div class="gi">${g.icon}</div><div class="gt">${g.name}</div><div class="gx">${g.text}</div>${detail ? html`<div class="gd">${detail}</div>` : ''}</div></div>`.toString();
+  const sum = v.summary && v.summary.round === ev.round - 1 ? summaryHTML(v, v.summary) : '';
+  els.stage.innerHTML = html`<div class="stage" data-act="closeStage"><div class="news"><div class="kicker">${ev.round}. TUR · SON DAKİKA</div><div class="gi">${g.icon}</div><div class="gt">${g.name}</div><div class="gx">${g.text}</div>${detail ? html`<div class="gd">${detail}</div>` : ''}${sum}</div></div>`.toString();
   clearTimeout(showNews.t);
-  showNews.t = setTimeout(() => (els.stage.innerHTML = ''), 3600);
+  showNews.t = setTimeout(() => (els.stage.innerHTML = ''), sum ? 5600 : 3600);
+}
+
+// Geçen turun özeti: en çok kazanan/kaybeden ve el değiştiren mülkler (en fazla 3).
+function summaryHTML(v, sm) {
+  const sign = (x) => `${x > 0 ? '+' : ''}${fmt(x)}`;
+  const rows = [];
+  if (sm.best !== null) {
+    rows.push(html`<div>📈 <b>${P(v, sm.best).name}</b> ${sign(sm.deltas[sm.best])}</div>`);
+    rows.push(html`<div>📉 <b>${P(v, sm.worst).name}</b> ${sign(sm.deltas[sm.worst])}</div>`);
+  }
+  for (const c of sm.changes.slice(0, 3)) rows.push(html`<div>🔁 ${BOARD[c.sq].name}: ${P(v, c.from).name} → ${c.to === null ? 'Banka' : P(v, c.to).name}</div>`);
+  if (sm.changes.length > 3) rows.push(html`<div>… ve ${sm.changes.length - 3} mülk daha</div>`);
+  return rows.length ? html`<div class="recap"><div class="rk">${sm.round}. TURUN ÖZETİ</div>${rows}</div>` : '';
 }
 
 export function confetti() {

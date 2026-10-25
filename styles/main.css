@@ -408,6 +408,8 @@ input, select { font: inherit; }
 .stage .news .gt { font-size: 26px; font-weight: 900; }
 .stage .news .gx { color: #d6e0f7; margin-top: 8px; font-size: 16px; }
 .stage .news .gd { margin-top: 10px; font-weight: 700; color: #ffe2a8; }
+.stage .news .recap { margin-top: 16px; padding-top: 12px; border-top: 1px dashed rgba(255, 255, 255, 0.3); font-size: 14px; color: #d6e0f7; display: grid; gap: 4px; }
+.stage .news .recap .rk { font-size: 11px; letter-spacing: 0.2em; color: var(--gold); font-weight: 800; }
 @keyframes flip { from { transform: rotateY(90deg) scale(0.7); opacity: 0; } }
 .float { position: fixed; z-index: 70; font-weight: 800; pointer-events: none; animation: floatUp 1.4s ease-out forwards; font-size: 17px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); }
 .float.plus { color: #22a65a; }

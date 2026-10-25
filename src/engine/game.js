@@ -163,6 +163,8 @@ export function createGame({ players, config = {}, seed = 1 }) {
     turn: null,
     pending: null,
     lastAuction: null,
+    roundStart: null,
+    summary: null,
     log: [],
     results: null,
   };
@@ -203,6 +205,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
 
 function startRound(s, ctx) {
   s.round++;
+  s.roundStart = { net: s.players.map((_, p) => R.netWorth(s, p)), owners: s.props.map((ps) => (ps ? ps.owner : null)) };
   s.mods = {};
   for (const ps of s.props) if (ps && ps.tedbir > 0) ps.tedbir--;
   if (!s.gundemDeck.length) {
@@ -225,9 +228,29 @@ function startTurn(s, ctx, p) {
   drawCards(s, ctx, p, 1, true);
 }
 
+// Tur sonu özeti: net değer farkları ve el değiştiren mülkler (bankadan ilk satın alma sayılmaz).
+function summarizeRound(s, ctx) {
+  const start = s.roundStart;
+  if (!start) return;
+  const deltas = s.players.map((_, p) => R.netWorth(s, p) - start.net[p]);
+  const changes = [];
+  s.props.forEach((ps, sq) => {
+    if (ps && start.owners[sq] !== null && ps.owner !== start.owners[sq]) changes.push({ sq, from: start.owners[sq], to: ps.owner });
+  });
+  const best = deltas.indexOf(Math.max(...deltas));
+  const worst = deltas.indexOf(Math.min(...deltas));
+  const flat = deltas[best] === deltas[worst];
+  s.summary = { round: s.round, deltas, best: flat ? null : best, worst: flat ? null : worst, changes };
+  const sign = (x) => `${x > 0 ? '+' : ''}${fmt(x)}`;
+  const parts = [flat ? 'Herkes yerinde saydı' : `En çok kazanan ${nm(s, best)} (${sign(deltas[best])}), en çok kaybeden ${nm(s, worst)} (${sign(deltas[worst])})`];
+  if (changes.length) parts.push(`El değiştiren: ${changes.map((c) => `${sqName(c.sq)} (${nm(s, c.from)} → ${c.to === null ? 'Banka' : nm(s, c.to)})`).join(', ')}`);
+  emit(s, ctx, { type: 'summary', round: s.round, text: `${s.round}. tur özeti: ${parts.join('. ')}.` });
+}
+
 function finishTurn(s, ctx) {
   const next = (s.turn.p + 1) % s.players.length;
   if (next === 0) {
+    summarizeRound(s, ctx);
     if (s.round >= s.config.maxRounds) return endGame(s, ctx);
     startRound(s, ctx);
   }

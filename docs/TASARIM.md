@@ -88,6 +88,7 @@ Sahil grupları: Antalya, İzmir.
 5. **Kareye geliş** (aşağıda).
 6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**.
 7. Turu bitirmek için: bekleyen karar yok, nakit >= 0, elde en fazla 6 kart.
+8. **Tur sonu** (son oyuncudan sonra): Tur özeti açıklanır: net değeri en çok artan ve en çok düşen oyuncu, el değiştiren mülkler. Yalnız bilgi verir, kurala etkisi yoktur.
 
 ### Karelere geliş
 
