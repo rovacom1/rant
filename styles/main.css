@@ -171,7 +171,7 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .table { flex: 1; display: flex; gap: 16px; padding: 10px 14px 0; align-items: flex-start; justify-content: center; min-height: 0; }
 .board-wrap { position: relative; flex: none; }
 .board {
-  --size: min(calc(100vh - 112px), calc(100vw - 440px)); /* el ekranın altına gömülü durur, tahtaya yer kalır */
+  --size: min(calc(100vh - 72px), calc(100vw - 440px)); /* el sağ sütunda, yükseklik tümüyle tahtanın */
   width: var(--size); height: var(--size); min-width: 560px; min-height: 560px;
   display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr);
   background: var(--paper); border-radius: 18px; padding: 6px; gap: 3px;
@@ -464,43 +464,36 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .k-foot { position: absolute; bottom: 2.4%; left: 0; right: 0; text-align: center; font-size: 0.56em; font-weight: 700; color: rgba(255, 250, 235, 0.92); letter-spacing: 0.03em; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5); }
 .kart.big { --w: 230px; }
 
-/* el (alt kenar) */
-/* Boştayken kartların yalnız adı görünür; fare ele gelince hepsi yükselir (open), üstüne gelinen büyür. */
-.hand-dock { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); width: min(820px, 100%); height: 46px; z-index: 30; pointer-events: none; }
-.hand-dock.open { --lift: 62px; }
-.hslot {
-  position: absolute; left: 50%; bottom: -137px; width: 128px; margin-left: -64px; transform-origin: 50% 130%;
-  transform: translate(var(--x), calc(var(--y) - var(--lift, 0px))) rotate(var(--r)); transition: transform 0.3s cubic-bezier(0.22, 0.8, 0.32, 1); pointer-events: auto; cursor: pointer; touch-action: none;
-}
-.hslot.hover { transform: translate(var(--x), -150px) rotate(0deg) scale(1.55); }
-.hslot.dragging { transform: translate(calc(var(--x) + var(--dx)), calc(var(--y) + var(--dy) - 40px)) rotate(0deg) scale(1.2); transition: none; z-index: 200 !important; cursor: grabbing; }
+/* el (sağ sütun, oyuncuların altında) */
+/* Kart boyu kalan yere göre hand.js fitGrid ile ayarlanır; üstüne gelinen kart ızgaranın içine doğru büyür. */
+.hand-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; background: rgba(8, 12, 24, 0.38); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07); }
+.hand-head { display: flex; align-items: center; gap: 4px; color: #e8eefc; font-size: 11px; font-weight: 800; letter-spacing: 0.14em; }
+.hand-head .hand-n { color: #9fb0d4; }
+.hand-head .spacer { flex: 1; }
+.deck-chip { display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0; font-family: var(--display); font-size: 13px; cursor: help; }
+.deck-chip i { width: 13px; height: 18px; border-radius: 3px; border: 1.5px solid #c9a24a; background: url(../assets/kart/arka.jpg) center / cover, linear-gradient(145deg, #1d2b4f, #00798c); }
+.hand-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--cols, 3), var(--hw, 128px)); gap: 8px; align-content: start; justify-content: center; }
+.hand-grid:empty::after { content: 'Elinde kart yok'; grid-column: 1 / -1; color: rgba(255, 255, 255, 0.5); font-size: 13px; padding: 10px 0; }
+.hand-grid .kart { --w: var(--hw, 128px); }
+.hslot { position: relative; z-index: 1; transition: transform 0.22s cubic-bezier(0.22, 0.8, 0.32, 1); cursor: pointer; touch-action: none; }
+@media (hover: hover) { .hslot:hover:not(.dragging) { transform: scale(var(--zoom, 1.6)); z-index: 50; } }
+.hslot.dragging { transform: translate(var(--dx), var(--dy)) scale(1.1); transition: none; z-index: 200; cursor: grabbing; }
 .hslot.playable .kart { box-shadow: 0 0 0 2px #7cf59a, 0 0 18px rgba(90, 240, 130, 0.85), 0 6px 16px rgba(0, 0, 0, 0.45); animation: playGlow 1.8s ease-in-out infinite; }
 .hslot.dragging.armed .kart { box-shadow: 0 0 0 3px #b6ffc7, 0 0 34px #5cf07f; }
-.hslot.selected { transform: translate(var(--x), -46px) rotate(0deg); }
+.hslot.selected { transform: translateY(-6px); }
 .hslot.selected .kart { box-shadow: 0 0 0 3px var(--accent), 0 0 18px rgba(209, 73, 91, 0.9); }
-.hslot.drawn { animation: drawIn 0.85s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.hslot.drawn { animation: drawIn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1); }
 @keyframes playGlow { 50% { box-shadow: 0 0 0 2px #7cf59a, 0 0 8px rgba(90, 240, 130, 0.5), 0 6px 16px rgba(0, 0, 0, 0.45); } }
-@keyframes drawIn { from { transform: translate(470px, -230px) rotate(35deg) scale(0.35); opacity: 0; } 55% { opacity: 1; } }
-.hand-empty { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); color: rgba(255, 255, 255, 0.55); font-size: 13px; white-space: nowrap; }
+@keyframes drawIn { from { transform: translateY(-26px) scale(0.6); opacity: 0; } }
 .kart-ghost { position: fixed; z-index: 75; pointer-events: none; }
 .kart-ghost .kart { --w: 100%; width: 100%; height: 100%; font-size: inherit; }
 
-/* destede kalan kart ve gizli hedef */
-.deck { position: absolute; right: 4px; bottom: -46px; width: 66px; height: 94px; pointer-events: auto; }
-.deck i { position: absolute; inset: 0; border-radius: 8px; border: 2px solid #c9a24a; background: url(../assets/kart/arka.jpg) center / cover, linear-gradient(145deg, #1d2b4f, #00798c); box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35); }
-.deck i:nth-child(2) { transform: translate(-3px, -3px); }
-.deck i:nth-child(3) { transform: translate(-6px, -6px); }
-.deck b { position: absolute; right: -8px; top: -14px; background: var(--ink); color: #fff; border: 2px solid #c9a24a; border-radius: 999px; font-size: 12px; padding: 1px 7px; font-family: var(--display); }
-.quest {
-  position: absolute; left: 4px; bottom: -6px; width: 150px; pointer-events: auto; cursor: help; border-radius: 12px; padding: 8px 10px;
-  background: linear-gradient(150deg, #2a2016, #4a3417); color: #fff3d6; border: 2px solid #c9a24a; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); transition: transform 0.2s;
-}
-.quest .q-k { font-size: 10px; letter-spacing: 0.15em; color: #f7dc92; font-weight: 800; }
-.quest .q-n { font-family: var(--display); font-weight: 600; font-size: 15px; display: flex; gap: 6px; align-items: center; }
-.quest .q-t { font-size: 12px; color: #e9dcc0; max-height: 0; overflow: hidden; transition: max-height 0.25s; }
-.quest .q-ok { color: #8ff0a8; font-size: 12px; font-weight: 700; }
-.quest:hover { transform: translateY(-60px); }
-.quest:hover .q-t { max-height: 80px; margin-top: 4px; }
+/* gizli hedef (elin üstünde) */
+.quest { border-radius: 12px; padding: 7px 10px; background: linear-gradient(150deg, #2a2016, #4a3417); color: #fff3d6; border: 2px solid #c9a24a; }
+.quest .q-n { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; font-family: var(--display); font-weight: 600; font-size: 14.5px; }
+.quest .q-k { font-family: var(--font); font-size: 10px; letter-spacing: 0.14em; color: #f7dc92; font-weight: 800; }
+.quest .q-ok { margin-left: auto; font-family: var(--font); color: #8ff0a8; font-size: 12px; font-weight: 700; }
+.quest .q-t { font-size: 12px; line-height: 1.35; color: #e9dcc0; margin-top: 2px; }
 
 /* başkasının oynadığı kart ortada gösterilir */
 /* fare üstündeyken kart durur ve büyür, tıklayınca kapanır; süre oyun hızına göre (--dur) */
@@ -541,7 +534,8 @@ body.dark .surp .sn { color: #e3a8ff; }
 body.dark .surp .sx { color: #c9d1e3; }
 
 /* ================= Sağ panel ================= */
-.side { width: 380px; flex: none; display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 80px); min-height: 0; }
+.side { flex: 0 1 480px; min-width: 360px; height: calc(100vh - 72px); display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.seats-panel { flex: none; }
 .seats-panel { display: flex; flex-direction: column; gap: 8px; }
 .seat2 {
   --c: #888; position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; cursor: pointer;
@@ -689,11 +683,8 @@ body.dark .pop .po, body.dark .pop .pn { color: #aab3c8; }
   .game { height: auto; overflow: visible; }
   .table { flex-direction: column; align-items: center; padding-bottom: 20px; }
   .board { --size: min(calc(100vw - 28px), 900px); min-width: 0; min-height: 0; }
-  .side { width: min(100%, 900px); max-height: none; }
-  .hand-dock { position: relative; top: auto; left: auto; transform: none; margin: 8px auto 0; height: 196px; }
-  .hslot { bottom: 4px; }
-  .hand-dock.open { --lift: 0px; } /* dar ekranda el kendi satırında, gömülü değil */
-  .deck, .quest { bottom: 10px; }
+  .side { width: min(100%, 900px); flex: none; min-width: 0; height: auto; }
+  .hand-panel { order: -1; } /* dar ekranda el tahtanın hemen altında */
 }
 .ring > div { position: relative; text-align: center; }
 .cdlg { display: flex; gap: 20px; align-items: flex-start; }

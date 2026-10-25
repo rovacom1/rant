@@ -1,5 +1,5 @@
-// Elde kartlar: ekranın altında Hearthstone tarzı yelpaze.
-// Üstüne gelince kart büyür; oynanabilir kart yukarı sürüklenip bırakılınca oynanır, tıklayınca ayrıntısı açılır.
+// Elde kartlar: sağ sütunda, oyuncuların altında ızgara. Kart boyu sütunda kalan yere göre ayarlanır, tahtanın önüne geçmez.
+// Üstüne gelince kart büyür; oynanabilir kart tahtaya sürüklenip bırakılınca oynanır, tıklayınca ayrıntısı açılır.
 // Bileşen olayları belgeye 'rant:card' olarak yollar: { uid, how: 'click' | 'drop' }.
 import { CARDS, cardId } from '../engine/index.js';
 import { html } from './dom.js';
@@ -20,28 +20,46 @@ export function cardFace(id, cls = '') {
 }
 
 const DRAG_START = 8; // px
-const DROP_LINE = 90; // elin üst kenarından bu kadar yukarı bırakılırsa oynanır
+const GAP = 8; // kartlar arası boşluk (CSS .hand-grid gap ile aynı)
+const MAX_W = 128; // kartın en geniş hali
+const ZOOM_W = 220; // üstüne gelince kartın genişliği
+const RATIO = 1.42; // kart yüksekliği / genişliği (CSS .kart)
+const NARROW = globalThis.matchMedia?.('(max-width: 1100px)'); // tahta, el ve panel alt alta (CSS ile aynı eşik)
+
+// n kartı w x h alana en büyük boyda yerleştiren sütun sayısı ve kart genişliği.
+// h yoksa (dar ekranda sütun içerik kadar uzar) yalnız genişliğe bakılır, kart 100 px'ten küçülmez.
+export function fitGrid(n, w, h) {
+  if (!n) return { cols: 1, w: MAX_W };
+  if (!h) {
+    const cols = Math.max(1, Math.min(n, Math.floor((w + GAP) / (100 + GAP))));
+    return { cols, w: Math.floor(Math.min(MAX_W, (w - (cols - 1) * GAP) / cols)) };
+  }
+  // En büyük kart; eşitse daha az satır (ızgara dolu görünür), satır da eşitse daha az sütun (dengeli dizilir).
+  let best = { cols: 1, rows: n, w: 0 };
+  for (let cols = 1; cols <= n; cols++) {
+    const rows = Math.ceil(n / cols);
+    const cw = Math.min(MAX_W, (w - (cols - 1) * GAP) / cols, (h - (rows - 1) * GAP) / rows / RATIO);
+    if (cw > best.w + 0.5 || (cw > best.w - 0.5 && rows < best.rows)) best = { cols, rows, w: cw };
+  }
+  return { cols: best.cols, w: Math.floor(best.w) };
+}
 
 export class Hand {
-  constructor(el) {
+  // el: kartların ızgarası; drop: üzerine bırakılınca kartın oynandığı alan (tahta).
+  constructor(el, drop) {
     this.el = el;
+    this.drop = drop;
     this.items = new Map(); // uid -> element
     this.order = [];
-    this.pos = []; // her kartın dinlenme konumunun merkezi (elin ortasına göre px)
-    this.hover = null;
     this.drag = null;
-    this.raf = 0;
     el.addEventListener('pointerdown', (e) => this.down(e));
-    window.addEventListener('pointermove', (e) => {
-      this.move(e);
-      this.last = e;
-      if (!this.raf) this.raf = requestAnimationFrame(() => ((this.raf = 0), this.track(this.last)));
-    });
+    window.addEventListener('pointermove', (e) => this.move(e));
     window.addEventListener('pointerup', (e) => this.up(e));
-    window.addEventListener('resize', () => this.layout());
+    new ResizeObserver(() => this.layout()).observe(el);
+    NARROW?.addEventListener('change', () => this.layout());
   }
 
-  // uids: eldeki kartlar; state(uid) -> { playable, selected }; fresh: yeni gelenler (desteden uçar).
+  // uids: eldeki kartlar; state(uid) -> { playable, selected }; fresh: yeni gelenler (belirerek gelir).
   render(uids, state, fresh = []) {
     for (const [uid, el] of this.items) {
       if (!uids.includes(uid)) {
@@ -56,68 +74,38 @@ export class Hand {
         el.className = 'hslot';
         el.dataset.uid = uid;
         el.innerHTML = String(cardFace(cardId(uid)));
-        this.el.appendChild(el);
-        this.items.set(uid, el);
         if (fresh.includes(uid)) {
           el.classList.add('drawn');
           setTimeout(() => el.classList.remove('drawn'), 900);
         }
+        this.items.set(uid, el);
+        this.el.appendChild(el);
       }
       const st = state(uid);
       el.classList.toggle('playable', !!st.playable);
       el.classList.toggle('selected', !!st.selected);
     });
+    // Sıra yalnız değiştiyse yeniden dizilir; yerinden oynayan kartın parıltısı baştan başlar.
+    if ([...this.el.children].some((c, i) => c.dataset.uid !== uids[i])) for (const uid of uids) this.el.appendChild(this.items.get(uid));
     this.order = uids;
-    if (!uids.includes(this.hover)) this.hover = null;
     this.layout();
   }
 
   layout() {
     const n = this.order.length;
-    // Yelpaze, soldaki gizli hedef ile sağdaki deste arasına sığar.
-    const width = Math.max(260, (this.el.clientWidth || 700) - 340);
-    const step = n > 1 ? Math.min(96, (width - 128) / (n - 1)) : 0;
-    this.step = step;
-    const h = this.order.indexOf(this.hover);
-    this.pos = this.order.map((uid, i) => {
-      const el = this.items.get(uid);
-      const k = i - (n - 1) / 2;
-      // Üstüne gelinen kartın komşuları biraz kenara açılır.
-      const spread = h < 0 || i === h ? 0 : i < h ? -28 : 28;
-      el.style.setProperty('--x', `${k * step + spread}px`);
-      el.style.setProperty('--y', `${Math.abs(k) * Math.abs(k) * 3.5}px`);
-      el.style.setProperty('--r', `${k * 4.5}deg`);
-      el.style.zIndex = String(i === h ? 100 : 10 + i);
-      el.classList.toggle('hover', i === h);
-      return k * step;
+    const { cols, w } = fitGrid(n, this.el.clientWidth, NARROW?.matches ? 0 : this.el.clientHeight);
+    this.el.style.setProperty('--cols', cols);
+    this.el.style.setProperty('--hw', `${w}px`);
+    this.el.style.setProperty('--zoom', Math.max(1, ZOOM_W / w).toFixed(3));
+    const rows = Math.ceil(n / cols);
+    // Büyüyen kart ızgaranın içine doğru açılır: kenardaki kart dışarı taşmaz.
+    this.order.forEach((uid, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = cols === 1 ? 'center' : col === 0 ? 'left' : col === cols - 1 ? 'right' : 'center';
+      const y = rows > 1 && row === 0 ? 'top' : 'bottom';
+      this.items.get(uid).style.transformOrigin = `${x} ${y}`;
     });
-    this.el.classList.toggle('open', h >= 0);
-  }
-
-  // Fare elin hizasındaysa en yakın kart seçilir; kart yukarı kalksa da seçim titremez.
-  track(e) {
-    if (!e || this.drag?.moving) return;
-    const r = this.el.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    let next = null;
-    const lifted = this.hover && this.items.get(this.hover)?.querySelector('.kart').getBoundingClientRect();
-    const onLifted = lifted && e.clientX >= lifted.left && e.clientX <= lifted.right && e.clientY >= lifted.top && e.clientY <= lifted.bottom;
-    if (onLifted) next = this.hover;
-    else if (this.order.length && e.clientY >= r.top - 6 && e.clientY <= window.innerHeight) {
-      const half = 64 + 4;
-      let best = Infinity;
-      this.pos.forEach((x, i) => {
-        const d = Math.abs(e.clientX - (cx + x));
-        if (d < best && d <= Math.max(half, this.step / 2 + 8)) {
-          best = d;
-          next = this.order[i];
-        }
-      });
-    }
-    if (next !== this.hover) {
-      this.hover = next;
-      this.layout();
-    }
   }
 
   rectOf(uid) {
@@ -125,9 +113,14 @@ export class Hand {
     return el ? el.querySelector('.kart').getBoundingClientRect() : null;
   }
 
+  overDrop(e) {
+    const r = this.drop.getBoundingClientRect();
+    return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  }
+
   down(e) {
     if (e.button !== 0) return;
-    const el = (this.hover && this.items.get(this.hover)) || e.target.closest('.hslot');
+    const el = e.target.closest('.hslot');
     if (!el) return;
     this.drag = { el, uid: el.dataset.uid, x0: e.clientX, y0: e.clientY, moving: false };
   }
@@ -141,20 +134,18 @@ export class Hand {
       if (Math.hypot(dx, dy) < DRAG_START || !d.el.classList.contains('playable')) return;
       d.moving = true;
       d.el.classList.add('dragging');
-      this.el.classList.add('has-drag');
     }
     d.el.style.setProperty('--dx', `${dx}px`);
     d.el.style.setProperty('--dy', `${dy}px`);
-    d.el.classList.toggle('armed', e.clientY < this.el.getBoundingClientRect().top - DROP_LINE);
+    d.el.classList.toggle('armed', this.overDrop(e));
   }
 
   up(e) {
     const d = this.drag;
     if (!d) return;
     this.drag = null;
-    const armed = d.moving && e.clientY < this.el.getBoundingClientRect().top - DROP_LINE;
+    const armed = d.moving && this.overDrop(e);
     d.el.classList.remove('dragging', 'armed');
-    this.el.classList.remove('has-drag');
     d.el.style.removeProperty('--dx');
     d.el.style.removeProperty('--dy');
     if (d.moving && !armed) return;

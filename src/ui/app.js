@@ -570,7 +570,7 @@ const A = {
   },
 };
 
-// Elden gelen kart olayları: tıklayınca ayrıntı, yukarı sürükleyip bırakınca oyna.
+// Elden gelen kart olayları: tıklayınca ayrıntı, tahtaya sürükleyip bırakınca oyna.
 document.addEventListener('rant:card', (e) => {
   const v = V();
   if (!v) return;

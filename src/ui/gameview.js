@@ -56,10 +56,14 @@ export function mountGame(root) {
           <div class="tokens" id="tokens"></div>
           <div id="pop"></div>
         </div>
-        <div class="hand-dock" id="handDock"><div class="quest hidden" id="quest"></div><div class="deck" id="deck"></div></div>
       </section>
       <aside class="side">
         <div class="seats-panel" id="players"></div>
+        <section class="hand-panel hidden" id="handPanel">
+          <div class="hand-head">KARTLARIN<span class="hand-n" id="handN"></span><span class="spacer"></span><span class="deck-chip" id="deck" data-tip="Destede kalan kart"></span></div>
+          <div class="quest hidden" id="quest"></div>
+          <div class="hand-grid" id="handGrid"></div>
+        </section>
       </aside>
     </main>
   </div>
@@ -68,13 +72,13 @@ export function mountGame(root) {
   els = {
     round: g('tRound'), target: g('tTarget'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
     board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'),
-    players: g('players'), feed: g('feed'), handDock: g('handDock'), quest: g('quest'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
+    players: g('players'), feed: g('feed'), handPanel: g('handPanel'), handN: g('handN'), handGrid: g('handGrid'), quest: g('quest'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
     modal: g('modal'), stage: g('stage'),
   };
   cells = buildBoard(els.board);
   tokens = new Tokens(els.tokens, cells);
   dice = new Dice(els.dice);
-  hand = new Hand(els.handDock);
+  hand = new Hand(els.handGrid, els.board);
   initTips();
   startMusic();
 }
@@ -335,7 +339,7 @@ function promptHTML(v) {
       <div class="row center"><button class="btn primary big" data-act="settleDebt" data-primary>Borcu Kapat (otomatik)</button><button class="btn ghost" data-act="manage">Mülklerim</button></div>`;
   }
   const hints = [];
-  if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push('yeşil parlayan bir kartı yukarı sürükleyip ya da tıklayıp oynayabilir');
+  if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push('yeşil parlayan bir kartı tahtaya sürükleyip ya da tıklayıp oynayabilir');
   if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false) || !E.buildBlock(v, me, q, true))) hints.push('kat dikebilirsin');
   return html`<h3>${BOARD[pl.pos].icon || ''} ${BOARD[pl.pos].name}</h3>${hints.length ? html`<p>İstersen ${hints.join(' ya da ')}.</p>` : ''}
     <div class="row center"><button class="btn primary big" data-act="endTurn" data-primary>Turu Bitir ➜</button></div>${timerHTML(v, [me])}`;
@@ -472,22 +476,20 @@ function playersHTML(v) {
     .join('');
 }
 
-// Ekranın altındaki el, gizli hedef kartı ve deste.
+// Sağ sütundaki el, gizli hedef ve deste. İzleyicinin eli yoktur.
 function renderHand(v) {
   const me = v.you;
-  if (me < 0) {
-    hand.render([], () => ({}));
-    els.quest.classList.add('hidden');
-    return;
-  }
+  els.handPanel.classList.toggle('hidden', me < 0);
+  if (me < 0) return hand.render([], () => ({}));
   const pl = P(v, me);
   const discard = v.pending && v.pending.type === 'discard' && v.pending.p === me;
   hand.render(pl.hand, (u) => ({ playable: !discard && canPlay(v, u), selected: app.ui.selected.includes(u) }), app.ui.newCards || []);
   app.ui.newCards = [];
   const h = pl.hedef && HEDEF[pl.hedef];
   els.quest.classList.toggle('hidden', !h);
-  if (h) setHTML(els.quest, html`<div class="q-k">GİZLİ HEDEF</div><div class="q-n">${h.icon} ${h.name}</div><div class="q-t">${h.text} (+${h.bonus} puan)</div>${E.hedefMet(v, me, pl.hedef) ? html`<div class="q-ok">✓ şu an tutuyor</div>` : ''}`);
-  setHTML(els.deck, html`<i></i><i></i><i></i><b title="Destede kalan kart">${v.deck}</b>`);
+  if (h) setHTML(els.quest, html`<div class="q-n">${h.icon} ${h.name}<span class="q-k">GİZLİ HEDEF · +${h.bonus}</span>${E.hedefMet(v, me, pl.hedef) ? html`<span class="q-ok">✓ tutuyor</span>` : ''}</div><div class="q-t">${h.text}</div>`);
+  setHTML(els.handN, ` · ${pl.hand.length}`);
+  setHTML(els.deck, html`<i></i>${v.deck}`);
 }
 
 function renderAudioPop() {

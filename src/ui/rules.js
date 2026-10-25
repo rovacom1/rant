@@ -39,7 +39,7 @@ export const RULES_HTML = `
 <li><b>Karenin çerçevesi ve buzlu cam rengi</b>: hangi şehre ait olduğu (aynı renkler aynı set).</li>
 <li><b>🏠×N</b>: yasal kat sayısı. <b>🚧</b>: kaçak kat (İhbar, Zabıta ya da Belediye operasyonu yıkabilir). <b>🔒</b>: ipotekli, kira alınmaz. <b>⚖️</b>: ihtiyati tedbir, kira yok.</li>
 <li><b>Altın halkalı taş</b>: sırası gelen oyuncu. <b>Yanıp sönen kare</b>: karar bekleyen kare.</li>
-<li><b>Yeşil parlayan kart</b>: şu an oynanabilir; yukarı sürükle ya da tıkla.</li>
+<li><b>Yeşil parlayan kart</b>: şu an oynanabilir; tahtaya sürükle ya da tıkla.</li>
 <li>Oyuncu panelinde <b>📜 mülk</b>, <b>kart</b> sayısı ve <b>değer</b> (nakit + mülk + katlar) yazar. Simgelerin üzerine gelince açıklaması çıkar.</li>
 </ul>
 <h3>Gizli hedef</h3>
