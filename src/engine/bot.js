@@ -4,7 +4,7 @@
 import { BOARD, CARDS, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, HEDEF } from './data.js';
 import { nextRandom } from './rng.js';
 import * as R from './rules.js';
-import { waitingFor, moveOptions, cardBlock, cardTargets, tradeBlock, hasCard } from './game.js';
+import { waitingFor, moveOptions, cardBlock, cardTargets, tradeBlock, hasCard, auctionStep } from './game.js';
 
 const N = BOARD.length;
 
@@ -292,10 +292,13 @@ export function botAction(s, p) {
         return { type: 'decline' };
       }
       case 'auction': {
+        // Değerine ve yedeğine göre bir tavan; tavanı aşmadan kalan payın üçte biri kadar artırır, aşılınca çekilir.
         const v = propValue(s, p, pd.sq) * (0.75 + noise(s, p, 1) * 0.3);
-        const cap = pl.cash - res * 0.5;
-        const bid = R.round5(Math.min(v, cap));
-        return { type: 'bid', amount: bid >= R.price(s, pd.sq) * 0.25 ? Math.max(0, bid) : 0 };
+        const cap = Math.min(v, pl.cash - res * 0.5, pl.cash);
+        const min = pd.high + auctionStep(s);
+        if (cap < min || v < R.price(s, pd.sq) * 0.25) return { type: 'pass' };
+        const bid = Math.min(Math.floor(cap / 5) * 5, Math.max(min, R.round5(pd.high + (cap - pd.high) / 3)));
+        return bid >= min ? { type: 'raise', amount: bid } : { type: 'pass' };
       }
       case 'react': {
         const [itiraz] = myCards(s, p, 'itiraz');

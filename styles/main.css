@@ -801,3 +801,15 @@ body.dark .reason { color: #ff9aa5; }
 body.dark .seat2 .s-tag.me { background: #e9edf7; color: #1b2233; }
 /* menü ve lobi kartı karanlık temada da açık renk kalır: değişkenler açık haline döner */
 body.dark .card-panel { --line: #d8c9a8; --muted: #6b6f7d; --btn-base: #1b2233; }
+
+/* açık artırma: en yüksek teklif ve katılımcılar */
+.ahigh { font-size: 15px; }
+.ahigh b { font-family: var(--display); font-size: 18px; }
+.abids { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 560px; }
+.abid { padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: var(--cream2); color: var(--ink); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent); }
+.abid.now { box-shadow: inset 0 0 0 2px var(--c), 0 0 10px color-mix(in srgb, var(--c) 60%, transparent); }
+.abid.lead { background: var(--c); color: #fff; }
+.abid.out { opacity: 0.45; text-decoration: line-through; }
+.moneybox.abox { padding: 8px 12px; width: min(360px, 100%); }
+.moneybox.abox .amount { font-size: 18px; margin-left: 8px; }
+.prompt h3 small { font-family: var(--font); font-size: 12.5px; font-weight: 600; }

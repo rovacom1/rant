@@ -17,7 +17,7 @@ RANT'a özgü olanlar:
 | **Hamle kartları** | Elde tutulan aksiyon kartları (Kamulaştırma, İhtiyati Tedbir, Dava...) | Sıra sende olmasa da oyundasın |
 | **İtiraz zinciri** | Sana oynanan karta İtiraz, İtiraz'a karşı İtiraz | Monopoly Deal'deki "Hayır!" gerilimi |
 | **Kaçak Kat** | Set olmadan, yarı fiyata kat; ama Zabıta ve İhbar ile yıkılabilir | Risk-ödül, İmar Affı kumarı |
-| **Gizli İhale** | Almadığın arsa herkesin gizli teklif verdiği ihaleye çıkar | Çevrimiçi oyuna özel, hızlı ve şaşırtıcı |
+| **Açık artırma** | Almadığın arsa Monopoly'deki gibi açık artırmaya çıkar: sırayla artır ya da çekil | Herkes teklifi görür, pazarlık gerilimi |
 | **Gizli Hedef** | Başta 2 hedef kartından 1'ini seçersin, sonda açılır | Blöf, pazarlıkta gizli niyet |
 | **Enflasyon Endeksi** | Fiyatlar ve kiralar endeksle artar, nakit erir | Erken yatırımı ödüllendirir |
 | **Konkordato** | Batan oyuncu oyundan çıkmaz; borcu silinir, sonda ceza alır | Kimse 20. dakikada izleyici olmaz |
@@ -38,7 +38,7 @@ Ev sahibi lobide dört kuralı açıp kapatabilir; hepsi varsayılan olarak aç�
 
 | Ayar | Kapalıyken |
 |---|---|
-| Gizli ihale | Alınmayan arsa ihaleye çıkmaz, sahipsiz kalır. İhale Kralı hedefi dağıtılmaz. |
+| Açık artırma | Alınmayan arsa artırmaya çıkmaz, sahipsiz kalır. İhale Kralı hedefi dağıtılmaz. |
 | SÜRPRİZ kareleri | SÜRPRİZ karesine gelince bir şey olmaz. |
 | Gündem kartları | Tur başında Gündem kartı açılmaz; turlar yalnız sayılır. |
 | Gizli hedefler | Hedef seçilmez, oyun hemen başlar; puanda hedef bonusu yoktur. |
@@ -128,9 +128,15 @@ Sahil grupları: Antalya, İzmir.
 - **ÇAY OCAĞI**: Diğer her oyuncu sana 25 çay parası öder (nakdi yettiği kadar).
 - **ZABITA**: Kaçak katı olan bir rakibi seç; tüm kaçak katları yıkılır, kat başı 25 ceza öder.
 
-### Gizli İhale
+### Açık artırma
 
-Nakdi 0'dan fazla olan tüm oyuncular aynı anda gizli teklif verir (0 = pas). En yüksek teklif kazanır; eşitlikte sırası en yakın gelecek oyuncu kazanır. Teklifler sonunda herkese gösterilir. Kimse teklif vermezse arsa sahipsiz kalır. Süre 25 sn.
+Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sırayla herkes ya **artırır** ya **çekilir**. Reddeden de katılır; nakdi olmayan katılamaz.
+
+- Artırma en az en yüksek teklif + 10 (Endeks ile ölçeklenir) olmalı ve nakdi geçemez. Nakdi bu en düşük teklife yetmeyen kendiliğinden çekilir.
+- Çekilen bir daha teklif veremez. Sıra lider dışındaki, çekilmemiş sonraki oyuncuya geçer.
+- Lider dışında herkes çekilince lider kazanır ve teklifini öder. Hiç teklif yokken herkes çekilirse arsa sahipsiz kalır.
+- Teklifler herkese açıktır. Her teklif sırası 15 sn; süre dolan çekilmiş sayılır.
+- (İlk sürümde aynı anda verilen gizli teklif vardı; kullanıcı testinde Monopoly'deki açık artırma istendi.)
 
 ## 5. İnşaat
 

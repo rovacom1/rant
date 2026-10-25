@@ -4,7 +4,7 @@
 import * as E from '../engine/index.js';
 import { PROTOCOL, SAVE_VERSION } from '../version.js';
 
-const PASSIVE_TIMEOUT = { auction: 30, react: 20, rent: 20, trade: 45, hedef: 90, discard: 45 }; // sn
+const PASSIVE_TIMEOUT = { auction: 15, react: 20, rent: 20, trade: 45, hedef: 90, discard: 45 }; // sn
 const DISCONNECT_GRACE = 20; // sn
 const BOT_MIN = 900; // ms, botun en kısa düşünme süresi
 const MAX_SEATS = 6;

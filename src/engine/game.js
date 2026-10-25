@@ -383,31 +383,51 @@ function payRent(s, ctx, r) {
   transfer(s, ctx, r.p, r.owner, r.amount, `Kira: ${sqName(r.sq)}${r.zam ? ', zamlı' : ''}`);
 }
 
-function startAuction(s, ctx, sq) {
-  const eligible = s.players.map((_, i) => i).filter((i) => s.players[i].cash > 0);
-  if (!eligible.length) return say(s, ctx, `${sqName(sq)} için teklif verebilecek kimse yok.`);
-  s.pending = { type: 'auction', sq, eligible, bids: {} };
-  emit(s, ctx, { type: 'auctionStart', sq, text: `${sqName(sq)} gizli ihaleye çıktı! Liste fiyatı ${fmt(R.price(s, sq))}.` });
+// Açık artırma (Monopoly gibi): reddedenden sonraki oyuncudan başlayıp sırayla herkes ya artırır ya çekilir;
+// lider dışında herkes çekilince lider kazanır. Reddeden de katılır, nakdi olmayan katılamaz.
+export const auctionStep = (s) => R.money(s, 10);
+
+function startAuction(s, ctx, sq, from) {
+  const n = s.players.length;
+  const order = Array.from({ length: n }, (_, k) => (from + 1 + k) % n).filter((i) => s.players[i].cash > 0);
+  if (!order.length) return say(s, ctx, `${sqName(sq)} için teklif verebilecek kimse yok.`);
+  s.pending = { type: 'auction', sq, order, out: [], high: 0, leader: null, turn: order[order.length - 1] };
+  emit(s, ctx, { type: 'auctionStart', sq, text: `${sqName(sq)} açık artırmaya çıktı! Liste fiyatı ${fmt(R.price(s, sq))}.` });
+  nextBidder(s, ctx);
+}
+
+// Sırayı lider olmayan, çekilmemiş sonraki oyuncuya verir; en düşük teklife nakdi yetmeyen kendiliğinden çekilir.
+function nextBidder(s, ctx) {
+  const pd = s.pending;
+  const min = pd.high + auctionStep(s);
+  const at = pd.order.indexOf(pd.turn);
+  for (let k = 1; k <= pd.order.length; k++) {
+    const q = pd.order[(at + k) % pd.order.length];
+    if (pd.out.includes(q) || q === pd.leader) continue;
+    if (s.players[q].cash < min) {
+      pd.out.push(q);
+      say(s, ctx, `${nm(s, q)} artıramıyor, çekildi.`);
+      continue;
+    }
+    pd.turn = q;
+    return;
+  }
+  resolveAuction(s, ctx);
 }
 
 function resolveAuction(s, ctx) {
   const pd = s.pending;
   s.pending = null;
-  const n = s.players.length;
-  const dist = (i) => (i - s.turn.p + n) % n;
-  const ranked = pd.eligible.filter((i) => pd.bids[i] > 0).sort((a, b) => pd.bids[b] - pd.bids[a] || dist(a) - dist(b));
-  const summary = pd.eligible.map((i) => `${nm(s, i)} ${pd.bids[i] > 0 ? fmt(pd.bids[i]) : 'pas'}`).join(', ');
-  const winner = ranked.length ? ranked[0] : null;
-  s.lastAuction = { sq: pd.sq, bids: { ...pd.bids }, winner };
+  const winner = pd.leader;
+  s.lastAuction = { sq: pd.sq, high: pd.high, winner };
   if (winner === null) {
-    emit(s, ctx, { type: 'auction', sq: pd.sq, winner, text: `İhale sonucu: teklif yok, ${sqName(pd.sq)} sahipsiz kaldı.` });
+    emit(s, ctx, { type: 'auction', sq: pd.sq, winner, text: `Açık artırma bitti: teklif yok, ${sqName(pd.sq)} sahipsiz kaldı.` });
     return;
   }
-  const bid = pd.bids[winner];
-  transfer(s, ctx, winner, null, bid, `İhale: ${sqName(pd.sq)}`, true);
+  transfer(s, ctx, winner, null, pd.high, `İhale: ${sqName(pd.sq)}`, true);
   s.props[pd.sq].owner = winner;
   s.players[winner].stats.ihale++;
-  emit(s, ctx, { type: 'auction', sq: pd.sq, winner, text: `İhale sonucu: ${sqName(pd.sq)} → ${nm(s, winner)} (${fmt(bid)}). Teklifler: ${summary}.` });
+  emit(s, ctx, { type: 'auction', sq: pd.sq, winner, text: `Açık artırma bitti: ${sqName(pd.sq)} → ${nm(s, winner)} (${fmt(pd.high)}).` });
 }
 
 // ---------- Sürpriz ----------
@@ -986,19 +1006,27 @@ const PENDING = {
     decline(s, p, a, ctx) {
       const sq = s.pending.sq;
       s.pending = null;
-      if (s.config.rules.ihale) startAuction(s, ctx, sq);
+      if (s.config.rules.ihale) startAuction(s, ctx, sq, p);
       else say(s, ctx, `${nm(s, p)} ${sqName(sq)} arsasını almadı, sahipsiz kaldı.`);
     },
     playCard,
   },
   auction: {
-    bid(s, p, a, ctx) {
+    raise(s, p, a, ctx) {
       const pd = s.pending;
-      need(Number.isInteger(a.amount) && a.amount >= 0, 'Geçersiz teklif.');
+      const min = pd.high + auctionStep(s);
+      need(Number.isInteger(a.amount) && a.amount >= min, `En az ${fmt(min)} teklif vermelisin.`);
       need(a.amount <= s.players[p].cash, 'Nakdinden fazla teklif veremezsin.');
-      pd.bids[p] = a.amount;
-      emit(s, ctx, { type: 'bid', p });
-      if (pd.eligible.every((i) => i in pd.bids)) resolveAuction(s, ctx);
+      pd.high = a.amount;
+      pd.leader = p;
+      emit(s, ctx, { type: 'bid', p, amount: a.amount, text: `${nm(s, p)} ${sqName(pd.sq)} için ${fmt(a.amount)} verdi.` });
+      nextBidder(s, ctx);
+    },
+    pass(s, p, a, ctx) {
+      const pd = s.pending;
+      pd.out.push(p);
+      emit(s, ctx, { type: 'bid', p, amount: 0, text: `${nm(s, p)} artırmadan çekildi.` });
+      nextBidder(s, ctx);
     },
   },
   react: {
@@ -1082,7 +1110,7 @@ export function waitingFor(s) {
       case 'hedef':
         return s.players.map((_, i) => i).filter((i) => !pd.chosen[i]);
       case 'auction':
-        return pd.eligible.filter((i) => !(i in pd.bids));
+        return [pd.turn];
       case 'react':
         return [pd.responder];
       case 'trade':
@@ -1129,7 +1157,7 @@ export function defaultAction(s, seat) {
       case 'buy':
         return { type: 'decline' };
       case 'auction':
-        return { type: 'bid', amount: 0 };
+        return { type: 'pass' };
       case 'react':
       case 'rent':
         return { type: 'react', uid: null };
@@ -1170,8 +1198,5 @@ export function viewFor(s, seat) {
       hedefChoices: i === seat ? pl.hedefChoices : [],
     })),
   };
-  if (s.pending?.type === 'auction') {
-    v.pending = { ...s.pending, bids: Object.fromEntries(Object.keys(s.pending.bids).map((k) => [k, Number(k) === seat ? s.pending.bids[k] : -1])) };
-  }
   return JSON.parse(JSON.stringify(v));
 }

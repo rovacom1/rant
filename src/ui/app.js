@@ -462,15 +462,12 @@ const A = {
   buy: () => act({ type: 'buy' }),
   decline: () => act({ type: 'decline' }),
   pazarlik: (el) => act({ type: 'playCard', uid: el.dataset.uid }),
-  bid() {
-    act({ type: 'bid', amount: Math.max(0, Math.floor(Number(app.ui.binds.bid) || 0)) });
-    app.ui.binds.bid = '0';
+  raise: (el) => act({ type: 'raise', amount: Number(el.dataset.amt) }),
+  raiseCustom() {
+    act({ type: 'raise', amount: Math.floor(Number(app.ui.binds.raise) || 0) });
+    app.ui.binds.raise = '';
   },
-  bidPass: () => act({ type: 'bid', amount: 0 }),
-  bidQuick(el) {
-    app.ui.binds.bid = el.dataset.amt;
-    G.updateGame();
-  },
+  auctionPass: () => act({ type: 'pass' }),
   react: (el) => act({ type: 'react', uid: el.dataset.uid || null }),
   tapuBuy: (el) => act({ type: 'tapuBuy', sq: el.dataset.sq === '' ? null : Number(el.dataset.sq) }),
   zabita: (el) => act({ type: 'zabitaTarget', target: Number(el.dataset.p) }),
@@ -622,7 +619,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && app.ui.pick) return A.pickCancel();
   if (e.key === 'Escape' && app.ui.popSq !== null && app.ui.popSq !== undefined) return closePop();
   if (e.key === 'Enter' && typing) {
-    if (document.activeElement.dataset.bind === 'bid') return A.bid();
+    if (document.activeElement.dataset.bind === 'raise') return A.raiseCustom();
     if (document.activeElement.id === 'codeInput') return A.join();
     if (document.activeElement.id === 'nameInput' && app.joinCode) return A.join();
   }

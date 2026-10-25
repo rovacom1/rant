@@ -20,11 +20,11 @@ Tam plan ve ölçümler: kullanıcı onaylı plan (sohbet). Özet ve takip burad
 - [x] Dayı/İtiraz beklemesinde nötr metin
 
 ## Faz 3 — Monopoly tarzı açık artırma (v0.11.0)
-- [ ] Motor: sırayla artır ya da çekil, son kalan kazanır; süre dolunca çekilir
-- [ ] Bot artırma/çekilme kuralı
-- [ ] Arayüz: en yüksek teklif, katılımcılar, +10/+50/+100, özel tutar, Çekil
-- [ ] "Gizli ihale" -> "Açık artırma"; PROTOCOL ve SAVE_VERSION
-- [ ] Testler
+- [x] Motor: sırayla artır ya da çekil, son kalan kazanır; süre dolunca çekilir
+- [x] Bot artırma/çekilme kuralı
+- [x] Arayüz: en yüksek teklif, katılımcılar, +10/+50/+100, özel tutar, Çekil
+- [x] "Gizli ihale" -> "Açık artırma"; PROTOCOL ve SAVE_VERSION
+- [x] Testler
 
 ## Faz 4 — Kart ve para dengesi, Monopoly'ye yakın (v0.12.0)
 - [ ] Sıra başı ve çift zar kartı yalnız elde 5'ten az kartken

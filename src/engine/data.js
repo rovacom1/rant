@@ -15,7 +15,7 @@ export const DEFAULT_CONFIG = {
 };
 
 export const RULE_LABELS = {
-  ihale: { name: 'Gizli ihale', icon: '🔨', off: 'Alınmayan arsa sahipsiz kalır.' },
+  ihale: { name: 'Açık artırma', icon: '🔨', off: 'Alınmayan arsa sahipsiz kalır.' },
   surpriz: { name: 'SÜRPRİZ kareleri', icon: '❓', off: 'SÜRPRİZ karesinde bir şey olmaz.' },
   gundem: { name: 'Gündem kartları', icon: '📰', off: 'Tur başında haber kartı açılmaz.' },
   hedef: { name: 'Gizli hedefler', icon: '🎯', off: 'Hedef seçilmez, bonus yok.' },

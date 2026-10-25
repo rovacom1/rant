@@ -341,30 +341,38 @@ function pendingHTML(v, pd) {
   const me = v.you;
   switch (pd.type) {
     case 'buy': {
-      if (pd.p !== me) return html`<div class="who">${av(P(v, pd.p))} ${P(v, pd.p).name}</div><p>${BOARD[pd.sq].name} için karar veriyor: ${v.config.rules.ihale ? 'alacak mı, ihaleye mi çıkaracak?' : 'alacak mı?'}</p>${timerHTML(v, [pd.p])}`;
+      if (pd.p !== me) return html`<div class="who">${av(P(v, pd.p))} ${P(v, pd.p).name}</div><p>${BOARD[pd.sq].name} için karar veriyor: ${v.config.rules.ihale ? 'alacak mı, açık artırmaya mı çıkaracak?' : 'alacak mı?'}</p>${timerHTML(v, [pd.p])}`;
       const cost = E.price(v, pd.sq);
       const cash = P(v, me).cash;
       const paz = P(v, me).hand.find((u) => cardId(u) === 'pazarlik');
       return html`${buyCard(v, pd.sq)}
         <div class="row center"><button class="btn green big" data-act="buy" data-primary ${cash < cost ? 'disabled' : ''}>Satın Al ${fmt(cost)}</button>
-        <button class="btn ghost" data-act="decline">${v.config.rules.ihale ? '🔨 İhaleye Çıkar' : 'Alma'}</button>
+        <button class="btn ghost" data-act="decline">${v.config.rules.ihale ? '🔨 Açık Artırmaya Çıkar' : 'Alma'}</button>
         ${paz && !v.turn.hamle && cash >= Math.round(cost / 10) * 5 ? html`<button class="btn gold" data-act="pazarlik" data-uid="${paz}">🤝 Pazarlık Ustası: ${fmt(Math.round(cost / 10) * 5)}</button>` : ''}</div>
-        ${cash < cost ? html`<p class="reason">${v.config.rules.ihale ? 'Nakdin yetmiyor; ihaleye çıkarabilirsin.' : 'Nakdin yetmiyor.'}</p>` : ''}${timerHTML(v, [me])}`;
+        ${cash < cost ? html`<p class="reason">${v.config.rules.ihale ? 'Nakdin yetmiyor; açık artırmaya çıkarabilirsin.' : 'Nakdin yetmiyor.'}</p>` : ''}${timerHTML(v, [me])}`;
     }
     case 'auction': {
-      const done = Object.keys(pd.bids).length;
-      const mine = pd.bids[me];
-      const eligible = pd.eligible.includes(me);
-      const head = html`<h3>🔨 Gizli ihale</h3><p>Liste fiyatı ${fmt(E.price(v, pd.sq))} · ${done}/${pd.eligible.length} teklif geldi</p>`;
-      if (!eligible) return html`${head}<p>Nakdin olmadığı için bu ihaleye katılamıyorsun.</p>${timerHTML(v, E.waitingFor(v))}`;
-      if (mine !== undefined && mine !== -1) return html`${head}<p><b>Teklifin: ${mine > 0 ? fmt(mine) : 'pas'}</b> — diğerleri bekleniyor.</p>${timerHTML(v, E.waitingFor(v))}`;
+      // Açık artırma: herkes en yüksek teklifi ve kimin çekildiğini görür; sırası gelen artırır ya da çekilir.
+      const step = E.auctionStep(v);
+      const min = pd.high + step;
+      const lead = pd.leader !== null ? P(v, pd.leader) : null;
+      const who = (i) => (i === me ? 'Sen' : P(v, i).name);
+      const people = pd.order.map((i) => {
+        const st = i === pd.leader ? `en yüksek ${fmt(pd.high)}` : pd.out.includes(i) ? 'çekildi' : i === pd.turn ? 'sırada' : 'bekliyor';
+        return html`<span class="abid ${pd.out.includes(i) ? 'out' : ''} ${i === pd.leader ? 'lead' : ''} ${i === pd.turn ? 'now' : ''}" style="--c:${P(v, i).color}">${P(v, i).avatar} ${who(i)} · ${st}</span>`;
+      });
+      const head = html`<h3>🔨 Açık artırma · ${BOARD[pd.sq].name} <small class="muted">${cityOf(pd.sq)} · liste ${fmt(E.price(v, pd.sq))}</small></h3>
+        <div class="ahigh">${lead ? html`En yüksek teklif <b>${fmt(pd.high)}</b> · ${who(pd.leader)}` : 'Henüz teklif yok'}</div>
+        <div class="abids">${people}</div>`;
+      if (pd.turn !== me) return html`${head}<p>${P(v, pd.turn).name} düşünüyor: artıracak mı, çekilecek mi?</p>${timerHTML(v, [pd.turn])}`;
       const cash = P(v, me).cash;
-      const quick = [0.5, 1, 1.5].map((f) => Math.min(cash, Math.round((E.price(v, pd.sq) * f) / 5) * 5));
-      return html`${head}${buyCard(v, pd.sq)}
-        <div class="moneybox"><div class="row"><span class="muted">Teklifin</span><div class="grow"></div><b class="amount" data-show="bid"></b></div>
-        ${slider('bid', cash, P(v, me).color, 5)}
-        <div class="row center">${[...new Set(quick)].map((q) => html`<button class="btn tiny ghost" data-act="bidQuick" data-amt="${q}">${fmt(q)}</button>`)}<button class="btn tiny ghost" data-act="bidQuick" data-amt="${cash}">Hepsi</button></div></div>
-        <div class="row center"><button class="btn primary big" data-act="bid" data-primary>Teklif Ver</button><button class="btn ghost" data-act="bidPass">Pas</button></div>${timerHTML(v, [me])}`;
+      const quick = [...new Set([min, pd.high + step * 5, pd.high + step * 10].filter((x) => x <= cash))];
+      app.ui.binds ||= {};
+      if (!(Number(app.ui.binds.raise) >= min)) app.ui.binds.raise = String(min);
+      return html`${head}
+        <div class="row center">${quick.map((q) => html`<button class="btn primary" data-act="raise" data-amt="${q}">${fmt(q)} ver</button>`)}<button class="btn ghost" data-act="auctionPass">Çekil</button></div>
+        <div class="moneybox abox"><div class="row"><span class="muted">Özel tutar</span><b class="amount" data-show="raise"></b><div class="grow"></div><button class="btn small" data-act="raiseCustom">Ver</button></div>
+          <input type="range" class="slider" min="${min}" max="${cash}" step="5" data-bind="raise" style="--c:${P(v, me).color}"></div>${timerHTML(v, [me])}`;
     }
     case 'react': {
       const c = pd.card;

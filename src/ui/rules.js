@@ -6,7 +6,7 @@ export const RULES_HTML = `
 <ul>
 <li>Otomatik 1 <b>Hamle kartı</b> çekersin. Turda en fazla 1 Hamle kartı oynayabilirsin.</li>
 <li><b>Zar at</b>, toplam kadar ilerle. Çift atarsan +1 kart. <b>Kestirme</b> kartın varsa zarlardan birini seçebilirsin.</li>
-<li>Sahipsiz arsaya gelince <b>satın al</b> ya da <b>gizli ihaleye</b> çıkar: herkes aynı anda gizli teklif verir, en yüksek kazanır.</li>
+<li>Sahipsiz arsaya gelince <b>satın al</b> ya da <b>açık artırmaya</b> çıkar: sırayla herkes ya teklifi artırır ya çekilir, son kalan kazanır.</li>
 <li>Başkasının mülküne gelince kira ödersin. <b>Dayın Çıktı</b> kartın varsa ödemezsin.</li>
 <li>Kat dik, ipotek et, pazarlık teklif et, sonra <b>Turu Bitir</b>.</li>
 </ul>
@@ -32,7 +32,7 @@ export const RULES_HTML = `
 <h3>Borç ve Konkordato</h3>
 <p>Para eksiye düşebilir; sıranı bitirmeden kat satıp ipotek ederek borcunu kapatmalısın ("Borcu Kapat" bunu otomatik yapar). Satacak bir şeyin kalmazsa konkordato ilan edersin: borcun silinir, oyunda kalırsın, sonda 300 puan ceza.</p>
 <h3>Masa ayarları</h3>
-<p>Ev sahibi lobide gizli ihaleyi, SÜRPRİZ karelerini, gündem kartlarını ve gizli hedefleri açıp kapatabilir. Kapalı ihalede alınmayan arsa sahipsiz kalır.</p>
+<p>Ev sahibi lobide açık artırmayı, SÜRPRİZ karelerini, gündem kartlarını ve gizli hedefleri açıp kapatabilir; oyunun hızını da seçer. Açık artırma kapalıysa alınmayan arsa sahipsiz kalır.</p>
 <h3>Tahtadaki işaretler</h3>
 <ul>
 <li><b>Karenin iç kenarındaki şerit</b>: gri ise sahipsiz, renkliyse o oyuncunun. Şeritte <b>★</b>: şehrin tamamı tek kişide (tam set), arsa kirası 2 katı.</li>

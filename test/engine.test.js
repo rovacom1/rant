@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, applyAction, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
+import { createGame, applyAction, defaultAction, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
 import { makePlayers } from '../tools/simlib.js';
 import { started, act, actEv, give, strip, own } from './helpers.js';
 
@@ -149,22 +149,42 @@ test('Dayın Çıktı ile kira ödenmez', () => {
   assert.equal(s.pending, null);
 });
 
-test('gizli ihale: en yüksek teklif kazanır, eşitlikte sıradaki', () => {
+test('açık artırma: sırayla artır ya da çekil, son kalan kazanır', () => {
   let s = calm(started(4));
   s = taksi(s, 0, 2);
   s = act(s, 0, { type: 'decline' });
   assert.equal(s.pending.type, 'auction');
-  const v = viewFor(s, 1);
-  s = act(s, 1, { type: 'bid', amount: 90 });
-  s = act(s, 2, { type: 'bid', amount: 120 });
-  s = act(s, 3, { type: 'bid', amount: 120 });
-  assert.equal(viewFor(s, 0).pending.bids[2], -1, 'başkasının teklifi gizli');
-  s = act(s, 0, { type: 'bid', amount: 0 });
+  assert.deepEqual(waitingFor(s), [1], 'reddedenden sonraki oyuncu başlar');
+  assert.throws(() => applyAction(s, 1, { type: 'raise', amount: 5 }), /En az/);
+  s = act(s, 1, { type: 'raise', amount: 40 });
+  assert.deepEqual(waitingFor(s), [2]);
+  s = act(s, 2, { type: 'pass' });
+  s = act(s, 3, { type: 'raise', amount: 60 });
+  s = act(s, 0, { type: 'raise', amount: 70 });
+  assert.deepEqual(waitingFor(s), [1], 'reddeden de katılır, çekilen atlanır');
+  assert.equal(viewFor(s, 2).pending.high, 70, 'teklifler herkese açık');
+  s = act(s, 1, { type: 'pass' });
+  s = act(s, 3, { type: 'pass' });
+  assert.equal(s.pending, null, 'lider dışında herkes çekilince biter');
+  assert.equal(s.props[2].owner, 0);
+  assert.equal(s.players[0].cash, 1500 - 70);
+  assert.equal(s.players[0].stats.ihale, 1);
+});
+
+test('açık artırma: teklif yoksa sahipsiz kalır, süre dolunca çekilir, nakdi yetmeyen çekilir', () => {
+  let s = calm(started(4));
+  s = taksi(s, 0, 2);
+  s = act(s, 0, { type: 'decline' });
+  for (let k = 0; k < 4; k++) s = act(s, waitingFor(s)[0], defaultAction(s, waitingFor(s)[0]));
   assert.equal(s.pending, null);
-  assert.equal(s.props[2].owner, 2, 'eşitlikte sırası önce gelen kazanır');
-  assert.equal(s.players[2].cash, 1500 - 120);
-  assert.equal(s.players[2].stats.ihale, 1);
-  assert.equal(v.pending.type, 'auction');
+  assert.equal(s.props[2].owner, null);
+  let t = calm(started(4));
+  t.players[2].cash = 30;
+  t = taksi(t, 0, 2);
+  t = act(t, 0, { type: 'decline' });
+  t = act(t, 1, { type: 'raise', amount: 40 });
+  assert.deepEqual(waitingFor(t), [3], 'nakdi 50 teklife yetmeyen sıra almaz');
+  assert.ok(t.pending.out.includes(2));
 });
 
 test('İtiraz zinciri: itiraza karşı itiraz kartı geçirir', () => {
@@ -265,7 +285,7 @@ test('borç: tur bitmez, Borcu Kapat satar ve ipotek eder, gerekirse konkordato'
 function defaultFor(s) {
   const pd = s.pending;
   if (pd.type === 'buy') return { type: 'decline' };
-  if (pd.type === 'auction') return { type: 'bid', amount: 0 };
+  if (pd.type === 'auction') return { type: 'pass' };
   if (pd.type === 'rent' || pd.type === 'react') return { type: 'react', uid: null };
   if (pd.type === 'tapu') return { type: 'tapuBuy', sq: null };
   if (pd.type === 'zabita') return { type: 'zabitaTarget', target: pd.options[0] };
