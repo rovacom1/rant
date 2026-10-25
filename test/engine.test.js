@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, applyAction, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, GameError } from '../src/engine/index.js';
+import { createGame, applyAction, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
 import { makePlayers } from '../tools/simlib.js';
 import { started, act, actEv, give, strip, own } from './helpers.js';
 
@@ -77,7 +77,7 @@ test('satın alma ve maaş', () => {
   assert.equal(s.props[1].owner, 0);
   assert.equal(s.players[0].cash, 1500 - 60);
   // Turu bitirip başa geçince maaş
-  s.players[0].pos = 26;
+  s.players[0].pos = 34;
   s.turn = { ...s.turn, step: 'preroll', hamle: false };
   s = taksi(s, 0, 3);
   assert.equal(s.players[0].pos, 1);
@@ -86,34 +86,53 @@ test('satın alma ve maaş', () => {
 
 test('kira: set, kat seviyesi, ipotek, tedbir ve gündem çarpanları', () => {
   const s = calm(started());
-  own(s, 1, 22);
-  assert.equal(rentFor(s, 22), 30);
-  own(s, 1, 23, 24);
-  assert.equal(rentFor(s, 22), 60, 'tam set temel kirayı ikiye katlar');
-  s.props[22].kat = 2;
-  assert.equal(rentFor(s, 22), 420);
-  s.props[22].kacak = 1;
-  assert.equal(rentFor(s, 22), 900);
+  own(s, 1, 28);
+  assert.equal(rentFor(s, 28), 30);
+  own(s, 1, 30, 32);
+  assert.equal(rentFor(s, 28), 60, 'tam set temel kirayı ikiye katlar');
+  s.props[28].kat = 2;
+  assert.equal(rentFor(s, 28), 420);
+  s.props[28].kacak = 1;
+  assert.equal(rentFor(s, 28), 900);
   s.mods.turizm = true;
-  assert.equal(rentFor(s, 22), 1800);
+  assert.equal(rentFor(s, 28), 1800);
   s.mods = {};
   s.index = 115;
-  assert.equal(rentFor(s, 22), 1035);
-  s.props[22].tedbir = 1;
-  assert.equal(rentFor(s, 22), 0);
-  s.props[23].ipotek = true;
-  assert.equal(rentFor(s, 23), 0);
-  own(s, 2, 10, 25);
-  s.index = 100;
-  assert.equal(rentFor(s, 10), 60);
+  assert.equal(rentFor(s, 28), 1035);
+  s.props[28].tedbir = 1;
+  assert.equal(rentFor(s, 28), 0);
+  s.props[30].ipotek = true;
+  assert.equal(rentFor(s, 30), 0);
+});
+
+test('havalimanı kirası her biri için ikiye katlanır, gar kirası orantılı artar', () => {
+  const s = calm(started());
+  const air = [7, 16, 25, 34];
+  const rail = [4, 13, 22, 31];
+  assert.ok(air.every((q) => BOARD[q].mode === 'air') && rail.every((q) => BOARD[q].mode === 'rail'));
+  [25, 50, 100, 200].forEach((rent, i) => {
+    own(s, 2, air[i]);
+    assert.equal(rentFor(s, air[0]), rent, `${i + 1} havalimanı`);
+  });
+  [30, 60, 90, 120].forEach((rent, i) => {
+    own(s, 3, rail[i]);
+    assert.equal(rentFor(s, rail[0]), rent, `${i + 1} gar`);
+  });
+  own(s, 3, air[3]);
+  assert.equal(rentFor(s, air[0]), 100, 'başkasına geçen havalimanı sayılmaz');
+  assert.equal(rentFor(s, rail[0]), 120, 'havalimanı gar sayısını etkilemez');
+  s.props[rail[1]].ipotek = true;
+  assert.equal(rentFor(s, rail[0]), 90, 'ipotekli gar sayılmaz');
+  s.mods.ulasimZam = true;
+  assert.equal(rentFor(s, air[0]), 200, 'Ulaşıma Zam: 2 katı');
 });
 
 test('kiraya gelen oyuncu öder; Kira Zammı ikiye katlar', () => {
   let s = calm(started());
-  own(s, 1, 4);
+  own(s, 1, 5);
   s.players[1].kiraZammi = true;
   strip(s, 0, 'dayi');
-  s = taksi(s, 0, 4);
+  s = taksi(s, 0, 5);
   assert.equal(s.players[0].cash, 1500 - 20);
   assert.equal(s.players[1].cash, 1500 + 20);
   assert.equal(s.players[1].kiraZammi, false, 'zam bir kez kullanılır');
@@ -121,9 +140,9 @@ test('kiraya gelen oyuncu öder; Kira Zammı ikiye katlar', () => {
 
 test('Dayın Çıktı ile kira ödenmez', () => {
   let s = calm(started());
-  own(s, 1, 4);
+  own(s, 1, 5);
   const dayi = give(s, 0, 'dayi');
-  s = taksi(s, 0, 4);
+  s = taksi(s, 0, 5);
   assert.equal(s.pending.type, 'rent');
   s = act(s, 0, { type: 'react', uid: dayi });
   assert.equal(s.players[0].cash, 1500);
@@ -150,32 +169,32 @@ test('gizli ihale: en yüksek teklif kazanır, eşitlikte sıradaki', () => {
 
 test('İtiraz zinciri: itiraza karşı itiraz kartı geçirir', () => {
   let s = calm(started());
-  own(s, 1, 4);
+  own(s, 1, 5);
   for (const p of [0, 1]) strip(s, p, 'itiraz');
   const kam = give(s, 0, 'kamulastirma');
   const it1 = give(s, 1, 'itiraz');
   const it0 = give(s, 0, 'itiraz');
-  s = act(s, 0, { type: 'playCard', uid: kam, target: { sq: 4 } });
+  s = act(s, 0, { type: 'playCard', uid: kam, target: { sq: 5 } });
   assert.equal(s.pending.type, 'react');
   assert.deepEqual(waitingFor(s), [1]);
   s = act(s, 1, { type: 'react', uid: it1 });
   assert.deepEqual(waitingFor(s), [0], 'saldıran karşı itiraz edebilir');
   s = act(s, 0, { type: 'react', uid: it0 });
   assert.equal(s.pending, null);
-  assert.equal(s.props[4].owner, 0);
+  assert.equal(s.props[5].owner, 0);
   assert.equal(s.players[1].cash, 1500 + 100);
   assert.equal(s.players[0].stats.hukuk, 2);
 });
 
 test('İtiraz kartı iptal eder; turda tek Hamle kuralı', () => {
   let s = calm(started());
-  own(s, 1, 4);
+  own(s, 1, 5);
   strip(s, 0, 'itiraz');
   const ted = give(s, 0, 'tedbir');
   const it = give(s, 1, 'itiraz');
-  s = act(s, 0, { type: 'playCard', uid: ted, target: { sq: 4 } });
+  s = act(s, 0, { type: 'playCard', uid: ted, target: { sq: 5 } });
   s = act(s, 1, { type: 'react', uid: it });
-  assert.equal(s.props[4].tedbir, 0);
+  assert.equal(s.props[5].tedbir, 0);
   assert.throws(() => applyAction(s, 0, { type: 'playCard', uid: give(s, 0, 'piyango') }), /zaten bir Hamle/);
 });
 
@@ -192,17 +211,17 @@ test('Aidat Günü her rakipten ayrı ayrı alınır', () => {
 
 test('kaçak kat, ihbar cezası ve imar affı', () => {
   let s = calm(started());
-  own(s, 0, 19);
-  s = act(s, 0, { type: 'buildKacak', sq: 19 });
-  assert.equal(s.props[19].kacak, 1);
+  own(s, 0, 24);
+  s = act(s, 0, { type: 'buildKacak', sq: 24 });
+  assert.equal(s.props[24].kacak, 1);
   assert.equal(s.players[0].cash, 1500 - 75);
-  assert.equal(rentFor(s, 19), 130);
-  assert.throws(() => applyAction(s, 0, { type: 'build', sq: 19 }), /tüm mülkleri/);
+  assert.equal(rentFor(s, 24), 130);
+  assert.throws(() => applyAction(s, 0, { type: 'build', sq: 24 }), /tüm mülkleri/);
   // Rakip ihbar eder
   s.turn = { ...s.turn, p: 1, hamle: false };
   strip(s, 0, 'itiraz');
   s = act(s, 1, { type: 'playCard', uid: give(s, 1, 'ihbar'), target: { player: 0 } });
-  assert.equal(s.props[19].kacak, 0);
+  assert.equal(s.props[24].kacak, 0);
   assert.equal(s.players[0].cash, 1500 - 75 - 25);
 });
 
@@ -255,16 +274,16 @@ function defaultFor(s) {
 
 test('pazarlık: kabul, ret ve katlı mülk yasağı', () => {
   let s = calm(started());
-  own(s, 1, 8);
-  own(s, 0, 9);
-  s = act(s, 0, { type: 'proposeTrade', to: 1, give: { cash: 200, props: [] }, take: { cash: 0, props: [8] } });
+  own(s, 1, 10);
+  own(s, 0, 12);
+  s = act(s, 0, { type: 'proposeTrade', to: 1, give: { cash: 200, props: [] }, take: { cash: 0, props: [10] } });
   assert.deepEqual(waitingFor(s), [1]);
   s = act(s, 1, { type: 'tradeRespond', accept: true });
-  assert.equal(s.props[8].owner, 0);
+  assert.equal(s.props[10].owner, 0);
   assert.equal(s.players[0].cash, 1300);
   assert.equal(s.players[1].cash, 1700);
-  s = act(s, 0, { type: 'build', sq: 8 });
-  assert.throws(() => applyAction(s, 0, { type: 'proposeTrade', to: 1, give: { props: [8] }, take: { cash: 10 } }), /katsız/);
+  s = act(s, 0, { type: 'build', sq: 10 });
+  assert.throws(() => applyAction(s, 0, { type: 'proposeTrade', to: 1, give: { props: [10] }, take: { cash: 10 } }), /katsız/);
   s = act(s, 0, { type: 'proposeTrade', to: 2, give: { cash: 10 }, take: {} });
   s = act(s, 2, { type: 'tradeRespond', accept: false });
   assert.equal(s.players[0].cash, 1300 - 100);
@@ -354,4 +373,59 @@ test('tur özeti: net değer farkı ve el değiştiren mülkler', () => {
   const top = Math.max(...s.summary.deltas);
   assert.equal(s.summary.deltas[s.summary.best], top);
   assert.ok(s.summary.deltas[0] < 0, 'mülkünü kaybeden net değer kaybeder');
+});
+
+// SÜRPRİZ karesine (3) Taksi ile gelir; rng'yi tarayıp istenen etkiyi çıkaran durumu döndürür.
+function surprizWith(id, prep = () => {}) {
+  for (let k = 1; k < 2000; k++) {
+    const s = calm(started());
+    prep(s);
+    s.rng = k;
+    const r = applyAction(s, 0, { type: 'playCard', uid: give(s, 0, 'taksi'), target: { steps: 3 } });
+    const ev = r.events.find((e) => e.type === 'surpriz');
+    if (ev && ev.id === id) return { before: s, after: r.state, events: r.events };
+  }
+  throw new Error(`etki bulunamadı: ${id}`);
+}
+
+test('SÜRPRİZ: her etki çıkabilir ve seçim beklemeden uygulanır', () => {
+  assert.equal(BOARD.filter((q) => q.kind === 'surpriz').length, 2);
+  assert.ok(Object.keys(SURPRIZ).length >= 10);
+  for (const id of Object.keys(SURPRIZ)) {
+    const { after } = surprizWith(id);
+    assert.ok(!after.pending || ['buy', 'rent', 'tapu', 'zabita'].includes(after.pending.type), `${id}: seçim beklemez`);
+  }
+});
+
+test('SÜRPRİZ: para, kart ve mülk etkileri', () => {
+  let r = surprizWith('miras');
+  assert.equal(r.after.players[0].cash, 1500 + 150);
+  r = surprizWith('dugun');
+  assert.equal(r.after.players[0].cash, 1500 + 25 * 3);
+  r = surprizWith('tarla');
+  assert.equal(r.after.props[1].owner, 0, 'en ucuz sahipsiz mülk Yakutiye');
+  r = surprizWith('kapkac');
+  const hand = (st) => st.players.reduce((n, pl) => n + pl.hand.length, 0);
+  assert.equal(r.after.players[0].hand.length, r.before.players[0].hand.length, 'Taksi gitti, kapılan kart geldi');
+  assert.equal(hand(r.after), hand(r.before) - 1, 'kart masadan kaybolmaz');
+  r = surprizWith('catlak', (s) => {
+    own(s, 0, 1);
+    s.props[1].kat = 2;
+    s.props[1].kacak = 1;
+  });
+  assert.equal(r.after.props[1].kacak, 0, 'önce kaçak kat çöker');
+  assert.equal(r.after.props[1].kat, 2);
+});
+
+test('SÜRPRİZ: hareket etkileri', () => {
+  let r = surprizWith('ucak');
+  assert.equal(r.after.players[0].pos, 7, 'ilk havalimanı Kapadokya');
+  assert.equal(r.after.pending.type, 'buy');
+  r = surprizWith('tersKose', (s) => {
+    s.players.forEach((pl, i) => i && (pl.pos = 20));
+  });
+  assert.equal(r.after.players[0].pos, 20);
+  assert.equal(r.after.players.filter((pl) => pl.pos === 3).length, 1, 'rakip SÜRPRİZ karesine geçer');
+  r = surprizWith('isinlan');
+  assert.notEqual(BOARD[r.after.players[0].pos].kind, 'surpriz');
 });

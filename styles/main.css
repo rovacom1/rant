@@ -163,7 +163,7 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .board {
   --size: min(calc(100vh - 186px), calc(100vw - 440px));
   width: var(--size); height: var(--size); min-width: 560px; min-height: 560px;
-  display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+  display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr);
   background: var(--paper); border-radius: 18px; padding: 6px; gap: 3px;
   box-shadow: var(--shadow), inset 0 0 0 6px #e7d9b9;
   position: relative;
@@ -171,7 +171,7 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .cell {
   position: relative; border-radius: 8px; overflow: hidden; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-  font-size: calc(var(--size) / 62); line-height: 1.12; padding: 4px; gap: 2px;
+  font-size: calc(var(--size) / 74); line-height: 1.12; padding: 3px; gap: 2px;
   transition: box-shadow 0.15s, transform 0.15s, background-color 0.4s, color 0.4s;
 }
 /* Alınabilir kareler: iç kenardaki şerit sahipsizken gri, alınınca sahibinin rengi */
@@ -182,16 +182,17 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .cell.side-t .band { bottom: 0; left: 0; right: 0; height: 20%; }
 .cell.side-l .band { top: 0; bottom: 0; right: 0; width: 20%; }
 .cell.side-r .band { top: 0; bottom: 0; left: 0; width: 20%; }
-.cell.side-b { padding-top: calc(var(--size) / 44); }
-.cell.side-t { padding-bottom: calc(var(--size) / 44); }
-.cell.side-l { padding-right: calc(var(--size) / 44); }
-.cell.side-r { padding-left: calc(var(--size) / 44); }
+.cell.side-b { padding-top: calc(var(--size) / 54); }
+.cell.side-t { padding-bottom: calc(var(--size) / 54); }
+.cell.side-l { padding-right: calc(var(--size) / 54); }
+.cell.side-r { padding-left: calc(var(--size) / 54); }
 .cell .city { color: var(--muted); }
 .cell.special { background: #fffaf0; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .cell.corner { background: linear-gradient(145deg, #fff6df, #f1e2bf); box-shadow: inset 0 0 0 1px var(--line); }
 .cell:hover { box-shadow: inset 0 0 0 2px var(--ink); z-index: 2; }
 .cell.open { box-shadow: inset 0 0 0 3px var(--ink); z-index: 3; }
 .cell .nm { font-family: var(--display); font-weight: 600; font-size: 1.08em; overflow-wrap: anywhere; hyphens: manual; }
+.cell.side-l .nm, .cell.side-r .nm { font-size: 1em; } /* yan sütunda şerit yer kaplar: "Odunpazarı" bölünmesin */
 .cell .city { font-size: 0.78em; font-weight: 600; }
 .cell .ic { font-size: 2em; line-height: 1; }
 .cell.corner .nm { font-size: 1.02em; }
@@ -227,7 +228,7 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .pop .pa { padding: 0 10px 10px; display: flex; gap: 4px; flex-wrap: wrap; }
 
 .board-center {
-  grid-area: 2 / 2 / 8 / 8; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 0;
+  grid-area: 2 / 2 / 10 / 10; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 0;
   background:
     radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.9), rgba(255, 250, 240, 0.75) 60%),
     repeating-conic-gradient(from 45deg at 50% 50%, rgba(0, 121, 140, 0.09) 0 25%, rgba(36, 64, 142, 0.05) 0 50%) 0 0 / 46px 46px;
@@ -269,8 +270,8 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 /* taşlar */
 .tokens { position: absolute; inset: 0; pointer-events: none; }
 .token {
-  position: absolute; width: calc(var(--size) / 22); height: calc(var(--size) / 22); margin: calc(var(--size) / -44) 0 0 calc(var(--size) / -44);
-  border-radius: 50%; background: var(--pc); display: grid; place-items: center; font-size: calc(var(--size) / 40);
+  position: absolute; width: calc(var(--size) / 26); height: calc(var(--size) / 26); margin: calc(var(--size) / -52) 0 0 calc(var(--size) / -52);
+  border-radius: 50%; background: var(--pc); display: grid; place-items: center; font-size: calc(var(--size) / 46);
   box-shadow: 0 0 0 3px #fff, 0 4px 10px rgba(0, 0, 0, 0.35); transition: left 0.14s ease-out, top 0.14s ease-out; z-index: 6;
 }
 .token.active { box-shadow: 0 0 0 3px var(--gold), 0 0 0 6px rgba(237, 174, 73, 0.4), 0 4px 10px rgba(0, 0, 0, 0.35); z-index: 7; }
@@ -369,7 +370,7 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 }
 @media (max-width: 640px) {
   .board { --size: calc(100vw - 20px); padding: 3px; gap: 2px; }
-  .cell { font-size: calc(var(--size) / 52); }
+  .cell { font-size: calc(var(--size) / 60); }
   .cell .city, .cell .pr { display: none; }
   .trade-cols { grid-template-columns: 1fr; }
 }
@@ -478,6 +479,45 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .reveal .who { background: rgba(10, 14, 28, 0.85); color: #fff; padding: 6px 14px; border-radius: 999px; font-family: var(--display); font-weight: 600; display: flex; gap: 8px; align-items: center; }
 @keyframes revealIn { 0% { opacity: 0; transform: translate(-50%, -40%) scale(0.6) rotateY(80deg); } 18% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotateY(0); } 82% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -60%) scale(0.85); } }
 
+/* SÜRPRİZ karesi: resim yerine parlayan, sallanan soru işareti */
+.cell .tile.q { background: radial-gradient(circle at 50% 36%, #ff8ad8 0, #b146d8 34%, #5a1f97 70%, #2c0f5c 100%); display: grid; place-items: center; }
+.cell .tile.q::before {
+  content: '?'; font-family: var(--display); font-weight: 700; font-size: calc(var(--size) / 15); line-height: 1; margin-bottom: 22%; color: #ffd75e;
+  text-shadow: 0 0 calc(var(--size) / 80) rgba(255, 215, 94, 0.85), 0 3px 0 #b8741a, 0 6px 14px rgba(0, 0, 0, 0.5); animation: qBob 2.8s ease-in-out infinite;
+}
+.cell .tile.q::after {
+  content: ''; position: absolute; inset: 0; animation: qTwinkle 1.6s ease-in-out infinite alternate;
+  background: radial-gradient(circle at 18% 20%, #fff 0 1.5px, transparent 2.5px), radial-gradient(circle at 82% 26%, #ffe9a6 0 2px, transparent 3px),
+    radial-gradient(circle at 74% 62%, #fff 0 1.2px, transparent 2.2px), radial-gradient(circle at 24% 58%, #ffd1f3 0 1.8px, transparent 2.8px),
+    radial-gradient(circle at 50% 12%, #fff 0 1px, transparent 2px);
+}
+@keyframes qBob { 50% { transform: translateY(-7%) rotate(-7deg) scale(1.06); } }
+@keyframes qTwinkle { from { opacity: 0.35; } to { opacity: 1; } }
+
+/* SÜRPRİZ açılışı: soru işaretli kart döner, arkasında etki yazar */
+/* saydamlık yüzlerde: 3B çeviren kutuya opacity verilirse çevirme düzleşir */
+.surp { position: fixed; z-index: 58; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 10px; transform: translate(-50%, -50%); perspective: 1100px; }
+.surp .who { background: rgba(10, 14, 28, 0.85); color: #fff; padding: 6px 14px; border-radius: 999px; font-family: var(--display); font-weight: 600; display: flex; gap: 8px; align-items: center; animation: surpFade 3s ease forwards; }
+.surp .sflip { width: 230px; height: 300px; position: relative; transform-style: preserve-3d; animation: surpFlip 3s cubic-bezier(0.5, 0, 0.2, 1) forwards; }
+.surp .sface { position: absolute; inset: 0; border-radius: 18px; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45), inset 0 0 0 3px #ffd75e; animation: surpFade 3s ease forwards; }
+.surp .sfront { background: radial-gradient(circle at 50% 38%, #ff8ad8 0, #b146d8 36%, #5a1f97 72%, #2c0f5c 100%); }
+.surp .sfront b { font-family: var(--display); font-size: 150px; line-height: 1; color: #ffd75e; text-shadow: 0 0 24px rgba(255, 215, 94, 0.8), 0 6px 0 #b8741a; }
+.surp .sback { transform: rotateY(180deg); background: linear-gradient(170deg, #fff8e8, #f6e6c4); color: var(--ink); padding: 18px; gap: 8px; }
+.surp .si { font-size: 64px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.2)); }
+.surp .sn { font-family: var(--display); font-weight: 700; font-size: 24px; color: #5a1f97; line-height: 1.1; }
+.surp .sx { font-size: 15px; line-height: 1.35; color: #3b3f4a; }
+@keyframes surpFade { 0% { opacity: 0; } 12%, 86% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes surpFlip {
+  0% { transform: translateY(40px) scale(0.6) rotateY(0) rotate(-6deg); }
+  14%, 28% { transform: translateY(0) scale(1) rotateY(0) rotate(-3deg); }
+  46% { transform: scale(1.08) rotateY(190deg); }
+  56%, 86% { transform: scale(1) rotateY(180deg); }
+  100% { transform: translateY(-40px) scale(0.9) rotateY(180deg); }
+}
+body.dark .surp .sback { background: linear-gradient(170deg, #26304d, #1e2741); color: #f1f4fb; }
+body.dark .surp .sn { color: #e3a8ff; }
+body.dark .surp .sx { color: #c9d1e3; }
+
 /* ================= Sağ panel ================= */
 .side { width: 380px; flex: none; display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 80px); min-height: 0; }
 .seats-panel { display: flex; flex-direction: column; gap: 8px; }
@@ -565,6 +605,13 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 }
 .cell.corner .tname { font-size: 1.12em; }
 .cell.has-art .band { z-index: 2; }
+/* resimli ulaşım karelerinde şerit ince, ad şeridin altında kalmasın */
+.cell.has-art.side-b .band, .cell.has-art.side-t .band { height: 14%; }
+.cell.has-art.side-l .band, .cell.has-art.side-r .band { width: 14%; }
+.cell.has-art.side-t .tname { bottom: 14%; }
+.cell.has-art.side-l .tname { right: 14%; }
+.cell.has-art.side-r .tname { left: 14%; }
+.cell.buyable .tname { font-size: 0.86em; letter-spacing: 0; padding-left: 1px; padding-right: 1px; }
 
 /* tahta ortası: hafif filigran */
 .board-center { position: relative; }

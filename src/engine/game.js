@@ -1,7 +1,7 @@
 // Oyun durum makinesi. applyAction(state, oyuncu, hamle) yeni state ve olay listesi döndürür.
 // Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste, hedef) içermez.
 
-import { BOARD, CARDS, GUNDEM, HEDEF, GROUPS, GROUP_SQUARES, OWNABLE, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION } from './data.js';
+import { BOARD, CARDS, GUNDEM, SURPRIZ, HEDEF, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION } from './data.js';
 import { randInt, rollDie, shuffle } from './rng.js';
 import * as R from './rules.js';
 
@@ -304,6 +304,8 @@ function land(s, ctx, p) {
     }
     case 'chance':
       return drawCards(s, ctx, p, 2);
+    case 'surpriz':
+      return applySurpriz(s, ctx, p, pick(s, Object.keys(SURPRIZ)));
     case 'tapu': {
       const cash = s.players[p].cash;
       if (OWNABLE.some((q) => s.props[q].owner === null && R.price(s, q) <= cash)) s.pending = { type: 'tapu', p };
@@ -375,6 +377,104 @@ function resolveAuction(s, ctx) {
   s.props[pd.sq].owner = winner;
   s.players[winner].stats.ihale++;
   emit(s, ctx, { type: 'auction', sq: pd.sq, winner, text: `İhale sonucu: ${sqName(pd.sq)} → ${nm(s, winner)} (${fmt(bid)}). Teklifler: ${summary}.` });
+}
+
+// ---------- Sürpriz ----------
+
+const pick = (s, arr) => arr[randInt(s, arr.length)];
+
+// Sürpriz etkisi seçim beklemeden hemen uygulanır; gerekirse oyuncuyu başka kareye taşıyıp oraya indirir.
+function applySurpriz(s, ctx, p, id) {
+  const pl = s.players[p];
+  const sur = SURPRIZ[id];
+  const amt = (k) => R.money(s, AMOUNTS[k]);
+  emit(s, ctx, { type: 'surpriz', p, id, text: `${nm(s, p)} için Sürpriz: ${sur.name}! ${sur.text}` });
+  switch (id) {
+    case 'miras':
+      return transfer(s, ctx, null, p, amt('surMiras'), 'Miras');
+    case 'radar':
+      return transfer(s, ctx, p, null, amt('surRadar'), 'Hız cezası');
+    case 'dugun':
+      for (const o of others(s, p)) {
+        const c = s.players[o].cash;
+        if (c > 0) transfer(s, ctx, o, p, Math.min(amt('surDugun'), c), 'Düğün takısı');
+      }
+      return;
+    case 'hesap':
+      for (const o of others(s, p)) transfer(s, ctx, p, o, amt('surHesap'), 'Kebap hesabı');
+      return;
+    case 'robin': {
+      const all = s.players.map((_, i) => i);
+      const rich = all.reduce((a, b) => (s.players[b].cash > s.players[a].cash ? b : a));
+      const poor = all.reduce((a, b) => (s.players[b].cash < s.players[a].cash ? b : a));
+      if (s.players[rich].cash === s.players[poor].cash) return say(s, ctx, 'Herkesin nakdi eşit, Robin Hood eli boş döndü.');
+      return transfer(s, ctx, rich, poor, Math.min(amt('surRobin'), Math.max(0, s.players[rich].cash)), 'Robin Hood');
+    }
+    case 'catlak': {
+      const built = R.propsOf(s, p).filter((q) => R.level(s.props[q]) > 0);
+      if (!built.length) return say(s, ctx, 'Neyse ki çökecek katın yoktu.');
+      const q = built.sort((a, b) => R.level(s.props[b]) - R.level(s.props[a]) || R.katValue(s, b) - R.katValue(s, a))[0];
+      const ps = s.props[q];
+      if (ps.kacak) ps.kacak = 0;
+      else ps.kat--;
+      return emit(s, ctx, { type: 'collapse', p, sq: q, text: `${sqName(q)} üstündeki 1 kat çöktü.` });
+    }
+    case 'jest': {
+      const ok = s.mods.durgunluk ? [] : R.propsOf(s, p).filter((q) => BOARD[q].kind === 'prop' && !s.props[q].ipotek && !s.props[q].tedbir && R.level(s.props[q]) < 4);
+      if (!ok.length) return transfer(s, ctx, null, p, amt('surTeselli'), 'Belediye tesellisi');
+      const q = pick(s, ok);
+      s.props[q].kat++;
+      return emit(s, ctx, { type: 'build', p, sq: q, text: `${sqName(q)} üstüne belediyeden bedava kat çıktı.` });
+    }
+    case 'tarla': {
+      const free = OWNABLE.filter((q) => s.props[q].owner === null);
+      if (!free.length) return transfer(s, ctx, null, p, amt('surTarla'), 'Tarla satışı');
+      const q = free.reduce((a, b) => (R.price(s, b) < R.price(s, a) ? b : a));
+      s.props[q].owner = p;
+      return emit(s, ctx, { type: 'own', p, sq: q, text: `${nm(s, p)} dededen kalan ${sqName(q)} tapusunu bedavaya aldı.` });
+    }
+    case 'ucak': {
+      const steps = Math.min(...MODE_SQUARES.air.map((q) => (q - pl.pos + N) % N || N));
+      return travel(s, ctx, p, steps, false);
+    }
+    case 'isinlan': {
+      const to = pick(s, BOARD.map((_, i) => i).filter((i) => BOARD[i].kind !== 'surpriz'));
+      pl.pos = to;
+      emit(s, ctx, { type: 'move', p, path: [to], jump: true, text: `${nm(s, p)} ışınlandı → ${sqName(to)}` });
+      return land(s, ctx, p);
+    }
+    case 'tersKose': {
+      const o = pick(s, others(s, p));
+      const [a, b] = [pl.pos, s.players[o].pos];
+      pl.pos = b;
+      s.players[o].pos = a;
+      emit(s, ctx, { type: 'move', p, path: [b], jump: true });
+      emit(s, ctx, { type: 'move', p: o, path: [a], jump: true, text: `${nm(s, p)} ile ${nm(s, o)} yer değiştirdi.` });
+      return;
+    }
+    case 'kapkac': {
+      const victims = others(s, p).filter((o) => s.players[o].hand.length);
+      if (!victims.length) return drawCards(s, ctx, p, 1);
+      const o = pick(s, victims);
+      const hand = s.players[o].hand;
+      pl.hand.push(hand.splice(randInt(s, hand.length), 1)[0]);
+      return say(s, ctx, `${nm(s, p)}, ${nm(s, o)} oyuncusunun elinden bir kart kaptı.`);
+    }
+    case 'bavul': {
+      if (!pl.hand.length) return say(s, ctx, 'Bavul zaten boştu.');
+      const uid = pick(s, pl.hand);
+      discardCard(s, p, uid);
+      return say(s, ctx, `${nm(s, p)} elindeki ${CARDS[cardId(uid)].name} kartını kaybetti.`);
+    }
+    case 'haciz':
+      return transfer(s, ctx, p, null, R.round5(Math.max(0, pl.cash) * 0.1), 'Haciz');
+    case 'vergiIade': {
+      const n = R.propsOf(s, p).length;
+      if (!n) return say(s, ctx, 'Mülkün olmadığı için iade çıkmadı.');
+      return transfer(s, ctx, null, p, n * amt('surVergi'), 'Vergi iadesi');
+    }
+    default:
+  }
 }
 
 // ---------- Gündem ----------

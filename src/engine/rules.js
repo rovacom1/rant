@@ -1,7 +1,7 @@
 // State'ten türetilen değerler: fiyatlar, kiralar, inşaat kuralları, net değer.
 // Buradaki fonksiyonlar state'i değiştirmez.
 
-import { BOARD, GROUPS, GROUP_SQUARES, TRANSPORT_SQUARES, TRANSPORT_RENT, OWNABLE, HEDEF } from './data.js';
+import { BOARD, GROUPS, GROUP_SQUARES, TRANSPORT_SQUARES, MODE_SQUARES, TRANSPORT_RENT, OWNABLE, HEDEF } from './data.js';
 
 export const round5 = (x) => Math.round(x / 5) * 5;
 export const fmt = (n) => `${n < 0 ? '-' : ''}${String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} ₺`;
@@ -41,8 +41,9 @@ export const inFullSet = (s, sq) => {
 
 export const propsOf = (s, p) => OWNABLE.filter((q) => s.props[q].owner === p);
 
-export function transportCount(s, p) {
-  return TRANSPORT_SQUARES.filter((q) => s.props[q].owner === p && !s.props[q].ipotek).length;
+// Oyuncunun bu türden (air | rail) ipoteksiz ulaşım sayısı.
+export function transportCount(s, p, mode) {
+  return MODE_SQUARES[mode].filter((q) => s.props[q].owner === p && !s.props[q].ipotek).length;
 }
 
 // Bu kareye gelen bir rakibin ödeyeceği kira (Kira Zammı hariç).
@@ -53,8 +54,8 @@ export function rentFor(s, sq) {
   let base;
   let mult = 1;
   if (sqd.kind === 'transport') {
-    base = TRANSPORT_RENT[transportCount(s, ps.owner)];
-    if (s.mods.ulasimZam) mult *= 3;
+    base = TRANSPORT_RENT[sqd.mode][transportCount(s, ps.owner, sqd.mode)];
+    if (s.mods.ulasimZam) mult *= 2;
   } else {
     const L = level(ps);
     base = L === 0 ? sqd.rents[0] * (ownsGroup(s, ps.owner, sqd.group) ? 2 : 1) : sqd.rents[L];
@@ -126,7 +127,7 @@ export function hedefMet(s, p, hedefId) {
       return f.kat + f.kacak >= c.n;
     }
     case 'transport':
-      return TRANSPORT_SQUARES.every((q) => s.props[q].owner === p);
+      return TRANSPORT_SQUARES.filter((q) => s.props[q].owner === p).length >= c.n;
     case 'mostCash':
       return s.players.every((o) => o.cash <= pl.cash);
     case 'props':

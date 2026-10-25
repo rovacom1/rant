@@ -1,7 +1,7 @@
 // Bot karar verici. Yalnız bir oyuncunun görebileceği bilgiyi kullanır:
 // kendi eli + herkese açık tahta. Oyunun zarını değil kendi küçük üretecini kullanır.
 
-import { BOARD, CARDS, GROUPS, GROUP_SQUARES, OWNABLE, TRANSPORT_SQUARES, AMOUNTS, HEDEF } from './data.js';
+import { BOARD, CARDS, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, HEDEF } from './data.js';
 import { nextRandom } from './rng.js';
 import * as R from './rules.js';
 import { waitingFor, moveOptions, cardBlock, cardTargets, tradeBlock, hasCard } from './game.js';
@@ -30,8 +30,10 @@ export function propValue(s, p, sq) {
   const sqd = BOARD[sq];
   let v = R.price(s, sq);
   if (sqd.kind === 'transport') {
-    const mine = TRANSPORT_SQUARES.filter((q) => q !== sq && s.props[q].owner === p).length;
-    return v * (mine ? 1.5 : 1.1) * (s.players[p].hedef === 'ulasim' ? 1.5 : 1);
+    // Havalimanı kirası her yeni havalimanıyla ikiye katlanır, gar kirası doğrusal artar.
+    const mine = MODE_SQUARES[sqd.mode].filter((q) => q !== sq && s.props[q].owner === p).length;
+    const step = sqd.mode === 'air' ? 0.4 : 0.25;
+    return v * (1.1 + step * mine) * (s.players[p].hedef === 'ulasim' ? 1.5 : 1);
   }
   const group = GROUP_SQUARES[sqd.group].filter((q) => q !== sq);
   const ownedByMe = group.filter((q) => s.props[q].owner === p).length;
@@ -64,6 +66,9 @@ function squareScore(s, p, sq, path) {
     }
     case 'chance':
       score += 70;
+      break;
+    case 'surpriz':
+      score += 40;
       break;
     case 'tapu':
       score += OWNABLE.some((q) => s.props[q].owner === null && R.price(s, q) <= pl.cash) ? 60 : 30;

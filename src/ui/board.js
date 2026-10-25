@@ -1,16 +1,20 @@
-// Tahta: 8x8 ızgaranın kenarındaki 28 kare, oyuncu taşları ve 3 boyutlu zarlar.
+// Tahta: 10x10 ızgaranın kenarındaki 36 kare, oyuncu taşları ve 3 boyutlu zarlar.
 // Karenin iç kenarındaki şerit sahipsizken gri, alınınca sahibinin rengi; karede fiyat/kira yazmaz (kareye tıklayınca açılır).
 import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
 import { html, sleep } from './dom.js';
 import { play } from './sound.js';
 
+// Izgara kenarı G kare; köşeler 0, K, 2K, 3K. Kare 0 sağ altta, sıra saat yönünde.
+export const G = BOARD.length / 4 + 1;
+const K = G - 1;
+
 export function cellPos(i) {
-  if (i <= 7) return { row: 8, col: 8 - i, side: i === 0 || i === 7 ? 'c' : 'b' };
-  if (i <= 13) return { row: 15 - i, col: 1, side: 'l' };
-  if (i === 14) return { row: 1, col: 1, side: 'c' };
-  if (i <= 20) return { row: 1, col: i - 13, side: 't' };
-  if (i === 21) return { row: 1, col: 8, side: 'c' };
-  return { row: i - 20, col: 8, side: 'r' };
+  if (i <= K) return { row: G, col: G - i, side: i === 0 || i === K ? 'c' : 'b' };
+  if (i < 2 * K) return { row: G - (i - K), col: 1, side: 'l' };
+  if (i === 2 * K) return { row: 1, col: 1, side: 'c' };
+  if (i < 3 * K) return { row: 1, col: 1 + i - 2 * K, side: 't' };
+  if (i === 3 * K) return { row: 1, col: G, side: 'c' };
+  return { row: 1 + i - 3 * K, col: G, side: 'r' };
 }
 
 // Açık renkli oyuncuda koyu yazı, koyu renkli oyuncuda beyaz yazı.
@@ -20,13 +24,14 @@ export function inkFor(hex) {
   return lum > 0.62 ? '#1b2233' : '#ffffff';
 }
 
-// Özel karelerin resmi (assets/kare); resim kareyi kaplar, adı alt kenarda yazar.
+// Özel karelerin resmi (assets/kare); resim kareyi kaplar, adı alt kenarda yazar. SÜRPRİZ resim yerine CSS soru işareti.
 const ART = { start: 'maas', chance: 'firsat', tapu: 'tapu', cay: 'cay', zabita: 'zabita' };
-const artOf = (sq) => (sq.kind === 'transport' ? (sq.name.startsWith('YHT') ? 'yht' : 'havalimani') : ART[sq.kind]);
+const artOf = (sq) => (sq.kind === 'transport' ? (sq.mode === 'air' ? 'havalimani' : 'yht') : ART[sq.kind]);
 
 function cellStatic(sq) {
   if (sq.kind === 'prop') return html`<div class="band"></div><div class="nm">${sq.name}</div><div class="city">${GROUPS[sq.group].name}</div><div class="floors"></div>`;
-  const tile = html`<div class="tile" style="background-image:url(assets/kare/${artOf(sq)}.jpg)"></div><div class="tname">${sq.name}</div>`;
+  const art = sq.kind === 'surpriz' ? html`<div class="tile q"></div>` : html`<div class="tile" style="background-image:url(assets/kare/${artOf(sq)}.jpg)"></div>`;
+  const tile = html`${art}<div class="tname">${sq.name}</div>`;
   return sq.kind === 'transport' ? html`<div class="band"></div>${tile}` : tile;
 }
 

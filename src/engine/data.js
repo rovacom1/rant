@@ -31,38 +31,54 @@ const rents = (base) => RENT_MULT.map((m, i) => (i === 0 ? base : round5(base * 
 
 const prop = (name, group, price, base) => ({ kind: 'prop', name, group, price, rents: rents(base) });
 
+const air = (name) => ({ kind: 'transport', mode: 'air', name, icon: '✈️', price: 200 });
+const rail = (name) => ({ kind: 'transport', mode: 'rail', name, icon: '🚂', price: 150 });
+const SURPRIZ_SQ = { kind: 'surpriz', name: 'SÜRPRİZ', icon: '❓' };
+const FIRSAT_SQ = { kind: 'chance', name: 'FIRSAT', icon: '🎴' };
+
+// 10x10 tahta: köşeler 0, 9, 18, 27; her kenarda 5 mülk, 1 gar, 1 havalimanı, 1 FIRSAT/SÜRPRİZ.
 export const BOARD = [
   { kind: 'start', name: 'MAAŞ GÜNÜ', icon: '💰' },
   prop('Yakutiye', 'erzurum', 60, 6),
   prop('Palandöken', 'erzurum', 80, 8),
-  { kind: 'chance', name: 'FIRSAT', icon: '🎴' },
+  SURPRIZ_SQ,
+  rail('DOĞU EKSPRESİ'),
   prop('Ortahisar', 'trabzon', 100, 10),
   prop('Akçaabat', 'trabzon', 100, 10),
+  air('KAPADOKYA'),
   prop('Uzungöl', 'trabzon', 120, 12),
   { kind: 'tapu', name: 'TAPU DAİRESİ', icon: '📜' },
   prop('Odunpazarı', 'eskisehir', 140, 14),
+  FIRSAT_SQ,
   prop('Tepebaşı', 'eskisehir', 160, 16),
-  { kind: 'transport', name: 'YHT GARI', icon: '🚄', price: 200 },
+  rail('KONYA GARI'),
   prop('Karatay', 'konya', 180, 18),
   prop('Meram', 'konya', 180, 18),
+  air('DALAMAN'),
   prop('Selçuklu', 'konya', 200, 20),
   { kind: 'cay', name: 'ÇAY OCAĞI', icon: '🫖' },
   prop('Kaleiçi', 'antalya', 220, 22),
   prop('Konyaaltı', 'antalya', 220, 22),
-  { kind: 'chance', name: 'FIRSAT', icon: '🎴' },
+  SURPRIZ_SQ,
+  rail('ANKARA GARI'),
   prop('Lara', 'antalya', 240, 24),
   prop('Kızılay', 'ankara', 260, 26),
+  air('ESENBOĞA'),
   prop('Çankaya', 'ankara', 280, 28),
   { kind: 'zabita', name: 'ZABITA', icon: '🚨' },
   prop('Karşıyaka', 'izmir', 300, 30),
+  FIRSAT_SQ,
   prop('Bornova', 'izmir', 300, 30),
+  rail('HAYDARPAŞA'),
   prop('Alsancak', 'izmir', 320, 32),
-  { kind: 'transport', name: 'HAVALİMANI', icon: '✈️', price: 200 },
   prop('Kadıköy', 'istanbul', 350, 35),
+  air('SABİHA GÖKÇEN'),
   prop('Bebek', 'istanbul', 400, 50),
 ];
 
-export const TRANSPORT_RENT = [0, 25, 60];
+// Kira, sahibinin aynı türden (ipoteksiz) kaç ulaşımı olduğuna göre: havalimanı her biri için ikiye katlanır, gar orantılı artar.
+export const TRANSPORT_RENT = { air: [0, 25, 50, 100, 200], rail: [0, 30, 60, 90, 120] };
+export const TRANSPORT_LABEL = { air: 'Havalimanı', rail: 'Gar' };
 
 export const OWNABLE = BOARD.map((s, i) => (s.kind === 'prop' || s.kind === 'transport' ? i : -1)).filter((i) => i >= 0);
 
@@ -71,6 +87,10 @@ export const GROUP_SQUARES = Object.fromEntries(
 );
 
 export const TRANSPORT_SQUARES = BOARD.map((s, i) => (s.kind === 'transport' ? i : -1)).filter((i) => i >= 0);
+export const MODE_SQUARES = {
+  air: TRANSPORT_SQUARES.filter((i) => BOARD[i].mode === 'air'),
+  rail: TRANSPORT_SQUARES.filter((i) => BOARD[i].mode === 'rail'),
+};
 
 // Sabit para değerleri (Endeks ile ölçeklenir).
 export const AMOUNTS = {
@@ -89,6 +109,14 @@ export const AMOUNTS = {
   faizUctu: 20,
   asgari: 50,
   enflasyon: 15,
+  surMiras: 150,
+  surRadar: 75,
+  surDugun: 25,
+  surHesap: 20,
+  surRobin: 100,
+  surTeselli: 50,
+  surTarla: 100,
+  surVergi: 15,
 };
 
 // target: none | self-prop | opp-prop | opp-player | swap | steps | die
@@ -119,7 +147,7 @@ export const GUNDEM = {
   imarAffi: { name: 'İmar Affı', icon: '🎉', count: 1, text: 'Tüm kaçak katlar yasallaştı!' },
   operasyon: { name: 'Belediye Operasyonu', icon: '🚜', count: 1, text: 'Kepçeler geldi: tüm kaçak katlar yıkıldı.' },
   turizm: { name: 'Turizm Sezonu', icon: '🏖️', count: 1, mod: 'turizm', text: 'Bu tur Antalya ve İzmir kiraları 2 katı.' },
-  ulasimZam: { name: 'Ulaşıma Zam', icon: '🎫', count: 1, mod: 'ulasimZam', text: 'Bu tur YHT ve Havalimanı kiraları 3 katı.' },
+  ulasimZam: { name: 'Ulaşıma Zam', icon: '🎫', count: 1, mod: 'ulasimZam', text: 'Bu tur gar ve havalimanı kiraları 2 katı.' },
   deprem: { name: 'Deprem Yönetmeliği', icon: '🏚️', count: 1, text: 'Güçlendirme zamanı: yasal kat başı 15, kaçak kat başı 30 öde.' },
   emlakVergisi: { name: 'Emlak Vergisi', icon: '🏦', count: 1, text: 'Mülk başı 10 vergi öde.' },
   kiraTavani: { name: 'Kira Artış Sınırı', icon: '🧯', count: 1, mod: 'kiraTavani', text: 'Bu tur tüm kiralar yarıya indi.' },
@@ -139,6 +167,25 @@ export const GUNDEM = {
   sakin: { name: 'Gündem Sakin', icon: '☕', count: 2, text: 'Bugün bir şey olmadı. Çaylar benden.' },
 };
 
+// SÜRPRİZ karesi: biri eşit olasılıkla seçilir, seçim beklemeden hemen uygulanır (game.js applySurpriz).
+export const SURPRIZ = {
+  miras: { name: 'Teyzeden Miras', icon: '👵', text: 'Hiç tanımadığın bir teyzen sana 150 bıraktı.' },
+  radar: { name: 'Radara Yakalandın', icon: '📸', text: 'Hız cezası: 75 öde.' },
+  dugun: { name: 'Düğün Var', icon: '💍', text: 'Kuzenin evleniyor: diğer herkes sana 25 takı takar.' },
+  hesap: { name: 'Hesap Senden', icon: '🍢', text: 'Masaya kebap ısmarladın: diğer her oyuncuya 20 öde.' },
+  robin: { name: 'Robin Hood', icon: '🏹', text: 'Nakdi en çok olandan 100 alınıp en az olana verildi.' },
+  catlak: { name: 'Duvarda Çatlak', icon: '🏚️', text: 'En yüksek katlı mülkünden 1 kat çöktü.' },
+  jest: { name: 'Belediyeden Jest', icon: '🏗️', text: 'Rastgele bir mülküne bedava 1 yasal kat.' },
+  tarla: { name: 'Dededen Kalma Tarla', icon: '🌾', text: 'Sahipsiz en ucuz mülk bedavaya senin oldu.' },
+  ucak: { name: 'Bedava Uçak Bileti', icon: '✈️', text: 'İleri yöndeki ilk havalimanına uçtun.' },
+  isinlan: { name: 'Işınlanma', icon: '🌀', text: 'Rastgele bir kareye ışınlandın.' },
+  tersKose: { name: 'Ters Köşe', icon: '🔄', text: 'Rastgele bir rakiple yer değiştirdin.' },
+  kapkac: { name: 'Kapkaç', icon: '🦝', text: 'Rastgele bir rakibin elinden bir kart kaptın.' },
+  bavul: { name: 'Kayıp Bavul', icon: '🧳', text: 'Elindeki rastgele 1 kart kayboldu.' },
+  haciz: { name: 'Haciz Memuru', icon: '📋', text: 'Nakdinin %10\'u haczedildi.' },
+  vergiIade: { name: 'Vergi İadesi', icon: '🧾', text: 'Mülk başı 15 iade aldın.' },
+};
+
 const cityHedef = (g) => {
   const n = GROUP_SQUARES[g].length;
   return {
@@ -153,13 +200,13 @@ const cityHedef = (g) => {
 export const HEDEF = {
   ...Object.fromEntries(Object.keys(GROUPS).map((g) => [`sehir_${g}`, cityHedef(g)])),
   katci: { name: 'Kat Kat Üstüne', icon: '🏢', bonus: 300, text: 'Oyun sonunda en az 7 katın olsun (kaçak dahil).', check: { type: 'floors', n: 7 } },
-  ulasim: { name: 'Ulaşım Baronu', icon: '🚄', bonus: 250, text: 'Oyun sonunda YHT Garı ve Havalimanı sende olsun.', check: { type: 'transport' } },
+  ulasim: { name: 'Ulaşım Baronu', icon: '✈️', bonus: 250, text: 'Oyun sonunda en az 4 gar ya da havalimanı sende olsun.', check: { type: 'transport', n: 4 } },
   nakit: { name: 'Nakit Kraldır', icon: '💸', bonus: 300, text: 'Oyun sonunda en çok nakit sende olsun (eşitlik dahil).', check: { type: 'mostCash' } },
-  arsa: { name: 'Arsa Avcısı', icon: '🗺️', bonus: 300, text: 'Oyun sonunda en az 6 mülkün olsun.', check: { type: 'props', n: 6 } },
+  arsa: { name: 'Arsa Avcısı', icon: '🗺️', bonus: 300, text: 'Oyun sonunda en az 7 mülkün olsun.', check: { type: 'props', n: 7 } },
   kacakci: { name: 'Kaçak Ama Sağlam', icon: '🚧', bonus: 300, text: 'Oyun sonunda en az 2 kaçak katın ayakta olsun.', check: { type: 'kacak', n: 2 } },
   hukukcu: { name: 'Hukuk Dünyası', icon: '📚', bonus: 300, text: 'Oyun boyunca en az 6 hukuk kartı oyna (Kamulaştırma, Tedbir, İhbar, Dava, İtiraz).', check: { type: 'hukuk', n: 6 } },
   ihaleci: { name: 'İhale Kralı', icon: '🔨', bonus: 250, text: 'Oyun boyunca en az 2 ihale kazan.', check: { type: 'ihale', n: 2 } },
-  temiz: { name: 'Temiz Sicil', icon: '🧼', bonus: 250, text: 'Hiç ipotek yapma, konkordato ilan etme ve oyunu en az 5 mülkle bitir.', check: { type: 'clean', n: 5 } },
+  temiz: { name: 'Temiz Sicil', icon: '🧼', bonus: 250, text: 'Hiç ipotek yapma, konkordato ilan etme ve oyunu en az 6 mülkle bitir.', check: { type: 'clean', n: 6 } },
 };
 
 export const AVATARS = ['🦊', '🐻', '🐼', '🐸', '🐯', '🦁', '🐙', '🦉', '🐺', '🐮', '🐵', '🦄'];

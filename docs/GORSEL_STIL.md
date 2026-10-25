@@ -17,7 +17,7 @@ Use your image generation tool. Square 1:1 trading card illustration, artwork on
 
 ## Özel kare görselleri
 
-- `assets/kare/<ad>.jpg` (300x300): maas, firsat, tapu, cay, zabita, yht, havalimani (+ secim, şimdilik kullanılmıyor).
+- `assets/kare/<ad>.jpg` (300x300): maas, firsat, tapu, cay, zabita, yht (4 garda), havalimani (4 havalimanında) (+ secim, şimdilik kullanılmıyor). SÜRPRİZ karesinin resmi yok: CSS ile parlayan soru işareti (`.tile.q`).
 - Kredi tasarrufu için 8 kutucuk tek görselde 4x2 ızgara olarak üretildi, koyu aralıklar otomatik bulunup kesildi. Model istenmese de altlara İngilizce yazı basabiliyor; kesimde alt %22 atılıyor. Ham dosya: `tasks/gorsel-ham/kareler.png`.
 
 ## Ses

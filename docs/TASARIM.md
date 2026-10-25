@@ -30,40 +30,49 @@ RANT'a özgü olanlar:
 - Başlangıç: 1500 TL nakit, 3 Hamle kartı, 2 Hedef kartından 1'i seçilir.
 - Kazanan: Seçim Günü'nde (son turun sonunda) en yüksek **puan**a sahip oyuncu.
 
-## 3. Tahta (28 kare)
+## 3. Tahta (36 kare)
 
-Kareler 0'dan 27'ye dizilir. Köşeler: 0, 7, 14, 21.
+Kareler 0'dan 35'e dizilir, tahta 10x10 ızgaradır. Köşeler: 0, 9, 18, 27.
+Her kenarda 5 mülk, 1 gar, 1 havalimanı ve 1 FIRSAT ya da SÜRPRİZ karesi var.
 
 | # | Kare | Tür | Fiyat |
 |---|---|---|---|
 | 0 | MAAŞ GÜNÜ | köşe | geçince ya da gelince maaş |
 | 1 | Yakutiye (Erzurum) | mülk | 60 |
 | 2 | Palandöken (Erzurum) | mülk | 80 |
-| 3 | FIRSAT | kart | 2 Hamle kartı çek |
-| 4 | Ortahisar (Trabzon) | mülk | 100 |
-| 5 | Akçaabat (Trabzon) | mülk | 100 |
-| 6 | Uzungöl (Trabzon) | mülk | 120 |
-| 7 | TAPU DAİRESİ | köşe | sahipsiz herhangi bir mülkü al |
-| 8 | Odunpazarı (Eskişehir) | mülk | 140 |
-| 9 | Tepebaşı (Eskişehir) | mülk | 160 |
-| 10 | YHT GARI | ulaşım | 200 |
-| 11 | Karatay (Konya) | mülk | 180 |
-| 12 | Meram (Konya) | mülk | 180 |
-| 13 | Selçuklu (Konya) | mülk | 200 |
-| 14 | ÇAY OCAĞI | köşe | herkesten çay parası |
-| 15 | Kaleiçi (Antalya) | mülk | 220 |
-| 16 | Konyaaltı (Antalya) | mülk | 220 |
-| 17 | FIRSAT | kart | 2 Hamle kartı çek |
-| 18 | Lara (Antalya) | mülk | 240 |
-| 19 | Kızılay (Ankara) | mülk | 260 |
-| 20 | Çankaya (Ankara) | mülk | 280 |
-| 21 | ZABITA | köşe | bir oyuncuyu ihbar et |
-| 22 | Karşıyaka (İzmir) | mülk | 300 |
-| 23 | Bornova (İzmir) | mülk | 300 |
-| 24 | Alsancak (İzmir) | mülk | 320 |
-| 25 | HAVALİMANI | ulaşım | 200 |
-| 26 | Kadıköy (İstanbul) | mülk | 350 |
-| 27 | Bebek (İstanbul) | mülk | 400 |
+| 3 | SÜRPRİZ | sürpriz | rastgele etki, hemen uygulanır |
+| 4 | DOĞU EKSPRESİ | gar | 150 |
+| 5 | Ortahisar (Trabzon) | mülk | 100 |
+| 6 | Akçaabat (Trabzon) | mülk | 100 |
+| 7 | KAPADOKYA | havalimanı | 200 |
+| 8 | Uzungöl (Trabzon) | mülk | 120 |
+| 9 | TAPU DAİRESİ | köşe | sahipsiz herhangi bir mülkü al |
+| 10 | Odunpazarı (Eskişehir) | mülk | 140 |
+| 11 | FIRSAT | kart | 2 Hamle kartı çek |
+| 12 | Tepebaşı (Eskişehir) | mülk | 160 |
+| 13 | KONYA GARI | gar | 150 |
+| 14 | Karatay (Konya) | mülk | 180 |
+| 15 | Meram (Konya) | mülk | 180 |
+| 16 | DALAMAN | havalimanı | 200 |
+| 17 | Selçuklu (Konya) | mülk | 200 |
+| 18 | ÇAY OCAĞI | köşe | herkesten çay parası |
+| 19 | Kaleiçi (Antalya) | mülk | 220 |
+| 20 | Konyaaltı (Antalya) | mülk | 220 |
+| 21 | SÜRPRİZ | sürpriz | rastgele etki, hemen uygulanır |
+| 22 | ANKARA GARI | gar | 150 |
+| 23 | Lara (Antalya) | mülk | 240 |
+| 24 | Kızılay (Ankara) | mülk | 260 |
+| 25 | ESENBOĞA | havalimanı | 200 |
+| 26 | Çankaya (Ankara) | mülk | 280 |
+| 27 | ZABITA | köşe | bir oyuncuyu ihbar et |
+| 28 | Karşıyaka (İzmir) | mülk | 300 |
+| 29 | FIRSAT | kart | 2 Hamle kartı çek |
+| 30 | Bornova (İzmir) | mülk | 300 |
+| 31 | HAYDARPAŞA | gar | 150 |
+| 32 | Alsancak (İzmir) | mülk | 320 |
+| 33 | Kadıköy (İstanbul) | mülk | 350 |
+| 34 | SABİHA GÖKÇEN | havalimanı | 200 |
+| 35 | Bebek (İstanbul) | mülk | 400 |
 
 Şehir grupları ve kat fiyatları: Erzurum 50, Trabzon 50, Eskişehir 100, Konya 100, Antalya 150, Ankara 150, İzmir 200, İstanbul 200.
 Sahil grupları: Antalya, İzmir.
@@ -74,7 +83,9 @@ Sahil grupları: Antalya, İzmir.
 - Seviye L = yasal kat + kaçak kat (en fazla 4).
 - L = 0: temel kira; şehrin tüm mülkleri aynı kişideyse **2 katı**.
 - L = 1..4: temel kira x 5 / 14 / 30 / 40 (5'e yuvarlanır).
-- Ulaşım: sahibinin 1 ulaşımı varsa 25, 2'si varsa 60.
+- Havalimanı: kira sahibinin havalimanı sayısıyla **her biri için ikiye katlanır**: 1'i varsa 25, 2'si 50, 3'ü 100, 4'ü 200.
+- Gar: kira elindeki gar sayısıyla **orantılı** artar: gar başı 30 (1'i 30, 2'si 60, 3'ü 90, 4'ü 120).
+- Gar ve havalimanı ayrı sayılır; ipotekli olan sayılmaz. Bunlara kat dikilmez.
 - Tüm para değerleri **Endeks / 100** ile çarpılır (başlangıçta Endeks 100) ve 5'e yuvarlanır.
 - İpotekli ya da İhtiyati Tedbirli mülk kira almaz.
 
@@ -96,6 +107,7 @@ Sahil grupları: Antalya, İzmir.
 - **Başkasının mülkü**: Kira ödenir. Elinde *Dayın Çıktı* varsa kullanıp ödemeyebilirsin.
 - **Kendi mülkün**: bir şey olmaz.
 - **FIRSAT**: 2 Hamle kartı çek.
+- **SÜRPRİZ**: Rastgele bir Sürpriz etkisi açılır ve **hemen** uygulanır, seçim yapılmaz (bkz. bölüm 8b).
 - **MAAŞ GÜNÜ**: İleri yönde geçince ya da gelince maaş (200; Asgari Ücret zammıyla artar).
 - **TAPU DAİRESİ**: Tahtadaki sahipsiz herhangi bir mülkü fiyatına alabilirsin. Alacak yoksa 1 kart.
 - **ÇAY OCAĞI**: Diğer her oyuncu sana 25 çay parası öder (nakdi yettiği kadar).
@@ -154,7 +166,7 @@ Kartlardaki para miktarları Endeks ile ölçeklenir.
 | İmar Affı | 1 | Tüm kaçak katlar yasallaşır |
 | Belediye Operasyonu | 1 | Tüm kaçak katlar yıkılır |
 | Turizm Sezonu | 1 | Bu tur Antalya ve İzmir kiraları 2 katı |
-| Ulaşıma Zam | 1 | Bu tur ulaşım kiraları 3 katı |
+| Ulaşıma Zam | 1 | Bu tur gar ve havalimanı kiraları 2 katı |
 | Deprem Yönetmeliği | 1 | Yasal kat başı 15, kaçak kat başı 30 güçlendirme bedeli |
 | Emlak Vergisi | 1 | Mülk başı 10 vergi |
 | Kira Artış Sınırı | 1 | Bu tur tüm kiralar yarıya iner |
@@ -173,13 +185,35 @@ Kartlardaki para miktarları Endeks ile ölçeklenir.
 | Komşuluk Hakkı | 1 | Herkes elinden rastgele bir kartı sonraki oyuncuya verir |
 | Gündem Sakin | 2 | Bir şey olmaz, çaylar benden |
 
+## 8b. Sürpriz etkileri (15)
+
+SÜRPRİZ karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçilir ve hemen uygulanır. Para değerleri Endeks ile ölçeklenir.
+
+| Etki | Ne olur |
+|---|---|
+| Teyzeden Miras | Bankadan 150 al. |
+| Radara Yakalandın | 75 hız cezası öde. |
+| Düğün Var | Diğer her oyuncu sana 25 takı takar (nakdi yettiği kadar). |
+| Hesap Senden | Diğer her oyuncuya 20 öde. |
+| Robin Hood | Nakdi en çok olandan 100 alınır, nakdi en az olana verilir. |
+| Duvarda Çatlak | En yüksek katlı mülkünden 1 kat çöker (önce kaçak kat). |
+| Belediyeden Jest | Rastgele bir mülküne bedava 1 yasal kat. Uygun mülk yoksa 50 teselli. |
+| Dededen Kalma Tarla | Sahipsiz en ucuz mülk bedavaya senin olur. Sahipsiz mülk yoksa 100 al. |
+| Bedava Uçak Bileti | İleri yöndeki ilk havalimanına uçarsın (Maaş Günü'nden geçersen maaş), o kareye gelmiş sayılırsın. |
+| Işınlanma | Rastgele bir kareye ışınlanırsın (maaş yok), o kareye gelmiş sayılırsın. SÜRPRİZ karelerine ışınlanılmaz. |
+| Ters Köşe | Rastgele bir rakiple yerini değiştirirsin; ikiniz için de kare etkisi işlemez. |
+| Kapkaç | Rastgele bir rakibin elinden rastgele bir kart kaparsın. Kimsenin kartı yoksa 1 kart çek. |
+| Kayıp Bavul | Elindeki rastgele 1 kart gider. |
+| Haciz Memuru | Nakdinin %10'u haczedilir. |
+| Vergi İadesi | Mülk başı 15 iade al. |
+
 ## 9. Gizli Hedefler (16)
 
 Başta herkese 2 hedef dağıtılır, 1'i seçilir. Oyun sonunda tutarsa bonus alınır. Eşikler bot simülasyonunda tutturma oranı %25-50 olacak şekilde ayarlandı.
 
 - 8 şehir hedefi: "<Şehir> Hakimi" — o şehrin tüm mülkleri sonda sende (2'li şehir +250, 3'lü şehir +300).
 - Kat Kat Üstüne: sonda en az 7 katın (kaçak dahil) var, +300.
-- Ulaşım Baronu: iki ulaşım da sende, +250.
+- Ulaşım Baronu: sonda en az 3 gar ya da havalimanı sende, +250.
 - Nakit Kraldır: sonda en çok nakit sende (eşitlik dahil), +300.
 - Arsa Avcısı: sonda en az 6 mülkün var, +300.
 - Kaçak Ama Sağlam: sonda en az 2 kaçak katın ayakta, +300.

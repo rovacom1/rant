@@ -87,7 +87,7 @@ export const unmountGame = () => {
 const P = (v, i) => v.players[i];
 const who = (v, i) => (i === v.you ? 'Sen' : P(v, i).name);
 const av = (pl, cls = '') => html`<span class="av ${cls}" style="--c:${pl.color}">${pl.avatar}</span>`;
-const cityOf = (sq) => (BOARD[sq].group ? GROUPS[BOARD[sq].group].name : 'Ulaşım');
+const cityOf = (sq) => (BOARD[sq].group ? GROUPS[BOARD[sq].group].name : E.TRANSPORT_LABEL[BOARD[sq].mode]);
 const sqChip = (sq) => html`<span class="chip">${BOARD[sq].name}<small class="muted">${cityOf(sq)}</small></span>`;
 // Endeks ve şehir çarpanıyla ölçeklenmiş tutar (kira tablosu için).
 const scaled = (v, sq, x) => Math.round((x * (v.index / 100) * (BOARD[sq].group ? v.groupMult[BOARD[sq].group] || 1 : 1)) / 5) * 5;
@@ -124,7 +124,7 @@ function timerHTML(v, ids) {
 export { canPlay };
 
 const MOD_LABEL = {
-  turizm: '🏖️ Turizm', ulasimZam: '🎫 Ulaşım x3', kiraTavani: '🧯 Kira yarı', kiraArtisi: '🔥 Kira x1,5', grev: '🪧 Maaş yok',
+  turizm: '🏖️ Turizm', ulasimZam: '🎫 Ulaşım x2', kiraTavani: '🧯 Kira yarı', kiraArtisi: '🔥 Kira x1,5', grev: '🪧 Maaş yok',
   durgunluk: '🥶 Kat yok', kampanya: '🏷️ Kat yarı fiyat', faizIndirimi: '📉 İpotek indirimi', zabitaIzinde: '🏝️ Zabıta izinde',
 };
 
@@ -160,10 +160,13 @@ function gundemHTML(v) {
 const SPECIAL_INFO = {
   start: 'Buradan geçince ya da buraya gelince maaş alırsın.',
   chance: 'Buraya gelince 2 Hamle kartı çekersin.',
+  surpriz: 'Rastgele bir sürpriz hemen uygulanır: miras, ceza, düğün, ışınlanma, kapkaç…',
   tapu: 'Tahtadaki sahipsiz herhangi bir arsayı fiyatına alabilirsin.',
   cay: 'Diğer herkes sana çay parası öder.',
   zabita: 'Kaçak katı olan bir rakibi ihbar edersin: kaçakları yıkılır.',
 };
+
+const TRANSPORT_NOTE = { air: 'Her yeni havalimanı kirayı ikiye katlar.', rail: 'Kira elindeki gar sayısıyla orantılı artar.' };
 
 // Kareye tıklayınca açılan küçük bilgi penceresi: kaç katta kaç kira.
 function popHTML(v, sq) {
@@ -180,13 +183,14 @@ function popHTML(v, sq) {
     const list = [[full ? 'Arsa (tam set)' : 'Arsa', s.rents[0] * (full ? 2 : 1)], ['1 kat', s.rents[1]], ['2 kat', s.rents[2]], ['3 kat', s.rents[3]], ['4 kat', s.rents[4]]];
     rows = list.map(([k, x], l) => html`<tr class="${owner && L === l ? 'cur' : ''}"><td>${k}</td><td>${fmt(scaled(v, sq, x))}</td></tr>`);
   } else {
-    const n = owner ? E.transportCount(v, ps.owner) : 0;
-    rows = [['1 ulaşım', 25], ['2 ulaşım', 60]].map(([k, x], l) => html`<tr class="${n === l + 1 ? 'cur' : ''}"><td>${k}</td><td>${fmt(E.money(v, x))}</td></tr>`);
+    const n = owner ? E.transportCount(v, ps.owner, s.mode) : 0;
+    const label = E.TRANSPORT_LABEL[s.mode].toLowerCase();
+    rows = E.TRANSPORT_RENT[s.mode].slice(1).map((x, l) => html`<tr class="${n === l + 1 ? 'cur' : ''}"><td>${l + 1} ${label}</td><td>${fmt(E.money(v, x))}</td></tr>`);
   }
   const status = owner
     ? html`<span class="dot" style="--c:${owner.color}"></span> ${owner.name}${ps.ipotek ? ' · ipotekli' : ''}${ps.tedbir ? ` · tedbir ${ps.tedbir} tur` : ''}`
     : html`Sahipsiz · fiyatı <b>${fmt(E.price(v, sq))}</b>`;
-  const note = s.kind === 'prop' ? `Tam sette arsa kirası 2 katı. Kat ${fmt(E.katCost(v, sq))}, kaçak ${fmt(E.kacakCost(v, sq))}.` : 'İkisi aynı kişideyse kira artar.';
+  const note = s.kind === 'prop' ? `Tam sette arsa kirası 2 katı. Kat ${fmt(E.katCost(v, sq))}, kaçak ${fmt(E.kacakCost(v, sq))}.` : TRANSPORT_NOTE[s.mode];
   const acts = [...propActions(v, sq)];
   if (tapuSquares(v)?.includes(sq)) acts.push(html`<button class="btn tiny turq" data-act="tapuBuy" data-sq="${sq}">📜 Tapudan al</button>`);
   return html`<div class="ph" style="${head}"><b>${s.name}</b><span>${cityOf(sq)}</span>${close}</div>
@@ -222,9 +226,10 @@ function renderPop(v) {
 function buyCard(v, sq) {
   const s = BOARD[sq];
   const others = s.group ? GROUP_SQUARES[s.group].filter((q) => q !== sq && v.props[q].owner !== null).map((q) => P(v, v.props[q].owner)) : [];
-  const rent = s.kind === 'transport' ? E.money(v, 25) : scaled(v, sq, s.rents[0]);
+  const rent = s.kind === 'transport' ? E.money(v, E.TRANSPORT_RENT[s.mode][1]) : scaled(v, sq, s.rents[0]);
+  const grows = s.kind === 'prop' ? ', katlarla artar' : s.mode === 'air' ? ', her yeni havalimanıyla 2 katı' : ', gar başına artar';
   return html`<div class="buycard"><div class="bn">${s.icon || ''} ${s.name}</div><div class="bc">${cityOf(sq)}</div>
-    <div class="bp">Kira ${fmt(rent)}${s.kind === 'prop' ? ', katlarla artar' : ''}</div>
+    <div class="bp">Kira ${fmt(rent)}${grows}</div>
     ${others.length ? html`<div class="bo">Şehrin diğer sahipleri: ${others.map((o) => html`<span class="dot" style="--c:${o.color}" title="${o.name}"></span>`)}</div>` : ''}</div>`;
 }
 
@@ -440,7 +445,7 @@ function renderAudioPop() {
 }
 
 // Olaylar: sade, büyük yazı; zar, yürüme, maaş gibi gürültü gizlenir. Her tur bir başlıkla ayrılır.
-const FEED_ICON = { card: '🃏', own: '🏠', auction: '🔨', build: '🏗️', demolish: '🚜', konkordato: '⚠️', tradeDone: '🤝', over: '🏆', summary: '📊' };
+const FEED_ICON = { surpriz: '❓', collapse: '🏚️', card: '🃏', own: '🏠', auction: '🔨', build: '🏗️', demolish: '🚜', konkordato: '⚠️', tradeDone: '🤝', over: '🏆', summary: '📊' };
 const FEED_HIDE = new Set(['dice', 'move', 'bid', 'draw', 'turn', 'trade', 'auctionStart']);
 
 function feedItem(l) {
@@ -591,12 +596,12 @@ function playerDialog(v, p) {
   const pl = P(v, p);
   const byGroup = {};
   for (const q of E.propsOf(v, p)) {
-    const g = BOARD[q].group || 'ulasim';
+    const g = BOARD[q].group || BOARD[q].mode;
     (byGroup[g] ||= []).push(q);
   }
   const groups = Object.entries(byGroup).map(
     ([g, qs]) =>
-      html`<div class="row"><b style="min-width:90px">${g === 'ulasim' ? 'Ulaşım' : GROUPS[g].name}${g !== 'ulasim' && E.ownsGroup(v, p, g) ? ' ★' : ''}</b>${qs.map((q) => html`<span class="chip">${BOARD[q].name}${v.props[q].kat ? ` 🏠×${v.props[q].kat}` : ''}${v.props[q].kacak ? ' 🚧' : ''}${v.props[q].ipotek ? ' (ipotek)' : ''}</span>`)}</div>`,
+      html`<div class="row"><b style="min-width:90px">${GROUPS[g] ? GROUPS[g].name : E.TRANSPORT_LABEL[g]}${GROUPS[g] && E.ownsGroup(v, p, g) ? ' ★' : ''}</b>${qs.map((q) => html`<span class="chip">${BOARD[q].name}${v.props[q].kat ? ` 🏠×${v.props[q].kat}` : ''}${v.props[q].kacak ? ' 🚧' : ''}${v.props[q].ipotek ? ' (ipotek)' : ''}</span>`)}</div>`,
   );
   return html`<h2>${av(pl)} ${pl.name}</h2>
     <div class="row"><span class="chip">💵 ${fmt(pl.cash)}</span><span class="chip">Net değer ${fmt(E.netWorth(v, p))}</span><span class="chip">🂠 ${pl.handCount} kart</span>${pl.konkordato ? html`<span class="chip">Konkordato ×${pl.konkordato}</span>` : ''}</div>
@@ -791,6 +796,24 @@ function flyMine(prev, v, id) {
   if (from) flyToCenter(cardFace(id), from, boardCenter());
 }
 
+// SÜRPRİZ: tahtanın ortasında soru işaretli kart döner, etkisi görünür.
+async function showSurpriz(v, ev) {
+  const sur = E.SURPRIZ[ev.id];
+  const pl = P(v, ev.p);
+  document.querySelectorAll('.surp').forEach((r) => r.remove());
+  const c = boardCenter();
+  const el = document.createElement('div');
+  el.className = 'surp';
+  el.style.left = `${c.x}px`;
+  el.style.top = `${c.y}px`;
+  el.innerHTML = String(html`<div class="who">${av(pl, 'sm')} ${pl.name} · Sürpriz!</div>
+    <div class="sflip"><div class="sface sfront"><b>?</b></div><div class="sface sback"><div class="si">${sur.icon}</div><div class="sn">${sur.name}</div><div class="sx">${sur.text}</div></div></div>`);
+  document.body.appendChild(el);
+  play('card');
+  setTimeout(() => el.remove(), 3000);
+  await sleep(2200);
+}
+
 // Başkasının oynadığı kart ortada büyük gösterilir.
 function revealCard(v, ev, tries = 0) {
   // Tur başı haber kartı ekrandaysa onun kapanmasını bekle (üst üste binmesin).
@@ -848,6 +871,9 @@ export async function present(prev, v, events, fast) {
         play('crash');
         toast(`🚜 ${P(v, ev.p).name}: ${ev.n} kaçak kat yıkıldı!`, 'error');
         break;
+      case 'collapse':
+        play('crash');
+        break;
       case 'konkordato':
         play('crash');
         toast(`⚠️ ${P(v, ev.p).name} konkordato ilan etti!`, 'error');
@@ -882,12 +908,16 @@ export async function present(prev, v, events, fast) {
   const myHandBefore = prev && prev.players[me] ? prev.players[me].hand : [];
   app.ui.newCards = me >= 0 ? v.players[me].hand.filter((u) => !myHandBefore.includes(u)) : [];
   const thrown = events.find((e) => e.type === 'dice' || e.type === 'dava');
-  const moves = events.filter((e) => e.type === 'move');
-  if ((thrown || moves.length) && prev && els) {
+  // Yürüyüşler ve sürprizler sırayla: önce kareye varılır, sonra sürpriz açılır, varsa ardından ışınlanma.
+  const steps = events.filter((e) => e.type === 'move' || e.type === 'surpriz');
+  if ((thrown || steps.length) && prev && els) {
     animating = true;
     try {
       if (thrown) await dice.roll(thrown.dice, fast);
-      for (const m of moves) await tokens.walk(P(v, m.p).id, m.path, fast);
+      for (const e of steps) {
+        if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast);
+        else if (!fast) await showSurpriz(v, e);
+      }
     } finally {
       animating = false;
     }

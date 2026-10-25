@@ -6,17 +6,18 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
+- [ ] **SÜRPRİZ ve gar görselleri:** Gemini kotası açılınca SÜRPRİZ karesine resimli kutucuk (şu an CSS soru işareti) ve garlara hızlı tren yerine klasik tren/gar görseli (docs/GORSEL_STIL.md kalıbıyla).
 - [ ] **Taşlar kare adını kapatmasın:** Taşları karenin kenarına yerleştir ya da küçült; birden çok taş varsa yan yana diz.
-- [ ] **Hedef dengesi:** 300 oyunluk simde hedefler %5 (Trabzon Hakimi) ile %62 (Hukuk Dünyası) arasında; en kolay ve en zor 3-4 hedefin eşiklerini %15-45 aralığına çek.
+- [ ] **Hedef dengesi:** 36 karelik tahtada 200x5 simde hedefler %0 (İzmir Hakimi) ile %61 (Hukuk Dünyası) arasında; en kolay ve en zor 3-4 hedefin eşiklerini %15-45 aralığına çek.
 - [ ] **Para animasyonu:** Kira ve transferlerde oyuncudan oyuncuya uçan jeton; kat dikince karede küçük inşaat animasyonu.
 - [ ] **Oyun sonu grafiği:** Sonuç penceresinde tur tur net değer çizgisi (motor her tur sonu net değerleri kaydetsin).
 - [ ] **Bot zorluk seviyesi:** Lobide Kolay / Normal / Zor. Zor bot mülk-mülk takası önersin, ihalede daha akıllı teklif versin.
 - [ ] **Açık pazarlık:** Sırası olmayan oyuncular da birbirine teklif yapabilsin (aynı anda tek teklif kuralıyla).
-- [ ] **Mobil düzen:** 400-800 px genişlikte tahta ve panelin rahat kullanımı (alt sekmeli panel).
+- [ ] **Mobil düzen:** 400-800 px genişlikte tahta ve panelin rahat kullanımı (alt sekmeli panel). 10x10 tahtada kareler dar ekranda çok küçülüyor.
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
 - [ ] **Yeni harita: İstanbul:** İlçelerden oluşan ikinci tahta; lobide harita seçimi (tahta verisi data.js'te haritaya göre).
 - [ ] **Yeni kartlar (denge simülasyonuyla):** "Kat Karşılığı" (rakibin arsasına onunla ortak kat), "Kredi Kartı" (şimdi 300 al, 2 tur sonra 360 öde), "Torpil" (ihalede ikinci en yüksek teklifle kazan).
-- [ ] **Yeni gündem kartları:** "Deprem" (en yüksek katlı mülk 1 kat kaybeder), "Arsa Spekülasyonu", "Altın Rekor".
+- [ ] **Yeni gündem kartları:** "Arsa Spekülasyonu", "Altın Rekor" ("Duvarda Çatlak" artık SÜRPRİZ etkisi).
 - [ ] **Ev sahibi devri:** Ev sahibi düşerse en eski oyuncu kayıttan oyunu devralsın (her oyuncuda son durum kopyası).
 - [ ] **PWA:** Masaüstüne kurulabilir uygulama (manifest + service worker); botlarla çevrimdışı oynama.
 - [ ] **Erişilebilirlik:** Klavyeyle tam oynanış, renk körleri için şehir desenleri, ekran okuyucu etiketleri.
@@ -24,6 +25,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] 36 karelik 10x10 tahta: 4 havalimanı (her biri kirayı ikiye katlar), 4 gar (kira gar sayısıyla orantılı), 2 SÜRPRİZ karesi ve hemen uygulanan 15 etki, dönen soru işaretli kart animasyonu; hedef eşikleri yeni tahtaya göre ayarlandı (v0.5.0)
 - [x] Kart yelpazesinde titremesiz üzerine gelme (fare konumuna göre seçim, komşular açılır), kart adı kartın üstünde, karede 🏠×N kat göstergesi, özel kareler için resimli kutucuklar, ceviz-altın tahta çerçevesi, karanlık mod, sohbet kaldırıldı, sade ve büyük yazılı olaylar paneli (v0.4.0)
 - [x] Hearthstone tarzı el (yelpaze, büyüme, sürükleyip oynama, desteden çekme, oynanan kartın ortada gösterilmesi), 16 kart görseli, yeni sağ panel, gündem barı ve haber kartı, ElevenLabs ses efektleri ve arka plan müziği, ses ayarları; tahtada şerit rengiyle sahiplik (v0.3.0)
 - [x] Kullanıcı geri bildirimiyle sade arayüz: Fredoka + Nunito yazı tipi, 3 boyutlu zar, gri/oyuncu rengi tahta, karelerde fiyat-kira yok (tıklayınca kira penceresi), pazarlık ve ihalede kaydırma çubuğu (v0.2.0)

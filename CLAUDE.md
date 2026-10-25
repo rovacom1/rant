@@ -13,7 +13,7 @@
 - Sesler ve müzik `assets/ses` altında; ayarı sağ üstteki ses penceresinden (müzik ve efektler ayrı).
 - Para seçimi (pazarlık, ihale) elle yazarak değil, oyuncu rengindeki kaydırma çubuğuyla yapılır.
 - Yazı tipleri: başlık/düğme/sayı Fredoka, metin Nunito. Zarlar 3 boyutlu döner.
-- Özel kareler (Maaş Günü, Fırsat, Tapu, Çay Ocağı, Zabıta, YHT, Havalimanı) kareyi kaplayan resimlerle gösterilir (`assets/kare`). Katlar karede 🏠×N, kaçak kat 🚧 olarak yazar.
+- Özel kareler (Maaş Günü, Fırsat, Tapu, Çay Ocağı, Zabıta, gar, havalimanı) kareyi kaplayan resimlerle gösterilir (`assets/kare`); SÜRPRİZ karesi resim yerine CSS ile parlayan soru işaretidir. Katlar karede 🏠×N, kaçak kat 🚧 olarak yazar.
 - Sohbet yok (kullanıcı kaldırttı). Olaylar paneli sade ve büyük yazılı: zar, yürüme, maaş gibi gürültü gösterilmez; her tur bir başlıkla ayrılır.
 - Tahtanın karanlık modu var (sağ üstte 🌙/☀️); yeni arayüz parçaları iki temada da denenmeli.
 

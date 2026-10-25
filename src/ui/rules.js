@@ -15,6 +15,12 @@ export const RULES_HTML = `
 <li><b>Yasal kat</b> için şehrin tüm mülkleri sende olmalı. Kat kirayı katlar (en fazla 4 seviye).</li>
 <li><b>Kaçak kat</b> set istemez, yarı fiyatına. Ama <b>İhbar</b> kartı, <b>Zabıta</b> karesi ya da <b>Belediye Operasyonu</b> yıkar. <b>İmar Affı</b> gelirse yasallaşır.</li>
 </ul>
+<h3>Gar, havalimanı ve SÜRPRİZ</h3>
+<ul>
+<li>Tahtada 4 <b>havalimanı</b> var: sende olan her havalimanı kirayı <b>ikiye katlar</b> (25 / 50 / 100 / 200).</li>
+<li>4 <b>gar</b> var: kira elindeki gar sayısıyla <b>orantılı</b> artar (30 / 60 / 90 / 120).</li>
+<li><b>SÜRPRİZ</b> (❓) karesine gelince 15 etkiden biri hemen uygulanır: miras, radar cezası, düğün takısı, ışınlanma, kapkaç, dededen kalma tarla...</li>
+</ul>
 <h3>Kartlar</h3>
 <ul>
 <li><b>Hamle</b> kartları (Kamulaştırma, İhtiyati Tedbir, Dava Aç, Taksi...) sıran sende iken oynanır.</li>

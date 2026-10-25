@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Host, idFromToken } from '../src/net/host.js';
+import { PROTOCOL } from '../src/version.js';
 
 // Ağsız sahte bağlantı: gönderilen mesajları biriktirir.
 function fakeConn() {
@@ -11,7 +12,7 @@ function fakeConn() {
 }
 
 const HOST_TOKEN = 'h'.repeat(32);
-const hello = (token, name) => ({ t: 'hello', v: 1, token, name, avatar: '🦊' });
+const hello = (token, name) => ({ t: 'hello', v: PROTOCOL, token, name, avatar: '🦊' });
 
 function room() {
   const host = new Host({ code: 'TEST1', hostToken: HOST_TOKEN, hostName: 'Ev', hostAvatar: '🦊' });
