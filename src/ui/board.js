@@ -176,5 +176,3 @@ export async function rollDice(el, dice, fast) {
   el.innerHTML = dice.map((d, i) => dieHTML(d, i ? 'red' : '')).join('');
   await sleep(250);
 }
-
-export const squareLabel = (i) => esc(BOARD[(i + N) % N].name);
