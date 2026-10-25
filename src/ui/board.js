@@ -89,10 +89,12 @@ export function updateBoard(cells, v, highlight, pick = null, open = null) {
         el.appendChild(badge);
       }
       badge.textContent = '⚖️';
-      badge.title = `İhtiyati tedbir (${ps.tedbir} tur)`;
+      badge.dataset.tip = `İhtiyati tedbir: ${ps.tedbir} tur kira yok, kat dikilmez`;
     } else if (badge) badge.remove();
     const floors = el.querySelector('.floors');
-    if (floors) floors.innerHTML = (ps.kat ? `<b title="Yasal kat">🏠×${ps.kat}</b>` : '') + (ps.kacak ? '<b class="k" title="Kaçak kat">🚧</b>' : '');
+    if (floors) floors.innerHTML = (ps.kat ? `<b data-tip="${ps.kat} yasal kat">🏠×${ps.kat}</b>` : '') + (ps.kacak ? '<b class="k" data-tip="Kaçak kat: İhbar, Zabıta ya da Belediye operasyonu yıkabilir">🚧</b>' : '');
+    const band = el.querySelector('.band');
+    if (band) band.dataset.tip = ps.ipotek ? 'İpotekli: kira alınmaz' : owner && inFullSet(v, i) ? `${owner.name} · tam set ★: arsa kirası 2 katı` : owner ? `Sahibi: ${owner.name}` : 'Sahipsiz';
     el.title = `${sq.name}${owner ? ` — ${owner.name}` : ' — sahipsiz'}${ps.ipotek ? ' (ipotekli)' : ''}`;
   });
 }

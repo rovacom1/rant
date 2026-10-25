@@ -13,11 +13,11 @@ Tam plan ve ölçümler: kullanıcı onaylı plan (sohbet). Özet ve takip burad
 - [x] Dava zarı etiketi, haber kartında kapatma ipucu, pencerelerde kaydırma korunur
 
 ## Faz 2 — Karanlık mod ve belirsizlikler (v0.10.1)
-- [ ] Tüm pencereler ve paneller karanlık temada koyu (yüzey değişkenleri)
-- [ ] Kare penceresinde kat/kaçak/set/ipotek/tedbir açıklamaları
-- [ ] Simge ipuçları (kare, oyuncu paneli, üst çubuk, halka, gündem çipleri, taş halkası, oynanabilir kart)
-- [ ] Kurallarda "Tahtadaki işaretler"
-- [ ] Dayı/İtiraz beklemesinde nötr metin
+- [x] Tüm pencereler ve paneller karanlık temada koyu (yüzey değişkenleri)
+- [x] Kare penceresinde kat/kaçak/set/ipotek/tedbir açıklamaları
+- [x] Simge ipuçları (kare, oyuncu paneli, üst çubuk, halka, gündem çipleri, taş halkası, oynanabilir kart)
+- [x] Kurallarda "Tahtadaki işaretler"
+- [x] Dayı/İtiraz beklemesinde nötr metin
 
 ## Faz 3 — Monopoly tarzı açık artırma (v0.11.0)
 - [ ] Motor: sırayla artır ya da çekil, son kalan kazanır; süre dolunca çekilir

@@ -20,6 +20,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Karanlık mod tüm pencerelerde; kare penceresinde kat/kaçak/set/ipotek/tedbir açıklamaları; simgelerin üzerine gelince ipucu; kurallarda Tahtadaki işaretler (v0.10.1)
 - [x] Tempo ve okunurluk: ev sahibi canlandırma bitene kadar bekler, lobide Oyun hızı; rakip kartı 3,5 sn, kime ne yaptığı yazar, üzerine gelince durur; akışta renkli kart çipi ve önizleme; süre çubuğu artık zıplamıyor (v0.10.0)
 - [x] Daha büyük tahta: el ekranın altına gömüldü (boştayken kart adları görünür, fare gelince yükselir); 1920x945'te tahta 759'dan 833 px'e (v0.9.3)
 - [x] Oyun sonu grafiği: motor oyun başında ve her tur sonunda herkesin net değerini kaydeder; Seçim Günü sonuçlarında oyuncu renklerinde tur tur net değer çizgisi, kazananınki kalın (v0.9.2)

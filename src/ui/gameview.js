@@ -31,10 +31,10 @@ export function mountGame(root) {
   <div class="game">
     <header class="topbar">
       <div class="mini-logo">RANT</div>
-      <div class="stat">Tur<b id="tRound"></b></div>
-      <div class="stat hidden" id="tTarget">Hedef<b></b></div>
-      <div class="stat">Endeks<b id="tIndex"></b></div>
-      <div class="stat">Maaş<b id="tSalary"></b></div>
+      <div class="stat" data-tip="Kaçıncı turdayız (tur sayısıyla bitişte: toplam tur)">Tur<b id="tRound"></b></div>
+      <div class="stat hidden" id="tTarget" data-tip="Biri bu değere ulaşınca o tur biter, Seçim Günü gelir">Hedef<b></b></div>
+      <div class="stat" data-tip="Fiyat ve kiraların çarpanı: 115 = her şey %15 pahalı. Enflasyon gündemiyle artar">Endeks<b id="tIndex"></b></div>
+      <div class="stat" data-tip="Başlangıç Noktası'ndan geçince ya da gelince alınan para">Maaş<b id="tSalary"></b></div>
       <div class="spacer"></div>
       <span class="conn" id="tConn"></span>
       <button class="iconbtn" data-act="copyLink" id="tCode" title="Davet linkini kopyala"></button>
@@ -155,18 +155,20 @@ function updateTopbar(v) {
 
 // ---------- orta alan ----------
 
-const ringHTML = (p, big, small) => html`<div class="ring" style="--p:${p}"><div><b>${big}</b><span>${small}</span></div></div>`;
+const ringHTML = (p, big, small, tip = '') => html`<div class="ring" style="--p:${p}" data-tip="${tip}"><div><b>${big}</b><span>${small}</span></div></div>`;
 
 // Bitişe ne kaldı: tur sayısında kalan tur, değer hedefinde en zengin oyuncunun hedefe yakınlığı.
 function progressRing(v) {
   const max = v.config.maxRounds;
   const goal = v.config.targetScore;
-  if (v.finalRound || (v.round && v.round >= max)) return ringHTML(100, 'SON', 'TUR');
+  if (v.finalRound || (v.round && v.round >= max)) return ringHTML(100, 'SON', 'TUR', 'Bu tur bitince Seçim Günü');
   if (goal) {
-    const pct = Math.min(99, Math.round((Math.max(...v.players.map((_, p) => E.netWorth(v, p))) / goal) * 100));
-    return ringHTML(pct, `%${pct}`, 'HEDEFE');
+    const worth = v.players.map((_, p) => E.netWorth(v, p));
+    const lead = worth.indexOf(Math.max(...worth));
+    const pct = Math.min(99, Math.round((worth[lead] / goal) * 100));
+    return ringHTML(pct, `%${pct}`, 'HEDEFE', `En zengin ${P(v, lead).name}: değeri ${fmt(worth[lead])} / ${fmt(goal)}`);
   }
-  return v.round ? ringHTML(Math.round((v.round / max) * 100), max - v.round, 'TUR KALDI') : ringHTML(0, max, 'TUR');
+  return v.round ? ringHTML(Math.round((v.round / max) * 100), max - v.round, 'TUR KALDI', `${max} turun ${v.round}. turu`) : ringHTML(0, max, 'TUR');
 }
 
 function gundemHTML(v) {
@@ -181,7 +183,8 @@ function gundemHTML(v) {
     return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div>${t}</div>${ring}</div>`;
   }
   const g = GUNDEM[v.gundem.id];
-  const mods = Object.keys(v.mods).map((m) => html`<span class="chip">${MOD_LABEL[m] || m}</span>`);
+  const modTip = (m) => Object.values(GUNDEM).find((x) => x.mod === m)?.text || '';
+  const mods = Object.keys(v.mods).map((m) => html`<span class="chip" data-tip="${modTip(m)}">${MOD_LABEL[m] || m}</span>`);
   return html`<div class="news-bar"><div class="nb-ic">${g.icon}</div>
     <div><div class="nb-k">GÜNDEM · ${v.round}. TUR</div><div class="nb-t">${g.name}</div><div class="nb-x">${g.text}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</div>${mods.length ? html`<div class="nb-mods">${mods}</div>` : ''}</div>
     ${ring}</div>`;
@@ -203,14 +206,14 @@ function popHTML(v, sq) {
   const s = BOARD[sq];
   const ps = v.props[sq];
   const close = html`<button class="x" data-act="popClose" title="Kapat">✕</button>`;
-  if (!ps) return html`<div class="ph" style="--pc:#1b2233;--ink:#fff"><b>${s.icon} ${s.name}</b>${close}</div><div class="pn" style="padding-top:9px">${SPECIAL_INFO[s.kind]}</div>`;
+  if (!ps) return html`<div class="ph" style="--pc:#34405f;--ink:#fff"><b>${s.icon} ${s.name}</b>${close}</div><div class="pn" style="padding-top:9px">${SPECIAL_INFO[s.kind]}</div>`;
   const owner = ps.owner === null ? null : P(v, ps.owner);
   const head = owner ? `--pc:${owner.color};--ink:${inkFor(owner.color)}` : '--pc:#8a8d96;--ink:#fff';
   let rows;
   if (s.kind === 'prop') {
     const L = E.level(ps);
     const full = owner && E.ownsGroup(v, ps.owner, s.group);
-    const list = [[full ? 'Arsa (tam set)' : 'Arsa', s.rents[0] * (full ? 2 : 1)], ['1 kat', s.rents[1]], ['2 kat', s.rents[2]], ['3 kat', s.rents[3]], ['4 kat', s.rents[4]]];
+    const list = [[full ? 'Arsa (tam set ★)' : 'Arsa', s.rents[0] * (full ? 2 : 1)], ['1 kat', s.rents[1]], ['2 kat', s.rents[2]], ['3 kat', s.rents[3]], ['4 kat', s.rents[4]]];
     rows = list.map(([k, x], l) => html`<tr class="${owner && L === l ? 'cur' : ''}"><td>${k}</td><td>${fmt(scaled(v, sq, x))}</td></tr>`);
   } else {
     const n = owner ? E.transportCount(v, ps.owner, s.mode) : 0;
@@ -220,11 +223,21 @@ function popHTML(v, sq) {
   const status = owner
     ? html`<span class="dot" style="--c:${owner.color}"></span> ${owner.name}${ps.ipotek ? ' · ipotekli' : ''}${ps.tedbir ? ` · tedbir ${ps.tedbir} tur` : ''}`
     : html`Sahipsiz · fiyatı <b>${fmt(E.price(v, sq))}</b>`;
-  const note = s.kind === 'prop' ? `Tam sette arsa kirası 2 katı. Kat ${fmt(E.katCost(v, sq))}, kaçak ${fmt(E.kacakCost(v, sq))}.` : TRANSPORT_NOTE[s.mode];
+  const note = s.kind === 'prop' ? `Kat ${fmt(E.katCost(v, sq))}, kaçak kat ${fmt(E.kacakCost(v, sq))}. Kat sayısına kaçak kat da girer.` : TRANSPORT_NOTE[s.mode];
+  const legend = [];
+  if (s.kind === 'prop') {
+    if (ps.kat || ps.kacak) legend.push(`Şu an: ${[ps.kat ? `${ps.kat} yasal kat 🏠` : '', ps.kacak ? '1 kaçak kat 🚧' : ''].filter(Boolean).join(' + ')}`);
+    legend.push('🏠 Yasal kat: şehrin tüm mülkleri sende olmalı.');
+    legend.push('🚧 Kaçak kat: set istemez, yarı fiyat; İhbar, Zabıta ve Belediye operasyonu yıkar.');
+    legend.push('★ Tam set: şehrin tümü tek kişide, arsa kirası 2 katı.');
+  }
+  if (ps.ipotek) legend.push(`🔒 İpotekli: kira alınmaz. Kaldırmak ${fmt(E.unmortgageCost(v, sq))}.`);
+  else if (owner) legend.push(`İpotek değeri ${fmt(E.mortgageValue(v, sq))}.`);
+  if (ps.tedbir) legend.push(`⚖️ İhtiyati tedbir: ${ps.tedbir} tur kira yok, kat dikilmez.`);
   const acts = [...propActions(v, sq)];
   if (tapuSquares(v)?.includes(sq)) acts.push(html`<button class="btn tiny turq" data-act="tapuBuy" data-sq="${sq}">📜 Tapudan al</button>`);
   return html`<div class="ph" style="${head}"><b>${s.name}</b><span>${cityOf(sq)}</span>${close}</div>
-    <div class="po">${status}</div><table>${rows}</table><div class="pn">${note}</div>${acts.length ? html`<div class="pa">${acts}</div>` : ''}`;
+    <div class="po">${status}</div><table>${rows}</table><div class="pn">${note}</div>${legend.length ? html`<ul class="pl">${legend.map((x) => html`<li>${x}</li>`)}</ul>` : ''}${acts.length ? html`<div class="pa">${acts}</div>` : ''}`;
 }
 
 function renderPop(v) {
@@ -318,7 +331,7 @@ function promptHTML(v) {
       <div class="row center"><button class="btn primary big" data-act="settleDebt" data-primary>Borcu Kapat (otomatik)</button><button class="btn ghost" data-act="manage">Mülklerim</button></div>`;
   }
   const hints = [];
-  if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push('kart oynayabilir');
+  if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push('yeşil parlayan bir kartı yukarı sürükleyip ya da tıklayıp oynayabilir');
   if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false) || !E.buildBlock(v, me, q, true))) hints.push('kat dikebilirsin');
   return html`<h3>${BOARD[pl.pos].icon || ''} ${BOARD[pl.pos].name}</h3>${hints.length ? html`<p>İstersen ${hints.join(' ya da ')}.</p>` : ''}
     <div class="row center"><button class="btn primary big" data-act="endTurn" data-primary>Turu Bitir ➜</button></div>${timerHTML(v, [me])}`;
@@ -360,14 +373,14 @@ function pendingHTML(v, pd) {
       const victim = P(v, pd.victim);
       const what = c.target && c.target.sq !== undefined ? ` (${BOARD[c.target.sq].name})` : c.target && c.target.theirs !== undefined ? ` (${BOARD[c.target.mine].name} ↔ ${BOARD[c.target.theirs].name})` : '';
       const desc = html`<div class="react-card">${cardFace(c.id)}<div><b>${attacker.name} → ${victim.name}</b><div class="muted">${card.name}${what}${pd.chain ? ` · ${pd.chain} itiraz` : ''}</div></div></div>`;
-      if (pd.responder !== me) return html`${desc}<p>${P(v, pd.responder).name} itiraz edecek mi?</p>${timerHTML(v, [pd.responder])}`;
+      if (pd.responder !== me) return html`${desc}<p>${P(v, pd.responder).name} karar veriyor…</p>${timerHTML(v, [pd.responder])}`;
       const it = P(v, me).hand.find((u) => cardId(u) === 'itiraz');
       const counter = me === c.by;
       return html`${desc}<h3>${counter ? `${victim.name} itiraz etti! Karşı itiraz?` : `${attacker.name} sana ${card.name} oynadı!`}</h3>
         <div class="row center"><button class="btn primary big" data-act="react" data-uid="${it}" data-primary>✋ ${counter ? 'Karşı İtiraz' : 'İtiraz Et'}</button><button class="btn ghost" data-act="react" data-uid="">${counter ? 'Vazgeç' : 'Kabul Et'}</button></div>${timerHTML(v, [me])}`;
     }
     case 'rent': {
-      if (pd.p !== me) return html`<p>${P(v, pd.p).name} kirayı ödeyecek mi, dayısını mı arayacak?</p>${timerHTML(v, [pd.p])}`;
+      if (pd.p !== me) return html`<p>${P(v, pd.p).name} ${BOARD[pd.sq].name} kirası için karar veriyor…</p>${timerHTML(v, [pd.p])}`;
       const dayi = P(v, me).hand.find((u) => cardId(u) === 'dayi');
       return html`<h3>Kira: ${fmt(pd.amount)}</h3><p>${BOARD[pd.sq].name} → ${P(v, pd.owner).name}${pd.zam ? ' (Kira Zammı!)' : ''}</p>
         <div class="row center"><button class="btn gold big" data-act="react" data-uid="${dayi}" data-primary>🧔 Dayın Çıktı!</button><button class="btn ghost" data-act="react" data-uid="">Öde</button></div>${timerHTML(v, [me])}`;
@@ -428,10 +441,10 @@ function playersHTML(v) {
     .map((pl, i) => {
       const turn = v.phase === 'play' && v.turn && v.turn.p === i;
       const flags = [
-        pl.bot ? html`<span title="Bot">🤖</span>` : conn[pl.id] === false ? html`<span title="Bağlantısı koptu">📴</span>` : '',
-        pl.konkordato ? html`<span title="Konkordato">⚠️${pl.konkordato}</span>` : '',
-        pl.kiraZammi ? html`<span title="Kira Zammı etkin">📈</span>` : '',
-        waiting.has(i) && !turn && v.phase !== 'over' ? html`<span class="s-wait" title="Bekleniyor"></span>` : '',
+        pl.bot ? html`<span data-tip="Bot oynuyor">🤖</span>` : conn[pl.id] === false ? html`<span data-tip="Bağlantısı koptu, süre dolunca bot oynar">📴</span>` : '',
+        pl.konkordato ? html`<span data-tip="Konkordato: oyun sonunda ${pl.konkordato * v.config.konkordatoPenalty} puan ceza">⚠️${pl.konkordato}</span>` : '',
+        pl.kiraZammi ? html`<span data-tip="Kira Zammı: tahsil edeceği ilk kira 2 katı">📈</span>` : '',
+        waiting.has(i) && !turn && v.phase !== 'over' ? html`<span class="s-wait" data-tip="Karar vermesi bekleniyor"></span>` : '',
       ];
       const tags = [i === v.you ? html`<span class="s-tag me">SEN</span>` : '', turn ? html`<span class="s-tag">SIRADA</span>` : ''];
       const acts =
@@ -441,8 +454,8 @@ function playersHTML(v) {
       return html`<div class="seat2 ${turn ? 'turn' : ''}" style="--c:${pl.color}" data-act="player" data-p="${i}">
         <div class="s-av">${pl.avatar}</div>
         <div><div class="s-name">${pl.name} ${tags} ${flags}</div>
-          <div class="s-meta"><span title="Mülk sayısı">🏠 ${E.propsOf(v, i).length}</span><span class="s-backs" title="${pl.handCount} kart">${raw('<i></i>'.repeat(Math.min(pl.handCount, 8)))}</span></div></div>
-        <div class="s-cash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${fmt(pl.cash)}<small>değer ${fmt(E.netWorth(v, i))}</small></div>${acts}</div>`;
+          <div class="s-meta"><span data-tip="Mülk sayısı (gar ve havalimanı dahil)">📜 ${E.propsOf(v, i).length} mülk</span><span class="s-backs" data-tip="Elindeki kart sayısı"><i></i>${pl.handCount} kart</span></div></div>
+        <div class="s-cash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}"><span data-tip="Nakit">${fmt(pl.cash)}</span><small data-tip="Net değer: nakit + mülk + katlar. Oyun sonu puanı buna gizli hedef bonusu eklenip konkordato cezası düşülerek bulunur">değer ${fmt(E.netWorth(v, i))}</small></div>${acts}</div>`;
     })
     .join('');
 }

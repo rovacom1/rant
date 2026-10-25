@@ -34,6 +34,7 @@ function show(n) {
   if (!n.isConnected) return hide();
   const card = n.dataset.card ? String(cardFace(n.dataset.card)) : '';
   const tip = n.dataset.tip ? `<div class="tt">${esc(n.dataset.tip)}</div>` : '';
+  if (!card && !tip) return hide();
   box.innerHTML = card + tip;
   box.classList.toggle('has-card', !!card);
   const r = n.getBoundingClientRect();
