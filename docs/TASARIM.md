@@ -38,8 +38,8 @@ Her kenarda 5 mülk, 1 gar, 1 havalimanı ve 1 FIRSAT ya da SÜRPRİZ karesi var
 | # | Kare | Tür | Fiyat |
 |---|---|---|---|
 | 0 | BAŞLANGIÇ NOKTASI | köşe | geçince ya da gelince maaş |
-| 1 | Yakutiye (Erzurum) | mülk | 60 |
-| 2 | Palandöken (Erzurum) | mülk | 80 |
+| 1 | İskilip (Çorum) | mülk | 60 |
+| 2 | Osmancık (Çorum) | mülk | 80 |
 | 3 | SÜRPRİZ | sürpriz | rastgele etki, hemen uygulanır |
 | 4 | DOĞU EKSPRESİ | gar | 150 |
 | 5 | Ortahisar (Trabzon) | mülk | 100 |
@@ -47,9 +47,9 @@ Her kenarda 5 mülk, 1 gar, 1 havalimanı ve 1 FIRSAT ya da SÜRPRİZ karesi var
 | 7 | KAPADOKYA | havalimanı | 200 |
 | 8 | Uzungöl (Trabzon) | mülk | 120 |
 | 9 | TAPU DAİRESİ | köşe | sahipsiz herhangi bir mülkü al |
-| 10 | Odunpazarı (Eskişehir) | mülk | 140 |
+| 10 | İnegöl (Bursa) | mülk | 140 |
 | 11 | FIRSAT | kart | 2 Hamle kartı çek |
-| 12 | Tepebaşı (Eskişehir) | mülk | 160 |
+| 12 | Nilüfer (Bursa) | mülk | 160 |
 | 13 | KONYA GARI | gar | 150 |
 | 14 | Karatay (Konya) | mülk | 180 |
 | 15 | Meram (Konya) | mülk | 180 |
@@ -74,7 +74,7 @@ Her kenarda 5 mülk, 1 gar, 1 havalimanı ve 1 FIRSAT ya da SÜRPRİZ karesi var
 | 34 | SABİHA GÖKÇEN | havalimanı | 200 |
 | 35 | Bebek (İstanbul) | mülk | 400 |
 
-Şehir grupları ve kat fiyatları: Erzurum 50, Trabzon 50, Eskişehir 100, Konya 100, Antalya 150, Ankara 150, İzmir 200, İstanbul 200.
+Şehir grupları ve kat fiyatları: Çorum 50, Trabzon 50, Bursa 100, Konya 100, Antalya 150, Ankara 150, İzmir 200, İstanbul 200.
 Sahil grupları: Antalya, İzmir.
 
 ### Kira

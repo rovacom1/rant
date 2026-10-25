@@ -15,9 +15,9 @@ export const ROUND_OPTIONS = [10, 15, 20];
 
 // gen: şehrin ilgi hali ("Konya'nın"), metinlerde kullanılır. tint: karenin buzlu camındaki ikinci renk.
 export const GROUPS = {
-  erzurum: { name: 'Erzurum', gen: "Erzurum'un", color: '#8d5b3e', tint: '#dfe8f2', kat: 50 },
+  corum: { name: 'Çorum', gen: "Çorum'un", color: '#c62f2f', tint: '#2a2a33', kat: 50 },
   trabzon: { name: 'Trabzon', gen: "Trabzon'un", color: '#3fa7d6', tint: '#8c2346', kat: 50 },
-  eskisehir: { name: 'Eskişehir', gen: "Eskişehir'in", color: '#b0569c', tint: '#f2c94c', kat: 100 },
+  bursa: { name: 'Bursa', gen: "Bursa'nın", color: '#1e8f4e', tint: '#eef6f0', kat: 100 },
   konya: { name: 'Konya', gen: "Konya'nın", color: '#ee8a1c', tint: '#1f9e5a', kat: 100 },
   antalya: { name: 'Antalya', gen: "Antalya'nın", color: '#d93b3b', tint: '#f5c542', kat: 150, sahil: true },
   ankara: { name: 'Ankara', gen: "Ankara'nın", color: '#e6b800', tint: '#1e3a8a', kat: 150 },
@@ -39,8 +39,8 @@ const FIRSAT_SQ = { kind: 'chance', name: 'FIRSAT', icon: '🎴' };
 // 10x10 tahta: köşeler 0, 9, 18, 27; her kenarda 5 mülk, 1 gar, 1 havalimanı, 1 FIRSAT/SÜRPRİZ.
 export const BOARD = [
   { kind: 'start', name: 'BAŞLANGIÇ NOKTASI', icon: '💰' },
-  prop('Yakutiye', 'erzurum', 60, 6),
-  prop('Palandöken', 'erzurum', 80, 8),
+  prop('İskilip', 'corum', 60, 6),
+  prop('Osmancık', 'corum', 80, 8),
   SURPRIZ_SQ,
   rail('DOĞU EKSPRESİ'),
   prop('Ortahisar', 'trabzon', 100, 10),
@@ -48,9 +48,9 @@ export const BOARD = [
   air('KAPADOKYA'),
   prop('Uzungöl', 'trabzon', 120, 12),
   { kind: 'tapu', name: 'TAPU DAİRESİ', icon: '📜' },
-  prop('Odunpazarı', 'eskisehir', 140, 14),
+  prop('İnegöl', 'bursa', 140, 14),
   FIRSAT_SQ,
-  prop('Tepebaşı', 'eskisehir', 160, 16),
+  prop('Nilüfer', 'bursa', 160, 16),
   rail('KONYA GARI'),
   prop('Karatay', 'konya', 180, 18),
   prop('Meram', 'konya', 180, 18),

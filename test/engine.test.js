@@ -320,7 +320,7 @@ test('el sınırı: fazla kart tur sonunda atılır', () => {
 test('puan: hedef bonusu ve konkordato cezası', () => {
   const s = calm(started(4));
   own(s, 0, 1, 2);
-  s.players[0].hedef = 'sehir_erzurum';
+  s.players[0].hedef = 'sehir_corum';
   s.players[0].konkordato = 1;
   const sc = scoreOf(s, 0);
   assert.equal(sc.hedefOk, true);
@@ -417,7 +417,7 @@ test('SÜRPRİZ: para, kart ve mülk etkileri', () => {
   r = surprizWith('dugun');
   assert.equal(r.after.players[0].cash, 1500 + 25 * 3);
   r = surprizWith('tarla');
-  assert.equal(r.after.props[1].owner, 0, 'en ucuz sahipsiz mülk Yakutiye');
+  assert.equal(r.after.props[1].owner, 0, 'en ucuz sahipsiz mülk İskilip');
   r = surprizWith('kapkac');
   const hand = (st) => st.players.reduce((n, pl) => n + pl.hand.length, 0);
   assert.equal(r.after.players[0].hand.length, r.before.players[0].hand.length, 'Taksi gitti, kapılan kart geldi');

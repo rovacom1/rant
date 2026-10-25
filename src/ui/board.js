@@ -55,7 +55,7 @@ export function buildBoard(boardEl) {
   return [...boardEl.querySelectorAll('.cell')];
 }
 
-// Uzun semt adı (ör. Odunpazarı) kareye sığmazsa kelime ortasından bölünmez, yazısı küçülür.
+// Uzun semt adı (ör. Konyaaltı, Karşıyaka) kareye sığmazsa kelime ortasından bölünmez, yazısı küçülür.
 function fitNames(boardEl) {
   for (const n of boardEl.querySelectorAll('.cell .nm')) {
     n.style.fontSize = '';
