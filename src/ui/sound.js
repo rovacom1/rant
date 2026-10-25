@@ -3,10 +3,10 @@
 // Dosya yüklenemezse çok kısık, yumuşak sentez seslere düşülür.
 import { store } from './dom.js';
 
-const FILE = { dice: 'zar', step: 'adim', coin: 'para', pay: 'odeme', card: 'kart', turn: 'sira', news: 'gundem', itiraz: 'tokmak', build: 'insaat', crash: 'yikim', win: 'zafer', chat: 'mesaj', sold: 'ihale', error: 'adim' };
-const LEVEL = { step: 0.3, chat: 0.6, error: 0.45, pay: 0.7, card: 0.8 };
+const FILE = { dice: 'zar', step: 'adim', coin: 'para', pay: 'odeme', card: 'kart', turn: 'sira', news: 'gundem', itiraz: 'tokmak', build: 'insaat', crash: 'yikim', win: 'zafer', sold: 'ihale', error: 'adim' };
+const LEVEL = { step: 0.3, error: 0.45, pay: 0.7, card: 0.8 };
 // Her sesin en fazla çalma süresi (sn); sonunda yumuşak kapanır.
-const MAX_LEN = { step: 0.28, chat: 0.6, card: 1.1, coin: 1.4, pay: 1.2, dice: 1.6, turn: 1.6, itiraz: 1.3, build: 1.3, sold: 1.8, crash: 1.8, news: 2.6, win: 3.6, error: 0.3 };
+const MAX_LEN = { step: 0.28, card: 1.1, coin: 1.4, pay: 1.2, dice: 1.6, turn: 1.6, itiraz: 1.3, build: 1.3, sold: 1.8, crash: 1.8, news: 2.6, win: 3.6, error: 0.3 };
 const TARGET_RMS = 0.11;
 const XFADE = 3; // müzik döngüsünde geçiş süresi (sn)
 

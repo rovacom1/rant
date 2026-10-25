@@ -14,7 +14,7 @@ import { RULES_HTML } from './rules.js';
 const root = document.getElementById('app');
 const SAVE = { host: 'save.host', local: 'save.local' };
 const SAVE_MAX_AGE = 3 * 24 * 3600 * 1000;
-const freshUI = () => ({ tab: 'log', dialog: null, selected: [], binds: {}, trade: null, swapMine: null, pick: null, popSq: null, seenOver: false });
+const freshUI = () => ({ dialog: null, selected: [], binds: {}, trade: null, swapMine: null, pick: null, popSq: null, seenOver: false });
 
 function savedGame(kind) {
   const s = store.get(SAVE[kind]);
@@ -145,7 +145,7 @@ function onMsg(m) {
   app.lastMsg = Date.now();
   switch (m.t) {
     case 'welcome':
-      Object.assign(app, { me: m.you, hostId: m.hostId, code: m.code, spectator: m.spectator, chat: m.chat || [], status: 'online', error: '' });
+      Object.assign(app, { me: m.you, hostId: m.hostId, code: m.code, spectator: m.spectator, status: 'online', error: '' });
       break;
     case 'lobby':
       app.lobby = m.lobby;
@@ -158,13 +158,6 @@ function onMsg(m) {
       break;
     case 'state':
       enqueue(m);
-      break;
-    case 'chat':
-      app.chat.push(m.msg);
-      if (app.chat.length > 80) app.chat.shift();
-      if (app.ui.tab !== 'chat') app.unread++;
-      play('chat');
-      G.renderFeed();
       break;
     case 'error':
       play('error');
@@ -326,7 +319,7 @@ function leave(msg = '') {
   if (app.peer) app.peer.destroy();
   if (app.host) clearTimeout(app.host.timer);
   clearInterval(app.hb);
-  Object.assign(app, { mode: null, conn: null, host: null, peer: null, me: null, view: null, meta: null, lobby: null, screen: 'menu', status: '', error: msg, chat: [], unread: 0 });
+  Object.assign(app, { mode: null, conn: null, host: null, peer: null, me: null, view: null, meta: null, lobby: null, screen: 'menu', status: '', error: msg });
   app.ui = freshUI();
   app.joinCode = '';
   store.del('lastJoin');
@@ -545,13 +538,12 @@ const A = {
   },
   closeStage: (el) => el.remove(),
   results: () => openDialog({ type: 'results' }),
-  tab(el) {
-    app.ui.tab = el.dataset.tab;
-    if (app.ui.tab === 'chat') app.unread = 0;
-    G.renderFeed();
-    if (app.ui.tab === 'chat') $('#chatInput')?.focus();
+  theme() {
+    const dark = !document.body.classList.contains('dark');
+    document.body.classList.toggle('dark', dark);
+    store.set('theme', dark ? 'dark' : 'light');
+    G.updateGame();
   },
-  quick: (el) => send({ t: 'chat', text: el.dataset.text }),
 };
 
 // Elden gelen kart olayları: tıklayınca ayrıntı, yukarı sürükleyip bırakınca oyna.
@@ -636,6 +628,8 @@ window.addEventListener('beforeunload', (e) => {
 
 app.ui = freshUI();
 app.joinCode = normalizeCode(location.hash.slice(1));
+// Tahta teması: kayıtlı seçim, yoksa sistemin karanlık mod tercihi.
+document.body.classList.toggle('dark', (store.get('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark');
 render();
 // Davet linkiyle girmiş oyuncu sayfayı yenilerse aynı odaya kendiliğinden döner.
 if (app.joinCode && app.joinCode === store.get('lastJoin') && profile.name) startJoin(app.joinCode);

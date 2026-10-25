@@ -205,6 +205,6 @@ Puan = Net Değer + tutan hedef bonusu - 300 x konkordato. Eşitlikte nakdi fazl
 
 ## 12. Protokol (v1)
 
-İstemci -> ev sahibi: `hello {v, name, avatar, token}`, `act {action}`, `chat {text}`.
-Ev sahibi -> istemci: `welcome {seat}`, `reject {reason}`, `lobby {...}`, `state {view, events}`, `error {msg}`, `chat {...}`.
+İstemci -> ev sahibi: `hello {v, name, avatar, token}`, `act {action}`, `lobby {cmd}`, `profile {...}`, `pong`.
+Ev sahibi -> istemci: `welcome {seat}`, `reject {reason}`, `lobby {...}`, `state {view, events}`, `error {msg}`, `ping`. (Sohbet 2026-10-25 kullanıcı isteğiyle kaldırıldı.)
 Sürüm uyuşmazsa istemciye "sayfayı yenile" denir.

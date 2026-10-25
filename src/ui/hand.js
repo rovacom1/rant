@@ -26,9 +26,17 @@ export class Hand {
   constructor(el) {
     this.el = el;
     this.items = new Map(); // uid -> element
+    this.order = [];
+    this.pos = []; // her kartın dinlenme konumunun merkezi (elin ortasına göre px)
+    this.hover = null;
     this.drag = null;
+    this.raf = 0;
     el.addEventListener('pointerdown', (e) => this.down(e));
-    window.addEventListener('pointermove', (e) => this.move(e));
+    window.addEventListener('pointermove', (e) => {
+      this.move(e);
+      this.last = e;
+      if (!this.raf) this.raf = requestAnimationFrame(() => ((this.raf = 0), this.track(this.last)));
+    });
     window.addEventListener('pointerup', (e) => this.up(e));
     window.addEventListener('resize', () => this.layout());
   }
@@ -60,22 +68,55 @@ export class Hand {
       el.classList.toggle('selected', !!st.selected);
     });
     this.order = uids;
+    if (!uids.includes(this.hover)) this.hover = null;
     this.layout();
   }
 
   layout() {
-    const n = this.order ? this.order.length : 0;
+    const n = this.order.length;
     // Yelpaze, soldaki gizli hedef ile sağdaki deste arasına sığar.
     const width = Math.max(260, (this.el.clientWidth || 700) - 340);
     const step = n > 1 ? Math.min(96, (width - 128) / (n - 1)) : 0;
-    (this.order || []).forEach((uid, i) => {
+    this.step = step;
+    const h = this.order.indexOf(this.hover);
+    this.pos = this.order.map((uid, i) => {
       const el = this.items.get(uid);
       const k = i - (n - 1) / 2;
-      el.style.setProperty('--x', `${k * step}px`);
+      // Üstüne gelinen kartın komşuları biraz kenara açılır.
+      const spread = h < 0 || i === h ? 0 : i < h ? -28 : 28;
+      el.style.setProperty('--x', `${k * step + spread}px`);
       el.style.setProperty('--y', `${Math.abs(k) * Math.abs(k) * 3.5}px`);
       el.style.setProperty('--r', `${k * 4.5}deg`);
-      el.style.zIndex = String(10 + i);
+      el.style.zIndex = String(i === h ? 100 : 10 + i);
+      el.classList.toggle('hover', i === h);
+      return k * step;
     });
+  }
+
+  // Fare elin hizasındaysa en yakın kart seçilir; kart yukarı kalksa da seçim titremez.
+  track(e) {
+    if (!e || this.drag?.moving) return;
+    const r = this.el.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    let next = null;
+    const lifted = this.hover && this.items.get(this.hover)?.querySelector('.kart').getBoundingClientRect();
+    const onLifted = lifted && e.clientX >= lifted.left && e.clientX <= lifted.right && e.clientY >= lifted.top && e.clientY <= lifted.bottom;
+    if (onLifted) next = this.hover;
+    else if (this.order.length && e.clientY >= r.top - 6 && e.clientY <= window.innerHeight) {
+      const half = 64 + 4;
+      let best = Infinity;
+      this.pos.forEach((x, i) => {
+        const d = Math.abs(e.clientX - (cx + x));
+        if (d < best && d <= Math.max(half, this.step / 2 + 8)) {
+          best = d;
+          next = this.order[i];
+        }
+      });
+    }
+    if (next !== this.hover) {
+      this.hover = next;
+      this.layout();
+    }
   }
 
   rectOf(uid) {
@@ -84,8 +125,9 @@ export class Hand {
   }
 
   down(e) {
-    const el = e.target.closest('.hslot');
-    if (!el || e.button !== 0) return;
+    if (e.button !== 0) return;
+    const el = (this.hover && this.items.get(this.hover)) || e.target.closest('.hslot');
+    if (!el) return;
     this.drag = { el, uid: el.dataset.uid, x0: e.clientX, y0: e.clientY, moving: false };
   }
 

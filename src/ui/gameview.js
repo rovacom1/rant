@@ -21,7 +21,6 @@ let animating = false;
 
 // ---------- iskelet ----------
 
-const QUICK = ['😂', '😤', '🤝', '💸', '🙏', 'Kira nerede?', 'İtiraz!', 'Dayım var benim', 'Çaylar benden ☕'];
 
 export function mountGame(root) {
   root.innerHTML = `
@@ -35,6 +34,7 @@ export function mountGame(root) {
       <span class="conn" id="tConn"></span>
       <button class="iconbtn" data-act="copyLink" id="tCode" title="Davet linkini kopyala"></button>
       <button class="iconbtn" data-act="rules">❓ Kurallar</button>
+      <button class="iconbtn" data-act="theme" id="tTheme" title="Karanlık / aydınlık tahta"></button>
       <button class="iconbtn" data-act="audio" id="tAudio" title="Müzik ve ses ayarları"></button>
       <button class="iconbtn${notifySupported() ? '' : ' hidden'}" data-act="notify" id="tNotify" title="Sekme arkadayken sıra sana gelince masaüstü bildirimi"></button>
       <button class="iconbtn" data-act="leave">Çık</button>
@@ -55,10 +55,8 @@ export function mountGame(root) {
       <aside class="side">
         <div class="seats-panel" id="players"></div>
         <div class="feed">
-          <div class="tabs"><button data-act="tab" data-tab="log" id="tabLog">Olaylar</button><button data-act="tab" data-tab="chat" id="tabChat">Sohbet</button></div>
+          <div class="feed-h">📜 Olaylar</div>
           <div class="feed-list" id="feed"></div>
-          <form class="chat-form hidden" id="chatForm"><input class="input" id="chatInput" maxlength="200" placeholder="Masaya bir şey yaz…" autocomplete="off"><button class="btn small turq">Gönder</button></form>
-          <div class="quick hidden" id="quick">${QUICK.map((q) => `<button type="button" data-act="quick" data-text="${esc(q)}">${esc(q)}</button>`).join('')}</div>
         </div>
       </aside>
     </main>
@@ -68,20 +66,14 @@ export function mountGame(root) {
   els = {
     round: g('tRound'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
     board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'),
-    players: g('players'), feed: g('feed'), handDock: g('handDock'), quest: g('quest'), deck: g('deck'), audioPop: g('audioPop'), chatForm: g('chatForm'), chatInput: g('chatInput'), quick: g('quick'),
-    tabLog: g('tabLog'), tabChat: g('tabChat'), modal: g('modal'), stage: g('stage'),
+    players: g('players'), feed: g('feed'), handDock: g('handDock'), quest: g('quest'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
+    modal: g('modal'), stage: g('stage'),
   };
   cells = buildBoard(els.board);
   tokens = new Tokens(els.tokens, cells);
   dice = new Dice(els.dice);
   hand = new Hand(els.handDock);
   startMusic();
-  els.chatForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const t = els.chatInput.value.trim();
-    if (t) send({ t: 'chat', text: t });
-    els.chatInput.value = '';
-  });
 }
 
 export const gameMounted = () => !!els && document.body.contains(els.board);
@@ -142,6 +134,7 @@ function updateTopbar(v) {
   els.salary.textContent = fmt(v.salary);
   els.code.textContent = app.mode === 'local' ? '🤖 Yerel oyun' : `🔗 Oda ${app.code}`;
   els.audio.textContent = isMuted() ? '🔇' : '🔊';
+  els.theme.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
   els.notify.textContent = isNotifyOn() ? '🔔' : '🔕';
   const st = app.status;
   els.conn.textContent = st === 'reconnecting' ? '⚠ Bağlantı koptu, yeniden bağlanılıyor…' : st === 'online' ? '● Bağlı' : '';
@@ -446,29 +439,28 @@ function renderAudioPop() {
   setHTML(els.audioPop, html`<div class="audio-pop"><h4>🎵 Ses ayarları</h4>${row('music', '🎶 Müzik', '#00798c')}${row('sfx', '🔔 Efektler', '#d1495b')}</div>`);
 }
 
-function feedHTML() {
-  if (app.ui.tab === 'chat') {
-    if (!app.chat.length) return html`<div class="muted" style="padding:6px">Henüz mesaj yok. Laf atmanın tam zamanı.</div>`;
-    return app.chat.map((m) => html`<div class="ln chat-msg"><b style="--c:${m.color}">${m.avatar} ${m.from}:</b> ${m.text}</div>`).join('');
+// Olaylar: sade, büyük yazı; zar, yürüme, maaş gibi gürültü gizlenir. Her tur bir başlıkla ayrılır.
+const FEED_ICON = { card: '🃏', own: '🏠', auction: '🔨', build: '🏗️', demolish: '🚜', konkordato: '⚠️', tradeDone: '🤝', over: '🏆', summary: '📊' };
+const FEED_HIDE = new Set(['dice', 'move', 'bid', 'draw', 'turn', 'trade', 'auctionStart']);
+
+function feedItem(l) {
+  if (l.type === 'gundem') {
+    const m = /Gündem: ([^.]+)\./.exec(l.text);
+    return html`<div class="ev-round"><b>${l.r}. TUR</b>${m ? html`<span>${m[1]}</span>` : ''}</div>`;
   }
-  const v = app.view;
-  return v.log
-    .slice()
-    .reverse()
-    .map((l) => html`<div class="ln t-${l.type}">${l.text}</div>`)
-    .join('');
+  let icon = FEED_ICON[l.type] || '•';
+  if (l.type === 'money') icon = / \+/.test(l.text) ? '💰' : '💸';
+  return html`<div class="ev t-${l.type}"><span class="ev-i">${icon}</span><span>${l.text}</span></div>`;
+}
+
+function feedHTML() {
+  const rows = app.view.log.filter((l) => l.text && !FEED_HIDE.has(l.type) && !/\((Maaş|Kat|Kaçak kat)\)$/.test(l.text));
+  return rows.slice(-60).reverse().map(feedItem).join('');
 }
 
 export function renderFeed() {
   if (!els) return;
-  const chat = app.ui.tab === 'chat';
-  els.tabLog.classList.toggle('on', !chat);
-  els.tabChat.classList.toggle('on', chat);
-  els.tabChat.textContent = app.unread && !chat ? `Sohbet (${app.unread})` : 'Sohbet';
-  els.chatForm.classList.toggle('hidden', !chat);
-  els.quick.classList.toggle('hidden', !chat);
   setHTML(els.feed, feedHTML());
-  if (chat) els.feed.scrollTop = els.feed.scrollHeight;
 }
 
 // ---------- pencereler ----------
@@ -545,11 +537,11 @@ function manageDialog(v) {
   if (!mine.length) return html`<h2>🏠 Mülklerim</h2>${note}<p class="muted">Henüz mülkün yok. Sahipsiz bir arsaya gelince satın alabilirsin.</p>`;
   const rows = mine.map((q) => {
     const ps = v.props[q];
-    const lvl = '■'.repeat(ps.kat) + (ps.kacak ? '▲' : '');
+    const lvl = [ps.kat ? `🏠×${ps.kat}` : '', ps.kacak ? '🚧' : ''].join(' ').trim();
     return html`<tr><td>${sqChip(q)}${ps.ipotek ? html` <span class="chip">ipotekli</span>` : ''}${ps.tedbir ? html` <span class="chip">⚖️</span>` : ''}</td><td>${lvl || '-'}</td><td class="money">${ps.ipotek ? '-' : fmt(E.rentFor(v, q))}</td><td class="acts">${propActions(v, q)}</td></tr>`;
   });
   return html`<h2>🏠 Mülklerim</h2>${note}<table class="mgr"><tr><th>Mülk</th><th>Kat</th><th>Kira</th><th></th></tr>${rows}</table>
-    <p class="muted" style="font-size:12px">■ yasal kat, ▲ kaçak kat. Yasal kat için şehrin tüm mülkleri sende olmalı. Kaçak kat yarı fiyat ama yıkılabilir.</p>`;
+    <p class="muted" style="font-size:12px">🏠 yasal kat, 🚧 kaçak kat. Yasal kat için şehrin tüm mülkleri sende olmalı. Kaçak kat yarı fiyat ama yıkılabilir.</p>`;
 }
 
 function tradeDialog(v) {
@@ -604,7 +596,7 @@ function playerDialog(v, p) {
   }
   const groups = Object.entries(byGroup).map(
     ([g, qs]) =>
-      html`<div class="row"><b style="min-width:90px">${g === 'ulasim' ? 'Ulaşım' : GROUPS[g].name}${g !== 'ulasim' && E.ownsGroup(v, p, g) ? ' ★' : ''}</b>${qs.map((q) => html`<span class="chip">${BOARD[q].name}${v.props[q].kat ? ` ${'■'.repeat(v.props[q].kat)}` : ''}${v.props[q].kacak ? ' ▲' : ''}${v.props[q].ipotek ? ' (ipotek)' : ''}</span>`)}</div>`,
+      html`<div class="row"><b style="min-width:90px">${g === 'ulasim' ? 'Ulaşım' : GROUPS[g].name}${g !== 'ulasim' && E.ownsGroup(v, p, g) ? ' ★' : ''}</b>${qs.map((q) => html`<span class="chip">${BOARD[q].name}${v.props[q].kat ? ` 🏠×${v.props[q].kat}` : ''}${v.props[q].kacak ? ' 🚧' : ''}${v.props[q].ipotek ? ' (ipotek)' : ''}</span>`)}</div>`,
   );
   return html`<h2>${av(pl)} ${pl.name}</h2>
     <div class="row"><span class="chip">💵 ${fmt(pl.cash)}</span><span class="chip">Net değer ${fmt(E.netWorth(v, p))}</span><span class="chip">🂠 ${pl.handCount} kart</span>${pl.konkordato ? html`<span class="chip">Konkordato ×${pl.konkordato}</span>` : ''}</div>

@@ -29,12 +29,10 @@ export const app = {
   lobby: null,
   view: null,
   meta: null,
-  chat: [],
-  unread: 0,
   status: '',
   error: '',
   leaving: false,
-  ui: { tab: 'log', dialog: null, selected: [], bid: '', trade: null, swapMine: null, seenOver: false, lastPromptKey: '' },
+  ui: { dialog: null, selected: [], bid: '', trade: null, swapMine: null, seenOver: false, lastPromptKey: '' },
 };
 
 export const send = (msg) => app.conn && app.conn.send(msg);

@@ -7,7 +7,6 @@ import { PROTOCOL, SAVE_VERSION } from '../version.js';
 const PASSIVE_TIMEOUT = { auction: 30, react: 20, rent: 20, trade: 45, hedef: 90, discard: 45 }; // sn
 const DISCONNECT_GRACE = 20; // sn
 const BOT_DELAY = 800; // ms
-const CHAT_KEEP = 60;
 const MAX_SEATS = 6;
 
 export const idFromToken = (token) => {
@@ -30,19 +29,18 @@ export class Host {
     // Koltuk kimliği tokenden türetilir; koltuğu yalnız aynı tokeni bilen geri alabilir.
     this.secrets = {};
     if (saved) {
-      Object.assign(this, { seats: saved.seats, config: saved.config, game: saved.game, chat: saved.chat || [], secrets: saved.secrets || {} });
+      Object.assign(this, { seats: saved.seats, config: saved.config, game: saved.game, secrets: saved.secrets || {} });
       for (const s of this.seats) s.connected = !!s.bot;
     } else {
       this.seats = [];
       this.config = { maxRounds: 15, turnLimit: 120 };
       this.game = null;
-      this.chat = [];
       this.addSeat({ id: this.hostId, name: cleanName(hostName), avatar: cleanAvatar(hostAvatar), bot: false });
     }
   }
 
   snapshot() {
-    return { v: SAVE_VERSION, code: this.code, seats: this.seats, config: this.config, game: this.game, chat: this.chat.slice(-CHAT_KEEP), secrets: this.secrets, savedAt: Date.now() };
+    return { v: SAVE_VERSION, code: this.code, seats: this.seats, config: this.config, game: this.game, secrets: this.secrets, savedAt: Date.now() };
   }
 
   persist() {
@@ -125,8 +123,6 @@ export class Host {
     switch (m.t) {
       case 'act':
         return this.onAct(client, m.action);
-      case 'chat':
-        return this.onChat(client, m.text);
       case 'profile':
         return this.onProfile(client, m);
       case 'lobby':
@@ -155,7 +151,7 @@ export class Host {
     client.playerId = id;
     if (seat) seat.connected = true;
     delete this.waitSince[id];
-    this.send(client, { t: 'welcome', you: id, hostId: this.hostId, code: this.code, spectator: !seat, chat: this.chat.slice(-CHAT_KEEP) });
+    this.send(client, { t: 'welcome', you: id, hostId: this.hostId, code: this.code, spectator: !seat });
     this.schedule();
     this.broadcast();
   }
@@ -227,16 +223,6 @@ export class Host {
     this.schedule();
     this.broadcast();
     this.persist();
-  }
-
-  onChat(client, text) {
-    const seat = this.seatOf(client.playerId);
-    const t = String(text || '').trim().slice(0, 200);
-    if (!t) return;
-    const msg = { from: seat ? seat.name : 'İzleyici', color: seat ? seat.color : '#888', avatar: seat ? seat.avatar : '👀', text: t, at: Date.now() };
-    this.chat.push(msg);
-    if (this.chat.length > CHAT_KEEP) this.chat.shift();
-    for (const c of this.clients) this.send(c, { t: 'chat', msg });
   }
 
   onAct(client, action) {

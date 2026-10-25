@@ -1,7 +1,7 @@
 // Tahta: 8x8 ızgaranın kenarındaki 28 kare, oyuncu taşları ve 3 boyutlu zarlar.
 // Karenin iç kenarındaki şerit sahipsizken gri, alınınca sahibinin rengi; karede fiyat/kira yazmaz (kareye tıklayınca açılır).
 import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
-import { html, raw, esc, sleep } from './dom.js';
+import { html, sleep } from './dom.js';
 import { play } from './sound.js';
 
 export function cellPos(i) {
@@ -20,17 +20,20 @@ export function inkFor(hex) {
   return lum > 0.62 ? '#1b2233' : '#ffffff';
 }
 
+// Özel karelerin resmi (assets/kare); resim kareyi kaplar, adı alt kenarda yazar.
+const ART = { start: 'maas', chance: 'firsat', tapu: 'tapu', cay: 'cay', zabita: 'zabita' };
+const artOf = (sq) => (sq.kind === 'transport' ? (sq.name.startsWith('YHT') ? 'yht' : 'havalimani') : ART[sq.kind]);
+
 function cellStatic(sq) {
   if (sq.kind === 'prop') return html`<div class="band"></div><div class="nm">${sq.name}</div><div class="city">${GROUPS[sq.group].name}</div><div class="floors"></div>`;
-  const name = raw(esc(sq.name).replace('HAVALİMANI', 'HAVA&shy;LİMANI'));
-  if (sq.kind === 'transport') return html`<div class="band"></div><div class="ic">${sq.icon}</div><div class="nm">${name}</div>`;
-  return html`<div class="ic">${sq.icon}</div><div class="nm">${name}</div>`;
+  const tile = html`<div class="tile" style="background-image:url(assets/kare/${artOf(sq)}.jpg)"></div><div class="tname">${sq.name}</div>`;
+  return sq.kind === 'transport' ? html`<div class="band"></div>${tile}` : tile;
 }
 
 export function buildBoard(boardEl) {
   const cells = BOARD.map((sq, i) => {
     const pos = cellPos(i);
-    const kind = sq.kind === 'prop' || sq.kind === 'transport' ? 'buyable' : 'special';
+    const kind = `${sq.kind === 'prop' || sq.kind === 'transport' ? 'buyable' : 'special'}${sq.kind === 'prop' ? '' : ' has-art'}`;
     return `<div class="cell ${pos.side === 'c' ? 'corner' : `side-${pos.side}`} ${kind}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}">${cellStatic(sq)}</div>`;
   }).join('');
   boardEl.insertAdjacentHTML('afterbegin', cells);
@@ -64,7 +67,7 @@ export function updateBoard(cells, v, highlight, pick = null, open = null) {
       badge.title = `İhtiyati tedbir (${ps.tedbir} tur)`;
     } else if (badge) badge.remove();
     const floors = el.querySelector('.floors');
-    if (floors) floors.innerHTML = '<i></i>'.repeat(ps.kat) + '<i class="k"></i>'.repeat(ps.kacak);
+    if (floors) floors.innerHTML = (ps.kat ? `<b title="Yasal kat">🏠×${ps.kat}</b>` : '') + (ps.kacak ? '<b class="k" title="Kaçak kat">🚧</b>' : '');
     el.title = `${sq.name}${owner ? ` — ${owner.name}` : ' — sahipsiz'}${ps.ipotek ? ' (ipotekli)' : ''}`;
   });
 }

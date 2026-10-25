@@ -15,6 +15,11 @@ Use your image generation tool. Square 1:1 trading card illustration, artwork on
 
 - Sahne, kartın esprisini tek bakışta anlatmalı (ör. Dayın Çıktı: kasketli, tespihli bir dayının ev sahibini savuşturması).
 
+## Özel kare görselleri
+
+- `assets/kare/<ad>.jpg` (300x300): maas, firsat, tapu, cay, zabita, yht, havalimani (+ secim, şimdilik kullanılmıyor).
+- Kredi tasarrufu için 8 kutucuk tek görselde 4x2 ızgara olarak üretildi, koyu aralıklar otomatik bulunup kesildi. Model istenmese de altlara İngilizce yazı basabiliyor; kesimde alt %22 atılıyor. Ham dosya: `tasks/gorsel-ham/kareler.png`.
+
 ## Ses
 
 - Efektler ve müzik ElevenLabs ile üretildi (`assets/ses/*.mp3`). Yeni efekt: kısa (1-2 sn), temiz, "close mic" komutlu. Kod sesi kendisi kırpar ve düzeyini eşitler (`src/ui/sound.js`).
