@@ -203,8 +203,8 @@ export const HEDEF = {
   ulasim: { name: 'Ulaşım Baronu', icon: '✈️', bonus: 250, text: 'Oyun sonunda en az 4 gar ya da havalimanı sende olsun.', check: { type: 'transport', n: 4 } },
   nakit: { name: 'Nakit Kraldır', icon: '💸', bonus: 300, text: 'Oyun sonunda en çok nakit sende olsun (eşitlik dahil).', check: { type: 'mostCash' } },
   arsa: { name: 'Arsa Avcısı', icon: '🗺️', bonus: 300, text: 'Oyun sonunda en az 7 mülkün olsun.', check: { type: 'props', n: 7 } },
-  kacakci: { name: 'Kaçak Ama Sağlam', icon: '🚧', bonus: 300, text: 'Oyun sonunda en az 2 kaçak katın ayakta olsun.', check: { type: 'kacak', n: 2 } },
-  hukukcu: { name: 'Hukuk Dünyası', icon: '📚', bonus: 300, text: 'Oyun boyunca en az 6 hukuk kartı oyna (Kamulaştırma, Tedbir, İhbar, Dava, İtiraz).', check: { type: 'hukuk', n: 6 } },
+  kacakci: { name: 'Kaçak Ama Sağlam', icon: '🚧', bonus: 300, text: 'Oyun sonunda en az 1 kaçak katın ayakta olsun.', check: { type: 'kacak', n: 1 } },
+  hukukcu: { name: 'Hukuk Dünyası', icon: '📚', bonus: 300, text: 'Oyun boyunca en az 7 hukuk kartı oyna (Kamulaştırma, Tedbir, İhbar, Dava, İtiraz).', check: { type: 'hukuk', n: 7 } },
   ihaleci: { name: 'İhale Kralı', icon: '🔨', bonus: 250, text: 'Oyun boyunca en az 2 ihale kazan.', check: { type: 'ihale', n: 2 } },
   temiz: { name: 'Temiz Sicil', icon: '🧼', bonus: 250, text: 'Hiç ipotek yapma, konkordato ilan etme ve oyunu en az 6 mülkle bitir.', check: { type: 'clean', n: 6 } },
 };

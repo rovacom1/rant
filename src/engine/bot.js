@@ -42,7 +42,7 @@ export function propValue(s, p, sq) {
   const owners = new Set(group.map((q) => s.props[q].owner));
   if (owners.size === 1 && !owners.has(null) && !owners.has(p)) v *= 1.35; // rakibin setini engeller
   const hedef = s.players[p].hedef && HEDEF[s.players[p].hedef].check;
-  if (hedef && hedef.type === 'group' && hedef.group === sqd.group) v *= 1.3;
+  if (hedef && hedef.type === 'group' && hedef.group === sqd.group) v *= group.length >= 2 ? 2.3 : 1.8; // üç mülklü şehir daha zor toplanır
   return v;
 }
 
@@ -119,7 +119,7 @@ function expectedRollScore(s, p) {
 }
 
 // Botun hedef seçerken kullandığı kaba tutturma olasılıkları (şehir hedefleri ayrıca hesaplanır).
-const HEDEF_ODDS = { hukukcu: 0.7, temiz: 0.5, nakit: 0.3, katci: 0.35, ihaleci: 0.3, kacakci: 0.3, arsa: 0.3, ulasim: 0.2 };
+const HEDEF_ODDS = { hukukcu: 0.45, temiz: 0.5, nakit: 0.3, katci: 0.35, ihaleci: 0.3, kacakci: 0.2, arsa: 0.3, ulasim: 0.2 };
 
 const CARD_KEEP = { kestirme: 50, itiraz: 90, dayi: 75, piyango: 150, aidat: 85, kamulastirma: 70, muteahhit: 80, taksi: 55, kiraZammi: 45, tedbir: 50, ihbar: 45, takas: 40, dava: 30, pazarlik: 45, geriVites: 10 };
 

@@ -328,6 +328,20 @@ test('puan: hedef bonusu ve konkordato cezası', () => {
   assert.equal(netWorth(s, 0), 1500 + price(s, 1) + price(s, 2));
 });
 
+test('hedef eşikleri: 1 kaçak kat ve 7 hukuk kartı', () => {
+  const s = calm(started(4));
+  own(s, 0, 1);
+  s.players[0].hedef = 'kacakci';
+  assert.equal(scoreOf(s, 0).hedefOk, false);
+  s.props[1].kacak = 1;
+  assert.equal(scoreOf(s, 0).hedefOk, true);
+  s.players[0].hedef = 'hukukcu';
+  s.players[0].stats.hukuk = 6;
+  assert.equal(scoreOf(s, 0).hedefOk, false);
+  s.players[0].stats.hukuk = 7;
+  assert.equal(scoreOf(s, 0).hedefOk, true);
+});
+
 // Kart oynamadan, satın almadan sırayı ilerleten en basit hamle.
 function simpleStep(s) {
   const p = waitingFor(s)[0];

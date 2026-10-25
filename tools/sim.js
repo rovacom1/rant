@@ -52,7 +52,7 @@ console.log(
   '  ' +
     Object.entries(hedefStats)
       .sort((a, b) => b[1].ok / b[1].n - a[1].ok / a[1].n)
-      .map(([h, v]) => `${HEDEF[h].name} %${Math.round((100 * v.ok) / v.n)}`)
+      .map(([h, v]) => `${HEDEF[h].name} %${Math.round((100 * v.ok) / v.n)} (${v.n})`)
       .join(', '),
 );
 console.log(`Kart kullanımı/oyun: ${Object.entries(agg.cards).sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${per(n)}`).join(', ')}`);

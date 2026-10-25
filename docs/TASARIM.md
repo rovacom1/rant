@@ -209,17 +209,17 @@ SÜRPRİZ karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçili
 
 ## 9. Gizli Hedefler (16)
 
-Başta herkese 2 hedef dağıtılır, 1'i seçilir. Oyun sonunda tutarsa bonus alınır. Eşikler bot simülasyonunda tutturma oranı %25-50 olacak şekilde ayarlandı.
+Başta herkese 2 hedef dağıtılır, 1'i seçilir. Oyun sonunda tutarsa bonus alınır. Eşikler bot simülasyonunda her hedefin tutturma oranı %15-45 olacak şekilde ayarlandı.
 
 - 8 şehir hedefi: "<Şehir> Hakimi" — o şehrin tüm mülkleri sonda sende (2'li şehir +250, 3'lü şehir +300).
 - Kat Kat Üstüne: sonda en az 7 katın (kaçak dahil) var, +300.
-- Ulaşım Baronu: sonda en az 3 gar ya da havalimanı sende, +250.
+- Ulaşım Baronu: sonda en az 4 gar ya da havalimanı sende, +250.
 - Nakit Kraldır: sonda en çok nakit sende (eşitlik dahil), +300.
-- Arsa Avcısı: sonda en az 6 mülkün var, +300.
-- Kaçak Ama Sağlam: sonda en az 2 kaçak katın ayakta, +300.
-- Hukuk Dünyası: oyun boyunca en az 6 hukuk kartı (Kamulaştırma, Tedbir, İhbar, Dava, İtiraz) oynadın, +300.
+- Arsa Avcısı: sonda en az 7 mülkün var, +300.
+- Kaçak Ama Sağlam: sonda en az 1 kaçak katın ayakta, +300.
+- Hukuk Dünyası: oyun boyunca en az 7 hukuk kartı (Kamulaştırma, Tedbir, İhbar, Dava, İtiraz) oynadın, +300.
 - İhale Kralı: en az 2 ihale kazandın, +250.
-- Temiz Sicil: hiç ipotek yapmadın, konkordato yok, sonda en az 5 mülk, +250.
+- Temiz Sicil: hiç ipotek yapmadın, konkordato yok, sonda en az 6 mülk, +250.
 
 ## 10. Net Değer ve puan
 
