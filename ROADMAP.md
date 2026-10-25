@@ -21,6 +21,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 ## Tamamlananlar
 
 - [x] Monopoly'ye yakın denge: Monopoly kira cetveli, set dışı kat kirası yarı, kirayı atlatan kartlar azaldı, elde 5 kart varken kart gelmez, Piyango 100 (v0.12.0)
+- [x] Gündem 4 turda bir değişir, dönem kuralları 4 tur sürer; çubukta kalan tur (v0.13.0)
 - [x] Monopoly tarzı açık artırma: sırayla artır ya da çekil, son kalan kazanır, teklifler açık, teklif başı 15 sn (v0.11.0)
 - [x] Karanlık mod tüm pencerelerde; kare penceresinde kat/kaçak/set/ipotek/tedbir açıklamaları; simgelerin üzerine gelince ipucu; kurallarda Tahtadaki işaretler (v0.10.1)
 - [x] Tempo ve okunurluk: ev sahibi canlandırma bitene kadar bekler, lobide Oyun hızı; rakip kartı 3,5 sn, kime ne yaptığı yazar, üzerine gelince durur; akışta renkli kart çipi ve önizleme; süre çubuğu artık zıplamıyor (v0.10.0)

@@ -154,31 +154,34 @@ export const CARDS = {
   pazarlik: { name: 'Pazarlık Ustası', icon: '🤝', count: 3, type: 'hamle', when: 'buy', target: 'none', text: 'Satın alma kararı sırasında oyna: arsayı yarı fiyatına al.' },
 };
 
+// Gündem bir dönem boyunca geçerlidir: dönem GUNDEM_PERIOD tur sürer (1., 5., 9., 13. tur).
+export const GUNDEM_PERIOD = 4;
+
 export const GUNDEM = {
   enflasyon: { name: 'Enflasyon Açıklandı', icon: '📊', count: 3, text: 'Endeks 15 puan arttı. Fiyatlar ve kiralar kalıcı olarak yükseldi.' },
   dolar: { name: 'Dolar Rekor Kırdı', icon: '💵', count: 1, text: 'Herkes nakdinin %10\'unu kaybeder.' },
   asgari: { name: 'Asgari Ücrete Zam', icon: '🧾', count: 2, text: 'Maaş kalıcı olarak 50 arttı.' },
   imarAffi: { name: 'İmar Affı', icon: '🎉', count: 1, text: 'Tüm kaçak katlar yasallaştı!' },
   operasyon: { name: 'Belediye Operasyonu', icon: '🚜', count: 1, text: 'Kepçeler geldi: tüm kaçak katlar yıkıldı.' },
-  turizm: { name: 'Turizm Sezonu', icon: '🏖️', count: 1, mod: 'turizm', text: 'Bu tur Antalya ve İzmir kiraları 2 katı.' },
-  ulasimZam: { name: 'Ulaşıma Zam', icon: '🎫', count: 1, mod: 'ulasimZam', text: 'Bu tur gar ve havalimanı kiraları 2 katı.' },
+  turizm: { name: 'Turizm Sezonu', icon: '🏖️', count: 1, mod: 'turizm', text: 'Bu dönem Antalya ve İzmir kiraları 2 katı.' },
+  ulasimZam: { name: 'Ulaşıma Zam', icon: '🎫', count: 1, mod: 'ulasimZam', text: 'Bu dönem gar ve havalimanı kiraları 2 katı.' },
   deprem: { name: 'Deprem Yönetmeliği', icon: '🏚️', count: 1, text: 'Güçlendirme zamanı: yasal kat başı 15, kaçak kat başı 30 öde.' },
   emlakVergisi: { name: 'Emlak Vergisi', icon: '🏦', count: 1, text: 'Mülk başı 10 vergi öde.' },
-  kiraTavani: { name: 'Kira Artış Sınırı', icon: '🧯', count: 1, mod: 'kiraTavani', text: 'Bu tur tüm kiralar yarıya indi.' },
-  kiraArtisi: { name: 'Kira Artışı', icon: '🔥', count: 1, mod: 'kiraArtisi', text: 'Ev sahipleri bayramda: bu tur tüm kiralar 1,5 katı.' },
+  kiraTavani: { name: 'Kira Artış Sınırı', icon: '🧯', count: 1, mod: 'kiraTavani', text: 'Bu dönem tüm kiralar yarıya indi.' },
+  kiraArtisi: { name: 'Kira Artışı', icon: '🔥', count: 1, mod: 'kiraArtisi', text: 'Ev sahipleri bayramda: bu dönem tüm kiralar 1,5 katı.' },
   bayram: { name: 'Bayram İkramiyesi', icon: '🍬', count: 2, text: 'Herkese 100 ikramiye.' },
   kentsel: { name: 'Kentsel Dönüşüm', icon: '🏗️', count: 1, text: 'Rastgele bir şehirde sahipli her mülke bedava 1 yasal kat.' },
   secimVaadi: { name: 'Seçim Vaadi', icon: '📣', count: 1, text: 'Net değeri en düşük oyuncuya 250 destek.' },
   rantVergisi: { name: 'Rant Vergisi', icon: '🧐', count: 1, text: 'Net değeri en yüksek oyuncu 200 öder.' },
-  grev: { name: 'Bankacılar Grevde', icon: '🪧', count: 1, mod: 'grev', text: 'Bu tur Başlangıç Noktası\'nda maaş ödenmez.' },
-  durgunluk: { name: 'Piyasa Durgun', icon: '🥶', count: 1, mod: 'durgunluk', text: 'Bu tur kimse kat dikemez.' },
-  kampanya: { name: 'Konut Kampanyası', icon: '🏷️', count: 1, mod: 'kampanya', text: 'Bu tur kat fiyatları yarı fiyatına.' },
-  faizIndirimi: { name: 'Faiz İndirimi', icon: '📉', count: 1, mod: 'faizIndirimi', text: 'Bu tur ipotek kaldırmak yarı fiyatına.' },
+  grev: { name: 'Bankacılar Grevde', icon: '🪧', count: 1, mod: 'grev', text: 'Bu dönem Başlangıç Noktası\'nda maaş ödenmez.' },
+  durgunluk: { name: 'Piyasa Durgun', icon: '🥶', count: 1, mod: 'durgunluk', text: 'Bu dönem kimse kat dikemez.' },
+  kampanya: { name: 'Konut Kampanyası', icon: '🏷️', count: 1, mod: 'kampanya', text: 'Bu dönem kat fiyatları yarı fiyatına.' },
+  faizIndirimi: { name: 'Faiz İndirimi', icon: '📉', count: 1, mod: 'faizIndirimi', text: 'Bu dönem ipotek kaldırmak yarı fiyatına.' },
   faizUctu: { name: 'Faizler Uçtu', icon: '🚀', count: 1, text: 'İpotekli mülk başı 20 faiz öde.' },
-  zabitaIzinde: { name: 'Zabıta İzinde', icon: '🏝️', count: 1, mod: 'zabitaIzinde', text: 'Bu tur İhbar oynanamaz, Zabıta karesi işlemez.' },
+  zabitaIzinde: { name: 'Zabıta İzinde', icon: '🏝️', count: 1, mod: 'zabitaIzinde', text: 'Bu dönem İhbar oynanamaz, Zabıta karesi işlemez.' },
   metro: { name: 'Metro Müjdesi', icon: '🚇', count: 1, text: 'Rastgele bir şehrin fiyat ve kiraları kalıcı olarak %25 arttı.' },
   komsuluk: { name: 'Komşuluk Hakkı', icon: '🎁', count: 1, text: 'Herkes elinden rastgele bir kartı sonraki oyuncuya verir.' },
-  sakin: { name: 'Gündem Sakin', icon: '☕', count: 2, text: 'Bugün bir şey olmadı. Çaylar benden.' },
+  sakin: { name: 'Gündem Sakin', icon: '☕', count: 2, text: 'Sakin bir dönem, bir şey olmuyor. Çaylar benden.' },
 };
 
 // SÜRPRİZ karesi: biri eşit olasılıkla seçilir, seçim beklemeden hemen uygulanır (game.js applySurpriz).

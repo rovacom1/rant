@@ -1,7 +1,7 @@
 // Oyun durum makinesi. applyAction(state, oyuncu, hamle) yeni state ve olay listesi döndürür.
 // Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste, hedef) içermez.
 
-import { BOARD, CARDS, GUNDEM, SURPRIZ, HEDEF, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP } from './data.js';
+import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, HEDEF, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP } from './data.js';
 import { randInt, rollDie, shuffle } from './rng.js';
 import * as R from './rules.js';
 
@@ -219,13 +219,18 @@ function startRound(s, ctx) {
   s.round++;
   s.roundStart = { net: s.players.map((_, p) => R.netWorth(s, p)), owners: s.props.map((ps) => (ps ? ps.owner : null)) };
   if (s.round === 1) s.worth = [s.roundStart.net];
-  s.mods = {};
   for (const ps of s.props) if (ps && ps.tedbir > 0) ps.tedbir--;
   const last = s.round === s.config.maxRounds ? ' SON TUR: Seçim Günü geliyor!' : '';
   if (!s.config.rules.gundem) {
     s.gundem = null;
     return emit(s, ctx, { type: 'round', round: s.round, text: `— ${s.round}. tur —${last}` });
   }
+  // Gündem dönemi sürüyorsa yeni kart açılmaz; dönem kuralları (s.mods) yerinde kalır.
+  if (s.gundem && s.round <= s.gundem.until) {
+    const left = s.gundem.until - s.round;
+    return emit(s, ctx, { type: 'round', round: s.round, text: `— ${s.round}. tur — Gündem sürüyor: ${GUNDEM[s.gundem.id].name} (${left ? `${left} tur daha` : 'son turu'}).${last}` });
+  }
+  s.mods = {};
   if (!s.gundemDeck.length) {
     s.gundemDeck = shuffle(s, s.gundemDiscard);
     s.gundemDiscard = [];
@@ -233,7 +238,7 @@ function startRound(s, ctx) {
   const uid = s.gundemDeck.pop();
   s.gundemDiscard.push(uid);
   const id = cardId(uid);
-  s.gundem = { id, detail: null };
+  s.gundem = { id, detail: null, until: Math.min(s.round + GUNDEM_PERIOD - 1, s.config.maxRounds) };
   emit(s, ctx, { type: 'gundem', id, round: s.round, text: `— ${s.round}. tur — Gündem: ${GUNDEM[id].name}. ${GUNDEM[id].text}${last}` });
   applyGundem(s, ctx, id);
 }
@@ -674,7 +679,7 @@ export function cardBlock(s, p, id, t = {}) {
       if (!ps || !isOpp(s, p, ps.owner)) return 'Bir rakibin mülkünü seç.';
       return ps.tedbir > 0 ? 'Bu mülkte zaten tedbir var.' : null;
     case 'ihbar':
-      if (s.mods.zabitaIzinde) return 'Zabıta izinde: bu tur ihbar olmaz.';
+      if (s.mods.zabitaIzinde) return 'Zabıta izinde: bu dönem ihbar olmaz.';
       if (!isOpp(s, p, t.player)) return 'Bir rakip seç.';
       return R.floorsOf(s, t.player).kacak > 0 ? null : 'Bu oyuncunun kaçak katı yok.';
     case 'kiraZammi':
@@ -682,7 +687,7 @@ export function cardBlock(s, p, id, t = {}) {
     case 'muteahhit':
       if (!ps || ps.owner !== p || BOARD[t.sq].kind !== 'prop') return 'Kendi mülklerinden birini seç.';
       if (GROUP_SQUARES[BOARD[t.sq].group].filter((q) => s.props[q].owner === p).length < 2) return 'Müteahhit için o şehirden en az 2 mülkün olmalı.';
-      if (s.mods.durgunluk) return 'Piyasa durgun: bu tur kat dikilemez.';
+      if (s.mods.durgunluk) return 'Piyasa durgun: bu dönem kat dikilemez.';
       if (ps.ipotek || ps.tedbir > 0) return 'İpotekli ya da tedbirli mülke kat dikilemez.';
       return R.level(ps) >= 4 ? 'Bu mülk en üst seviyede.' : null;
     case 'piyango':

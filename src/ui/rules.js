@@ -27,8 +27,8 @@ export const RULES_HTML = `
 <li><b>Tepki</b> kartları gerektiğinde sana sorulur. <b>İtiraz</b> sana oynanan kartı iptal eder; itiraza karşı da itiraz edilir!</li>
 <li>Elinde en fazla 6 kart tutabilirsin.</li>
 </ul>
-<h3>Her tur bir Gündem</h3>
-<p>Tur başında bir haber kartı açılır: enflasyon, imar affı, turizm sezonu, deprem yönetmeliği... <b>Endeks</b> yükseldikçe fiyat ve kiralar artar, nakit erir.</p>
+<h3>4 turda bir Gündem</h3>
+<p>1., 5., 9. ve 13. turun başında bir haber kartı açılır: enflasyon, imar affı, turizm sezonu, deprem yönetmeliği... Para ve kat etkileri hemen bir kez uygulanır; "Bu dönem" diye başlayan kurallar gündem değişene kadar, 4 tur boyunca geçerlidir. Üstteki gündem çubuğu kaç tur kaldığını gösterir. <b>Endeks</b> yükseldikçe fiyat ve kiralar artar, nakit erir.</p>
 <h3>Borç ve Konkordato</h3>
 <p>Para eksiye düşebilir; sıranı bitirmeden kat satıp ipotek ederek borcunu kapatmalısın ("Borcu Kapat" bunu otomatik yapar). Satacak bir şeyin kalmazsa konkordato ilan edersin: borcun silinir, oyunda kalırsın, sonda 300 puan ceza.</p>
 <h3>Masa ayarları</h3>

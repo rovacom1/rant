@@ -35,7 +35,10 @@ Tam plan ve ölçümler: kullanıcı onaylı plan (sohbet). Özet ve takip burad
 - [x] Sim önce/sonra tablosu (kira, konkordato, sıra adaleti, hedefler, değer hedefi süreleri)
 
 ## Faz 5 — Gündem
-- [ ] Mevcut sistemi anlat, yeni tasarımı kullanıcıyla konuş (kod yok)
+- [x] Mevcut sistemi anlat, yeni tasarımı kullanıcıyla konuş (kod yok)
+- [x] Kullanıcı kararı: gündem 4 turda bir değişsin; dönem kuralları 4 tur sürer (v0.13.0)
+- [x] Test (dönem ve oyun sonu sınırı), sim önce/sonra, headless tarayıcıda haber kartı yalnız değişimde
+- [ ] Kullanıcıyla kart kart gözden geçirme (Gündem Sakin, Durgunluk, Grev 4 tur için)
 
 ---
 

@@ -13,7 +13,7 @@ RANT'a özgü olanlar:
 | Mekanik | Ne yapar | Neden eğlenceli |
 |---|---|---|
 | **Kestirme ve Taksi** | Zar toplamı kadar ilerlersin; kartla zarlardan birini seçer ya da 1-12 kare istediğin yere gidersin | Kirayı atlatma şansı değerli ve sınırlı kalır |
-| **Gündem** | Her tur başında herkesi etkileyen bir haber kartı açılır | Ortak kahkaha, her oyun farklı |
+| **Gündem** | 4 turda bir herkesi etkileyen bir haber kartı açılır; kuralları 4 tur sürer | Ortak kahkaha, her oyun farklı |
 | **Hamle kartları** | Elde tutulan aksiyon kartları (Kamulaştırma, İhtiyati Tedbir, Dava...) | Sıra sende olmasa da oyundasın |
 | **İtiraz zinciri** | Sana oynanan karta İtiraz, İtiraz'a karşı İtiraz | Monopoly Deal'deki "Hayır!" gerilimi |
 | **Kaçak Kat** | Set olmadan, yarı fiyata kat; ama Zabıta ve İhbar ile yıkılabilir | Risk-ödül, İmar Affı kumarı |
@@ -107,7 +107,7 @@ Sahil grupları: Antalya, İzmir.
 
 ## 4. Tur akışı
 
-1. **Tur başı** (ilk oyuncudan önce): Gündem kartı açılır ve uygulanır. Önceki turun geçici etkileri biter, Tedbir sayaçları 1 azalır.
+1. **Tur başı** (ilk oyuncudan önce): 1., 5., 9. ve 13. turda yeni Gündem kartı açılır ve uygulanır; önceki gündemin dönem kuralları biter. Tedbir sayaçları her tur 1 azalır.
 2. **Sıra başı**: Elinde 5'ten az kart varsa 1 Hamle kartı çekersin (kart birikmesin). Kira Zammı etkin kaldıysa burada biter.
 3. **Zar öncesi**: Hamle kartı oynayabilir (turda en fazla 1), kat dikebilir, ipotek yapabilir, pazarlık teklif edebilirsin.
 4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift gelirse, elinde 5'ten az kart varsa +1 kart.
@@ -192,9 +192,13 @@ Kira oyunu sürüklemiyordu: kirayı atlatan kartlar çok, kart birikiyordu, bed
 | Oturma sırasına göre kazanma | %14-24 | %18-22 |
 | Gizli hedef tutma | %31 | %31 |
 
-Kalan bedava paranın çoğu gündemden gelir (Bayram, Seçim vaadi); gündem ayrıca ele alınacak.
+Kalan bedava paranın çoğu gündemden geliyordu (Bayram, Seçim vaadi). Gündem 4 turda bir değişince bu da azaldı (bkz. §8).
 
 ## 8. Gündem kartları (29)
+
+Gündem bir **dönem** boyunca geçerlidir: dönem 4 tur sürer (tüm oyuncuların 4 kez oynaması). Kart 1., 5., 9. ve 13. turun başında açılır; 15 turluk oyunda 4 gündem görülür. Para, kat ve endeks kartları açıldıkları anda bir kez uygulanır. "Bu dönem" diye başlayan kurallar dönem bitene kadar, yani 4 tur boyunca geçerlidir. Haber kartı yalnız gündem değişince ekrana gelir; aradaki turlarda gündem çubuğu kaç tur kaldığını gösterir. Ev sahibi gündemi lobiden tümüyle kapatabilir.
+
+Ölçüm (300 bot oyunu, 5 kişi, her tur yerine 4 turda bir): oyun başına gündem 15 -> 4; oyun sonu Endeks ortalaması 123 -> 107; gündemden oyunculara giren para 715 -> 165, çıkan 559 -> 134; bedava banka parası maaşın %47'si -> %28'i; konkordato 0,33 -> 0,22. Bir dönem kuralının geçerli olduğu turların payı aynı kaldı (%31): kurallar daha seyrek gelir ama 4 kat uzun sürer.
 
 | Kart | Adet | Etki |
 |---|---|---|
@@ -203,22 +207,22 @@ Kalan bedava paranın çoğu gündemden gelir (Bayram, Seçim vaadi); gündem ay
 | Asgari Ücrete Zam | 2 | Maaş +50 (kalıcı) |
 | İmar Affı | 1 | Tüm kaçak katlar yasallaşır |
 | Belediye Operasyonu | 1 | Tüm kaçak katlar yıkılır |
-| Turizm Sezonu | 1 | Bu tur Antalya ve İzmir kiraları 2 katı |
-| Ulaşıma Zam | 1 | Bu tur gar ve havalimanı kiraları 2 katı |
+| Turizm Sezonu | 1 | Bu dönem Antalya ve İzmir kiraları 2 katı |
+| Ulaşıma Zam | 1 | Bu dönem gar ve havalimanı kiraları 2 katı |
 | Deprem Yönetmeliği | 1 | Yasal kat başı 15, kaçak kat başı 30 güçlendirme bedeli |
 | Emlak Vergisi | 1 | Mülk başı 10 vergi |
-| Kira Artış Sınırı | 1 | Bu tur tüm kiralar yarıya iner |
-| Kira Artışı | 1 | Bu tur tüm kiralar 1,5 katı |
+| Kira Artış Sınırı | 1 | Bu dönem tüm kiralar yarıya iner |
+| Kira Artışı | 1 | Bu dönem tüm kiralar 1,5 katı |
 | Bayram İkramiyesi | 2 | Herkese 100 |
 | Kentsel Dönüşüm | 1 | Rastgele bir şehirde sahipli her mülke bedava 1 yasal kat |
 | Seçim Vaadi | 1 | Net değeri en düşük oyuncuya 250 |
 | Rant Vergisi | 1 | Net değeri en yüksek oyuncu 200 öder |
-| Bankacılar Grevde | 1 | Bu tur maaş yok |
-| Piyasa Durgun | 1 | Bu tur kat dikilemez |
-| Konut Kampanyası | 1 | Bu tur kat fiyatları yarı fiyat |
-| Faiz İndirimi | 1 | Bu tur ipotek kaldırma yarı fiyat |
+| Bankacılar Grevde | 1 | Bu dönem maaş yok |
+| Piyasa Durgun | 1 | Bu dönem kat dikilemez |
+| Konut Kampanyası | 1 | Bu dönem kat fiyatları yarı fiyat |
+| Faiz İndirimi | 1 | Bu dönem ipotek kaldırma yarı fiyat |
 | Faizler Uçtu | 1 | İpotekli mülk başı 20 faiz |
-| Zabıta İzinde | 1 | Bu tur İhbar oynanamaz, Zabıta karesi işlemez |
+| Zabıta İzinde | 1 | Bu dönem İhbar oynanamaz, Zabıta karesi işlemez |
 | Metro Müjdesi | 1 | Rastgele bir şehrin fiyat ve kiraları kalıcı olarak %25 artar |
 | Komşuluk Hakkı | 1 | Herkes elinden rastgele bir kartı sonraki oyuncuya verir |
 | Gündem Sakin | 2 | Bir şey olmaz, çaylar benden |

@@ -76,7 +76,7 @@ export function buildBlock(s, p, sq, kacak) {
   const ps = s.props[sq];
   if (!ps || sqd.kind !== 'prop') return 'Buraya kat dikilemez.';
   if (ps.owner !== p) return 'Bu mülk senin değil.';
-  if (s.mods.durgunluk) return 'Piyasa durgun: bu tur kat dikilemez.';
+  if (s.mods.durgunluk) return 'Piyasa durgun: bu dönem kat dikilemez.';
   if (ps.ipotek) return 'İpotekli mülke kat dikilemez.';
   if (ps.tedbir > 0) return 'Mülkte ihtiyati tedbir var.';
   if (level(ps) >= 4) return 'Bu mülk en üst seviyede.';

@@ -185,8 +185,11 @@ function gundemHTML(v) {
   const g = GUNDEM[v.gundem.id];
   const modTip = (m) => Object.values(GUNDEM).find((x) => x.mod === m)?.text || '';
   const mods = Object.keys(v.mods).map((m) => html`<span class="chip" data-tip="${modTip(m)}">${MOD_LABEL[m] || m}</span>`);
+  // Gündem 4 tur sürer; oyunun son turunda "değişir" demek yanıltır.
+  const left = v.gundem.until - v.round;
+  const tail = v.finalRound || v.round >= max ? '' : left > 0 ? ` · ${left} TUR DAHA` : ' · TUR SONUNDA DEĞİŞİR';
   return html`<div class="news-bar"><div class="nb-ic">${g.icon}</div>
-    <div><div class="nb-k">GÜNDEM · ${v.round}. TUR</div><div class="nb-t">${g.name}</div><div class="nb-x">${g.text}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</div>${mods.length ? html`<div class="nb-mods">${mods}</div>` : ''}</div>
+    <div><div class="nb-k" data-tip="Gündem 4 turda bir değişir; kuralları o 4 tur boyunca geçerlidir.">GÜNDEM · ${v.round}. TUR${tail}</div><div class="nb-t">${g.name}</div><div class="nb-x">${g.text}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</div>${mods.length ? html`<div class="nb-mods">${mods}</div>` : ''}</div>
     ${ring}</div>`;
 }
 
