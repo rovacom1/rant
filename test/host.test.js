@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Host, idFromToken } from '../src/net/host.js';
+import { Host, idFromToken, paceOf } from '../src/net/host.js';
 import { PROTOCOL } from '../src/version.js';
 
 // Ağsız sahte bağlantı: gönderilen mesajları biriktirir.
@@ -118,4 +118,26 @@ test('oyun sonu: değer hedefi seçilir, geçersiz tutar reddedilir', () => {
   clearTimeout(host.timer);
   assert.equal(host.game.config.targetScore, 5000);
   assert.equal(host.game.config.maxRounds, 30);
+});
+
+test('tempo: bekleme süresi olayların canlandırma süresinden hesaplanır', () => {
+  assert.equal(paceOf([]), 0);
+  assert.equal(paceOf([{ type: 'dice' }, { type: 'move', path: [1, 2, 3] }]), 1250 + 600);
+  assert.equal(paceOf([{ type: 'card' }]), 3500);
+  assert.equal(paceOf([{ type: 'summary' }, { type: 'gundem' }]), 5600);
+  assert.equal(paceOf([{ type: 'money' }, { type: 'money' }]), 910);
+});
+
+test('süreler toplam süreyle ve ev sahibinin saatiyle gönderilir', () => {
+  const { host, me } = room();
+  me.say({ t: 'lobby', cmd: 'config', speed: 'slow' });
+  me.say({ t: 'lobby', cmd: 'config', speed: 'turbo' });
+  assert.equal(host.config.speed, 'slow', 'geçersiz hız yok sayılır');
+  me.say({ t: 'lobby', cmd: 'addBot' });
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  const m = host.meta();
+  assert.equal(typeof m.now, 'number');
+  assert.equal(m.deadlines[host.hostId].span, 90000, 'hedef seçimi 90 sn');
+  assert.ok(m.deadlines[host.hostId].at >= m.now + 89000);
 });

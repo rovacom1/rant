@@ -151,7 +151,7 @@ export class Tokens {
     }
   }
 
-  async walk(id, path, fast) {
+  async walk(id, path, fast, stepMs = 150) {
     const el = this.els.get(id);
     if (!el || fast) {
       this.place(id, path[path.length - 1]);
@@ -163,7 +163,7 @@ export class Tokens {
       void el.offsetWidth;
       el.classList.add('hop');
       play('step');
-      await sleep(150);
+      await sleep(stepMs);
     }
   }
 
@@ -211,7 +211,10 @@ export class Dice {
     values.forEach((v, i) => this.orient(i, v, false));
   }
 
-  async roll(values, fast) {
+  // cap: zarın üstünde kısa açıklama (ör. dava zarları); boşsa yok.
+  async roll(values, fast, waitMs = 1250, cap = '') {
+    if (cap) this.el.dataset.cap = cap;
+    else delete this.el.dataset.cap;
     if (fast) return this.show(values);
     this.el.classList.remove('off');
     this.values = values.join();
@@ -226,6 +229,6 @@ export class Dice {
       w.classList.add('throw');
       this.orient(i, v, true);
     });
-    await sleep(1250);
+    await sleep(waitMs);
   }
 }

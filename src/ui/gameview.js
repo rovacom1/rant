@@ -7,6 +7,8 @@ import { isNotifyOn, notifySupported } from './notify.js';
 import { buildBoard, updateBoard, Tokens, Dice, inkFor, cellPos } from './board.js';
 import { app, act, send, isHost } from './state.js';
 import { RULES_HTML } from './rules.js';
+import { initTips } from './tip.js';
+import { SPEEDS } from '../net/host.js';
 import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
 import { coinFlights, arcPeak, COIN_GAP } from './coins.js';
 import { worthLines } from './chart.js';
@@ -73,6 +75,7 @@ export function mountGame(root) {
   tokens = new Tokens(els.tokens, cells);
   dice = new Dice(els.dice);
   hand = new Hand(els.handDock);
+  initTips();
   startMusic();
 }
 
@@ -111,12 +114,18 @@ function canPlay(v, uid) {
   return E.cardTargets(v, v.you, id).length > 0;
 }
 
+// Oyun hızı çarpanı (lobi ayarı); animasyon süreleri ev sahibinin beklemesiyle aynı oranda uzar.
+const spd = () => SPEEDS[app.lobby?.config?.speed] || 1;
+const hostNow = () => Date.now() + (app.clockOffset || 0);
+
+// Süre çubuğu: toplam süre (span) ev sahibinden gelir, işaretleme her çizimde aynı kalır, çubuk zıplamaz.
 function timerHTML(v, ids) {
   const dl = app.meta && app.meta.deadlines;
   if (!dl) return '';
-  const at = Math.min(...ids.map((i) => dl[P(v, i).id] || Infinity));
-  if (!Number.isFinite(at)) return '';
-  return html`<div class="timer" data-deadline="${at}" data-span="${Math.max(1000, at - Date.now())}"><i></i></div><div class="muted" style="font-size:12px" data-countdown="${at}"></div>`;
+  const ds = ids.map((i) => dl[P(v, i)?.id]).filter((d) => d && d.at);
+  if (!ds.length) return '';
+  const d = ds.reduce((a, b) => (b.at < a.at ? b : a));
+  return html`<div class="timer" data-deadline="${d.at}" data-span="${d.span}"><i></i></div><div class="muted" style="font-size:12px" data-countdown="${d.at}"></div>`;
 }
 
 // ---------- üst çubuk ----------
@@ -274,13 +283,13 @@ function promptHTML(v) {
         <div class="row center">${P(v, me).hedefChoices.map((h) => hedefCard(h, 'hedef'))}</div>${timerHTML(v, [me])}`;
     }
     const rest = E.waitingFor(v).map((i) => P(v, i).name).join(', ');
-    return html`<h3>Hedefler seçiliyor…</h3><p>Bekleniyor: ${rest}</p>`;
+    return html`<h3>Hedefler seçiliyor…</h3><p>Bekleniyor: ${rest}</p>${timerHTML(v, E.waitingFor(v))}`;
   }
   if (app.ui.pick) {
     const c = CARDS[cardId(app.ui.pick.uid)];
     const step = c.target === 'swap' ? (app.ui.swapMine === null ? ' 1) Vereceğin mülkü seç.' : ` 2) ${BOARD[app.ui.swapMine].name} karşılığı alacağın mülkü seç.`) : '';
     return html`<h3>${c.icon} ${c.name}</h3><p>Parlayan karelerden birine tıkla.${step}</p>
-      <button class="btn" data-act="pickCancel">Vazgeç</button>`;
+      <button class="btn" data-act="pickCancel">Vazgeç</button>${timerHTML(v, [me])}`;
   }
   if (pd) return pendingHTML(v, pd);
   const t = v.turn;
@@ -301,7 +310,7 @@ function promptHTML(v) {
       html`<button class="btn ${actName === 'moveSum' ? 'primary big' : 'gold'}" data-act="${actName}" ${raw(extra)}>${label}: ${steps} kare → ${BOARD[destOf(v, steps, t.backward)].name}</button>`;
     return html`<h3>Nereye gidiyorsun?</h3>
       <div class="row center">${opt(a + b, 'Toplam', 'moveSum', 'data-primary')}</div>
-      ${kes ? html`<p>🛵 Kestirme kartınla zarlardan birini seçebilirsin:</p><div class="row center">${opt(a, '1. zar', 'kestirme', `data-die="0" data-uid="${kes}"`)}${opt(b, '2. zar', 'kestirme', `data-die="1" data-uid="${kes}"`)}</div>` : ''}`;
+      ${kes ? html`<p>🛵 Kestirme kartınla zarlardan birini seçebilirsin:</p><div class="row center">${opt(a, '1. zar', 'kestirme', `data-die="0" data-uid="${kes}"`)}${opt(b, '2. zar', 'kestirme', `data-die="1" data-uid="${kes}"`)}</div>` : ''}${timerHTML(v, [me])}`;
   }
   // serbest evre
   if (pl.cash < 0) {
@@ -358,20 +367,20 @@ function pendingHTML(v, pd) {
         <div class="row center"><button class="btn primary big" data-act="react" data-uid="${it}" data-primary>✋ ${counter ? 'Karşı İtiraz' : 'İtiraz Et'}</button><button class="btn ghost" data-act="react" data-uid="">${counter ? 'Vazgeç' : 'Kabul Et'}</button></div>${timerHTML(v, [me])}`;
     }
     case 'rent': {
-      if (pd.p !== me) return html`<p>${P(v, pd.p).name} kirayı ödeyecek mi, dayısını mı arayacak?</p>`;
+      if (pd.p !== me) return html`<p>${P(v, pd.p).name} kirayı ödeyecek mi, dayısını mı arayacak?</p>${timerHTML(v, [pd.p])}`;
       const dayi = P(v, me).hand.find((u) => cardId(u) === 'dayi');
       return html`<h3>Kira: ${fmt(pd.amount)}</h3><p>${BOARD[pd.sq].name} → ${P(v, pd.owner).name}${pd.zam ? ' (Kira Zammı!)' : ''}</p>
         <div class="row center"><button class="btn gold big" data-act="react" data-uid="${dayi}" data-primary>🧔 Dayın Çıktı!</button><button class="btn ghost" data-act="react" data-uid="">Öde</button></div>${timerHTML(v, [me])}`;
     }
     case 'tapu': {
-      if (pd.p !== me) return html`<p>${P(v, pd.p).name} Tapu Dairesi'nde arsa bakıyor…</p>`;
+      if (pd.p !== me) return html`<p>${P(v, pd.p).name} Tapu Dairesi'nde arsa bakıyor…</p>${timerHTML(v, [pd.p])}`;
       return html`<h3>📜 Tapu Dairesi</h3><p>Parlayan arsalardan birine tıkla, fiyatını gör ve tapudan al.</p>
-        <button class="btn ghost" data-act="tapuBuy" data-sq="">Bir şey alma</button>`;
+        <button class="btn ghost" data-act="tapuBuy" data-sq="">Bir şey alma</button>${timerHTML(v, [me])}`;
     }
     case 'zabita': {
-      if (pd.p !== me) return html`<p>🚨 ${P(v, pd.p).name} zabıtaya kimi ihbar edecek?</p>`;
+      if (pd.p !== me) return html`<p>🚨 ${P(v, pd.p).name} zabıtaya kimi ihbar edecek?</p>${timerHTML(v, [pd.p])}`;
       return html`<h3>🚨 Zabıta geldi</h3><p>Kimin kaçak katlarını ihbar ediyorsun? Hepsi yıkılır, kat başı ceza öder.</p>
-        <div class="row center">${pd.options.map((o) => html`<button class="btn primary" data-act="zabita" data-p="${o}">${P(v, o).avatar} ${P(v, o).name} (${E.floorsOf(v, o).kacak} kaçak)</button>`)}</div>`;
+        <div class="row center">${pd.options.map((o) => html`<button class="btn primary" data-act="zabita" data-p="${o}">${P(v, o).avatar} ${P(v, o).name} (${E.floorsOf(v, o).kacak} kaçak)</button>`)}</div>${timerHTML(v, [me])}`;
     }
     case 'trade': {
       const desc = tradeDesc(v, pd);
@@ -383,10 +392,10 @@ function pendingHTML(v, pd) {
       return html`<h3>🤝 Pazarlık</h3><p>${P(v, pd.from).name} → ${P(v, pd.to).name}</p>${desc}`;
     }
     case 'discard': {
-      if (pd.p !== me) return html`<p>${P(v, pd.p).name} elindeki fazla kartları atıyor…</p>`;
+      if (pd.p !== me) return html`<p>${P(v, pd.p).name} elindeki fazla kartları atıyor…</p>${timerHTML(v, [pd.p])}`;
       const n = app.ui.selected.length;
       return html`<h3>Elinde fazla kart var</h3><p>Sağdaki elinden <b>${pd.count}</b> kart seç ve at (seçili: ${n}).</p>
-        <button class="btn primary big" data-act="discardGo" ${n !== pd.count ? 'disabled' : ''} data-primary>Seçilenleri At</button>`;
+        <button class="btn primary big" data-act="discardGo" ${n !== pd.count ? 'disabled' : ''} data-primary>Seçilenleri At</button>${timerHTML(v, [me])}`;
     }
     default:
       return '';
@@ -476,7 +485,17 @@ function feedItem(l) {
   }
   let icon = FEED_ICON[l.type] || '•';
   if (l.type === 'money') icon = / \+/.test(l.text) ? '💰' : '💸';
-  return html`<div class="ev t-${l.type}"><span class="ev-i">${icon}</span><span>${l.text}</span></div>`;
+  return html`<div class="ev t-${l.type}"><span class="ev-i">${icon}</span><span>${feedText(l)}</span></div>`;
+}
+
+// Kart adı türüne göre renkli bir çip olur (Hamle kırmızı, Tepki mavi); üzerine gelince kartın kendisi görünür.
+const cardChip = (id) => html`<span class="cchip ${CARDS[id].type}" data-card="${id}">${CARDS[id].icon} ${CARDS[id].name}</span>`;
+
+function feedText(l) {
+  const c = l.card && CARDS[l.card];
+  if (!c) return l.text;
+  const i = l.text.indexOf(c.name);
+  return i < 0 ? html`${l.text} ${cardChip(l.card)}` : html`${l.text.slice(0, i)}${cardChip(l.card)}${l.text.slice(i + c.name.length)}`;
 }
 
 const feedRows = () => app.view.log.filter((l) => l.text && !FEED_HIDE.has(l.type) && !/\((Maaş|Kat|Kaçak kat)\)$/.test(l.text));
@@ -710,7 +729,10 @@ export function renderModal() {
 // İçerik değişince girişleri (teklif, para) kaybetmeden yeniden çizer.
 function renderKeep(el, content) {
   const focused = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.bind : null;
+  const scrollers = () => el.querySelectorAll('.modal, .feed-list, .mgr');
+  const tops = [...scrollers()].map((n) => n.scrollTop);
   setHTML(el, content);
+  [...scrollers()].forEach((n, i) => tops[i] && (n.scrollTop = tops[i]));
   app.ui.binds ||= {};
   for (const inp of el.querySelectorAll('[data-bind]')) {
     const key = inp.dataset.bind;
@@ -758,7 +780,7 @@ export function updateGame() {
 }
 
 export function tickTimers() {
-  const now = Date.now();
+  const now = hostNow();
   for (const el of document.querySelectorAll('[data-deadline]')) {
     const at = Number(el.dataset.deadline);
     const span = Number(el.dataset.span);
@@ -851,9 +873,9 @@ function showNews(v, ev) {
   const g = GUNDEM[ev.id];
   const detail = v.gundem && v.gundem.id === ev.id ? v.gundem.detail : '';
   const sum = v.summary && v.summary.round === ev.round - 1 ? summaryHTML(v, v.summary) : '';
-  els.stage.innerHTML = html`<div class="stage" data-act="closeStage"><div class="news"><div class="kicker">${ev.round}. TUR · SON DAKİKA</div><div class="gi">${g.icon}</div><div class="gt">${g.name}</div><div class="gx">${g.text}</div>${detail ? html`<div class="gd">${detail}</div>` : ''}${sum}</div></div>`.toString();
+  els.stage.innerHTML = html`<div class="stage" data-act="closeStage"><div class="news"><div class="kicker">${ev.round}. TUR · SON DAKİKA</div><div class="gi">${g.icon}</div><div class="gt">${g.name}</div><div class="gx">${g.text}</div>${detail ? html`<div class="gd">${detail}</div>` : ''}${sum}<div class="nhint">kapatmak için tıkla</div></div></div>`.toString();
   clearTimeout(showNews.t);
-  showNews.t = setTimeout(() => (els.stage.innerHTML = ''), sum ? 5600 : 3600);
+  showNews.t = setTimeout(() => (els.stage.innerHTML = ''), (sum ? 5600 : 3600) * spd());
 }
 
 // Geçen turun özeti: en çok kazanan/kaybeden ve el değiştiren mülkler (en fazla 3).
@@ -890,32 +912,108 @@ async function showSurpriz(v, ev) {
   document.querySelectorAll('.surp').forEach((r) => r.remove());
   const c = boardCenter();
   const el = document.createElement('div');
+  const dur = Math.round(3000 * spd());
   el.className = 'surp';
   el.style.left = `${c.x}px`;
   el.style.top = `${c.y}px`;
+  el.style.setProperty('--dur', `${dur}ms`);
   el.innerHTML = String(html`<div class="who">${av(pl, 'sm')} ${pl.name} · Sürpriz!</div>
     <div class="sflip"><div class="sface sfront"><b>?</b></div><div class="sface sback"><div class="si">${sur.icon}</div><div class="sn">${sur.name}</div><div class="sx">${sur.text}</div></div></div>`);
   document.body.appendChild(el);
   play('card');
-  setTimeout(() => el.remove(), 3000);
-  await sleep(2200);
+  await sleep(dur);
+  el.remove();
 }
 
-// Başkasının oynadığı kart ortada büyük gösterilir.
-function revealCard(v, ev, tries = 0) {
+// Kartın kime oynandığı (oynamadan önceki duruma göre).
+function victimsOf(pv, ev) {
+  const t = ev.target || {};
+  switch (ev.card) {
+    case 'kamulastirma':
+    case 'tedbir':
+      return [pv.props[t.sq]?.owner];
+    case 'takas':
+      return [pv.props[t.theirs]?.owner];
+    case 'ihbar':
+    case 'dava':
+      return [t.player];
+    case 'aidat':
+      return pv.players.map((_, i) => i).filter((i) => i !== ev.p);
+    default:
+      return [];
+  }
+}
+
+// Kartın bu oyunda ne yaptığı, tek cümle.
+function cardEffect(v, ev) {
+  const t = ev.target || {};
+  const sq = (q) => (BOARD[q] ? BOARD[q].name : '');
+  const m = (k) => fmt(E.money(v, E.AMOUNTS[k]));
+  switch (ev.card) {
+    case 'kamulastirma':
+      return `${sq(t.sq)} mülkünü fiyatını ödeyerek almak istiyor.`;
+    case 'tedbir':
+      return `${sq(t.sq)} 2 tur kira alamayacak, üstüne kat dikilemeyecek.`;
+    case 'takas':
+      return `${sq(t.mine)} ile ${sq(t.theirs)} el değiştirecek.`;
+    case 'ihbar':
+      return `Tüm kaçak katları yıkılacak, kat başı ${m('ihbarFine')} ceza.`;
+    case 'dava':
+      return `Zar atılacak; büyük atan ${m('dava')} alır, eşitlikte davalı kazanır.`;
+    case 'aidat':
+      return `Diğer herkes ona ${m('aidat')} aidat ödeyecek.`;
+    case 'kiraZammi':
+      return 'Tahsil edeceği ilk kira 2 katı.';
+    case 'muteahhit':
+      return `${sq(t.sq)} üstüne bedava yasal kat.`;
+    case 'piyango':
+      return `Bankadan ${m('piyango')} aldı.`;
+    case 'taksi':
+      return `Zar atmadan ${t.steps} kare ilerliyor.`;
+    case 'kestirme':
+      return 'Zar toplamı yerine zarlardan biriyle ilerliyor.';
+    case 'geriVites':
+      return 'Bu tur geri yönde ilerleyecek.';
+    case 'pazarlik':
+      return 'Arsayı yarı fiyatına alıyor.';
+    case 'itiraz':
+      return 'Oynanan kartı iptal etmek istiyor.';
+    case 'dayi':
+      return 'Kirayı ödemiyor.';
+    default:
+      return CARDS[ev.card] ? CARDS[ev.card].text : '';
+  }
+}
+
+// Başkasının oynadığı kart ortada büyük gösterilir. Kimin kime ne yaptığı yazar; üzerine gelince durur, tıklayınca kapanır.
+async function revealCard(pv, v, ev) {
   // Tur başı haber kartı ekrandaysa onun kapanmasını bekle (üst üste binmesin).
-  if (els && els.stage.firstChild && tries < 10) return setTimeout(() => revealCard(v, ev, tries + 1), 500);
+  for (let k = 0; els && els.stage.firstChild && k < 15; k++) await sleep(400);
   if (!els) return;
   document.querySelectorAll('.reveal').forEach((r) => r.remove());
   const c = boardCenter();
+  const dur = Math.round(3500 * spd());
+  const vics = victimsOf(pv, ev).filter((i) => Number.isInteger(i));
+  const toMe = vics.includes(v.you);
+  const pl = P(v, ev.p);
+  const to = toMe ? ' sana oynadı!' : vics.length === 1 ? ` → ${P(v, vics[0]).name}` : vics.length > 1 ? ' → herkese' : ' oynadı';
   const el = document.createElement('div');
-  el.className = 'reveal';
+  el.className = `reveal${toMe ? ' me' : ''}`;
   el.style.left = `${c.x}px`;
   el.style.top = `${c.y}px`;
-  const pl = P(v, ev.p);
-  el.innerHTML = String(html`<div class="who">${av(pl, 'sm')} ${pl.name} oynadı</div>${cardFace(ev.card, 'big')}`);
+  el.style.setProperty('--dur', `${dur}ms`);
+  el.innerHTML = String(html`<div class="who">${av(pl, 'sm')} ${pl.name}${to}</div>${cardFace(ev.card, 'big')}<div class="eff">${cardEffect(v, ev)}</div><div class="rhint">üzerine gel: dur · tıkla: kapat</div>`);
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2100);
+  await new Promise((done) => {
+    const end = () => {
+      clearTimeout(cap);
+      el.remove();
+      done();
+    };
+    el.addEventListener('animationend', (e) => e.target === el && end());
+    el.addEventListener('click', end);
+    const cap = setTimeout(end, dur + 8000); // üzerinde bekletilse de en fazla 8 sn fazladan
+  });
 }
 
 export function confetti() {
@@ -940,9 +1038,7 @@ export async function present(prev, v, events, fast) {
     switch (ev.type) {
       case 'card':
         play(ev.card === 'itiraz' ? 'itiraz' : 'card');
-        if (fast) break;
-        if (ev.p === me) flyMine(prev, v, ev.card);
-        else revealCard(v, ev);
+        if (!fast && ev.p === me) flyMine(prev, v, ev.card);
         break;
       case 'money':
         if (ev.to === me) play('coin');
@@ -996,16 +1092,19 @@ export async function present(prev, v, events, fast) {
   }
   const myHandBefore = prev && prev.players[me] ? prev.players[me].hand : [];
   app.ui.newCards = me >= 0 ? v.players[me].hand.filter((u) => !myHandBefore.includes(u)) : [];
-  const thrown = events.find((e) => e.type === 'dice' || e.type === 'dava');
-  // Yürüyüşler ve sürprizler sırayla: önce kareye varılır, sonra sürpriz açılır, varsa ardından ışınlanma.
-  const steps = events.filter((e) => e.type === 'move' || e.type === 'surpriz');
-  if ((thrown || steps.length) && prev && els) {
+  // Olay sırasıyla canlandır: zar, yürüyüş, sürpriz ve rakip kartları birbirinin üstüne binmez.
+  const seq = events.filter((e) => ['dice', 'dava', 'move', 'surpriz'].includes(e.type) || (e.type === 'card' && e.p !== me));
+  if (seq.length && prev && els) {
     animating = true;
     try {
-      if (thrown) await dice.roll(thrown.dice, fast);
-      for (const e of steps) {
-        if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast);
-        else if (!fast) await showSurpriz(v, e);
+      for (const e of seq) {
+        if (e.type === 'dice' || e.type === 'dava') {
+          const cap = e.type === 'dava' ? `⚖️ Dava zarları: ${P(v, e.p).name} ${e.dice[0]} · ${P(v, e.victim).name} ${e.dice[1]}` : '';
+          await dice.roll(e.dice, fast, 1250 * spd(), cap);
+        } else if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast, 150 * spd());
+        else if (fast) continue;
+        else if (e.type === 'surpriz') await showSurpriz(v, e);
+        else await revealCard(prev, v, e);
       }
     } finally {
       animating = false;

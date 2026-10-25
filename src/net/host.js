@@ -6,8 +6,60 @@ import { PROTOCOL, SAVE_VERSION } from '../version.js';
 
 const PASSIVE_TIMEOUT = { auction: 30, react: 20, rent: 20, trade: 45, hedef: 90, discard: 45 }; // sn
 const DISCONNECT_GRACE = 20; // sn
-const BOT_DELAY = 800; // ms
+const BOT_MIN = 900; // ms, botun en kısa düşünme süresi
 const MAX_SEATS = 6;
+// Lobideki oyun hızı: bekleme ve animasyon süreleri bu çarpanla uzar ya da kısalır (istemci de aynısını kullanır).
+export const SPEEDS = { slow: 1.4, normal: 1, fast: 0.6 };
+
+// Olayların istemcide canlandırılması normal hızda ne kadar sürer (ms). Ev sahibi bot hamlesini bunun
+// bitişine erteler, insanın süresi de o zaman başlar; böylece hamleler okunmadan geçmez.
+export function paceOf(events) {
+  let block = 0;
+  let read = 0;
+  let money = 0;
+  const has = (t) => events.some((e) => e.type === t);
+  for (const e of events) {
+    switch (e.type) {
+      case 'dice':
+        block += 1250;
+        break;
+      case 'dava':
+        block += 1250;
+        read = Math.max(read, 1200);
+        break;
+      case 'move':
+        block += 150 * e.path.length + 150;
+        break;
+      case 'surpriz':
+        block += 3000;
+        break;
+      case 'card':
+        block += 3500;
+        break;
+      case 'gundem':
+        read = Math.max(read, has('summary') ? 5600 : 3600);
+        break;
+      case 'auction':
+      case 'tradeDone':
+      case 'demolish':
+      case 'collapse':
+      case 'konkordato':
+      case 'target':
+        read = Math.max(read, 1200);
+        break;
+      case 'build':
+      case 'own':
+        read = Math.max(read, 700);
+        break;
+      case 'money':
+        money++;
+        break;
+      default:
+    }
+  }
+  if (money) read = Math.max(read, 650 + 260 * (money - 1));
+  return block + read;
+}
 
 export const idFromToken = (token) => {
   let h = 2166136261;
@@ -33,7 +85,7 @@ export class Host {
       for (const s of this.seats) s.connected = !!s.bot;
     } else {
       this.seats = [];
-      this.config = { maxRounds: 15, turnLimit: 120, endMode: 'rounds', targetScore: 3500, rules: { ...E.DEFAULT_CONFIG.rules } };
+      this.config = { maxRounds: 15, turnLimit: 120, endMode: 'rounds', targetScore: 3500, speed: 'normal', rules: { ...E.DEFAULT_CONFIG.rules } };
       this.game = null;
       this.addSeat({ id: this.hostId, name: cleanName(hostName), avatar: cleanAvatar(hostAvatar), bot: false });
     }
@@ -188,6 +240,7 @@ export class Host {
         if (['rounds', 'score'].includes(m.endMode)) this.config.endMode = m.endMode;
         if (E.TARGET_OPTIONS.includes(m.targetScore)) this.config.targetScore = m.targetScore;
         if ([0, 60, 90, 120, 180].includes(m.turnLimit)) this.config.turnLimit = m.turnLimit;
+        if (Object.hasOwn(SPEEDS, m.speed)) this.config.speed = m.speed;
         if (m.rules && typeof m.rules === 'object') {
           for (const k of Object.keys(E.DEFAULT_CONFIG.rules)) if (typeof m.rules[k] === 'boolean') this.config.rules[k] = m.rules[k];
         }
@@ -234,13 +287,18 @@ export class Host {
     if (!this.game) return;
     const seat = this.seatIndex(client.playerId);
     if (seat < 0) throw new E.GameError('İzleyiciler hamle yapamaz.');
-    this.waitSince[client.playerId] = Date.now();
+    delete this.waitSince[client.playerId];
     this.apply(seat, action);
+  }
+
+  speed() {
+    return SPEEDS[this.config.speed] || 1;
   }
 
   apply(seat, action) {
     const { state, events } = E.applyAction(this.game, seat, action);
     this.game = state;
+    this.readyAt = Date.now() + Math.round(paceOf(events) * this.speed());
     this.schedule();
     this.broadcast(events);
     this.persist();
@@ -248,8 +306,9 @@ export class Host {
 
   meta() {
     const deadlines = {};
-    for (const [id, d] of Object.entries(this.deadlines || {})) deadlines[id] = d.at;
-    return { connected: Object.fromEntries(this.seats.map((s) => [s.id, s.connected])), deadlines, hostId: this.hostId };
+    for (const [id, d] of Object.entries(this.deadlines || {})) deadlines[id] = { at: d.at, span: d.span };
+    // now: istemci kendi saatiyle aradaki farkı hesaplar, süre çubuğu ev sahibinin saatine göre işler.
+    return { connected: Object.fromEntries(this.seats.map((s) => [s.id, s.connected])), deadlines, hostId: this.hostId, now: Date.now() };
   }
 
   lobbyInfo() {
@@ -276,22 +335,24 @@ export class Host {
     if (!g || g.phase === 'over') return;
     const waiting = E.waitingFor(g);
     const now = Date.now();
+    const ready = Math.max(now, this.readyAt || 0); // ekrandaki son animasyonun bitişi
     for (const id of Object.keys(this.waitSince)) if (!waiting.some((i) => g.players[i].id === id)) delete this.waitSince[id];
     let next = null;
     for (const i of waiting) {
       const pl = g.players[i];
       const seat = this.seatOf(pl.id);
       if (pl.bot || !seat) {
-        next = { at: now + BOT_DELAY, seat: i, mode: 'bot' };
-        break;
+        const at = Math.max(ready, now + BOT_MIN * this.speed());
+        if (!next || at < next.at) next = { at, seat: i, mode: 'bot' };
+        continue;
       }
-      const since = (this.waitSince[pl.id] ??= now);
+      const since = (this.waitSince[pl.id] ??= ready);
       const pd = g.pending;
       const passive = pd && PASSIVE_TIMEOUT[pd.type];
       let limit = passive || this.config.turnLimit;
       if (!seat.connected) limit = Math.min(limit || DISCONNECT_GRACE, DISCONNECT_GRACE);
       if (!limit) continue;
-      const d = { at: since + limit * 1000, seat: i, mode: passive ? 'default' : 'bot' };
+      const d = { at: since + limit * 1000, span: limit * 1000, seat: i, mode: passive ? 'default' : 'bot' };
       this.deadlines[pl.id] = d;
       if (!next || d.at < next.at) next = d;
     }

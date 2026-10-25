@@ -27,7 +27,8 @@ const MANAGE_STEPS = ['preroll', 'free'];
 function emit(s, ctx, ev) {
   ctx.events.push(ev);
   if (ev.text) {
-    s.log.push({ r: s.round, text: ev.text, type: ev.type });
+    // Kart olaylarında kart ve oynayan da saklanır: akışta kart adı çip olur, üzerine gelince kart görünür.
+    s.log.push(ev.card ? { r: s.round, text: ev.text, type: ev.type, card: ev.card, p: ev.p } : { r: s.round, text: ev.text, type: ev.type });
     if (s.log.length > LOG_MAX) s.log.splice(0, s.log.length - LOG_MAX);
   }
 }

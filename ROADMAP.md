@@ -20,6 +20,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Tempo ve okunurluk: ev sahibi canlandırma bitene kadar bekler, lobide Oyun hızı; rakip kartı 3,5 sn, kime ne yaptığı yazar, üzerine gelince durur; akışta renkli kart çipi ve önizleme; süre çubuğu artık zıplamıyor (v0.10.0)
 - [x] Daha büyük tahta: el ekranın altına gömüldü (boştayken kart adları görünür, fare gelince yükselir); 1920x945'te tahta 759'dan 833 px'e (v0.9.3)
 - [x] Oyun sonu grafiği: motor oyun başında ve her tur sonunda herkesin net değerini kaydeder; Seçim Günü sonuçlarında oyuncu renklerinde tur tur net değer çizgisi, kazananınki kalın (v0.9.2)
 - [x] Para animasyonu: kira, transfer ve banka ödemelerinde ödeyenden alana kavisli uçan altın jetonlar (tutarla 1-6 jeton, tahtanın ortası banka); kat dikilince kare sıçrar ve üstünden vinç yükselir; hareket azaltma tercihinde kapalı (v0.9.1)

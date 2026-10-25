@@ -502,3 +502,11 @@ test('değer hedefi: hedefe ulaşılan tur tamamlanınca Seçim Günü gelir', (
   assert.equal(s.finalRound, 1);
   assert.equal(ev.p, 2);
 });
+
+test('günlükte kart olayları kartı ve oynayanı taşır', () => {
+  let s = calm(started());
+  s = act(s, 0, { type: 'playCard', uid: give(s, 0, 'piyango') });
+  const l = s.log.find((x) => x.type === 'card');
+  assert.equal(l.card, 'piyango');
+  assert.equal(l.p, 0);
+});

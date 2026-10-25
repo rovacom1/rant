@@ -43,6 +43,8 @@ Ev sahibi lobide dört kuralı açıp kapatabilir; hepsi varsayılan olarak aç�
 | Gündem kartları | Tur başında Gündem kartı açılmaz; turlar yalnız sayılır. |
 | Gizli hedefler | Hedef seçilmez, oyun hemen başlar; puanda hedef bonusu yoktur. |
 
+Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi ve canlandırmaları 1,4 / 1 / 0,6 katına çeker.
+
 ## 3. Tahta (36 kare)
 
 Kareler 0'dan 35'e dizilir, tahta 10x10 ızgaradır. Köşeler: 0, 9, 18, 27.
