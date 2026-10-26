@@ -18,6 +18,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Bakım (oturum 35): kullanılmayan CSS (.bigcard, .gundem-card, .pl .pname, .cell .pr) silindi, yalnız kendi dosyasında kullanılan 7 ad dışa kapatıldı; denge 300x5 sıra %18-23, kira 21,7/oyun; PeerJS 1.5.5 güncel (v0.17.2)
 - [x] Mobil düzen 1. dilim: 800 px ve altında üst çubuk tek satır ve yalnız ikon (142 -> 44-54 px), tahta tam genişlik (375 px'te 347 -> 367), altında 'Kartların / Oyuncular' sekmeleri (sayfa 1222 -> 855 px); izleyicide sekme yok (v0.17.1)
 - [x] Açık pazarlık: sırası olmayan oyuncu da, sıradaki oyuncu zar öncesi ya da serbest evredeyken, turda bir teklif yapabilir; masada aynı anda tek teklif; pazarlık penceresi sıra beklerken açık kalır, gönderme düğmesi uygun ana kadar kapalı (v0.17.0)
 - [x] Lobide Bot seviyesi seçimi (Kolay / Normal / Zor, yalnız ev sahibi); kurallarda bot seviyesi satırı, eskimiş gizli hedef ve "kimse batmaz" ifadeleri düzeltildi (v0.16.2)
