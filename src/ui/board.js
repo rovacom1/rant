@@ -7,6 +7,7 @@ import { play } from './sound.js';
 import { icon, ic } from './icons.js';
 import { pawn } from './pawns.js';
 import { PAWN, laneTop, pawnXs } from './slots.js';
+import { PACE } from '../net/host.js';
 
 // Izgara kenarı G kare; köşeler 0, K, 2K, 3K. Kare 0 sağ altta, sıra saat yönünde.
 export const G = BOARD.length / 4 + 1;
@@ -204,7 +205,7 @@ export class Tokens {
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 // Küpün o yüzü öne bakması için gereken dönüş (derece): [x, y]. Sonra küp öne doğru 90 derece yatırılır: değer üst yüze gelir.
 const FACE_ROT = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
-const ROLL_MS = 1150; // zarın dönme süresi (normal hızda); ses de bu kadar sürer
+const ROLL_MS = PACE.roll; // zarın dönme süresi (normal hızda); ses de bu kadar sürer
 const face = (n) => `<div class="face f${n}">${Array.from({ length: 9 }, (_, i) => `<i class="${PIPS[n].includes(i) ? 'on' : ''}"></i>`).join('')}</div>`;
 // Zarlara yukarıdan bakılır: geçerli yüz üstteki yüzdür, ön ve yan yüzler biraz görünür (3 boyutlu durduğu belli olsun).
 const TILT = 'rotateX(-52deg) rotateY(-28deg) rotateX(90deg)';

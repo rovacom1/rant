@@ -9,7 +9,7 @@ import { buildBoard, updateBoard, Tokens, Dice, cellPos, isLight } from './board
 import { app, isHost } from './state.js';
 import { RULES_HTML } from './rules.js';
 import { initTips } from './tip.js';
-import { SPEEDS } from '../net/host.js';
+import { SPEEDS, PACE } from '../net/host.js';
 import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
 import { coinFlights, arcPeak, COIN_GAP } from './coins.js';
 import { worthLines } from './chart.js';
@@ -347,7 +347,7 @@ function promptHTML(v) {
   }
   const pl = P(v, me);
   if (t.step === 'preroll') {
-    return html`<div class="stagebox"><div class="who">${PW(pl, 30)}Sıra sende</div>${t.backward ? html`<span class="hint">${I('arrowL')}Geri vitestesin: bu tur geri gideceksin</span>` : ''}
+    return html`<div class="stagebox"><div class="who">${PW(pl, 30)}${t.doubles ? 'Çift attın, bir daha!' : 'Sıra sende'}</div>${t.backward ? html`<span class="hint">${I('arrowL')}Geri vitestesin: bu tur geri gideceksin</span>` : ''}
       <button class="btn L pri" style="min-width:240px" data-act="roll" data-primary>${I('dice')}Zar At</button><div style="width:260px">${timerHTML(v, [me])}</div></div>`;
   }
   if (t.step === 'choose') {
@@ -365,7 +365,7 @@ function promptHTML(v) {
   if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push(html`<span class="hint">${I('bolt')}Kart oynayabilirsin</span>`);
   if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false))) hints.push(html`<span class="hint">${I('home')}Kat dikebilirsin</span>`);
   return html`<div class="stagebox"><div class="who">${PW(pl, 30)}${BOARD[pl.pos].name}</div>${hints.length ? html`<div class="row">${hints}</div>` : ''}
-    <button class="btn L pri" style="min-width:240px" data-act="endTurn" data-primary>Turu bitir ${I('arrow')}</button><div style="width:260px">${timerHTML(v, [me])}</div></div>`;
+    ${t.again ? html`<button class="btn L pri" style="min-width:240px" data-act="endTurn" data-primary>${I('dice')}Çift attın: bir daha at</button>` : html`<button class="btn L pri" style="min-width:240px" data-act="endTurn" data-primary>Turu bitir ${I('arrow')}</button>`}<div style="width:260px">${timerHTML(v, [me])}</div></div>`;
 }
 
 // Borç: satılabilecekler sırasıyla, otomatik kapat ya da kendin seç (İnşaat/İpotek).
@@ -775,7 +775,7 @@ function playerPanelHTML(v, p) {
 }
 
 const RULE_ITEMS = [
-  ['dice', 'Zar at, ilerle', 'Sahipsiz arsayı al ya da artırmaya çıkar.'],
+  ['dice', 'Zar at, ilerle', 'Sahipsiz arsayı al ya da artırmaya çıkar. Çift gelirse bir daha atarsın.'],
   ['star', 'Seti tamamla', 'Şehrin hepsi sende: kira 2 kat, yasal kat dikebilirsin.'],
   ['house', 'Kat dik', 'Karena tıkla ya da İnşaat. En fazla 4 kat.'],
   ['kacak', 'Kaçak kat', 'Set şart değil, yarı fiyat; ama Zabıta ve İhbar yıkar.'],
@@ -1021,7 +1021,7 @@ function floatMoney(p, delta) {
   setTimeout(() => el.remove(), 1500);
 }
 
-const FLIGHT_MS = 650;
+const FLIGHT_MS = PACE.flight;
 const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Oyuncunun para kutusu ya da banka (tahtanın ortası) ekrandaki merkez noktası.
@@ -1034,10 +1034,11 @@ function moneyPoint(p) {
 
 // Kira ve transferlerde ödeyenden alana kavis çizerek uçan jetonlar.
 function flyCoins({ from, to, amount, n, delay }) {
+  const F = FLIGHT_MS * spd();
   const a = moneyPoint(from);
   const b = moneyPoint(to);
   setTimeout(() => from !== null && floatMoney(from, -amount), delay);
-  setTimeout(() => to !== null && floatMoney(to, amount), delay + (a && b && !calm() ? FLIGHT_MS + (n - 1) * COIN_GAP : 0));
+  setTimeout(() => to !== null && floatMoney(to, amount), delay + (a && b && !calm() ? F + (n - 1) * COIN_GAP : 0));
   if (!a || !b || calm()) return;
   const m = arcPeak(a, b);
   const at = (q, s) => `translate(${q.x}px, ${q.y}px) translate(-50%, -50%) scale(${s})`;
@@ -1050,7 +1051,7 @@ function flyCoins({ from, to, amount, n, delay }) {
       { transform: at(m, 1.15), opacity: 1, offset: 0.5 },
       { transform: at(b, 0.8), opacity: 1, offset: 0.92 },
       { transform: at(b, 0.4), opacity: 0 },
-    ], { duration: FLIGHT_MS, delay: delay + i * COIN_GAP, easing: 'ease-in-out', fill: 'both' });
+    ], { duration: F, delay: delay + i * COIN_GAP, easing: 'ease-in-out', fill: 'both' });
     k.onfinish = () => el.remove();
   }
 }
@@ -1092,7 +1093,7 @@ function showNews(v, ev) {
   const detail = v.gundem && v.gundem.id === ev.id ? v.gundem.detail : '';
   const sum = v.summary && v.summary.round === ev.round - 1 ? summaryHTML(v, v.summary) : '';
   const img = html`<div class="nimg" style="background-image:url(assets/gundem/${ev.id}.jpg)"></div>`;
-  stageShow(html`<div class="news-card">${img}<div class="nbody"><span class="kicker">${ev.round}. tur · son dakika</span><span class="h28">${g.name}</span><span class="body">${g.text}</span>${detail ? html`<span class="hint" style="height:auto;padding:8px 12px;white-space:normal">${detail}</span>` : ''}${sum}</div></div>`, (sum ? 5600 : 3600) * spd());
+  stageShow(html`<div class="news-card">${img}<div class="nbody"><span class="kicker">${ev.round}. tur · son dakika</span><span class="h28">${g.name}</span><span class="body">${g.text}</span>${detail ? html`<span class="hint" style="height:auto;padding:8px 12px;white-space:normal">${detail}</span>` : ''}${sum}</div></div>`, (sum ? PACE.newsSum : PACE.news) * spd());
 }
 
 // Geçen turun özeti: en çok kazanan/kaybeden ve el değiştiren mülkler (en fazla 3).
@@ -1126,7 +1127,7 @@ async function showSurpriz(v, ev) {
   const sur = E.SURPRIZ[ev.id];
   const pl = P(v, ev.p);
   play('card');
-  await stageShow(html`<div class="surp"><div class="sback" style="background-image:url(assets/kart/surpriz.jpg)"></div><div class="scard"><div class="row" style="gap:8px">${PW(pl, 28)}<span class="h16">${pl.name} · Sürpriz</span></div>${I(SURPRIZ_IC[ev.id] || 'surpriz')}<span class="h28">${sur.name}</span><span class="body">${sur.text}</span></div></div>`, Math.round(3000 * spd()));
+  await stageShow(html`<div class="surp"><div class="sback" style="background-image:url(assets/kart/surpriz.jpg)"></div><div class="scard"><div class="row" style="gap:8px">${PW(pl, 28)}<span class="h16">${pl.name} · Sürpriz</span></div>${I(SURPRIZ_IC[ev.id] || 'surpriz')}<span class="h28">${sur.name}</span><span class="body">${sur.text}</span></div></div>`, Math.round(PACE.surpriz * spd()));
 }
 
 // Kartın kime oynandığı (oynamadan önceki duruma göre).
@@ -1198,7 +1199,7 @@ async function revealCard(pv, v, ev) {
   const who = vics.length === 1 ? vs(v, ev.p, vics[0]) : html`<div class="row" style="gap:8px">${PW(pl, 32)}</div>`;
   play('card');
   const title = toMe ? `${pl.name} sana oynadı` : vics.length === 1 ? `${pl.name}, ${P(v, vics[0]).name} için oynadı` : vics.length > 1 ? `${pl.name} herkese oynadı` : `${pl.name} oynadı`;
-  await stageShow(html`<div class="card-prompt reveal">${cardFace(ev.card, 'big')}<div class="opt-col">${who}<span class="h22">${title}</span><span class="line-row">${I(CARD_IC[ev.card] || 'hamle')}<span class="grow">${cardEffect(v, ev)}</span></span><span class="muted small">kapatmak için tıkla</span></div></div>`, Math.round(3500 * spd()));
+  await stageShow(html`<div class="card-prompt reveal">${cardFace(ev.card, 'big')}<div class="opt-col">${who}<span class="h22">${title}</span><span class="line-row">${I(CARD_IC[ev.card] || 'hamle')}<span class="grow">${cardEffect(v, ev)}</span></span><span class="muted small">kapatmak için tıkla</span></div></div>`, Math.round(PACE.card * spd()));
 }
 
 export function confetti() {
@@ -1224,7 +1225,7 @@ export async function present(prev, v, events, fast) {
   const buildFx = (sq) => later.push(() => buildFxNow(sq));
   // Sesler, ait oldukları canlandırmayla aynı anda ve aynı sürede çalar (jeton sesi jetonlar uçarken).
   const sfx = (name, sec) => later.push(() => play(name, sec));
-  const flight = (FLIGHT_MS * spd()) / 1000;
+  const flight = (PACE.flight * spd()) / 1000;
   for (const ev of events) {
     switch (ev.type) {
       case 'card':
@@ -1298,9 +1299,9 @@ export async function present(prev, v, events, fast) {
       for (const e of seq) {
         if (e.type === 'dice' || e.type === 'dava') {
           const cap = e.type === 'dava' ? `Dava zarları: ${P(v, e.p).name} ${e.dice[0]} · ${P(v, e.victim).name} ${e.dice[1]}` : '';
-          app.ui.diceUntil = Date.now() + 2500 + 1250 * spd();
-          await dice.roll(e.dice, fast, 1250 * spd(), cap, spd());
-        } else if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast, 150 * spd());
+          app.ui.diceUntil = Date.now() + (PACE.diceShow + PACE.dice) * spd();
+          await dice.roll(e.dice, fast, PACE.dice * spd(), cap, spd());
+        } else if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast, PACE.step * spd());
         else if (fast) continue;
         else if (e.type === 'surpriz') await showSurpriz(v, e);
         else if (e.card === 'itiraz' && prev.pending && prev.pending.type === 'react') {
@@ -1316,7 +1317,7 @@ export async function present(prev, v, events, fast) {
   for (const f of later) f();
   if (flights.length && els) {
     for (const f of flights) flyCoins(f);
-    await sleep(FLIGHT_MS * 0.6); // jetonlar yola çıksın, sayılar sonra değişsin
+    await sleep(FLIGHT_MS * spd() * 0.6); // jetonlar yola çıksın, sayılar sonra değişsin
   }
   if (v.phase === 'over' && !app.ui.seenOver) {
     app.ui.seenOver = true;

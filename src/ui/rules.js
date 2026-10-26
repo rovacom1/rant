@@ -7,7 +7,7 @@ export const RULES_HTML = `
 <h3>Sıran geldiğinde</h3>
 <ul>
 <li><b>Hamle kartı</b>, Başlangıç Noktası'ndan geçince (elinde 5'ten az kart varsa 1) ve FIRSAT karesinde (2) gelir. Turda en fazla 1 Hamle kartı oynayabilirsin.</li>
-<li><b>Zar at</b>, toplam kadar ilerle. <b>Kestirme</b> kartın varsa zarlardan birini seçebilirsin.</li>
+<li><b>Zar at</b>, toplam kadar ilerle. <b>Çift</b> atarsan turun bitince bir daha atarsın (en fazla 2 kez). <b>Kestirme</b> kartın varsa zarlardan birini seçebilirsin.</li>
 <li>Sahipsiz arsaya gelince <b>satın al</b> ya da <b>açık artırmaya</b> çıkar: sırayla herkes ya teklifi artırır ya çekilir, son kalan kazanır.</li>
 <li>Başkasının mülküne gelince kira ödersin. <b>Dayın Çıktı</b> kartın varsa ödemezsin.</li>
 <li>Kat dik, ipotek et, pazarlık teklif et, sonra <b>Turu Bitir</b>.</li>

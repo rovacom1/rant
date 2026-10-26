@@ -287,7 +287,15 @@ function checkTarget(s, ctx) {
   emit(s, ctx, { type: 'target', p, text: `${nm(s, p)} ${fmt(t)} değer hedefini geçti! Bu tur bitince Seçim Günü.` });
 }
 
+// Çift zar atan, turunu bitirince bir daha zar atar (Monopoly gibi); üçüncü çiftte ek hak yok.
+const MAX_DOUBLES = 2;
+
 function finishTurn(s, ctx) {
+  const t = s.turn;
+  if (t.again && !s.players[t.p].out && s.phase === 'play') {
+    Object.assign(t, { again: false, step: 'preroll', dice: null, backward: false });
+    return emit(s, ctx, { type: 'again', p: t.p, text: `${nm(s, t.p)} çift attı, bir daha oynuyor.` });
+  }
   checkTarget(s, ctx);
   const alive = R.activePlayers(s);
   if (alive.length < 2) {
@@ -941,6 +949,10 @@ const TURN = {
     s.turn.dice = d;
     s.turn.step = 'choose';
     emit(s, ctx, { type: 'dice', p, dice: d, text: `${nm(s, p)} zar attı: ${d[0]} ve ${d[1]}${d[0] === d[1] ? ', çift' : ''}` });
+    if (d[0] === d[1]) {
+      s.turn.doubles = (s.turn.doubles || 0) + 1;
+      s.turn.again = s.turn.doubles <= MAX_DOUBLES;
+    }
     // Masada Kestirme varsa oyuncu (kartı olsun olmasın) zarı görüp karar verir; yoksa doğrudan ilerler.
     if (s.turn.hamle || !tableHolds(s, 'kestirme')) travel(s, ctx, p, d[0] + d[1], s.turn.backward);
   },

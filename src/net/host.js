@@ -4,13 +4,31 @@
 import * as E from '../engine/index.js';
 import { PROTOCOL, SAVE_VERSION } from '../version.js';
 
-// Tepki beklemeleri (İtiraz, Dayın Çıktı, Kestirme yolu) kartı olana da olmayana da aynı kısa pencere: kimde kart olduğu sızmaz.
-const PASSIVE_TIMEOUT = { auction: 15, react: 5, rent: 5, choose: 5, trade: 45, discard: 45 }; // sn
+// Normal hızdaki süreler (ms). Ev sahibi beklemeyi, istemci canlandırmayı bunlardan hesaplar; oyun hızı (SPEEDS) çarpar.
+export const PACE = {
+  bot: 1600, // botun en kısa düşünme süresi
+  dice: 1600, // zar atışı (dönme + okuma)
+  roll: 1400, // zarın dönme süresi; zar sesi de bu kadar
+  diceShow: 3500, // atıştan sonra zarlar bu kadar görünür kalır
+  step: 220, // piyonun kare başı yürüyüşü
+  surpriz: 4500,
+  card: 5500, // rakibin oynadığı kart ortada
+  news: 5000,
+  newsSum: 7500, // haber + geçen turun özeti
+  read: 1800, // artırma sonucu, iflas, yıkım gibi bildirimler
+  build: 1100, // kat dikme / mülk alma
+  money: 900, // ilk para hareketi; sonrakilerin her biri +moneyStep
+  moneyStep: 300,
+  flight: 900, // jetonların uçuşu
+};
+// Tepki beklemeleri (İtiraz, Dayın Çıktı, Kestirme yolu) kartı olana da olmayana da aynı pencere: kimde kart olduğu sızmaz.
+// Normal hızda 10 sn (yavaşta 15, hızlıda 5). Açık artırma ve tepki süreleri oyun hızıyla ölçeklenir.
+const PASSIVE_TIMEOUT = { auction: 15, react: 10, rent: 10, choose: 10, trade: 45, discard: 45 }; // sn
+const SCALED = new Set(['auction', 'react', 'rent', 'choose']);
 const DISCONNECT_GRACE = 20; // sn
-const BOT_MIN = 900; // ms, botun en kısa düşünme süresi
 const MAX_SEATS = 6;
-// Lobideki oyun hızı: bekleme ve animasyon süreleri bu çarpanla uzar ya da kısalır (istemci de aynısını kullanır).
-export const SPEEDS = { slow: 1.4, normal: 1, fast: 0.6 };
+// Lobideki oyun hızı: bekleme ve canlandırma süreleri bu çarpanla uzar ya da kısalır (istemci de aynısını kullanır).
+export const SPEEDS = { slow: 1.5, normal: 1, fast: 0.5 };
 
 // Olayların istemcide canlandırılması normal hızda ne kadar sürer (ms). Ev sahibi bot hamlesini bunun
 // bitişine erteler, insanın süresi de o zaman başlar; böylece hamleler okunmadan geçmez.
@@ -22,23 +40,22 @@ export function paceOf(events) {
   for (const e of events) {
     switch (e.type) {
       case 'dice':
-        block += 1250;
+        block += PACE.dice;
         break;
       case 'dava':
-        block += 1250;
-        read = Math.max(read, 1200);
+        block += PACE.dice + PACE.card; // iki zar ve sonucu ortada okunur
         break;
       case 'move':
-        block += 150 * e.path.length + 150;
+        block += PACE.step * (e.path.length + 1);
         break;
       case 'surpriz':
-        block += 3000;
+        block += PACE.surpriz;
         break;
       case 'card':
-        block += 3500;
+        block += PACE.card;
         break;
       case 'gundem':
-        read = Math.max(read, has('summary') ? 5600 : 3600);
+        read = Math.max(read, has('summary') ? PACE.newsSum : PACE.news);
         break;
       case 'auction':
       case 'tradeDone':
@@ -47,11 +64,11 @@ export function paceOf(events) {
       case 'konkordato':
       case 'iflas':
       case 'target':
-        read = Math.max(read, 1200);
+        read = Math.max(read, PACE.read);
         break;
       case 'build':
       case 'own':
-        read = Math.max(read, 700);
+        read = Math.max(read, PACE.build);
         break;
       case 'money':
         money++;
@@ -59,7 +76,7 @@ export function paceOf(events) {
       default:
     }
   }
-  if (money) read = Math.max(read, 650 + 260 * (money - 1));
+  if (money) read = Math.max(read, PACE.money + PACE.moneyStep * (money - 1));
   return block + read;
 }
 
@@ -373,13 +390,14 @@ export class Host {
       const pl = g.players[i];
       const seat = this.seatOf(pl.id);
       if (pl.bot || !seat) {
-        const at = Math.max(ready, now + BOT_MIN * this.speed());
+        const at = Math.max(ready, now + PACE.bot * this.speed());
         if (!next || at < next.at) next = { at, seat: i, mode: 'bot' };
         continue;
       }
       const since = (this.waitSince[pl.id] ??= ready);
       const pd = g.pending;
-      const passive = pd ? PASSIVE_TIMEOUT[pd.type] : g.turn.step === 'choose' && PASSIVE_TIMEOUT.choose;
+      const kind = pd ? pd.type : g.turn.step === 'choose' ? 'choose' : null;
+      const passive = kind && PASSIVE_TIMEOUT[kind] ? Math.round(PASSIVE_TIMEOUT[kind] * (SCALED.has(kind) ? this.speed() : 1)) : 0;
       let limit = passive || this.config.turnLimit;
       if (!seat.connected) limit = Math.min(limit || DISCONNECT_GRACE, DISCONNECT_GRACE);
       if (!limit) continue;

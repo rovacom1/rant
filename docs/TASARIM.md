@@ -42,7 +42,7 @@ Ev sahibi lobide üç kuralı açıp kapatabilir; hepsi varsayılan olarak açı
 | SÜRPRİZ kareleri | SÜRPRİZ karesine gelince bir şey olmaz. |
 | Gündem kartları | Tur başında Gündem kartı açılmaz; turlar yalnız sayılır. |
 
-Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi ve canlandırmaları 1,4 / 1 / 0,6 katına çeker.
+Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi, canlandırmaları ve tepki pencerelerini 1,5 / 1 / 0,5 katına çeker: İtiraz, Dayın Çıktı ve Kestirme penceresi yavaşta 15, normalde 10, hızlıda 5 saniye; rakibin oynadığı kart normalde 5,5 saniye ortada kalır.
 
 **Bot seviyesi** (Kolay / Normal / Zor) masadaki bütün botlara uygulanır. Kolay bot pazarlık önermez, kaçak kat dikmez, kat dikmeyi ve kart oynamayı yarı yarıya unutur, yedeğini bozacak arsayı almaz, artırmada çabuk çekilir. Zor bot kaçak kat dikmez (zabıta ve ihbar riskine girmez), eksik parçayı karşı tarafın kabul edeceği en düşük parayla ister, para yetmezse kendi işine yaramayan bir mülkü takasa koyar; artırmada tavanını şaşmadan hesaplar ve her seferinde en az artışla teklif verir.
 
@@ -111,7 +111,7 @@ Sahil grupları: Antalya, İzmir.
 1. **Tur başı** (ilk oyuncudan önce): her dönem başında (1., 4., 7. ... tur) yeni Gündem kartı açılır ve uygulanır; önceki gündemin dönem kuralları biter.
 2. **Sıra başı**: Kart çekilmez. Kira Zammı etkin kaldıysa burada biter.
 3. **Zar öncesi**: Hamle kartı oynayabilir (turda en fazla 1), kat dikebilir, ipotek yapabilir, pazarlık teklif edebilirsin.
-4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift zar kart vermez.
+4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift zar kart vermez ama Monopoly'deki gibi **bir daha oynatır**: turunu (kat, kart, pazarlık) bitirince yeniden zar atarsın; üst üste en fazla 2 kez (üçüncü çiftte ek hak yok). Turda tek Hamle kartı kuralı ek atışta da geçerlidir.
    (İlk taslakta her turda zar seçimi vardı; simülasyonda oyuncular kirayı neredeyse hiç ödemediği için karta taşındı.)
 5. **Kareye geliş** (aşağıda).
 6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**.
@@ -162,7 +162,7 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 
 Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz, Dayın Çıktı) bu sınıra girmez.
 
-**Tepki beklemesi ve gizli el:** Oyun yalnız kartı olanı bekletirse kimde kart olduğu herkesin ekranında belli olur. Bu yüzden masada o karttan en az biri varsa ilgili oyuncuya, kartı olsun olmasın, aynı 5 saniyelik karar penceresi açılır: Hamle kartının hedefine İtiraz (zincirde karşı taraf da), kira ödeyene Dayın Çıktı, zar atana Kestirme ile yol seçimi. Kartı olmayan yalnız Kabul Et / Öde / Toplam'ı görür. Masada o karttan hiç yoksa beklenmez; böylece yalnız "masada biri bu karta sahip" bilgisi çıkar, kimin olduğu çıkmaz.
+**Tepki beklemesi ve gizli el:** Oyun yalnız kartı olanı bekletirse kimde kart olduğu herkesin ekranında belli olur. Bu yüzden masada o karttan en az biri varsa ilgili oyuncuya, kartı olsun olmasın, aynı karar penceresi (normal hızda 10 sn) açılır: Hamle kartının hedefine İtiraz (zincirde karşı taraf da), kira ödeyene Dayın Çıktı, zar atana Kestirme ile yol seçimi. Kartı olmayan yalnız Kabul Et / Öde / Toplam'ı görür. Masada o karttan hiç yoksa beklenmez; böylece yalnız "masada biri bu karta sahip" bilgisi çıkar, kimin olduğu çıkmaz.
 
 **İhtiyati Tedbir süresi:** Kartı oynayanın 2 sırası boyunca sürer: sayaç 2 başlar, oynayanın her sıra başında 1 azalır, 0 olunca kalkar. Oynayan iflas edip elenirse tedbir de kalkar.
 

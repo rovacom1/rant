@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Host, idFromToken, paceOf } from '../src/net/host.js';
+import { Host, idFromToken, paceOf, PACE } from '../src/net/host.js';
 import { PROTOCOL } from '../src/version.js';
 
 // Ağsız sahte bağlantı: gönderilen mesajları biriktirir.
@@ -146,10 +146,11 @@ test('oyun sonu: son kalan (iflas) modu motora geçer', () => {
 
 test('tempo: bekleme süresi olayların canlandırma süresinden hesaplanır', () => {
   assert.equal(paceOf([]), 0);
-  assert.equal(paceOf([{ type: 'dice' }, { type: 'move', path: [1, 2, 3] }]), 1250 + 600);
-  assert.equal(paceOf([{ type: 'card' }]), 3500);
-  assert.equal(paceOf([{ type: 'summary' }, { type: 'gundem' }]), 5600);
-  assert.equal(paceOf([{ type: 'money' }, { type: 'money' }]), 910);
+  assert.equal(paceOf([{ type: 'dice' }, { type: 'move', path: [1, 2, 3] }]), PACE.dice + PACE.step * 4);
+  assert.equal(paceOf([{ type: 'card' }]), PACE.card);
+  assert.equal(paceOf([{ type: 'summary' }, { type: 'gundem' }]), PACE.newsSum);
+  assert.equal(paceOf([{ type: 'money' }, { type: 'money' }]), PACE.money + PACE.moneyStep);
+  assert.ok(PACE.card >= 5000 && PACE.bot >= 1500, 'normal hız okunacak kadar yavaş');
 });
 
 test('süreler toplam süreyle ve ev sahibinin saatiyle gönderilir', () => {

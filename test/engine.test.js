@@ -65,6 +65,34 @@ test('başkasının hamlesi ve sıra dışı hamle reddedilir', () => {
   assert.throws(() => applyAction(s, 0, { type: 'hackle' }), GameError);
 });
 
+test('çift zar: turu bitirince bir daha zar atar, üçüncü çiftte ek hak yok', () => {
+  let s = calm(started(4, 42, { rules: { surpriz: false, ihale: false } }));
+  stripAll(s, 'kestirme');
+  stripAll(s, 'dayi');
+  // Çift gelen bir tohum bul ve oyuncu 0 zar atsın; karede çıkan kararlar varsayılanla geçilir.
+  const rollDouble = (st) => {
+    for (let seed = 0; seed < 2000; seed++) {
+      const t = structuredClone(st);
+      t.rng = seed;
+      let r = applyAction(t, 0, { type: 'roll' }).state;
+      if (r.turn.dice[0] !== r.turn.dice[1]) continue;
+      while (r.pending) r = act(r, waitingFor(r)[0], defaultFor(r));
+      if (r.turn.p === 0 && r.turn.step === 'free' && r.players[0].cash >= 0) return r;
+    }
+    throw new Error('çift bulunamadı');
+  };
+  s = rollDouble(s);
+  s = act(s, 0, { type: 'endTurn' });
+  assert.equal(s.turn.p, 0, 'aynı oyuncu bir daha oynar');
+  assert.equal(s.turn.step, 'preroll');
+  s = rollDouble(s);
+  s = act(s, 0, { type: 'endTurn' });
+  assert.equal(s.turn.p, 0, 'ikinci çiftte de bir daha');
+  s = rollDouble(s);
+  s = act(s, 0, { type: 'endTurn' });
+  assert.notEqual(s.turn.p, 0, 'üçüncü çiftten sonra sıra geçer');
+});
+
 test('zar: toplam kadar ilerler ve sıra serbest evreye geçer', () => {
   let s = calm(started());
   stripAll(s, 'kestirme');
