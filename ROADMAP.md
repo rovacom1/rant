@@ -6,21 +6,28 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Bot zorluk seviyesi (devam):** Motor tarafı bitti (v0.14.0, `config.botLevel`, Host `config` mesajında `botLevel`).
-  - [ ] Lobide Masa ayarlarına Kolay / Normal / Zor seçimi (yalnız ev sahibi), kurallar penceresinde bir satır; tarayıcıda iki temada dene.
+- [ ] **Bot zorluk seviyesi (devam):** Motor ve lobi seçimi bitti (v0.14.0, v0.19.0).
   - [ ] Zor bot 4 kişide belirgin güçlü değil (1000 oyunda %24, eşit şans %25; 5 kişide %25/%20). Kat dikme zamanlaması ya da kart oynama sırasıyla güçlendir.
 - [ ] **Açık pazarlık:** Sırası olmayan oyuncular da birbirine teklif yapabilsin (aynı anda tek teklif kuralıyla).
-- [ ] **Mobil düzen:** 400-800 px genişlikte tahta ve panelin rahat kullanımı (alt sekmeli panel). 10x10 tahtada kareler dar ekranda çok küçülüyor.
+- [ ] **Mobil düzen (devam):** Temel telefon düzeni var (v0.22.0). Dar ekranda kare adları küçük; yatay ekran ve alt sekmeli panel denenebilir.
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
 - [ ] **Yeni harita: İstanbul:** İlçelerden oluşan ikinci tahta; lobide harita seçimi (tahta verisi data.js'te haritaya göre).
 - [ ] **Yeni kartlar (denge simülasyonuyla):** "Kat Karşılığı" (rakibin arsasına onunla ortak kat), "Kredi Kartı" (şimdi 300 al, 2 tur sonra 360 öde), "Torpil" (ihalede ikinci en yüksek teklifle kazan).
 - [ ] **Yeni gündem kartları:** "Arsa Spekülasyonu", "Altın Rekor" ("Duvarda Çatlak" artık SÜRPRİZ etkisi).
-- [ ] **Ev sahibi devri:** Ev sahibi düşerse en eski oyuncu kayıttan oyunu devralsın (her oyuncuda son durum kopyası).
 - [ ] **PWA:** Masaüstüne kurulabilir uygulama (manifest + service worker); botlarla çevrimdışı oynama.
 - [ ] **Erişilebilirlik:** Klavyeyle tam oynanış, renk körleri için şehir desenleri, ekran okuyucu etiketleri.
 - [ ] **İsteğe bağlı sunucu:** P2P'nin çalışmadığı ağlar için aynı protokolle küçük bir WebSocket aktarıcısı (Cloudflare Workers + Durable Objects), varsayılan kapalı.
 
 ## Tamamlananlar
+
+- [x] Hız hissi, tek odak: zar ve yürüyüş, sonra rakip kartı/sürpriz, en son para jetonları, kat efekti ve bildirimler; istemdeki düğme çift tıklamada hata vermez (v0.23.0)
+- [x] Telefon düzeni, GitHub Actions testi, davet linki önizlemesi (v0.22.0)
+- [x] Ev sahibi devri: yedek oyuncu kopyayla 15 sn sonra aynı oda kodunda devralır (v0.21.0)
+- [x] Yeni tarzda piyonlar, 24 gündem kartı görseli, sürpriz arka yüzü, davet görseli (v0.20.1)
+- [x] Karşı teklif (en fazla 2), ortama göre müzik, itiraz zinciri tek görselde (v0.20.0)
+- [x] Tasarım A (Geniş Tahta) ile arayüz baştan: tek renk şehirler, piyon resimleri, emoji yok, yeni yazı tipleri ve düğmeler (v0.19.0)
+- [x] Gizli kart sızıntısı kapandı, İhtiyati Tedbir 2 sıra (v0.18.0)
+- [x] Monopoly temposunda kart (yalnız Başlangıç ve FIRSAT), 20 tur, İtiraz 4, İhbar 2, bot set takası, sıra nakdi (v0.17.0)
 
 - [x] Bot seviyesi motoru: Kolay (pazarlık ve kaçak kat yok, kat ve kartı yarı yarıya unutur, artırmada erken çekilir) / Zor (eksik parçayı karşının kabul edeceği en ucuz teklifle ister, gerekirse mülk takası; artırmada en az artış); sim'de `node tools/sim.js N 5 zor` ile tek botu seviyeli oynatma. 1000 oyun, 5 kişi: zor %25, kolay %14, eşit şans %20 (v0.14.0)
 

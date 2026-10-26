@@ -164,7 +164,7 @@ export class Host {
       try {
         this.onMessage(client, m);
       } catch (e) {
-        console.error(e);
+        if (!(e instanceof E.GameError)) console.error(e); // kural dışı hamle hata değil, oyuncuya mesaj gider
         this.send(client, { t: 'error', msg: e instanceof E.GameError ? e.message : 'Beklenmeyen bir hata oldu.' });
       }
     };

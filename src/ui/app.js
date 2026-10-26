@@ -169,7 +169,10 @@ function onMsg(m) {
       break;
     case 'error':
       play('error');
-      if (app.screen === 'game') G.toast(m.msg, 'error');
+      if (app.screen === 'game') {
+        G.toast(m.msg, 'error', 'warning');
+        G.unlockPrompt();
+      }
       else {
         app.error = m.msg;
         render();
@@ -688,6 +691,8 @@ document.addEventListener('click', (e) => {
   if (!fn) return;
   if (el.tagName !== 'INPUT') e.preventDefault();
   fn(el, e);
+  // İstemdeki düğme bir kez basılır; istem yeni durumla yeniden çizilene kadar kilitli kalır (çift tıklama hata vermesin).
+  if (el.tagName === 'BUTTON' && el.closest('#prompt')) el.disabled = true;
 });
 
 document.addEventListener('input', (e) => {

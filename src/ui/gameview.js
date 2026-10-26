@@ -1,7 +1,7 @@
 // Oyun ekranı (tasarım A, Geniş Tahta): tahta, tahtanın ortası (istem, gündem, son olaylar), sağ sütun
 // (oyuncular, el, araçlar), kare penceresi, tahtanın ortasında açılan pencereler ve olay efektleri.
 import * as E from '../engine/index.js';
-import { html, raw, setHTML } from './dom.js';
+import { html, raw, setHTML, sleep } from './dom.js';
 import { play, isMuted, getAudio, setMusic } from './sound.js';
 import { Hand, cardFace, flyToCenter, WHEN } from './hand.js';
 import { isNotifyOn, notifySupported } from './notify.js';
@@ -83,6 +83,12 @@ export function mountGame(root) {
 }
 
 export const gameMounted = () => !!els && document.body.contains(els.board);
+// Ev sahibi hamleyi reddedince istem aynı kalır; basılıp kilitlenen düğmeler yeniden açılsın diye baştan çizilir.
+export function unlockPrompt() {
+  if (!els) return;
+  els.prompt._last = null;
+  updateGame();
+}
 export const unmountGame = () => {
   els = null;
 };
@@ -981,7 +987,8 @@ function worthChart(v) {
 // ---------- olay efektleri ----------
 
 // Bildirimler tahtanın ortasının altında belirir, aynı metin üst üste gelmez.
-export function toast(text, kind = '', icon = '') {
+export const toast = (text, kind = '', icon = '') => showToast(text, kind, icon);
+function showToast(text, kind = '', icon = '') {
   const box = els && document.getElementById('toasts');
   if (!box) return;
   if ([...box.children].some((c) => c.dataset.text === text)) return;
@@ -1044,7 +1051,7 @@ function flyCoins({ from, to, amount, n, delay }) {
 }
 
 // Kat dikilince karede kısa bir inşaat sıçraması ve vinç.
-function buildFx(sq) {
+function buildFxNow(sq) {
   const cell = cells && cells[sq];
   if (!cell || calm()) return;
   cell.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1) translateY(-4%)', offset: 0.35 }, { transform: 'scale(0.97)', offset: 0.7 }, { transform: 'scale(1)' }], { duration: 650, easing: 'ease-out' });
@@ -1202,10 +1209,13 @@ export function confetti() {
   }
 }
 
-// Sunucudan gelen bir durum güncellemesini canlandırıp çizer.
+// Sunucudan gelen bir durum güncellemesini canlandırıp çizer. Tek odak: önce zar ve yürüyüş, sonra rakip kartı
+// ya da sürpriz, en son para jetonları, kat efekti ve bildirimler; hepsi aynı anda ekrana dökülmez.
 export async function present(prev, v, events, fast) {
   const me = v.you;
-  if (!fast) for (const f of coinFlights(events)) flyCoins(f);
+  const later = []; // canlandırma sırası bitince gösterilecekler
+  const toast = (...a) => later.push(() => showToast(...a));
+  const buildFx = (sq) => later.push(() => buildFxNow(sq));
   for (const ev of events) {
     switch (ev.type) {
       case 'card':
@@ -1265,6 +1275,7 @@ export async function present(prev, v, events, fast) {
       default:
     }
   }
+  const flights = fast ? [] : coinFlights(events);
   const myHandBefore = prev && prev.players[me] ? prev.players[me].hand : [];
   app.ui.newCards = me >= 0 ? v.players[me].hand.filter((u) => !myHandBefore.includes(u)) : [];
   // Olay sırasıyla canlandır: zar, yürüyüş, sürpriz ve rakip kartları birbirinin üstüne binmez.
@@ -1286,6 +1297,11 @@ export async function present(prev, v, events, fast) {
     } finally {
       animating = false;
     }
+  }
+  for (const f of later) f();
+  if (flights.length && els) {
+    for (const f of flights) flyCoins(f);
+    await sleep(FLIGHT_MS * 0.6); // jetonlar yola çıksın, sayılar sonra değişsin
   }
   if (v.phase === 'over' && !app.ui.seenOver) {
     app.ui.seenOver = true;
