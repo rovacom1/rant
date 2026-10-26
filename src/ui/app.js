@@ -29,7 +29,6 @@ function savedGame(kind) {
 
 const I = (name, cls = '') => raw(ic(name, cls));
 const PW = (avatar, color, s) => raw(pawn(avatar, color, s));
-const ME_COLOR = '#2475e8';
 
 function menuHTML() {
   const host = savedGame('host');
@@ -45,8 +44,7 @@ function menuHTML() {
     <div class="start-card"><span class="h22">Masaya otur</span>
       ${app.error ? html`<div class="box-err">${I('warning')}<span>${app.error}</span></div>` : ''}
       ${busy ? html`<div class="box-note"><span class="spinner"></span><span>${app.status === 'connecting' ? 'Bağlanılıyor' : app.status}</span></div>` : ''}
-      <label class="label">Adın<input class="input" id="nameInput" maxlength="16" placeholder="ör. Deniz" value="${profile.name}"></label>
-      <div class="label">Piyonun<div class="pawn-pick">${E.AVATARS.map((a) => html`<button class="${a === profile.avatar ? 'on' : ''}" data-act="avatar" data-a="${a}" aria-label="${E.PAWN_NAMES[a]}" data-tip="${E.PAWN_NAMES[a]}">${PW(a, ME_COLOR, 36)}</button>`)}</div></div>
+      <label class="label">Adın<input class="input" id="nameInput" maxlength="${E.NAME_MAX}" placeholder="ör. Deniz" value="${profile.name}"></label>
       ${host ? resume('host', host, 'Kurduğun oda') : ''}${local ? resume('local', local, 'Bot oyunun') : ''}
       <button class="btn L pri full" data-act="host" ${busy ? 'disabled' : ''}>Oda kur</button>
       <div class="row" style="gap:8px"><input class="input code" id="codeInput" maxlength="8" placeholder="ODA KODU" aria-label="Oda kodu" value="${app.joinCode || ''}"><button class="btn sec" data-act="join" ${busy ? 'disabled' : ''}>Katıl${I('arrow')}</button></div>
@@ -71,13 +69,20 @@ function lobbyHTML() {
   const RULE_IC = { ihale: 'gavel', surpriz: 'surpriz', gundem: 'news' };
   const humans = L.seats.filter((s) => !s.bot).length;
   const levelName = (b) => b[0].toLocaleUpperCase('tr-TR') + b.slice(1);
+  // Piyon lobide seçilir; başkasının piyonu kapalıdır. Seçicide renk kenarı yok, oyuncu rengi tahtada görünür.
+  const mine = L.seats.find((s) => s.id === app.me);
+  const pick = (a) => {
+    const o = L.seats.find((s) => s.avatar === a);
+    return html`<button class="${o === mine ? 'on' : ''}" data-act="avatar" data-a="${a}" ${o ? 'disabled' : ''} aria-label="${E.PAWN_NAMES[a]}" ${o && o !== mine ? html`data-tip="${o.name}"` : ''}>${PW(a, 'transparent', 36)}<span class="pn">${E.PAWN_NAMES[a]}</span></button>`;
+  };
   return html`<div class="lobby">
     <div class="lobby-head"><span class="logo sm">Rantçı Dayı</span><span class="grow"></span><button class="btn sq" data-act="rules" aria-label="Kurallar">${I('book')}</button><button class="btn sq" data-act="theme" aria-label="Tema">${I(document.body.classList.contains('dark') ? 'sun' : 'moon')}</button><button class="btn sq" data-act="leave" aria-label="Çık">${I('door')}</button></div>
     <div class="lobby-main">
       <section class="panel lobby-seats">
         ${online ? html`<div class="row" style="gap:14px"><span class="label">Oda</span><span class="room-code">${L.code}</span><span class="grow"></span><button class="btn sec" data-act="copyLink">${I('link')}Davet linkini kopyala</button></div>
           <span class="muted small">Linki arkadaşlarına gönder; açıp adını yazınca masaya otururlar.</span>` : html`<span class="h18">Bot masası</span><span class="muted small">Tek bilgisayarda botlara karşı. Arkadaşlarla oynamak için menüden "Oda kur".</span>`}
-        ${seats}
+        <div class="seat-grid">${seats}</div>
+        ${mine ? html`<div class="label">Piyonun<div class="pawn-pick">${E.AVATARS.map(pick)}</div></div>` : ''}
       </section>
       <section class="panel lobby-cfg"><span class="h18">Masa${host ? '' : html` <span class="muted small">(ev sahibi seçer)</span>`}</span>
         ${seg('cfgEnd', [['rounds', 'Tur'], ['score', 'Değer hedefi'], ['iflas', 'Son kalan']], L.config.endMode || 'rounds', 'Oyun sonu')}
@@ -391,7 +396,7 @@ function leave(msg = '') {
 
 function needName() {
   const inp = $('#nameInput');
-  if (inp) profile.name = inp.value.trim().slice(0, 16);
+  if (inp) profile.name = inp.value.trim().slice(0, E.NAME_MAX);
   store.set('name', profile.name);
   if (!profile.name) {
     app.error = 'Önce adını yaz.';
@@ -441,9 +446,7 @@ const A = {
   avatar(el) {
     profile.avatar = el.dataset.a;
     store.set('avatar', profile.avatar);
-    const inp = $('#nameInput');
-    if (inp) profile.name = inp.value;
-    render();
+    send({ t: 'profile', name: profile.name, avatar: profile.avatar });
   },
   host: () => needName() && startHost(),
   join: () => needName() && startJoin($('#codeInput').value),
@@ -708,7 +711,7 @@ document.addEventListener('input', (e) => {
   }
   if (G.bindsInput(e)) return;
   if (e.target.id === 'nameInput') {
-    profile.name = e.target.value.trim().slice(0, 16);
+    profile.name = e.target.value.trim().slice(0, E.NAME_MAX);
     store.set('name', profile.name);
   }
 });

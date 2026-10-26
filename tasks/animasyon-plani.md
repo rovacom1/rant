@@ -12,7 +12,7 @@ Kullanıcı üç denemeden (Sahne / Sade / Kamera) **Sade**'yi seçti ve her ko�
   Taş tahtanın üst yarısındaysa etiket taşın altında, alt yarısındaysa üstünde durur (yoksa ekrandan taşar).
 - `prefers-reduced-motion`: zıplama ve halkalar yok, yalnız parlama ve etiket.
 - Bağlanacağı yer: `src/ui/gameview.js` `present()` içindeki `turn` olayı, yürüyüş/zar sırası bittikten sonra; taş konumu `Tokens` (`src/ui/board.js`).
-- Deneme sayfası: https://claude.ai/artifact/9sLyPxPDHyQaRGK9NDLMW8
+- Deneme sayfası (eski taşlarla): https://claude.ai/artifact/9sLyPxPDHyQaRGK9NDLMW8 — yeni piyonlarla tuval: https://claude.ai/artifact/N6fRTDN5jXxjywauDcwkXA
 
 ## Genel kurallar (kullanıcı geri bildirimi, 2026-10-26)
 - Kareyi (mülk kartını) büyüten ya da yerinden oynatan animasyon yok. Vurgu kenarda olur: oyuncu rengi karenin kenarını dolanır, sonra söner.
@@ -30,11 +30,11 @@ Kira, kat, yıkım ve maaş mevcut seslerle karşılanıyor.
 ElevenLabs akışı: https://elevenlabs.io/app/flows/KdrEk2RzPD9O2DraxQM3
 
 ## Değerlendirmede: diğer olay animasyonları
-Deneme sayfası: https://claude.ai/artifact/PcmrrAgHXEd7cnRdxhjVQ9 — kullanıcı her birini ayrı değerlendirecek.
+Yeni piyonlara ve buzlu cam karelere uyarlanmış tuval (2026-10-26): https://claude.ai/artifact/N6fRTDN5jXxjywauDcwkXA — kullanıcı her birini ayrı değerlendirecek. Eski deneme: https://claude.ai/artifact/PcmrrAgHXEd7cnRdxhjVQ9
 - [ ] Mülk alındı: alıcının rengi karenin kenarını dolanır, sonra şerit o renkle dolar
 - [ ] Kira: jetonlar ödeyenin taşından sahibinin taşına uçar (bugün oyuncu panelleri arasında)
 - [ ] Kat dikildi: 🏠 kareye düşüp seker (bugün 🏗️ yukarı süzülür)
-- [ ] Kaçak kat yıkıldı: kare sarsılır, 🚧 toz olur (bugün yalnız bildirim)
+- [ ] Kaçak kat yıkıldı: karenin kenarı kırmızı yanar, 🚧 titreyip toz olur; kare sarsılmaz (bugün yalnız bildirim)
 - [ ] Maaş: Başlangıç köşesi parlar, jetonlar taşa uçar
 - [ ] Tam set: setin karelerinin kenarı sırayla oyuncu rengine boyanır, ★ belirir
 - [ ] İflas: taş solup düşer, mülklerin şeritleri sırayla griye döner

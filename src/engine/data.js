@@ -212,8 +212,14 @@ export const SURPRIZ = {
 };
 
 // Oyuncu piyonları (resimleri assets/piyon/<ad>.png). Oyuncu rengi resmin kenarına çizilir.
-export const AVATARS = ['semazen', 'kofte', 'leblebi', 'ankaray', 'galata', 'hitit'];
-export const PAWN_NAMES = { semazen: 'Semazen', kofte: 'İnegöl Köftesi', leblebi: 'Çorum Leblebisi', ankaray: 'Ankaray', galata: 'Galata Kulesi', hitit: 'Hitit Güneşi' };
+// Sıra tahtadaki şehir sırası: Çorum, Trabzon, Bursa, Konya, Antalya, Ankara, İzmir, İstanbul.
+export const AVATARS = ['leblebi', 'hitit', 'hamsi', 'ekmek', 'kofte', 'kestane', 'semazen', 'nasreddin', 'caretta', 'ankaray', 'atakule', 'saatkulesi', 'boyoz', 'galata', 'kizkulesi'];
+export const PAWN_NAMES = {
+  leblebi: 'Çorum Leblebisi', hamsi: 'Hamsi', ekmek: 'Trabzon Ekmeği', kofte: 'İnegöl Köftesi', kestane: 'Kestane Şekeri', semazen: 'Semazen', nasreddin: 'Nasreddin Hoca',
+  caretta: 'Caretta Caretta', ankaray: 'Ankaray', hitit: 'Hitit Güneşi', atakule: 'Atakule', saatkulesi: 'İzmir Saat Kulesi', boyoz: 'Boyoz', galata: 'Galata Kulesi', kizkulesi: 'Kız Kulesi',
+};
 // Renk körlüğüne dayanıklı palet (kırmızı, mavi, zümrüt, koyu mor, sarı, pembe).
 export const PLAYER_COLORS = ['#d1342f', '#2475e8', '#0e9f80', '#5a2d9c', '#f4b400', '#f472b6'];
+// Oyuncu adı en fazla bu kadar karakter; arayüz (podyum, oyuncu listesi, sonuç balonu) bu uzunluğa göre denendi.
+export const NAME_MAX = 16;
 export const BOT_NAMES = ['Hacı Müteahhit', 'Emlakçı Nuri', 'Kooperatif Sevim', 'Tapucu Rıza', 'Arsa Kemal', 'Rezidans Bülent'];

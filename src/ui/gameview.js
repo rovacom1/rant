@@ -15,6 +15,8 @@ import { coinFlights, arcPeak, COIN_GAP } from './coins.js';
 import { worthLines } from './chart.js';
 import { ic, money, CARD_IC, GUNDEM_IC, SURPRIZ_IC } from './icons.js';
 import { pawn } from './pawns.js';
+import { verdict } from './verdict.js';
+import { mountDayi } from './dayi.js';
 
 const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, GUNDEM_PERIOD, fmt, cardId } = E;
 const N = BOARD.length;
@@ -952,7 +954,10 @@ export function tickTimers() {
 // ---------- sonuç ekranı ----------
 
 function renderResults(v) {
-  if (!app.ui.resultsOpen || v.phase !== 'over') return setHTML(els.results, '');
+  if (!app.ui.resultsOpen || v.phase !== 'over') {
+    mountDayi(null);
+    return setHTML(els.results, '');
+  }
   const r = v.results;
   const iflas = v.config.iflas;
   const sub = (p) => {
@@ -967,18 +972,26 @@ function renderResults(v) {
   const podium = podOrder.map((p) => {
     const k = r.ranking.indexOf(p);
     const pl = P(v, p);
-    return html`<div class="pod" style="--pc:${pl.color}">${k === 0 ? I('crown') : ''}${PW(pl, k === 0 ? 84 : 64)}<span class="h18">${pl.name}</span><div class="block" style="height:${H[k]}px"><span class="h28">${score(p)}</span><span class="rank">${k + 1}</span></div></div>`;
+    return html`<div class="pod" style="--pc:${pl.color}">${k === 0 ? I('crown') : ''}${PW(pl, k === 0 ? 84 : 64)}<span class="h18 ${pl.name.length > 12 ? 'long' : ''}">${pl.name}</span><div class="block" style="height:${H[k]}px"><span class="h28">${score(p)}</span><span class="rank">${k + 1}</span></div></div>`;
   });
+  // Dayı kazanana konuşur; sonuncu oyuncu kendi ekranında kendi azarını büyük görür, herkes de satırının altında.
+  const vd = verdict(v);
+  const mine = vd.lose && vd.lose.p === v.you;
+  const say = mine ? vd.lose : vd.win;
   const rows = r.ranking.map((p, k) => {
     const pl = P(v, p);
+    const note = vd.lose && vd.lose.p === p && !mine ? html`<span class="rank-note"><b>${pl.name}</b>, ${vd.lose.text}</span>` : '';
     return html`<div class="rank-row ${k === 0 ? 'first' : ''} ${pl.out ? 'out' : ''}" style="--pc:${pl.color}"><span class="rank-n">${k + 1}</span><span class="disc">${PW(pl, 30)}</span>
-      <span class="col grow" style="gap:0;min-width:0"><span class="h16">${pl.name}</span><span class="muted small">${sub(p)}</span></span>${pl.out ? I('iflas') : ''}<span class="h22">${score(p)}</span></div>`;
+      <span class="col grow" style="gap:0;min-width:0"><span class="h16">${pl.name}</span><span class="muted small">${sub(p)}</span></span>${pl.out ? I('iflas') : ''}<span class="h22">${score(p)}</span>${note}</div>`;
   });
+  const sp = P(v, say.p);
+  const bubble = html`<div class="verdict"><div class="verdict-dayi"></div><div class="bubble"><p><b>${sp.name}</b>, ${say.text}</p></div></div>`;
   const winner = P(v, r.ranking[0]).name;
   setHTML(els.results, html`<div class="results" role="dialog" aria-label="Oyun sonu">
-    <div class="left"><span class="kicker">${iflas ? 'Son kalan' : `${v.round} tur bitti`}</span><span class="logo" style="font-size:52px">${iflas ? `${winner} kazandı` : 'Seçim Günü'}</span><div class="podium">${podium}</div><span class="grow"></span>
+    <div class="left"><span class="kicker">${iflas ? 'Son kalan' : `${v.round} tur bitti`}</span><span class="logo" style="font-size:${iflas && winner.length > 10 ? 40 : 52}px;text-align:center">${iflas ? `${winner} kazandı` : 'Seçim Günü'}</span>${bubble}<div class="podium">${podium}</div><span class="grow"></span>
       <div class="row">${isHost() ? html`<button class="btn L pri" data-act="newGame">${I('refresh')}Aynı masayla yeni oyun</button>` : ''}<button class="btn L sec" data-act="resultsClose">Tahtaya dön</button><button class="btn L gho" data-act="leave">Ana menü</button></div></div>
     <div class="right">${rows}${worthChart(v)}</div></div>`);
+  mountDayi(els.results.querySelector('.verdict-dayi'), mine ? 'kayip' : vd.win.clip);
 }
 
 // Tur tur net değer çizgisi (konkordato cezası yok; kazananın çizgisi kalın).

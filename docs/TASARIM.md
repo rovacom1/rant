@@ -25,6 +25,7 @@ RANT'a özgü olanlar:
 ## 2. Temel bilgiler
 
 - Oyuncu: 2-6 (denge 4-5 için ayarlı). Boş koltuklar botla doldurulabilir.
+- Piyon lobide, adı altında yazan 15 figürden seçilir (her şehrin bir ya da birkaç simgesi). Her piyon masada bir kez bulunur; başkasının seçtiği piyon seçilemez. Seçicide piyonun etrafında renk çizgisi olmaz, oyuncu rengi tahtada görünür.
 - Süre: ev sahibi lobide oyunun nasıl biteceğini seçer:
   - **Tur sayısıyla**: 15, 20 (varsayılan) ya da 25 tur. 20 tur 5 kişiyle yaklaşık 40-50 dakika (kartlar seyrek geldiği için 15 turluk eski oyunla aşağı yukarı aynı süre).
   - **Değer hedefiyle**: 2.500, 3.500 ya da 5.000 ₺. Bir oyuncunun değeri (nakit + mülk + katlar, oyuncu panelinde görünen) hedefe ulaşınca o tur tamamlanır ve Seçim Günü gelir; herkes eşit sayıda oynamış olur. Bot simülasyonunda yaklaşık 9, 15 ve 22 tur sürer. Oyun en geç 30. turda biter.
@@ -261,6 +262,7 @@ SÜRPRİZ karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçili
 Net Değer = nakit + mülklerin güncel fiyatı (ipotekli ise yarısı) + yasal kat x kat fiyatı + kaçak kat x kat fiyatının yarısı.
 Puan = Net Değer - 300 x konkordato. Eşitlikte nakdi fazla olan kazanır.
 Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tur tur net değer çizgisi gösterilir (konkordato cezası çizgide yoktur, yalnız puanda).
+Oyun sonu ekranındaki dayı yorumu için her oyuncunun diktiği kaçak kat, kazandığı açık artırma, kazandığı dava, itirazsız geçen Kamulaştırma ve Zorla Takas sayısı, ihbarı ya da zabıtasıyla yıkılan rakip kaçak katı ve aldığı toplam kira sayılır; puanı etkilemez.
 
 ## 10. Çevrimiçi mimari
 
