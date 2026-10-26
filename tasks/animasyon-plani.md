@@ -1,6 +1,6 @@
 # Animasyon planı (2026-10-26)
 
-Durum: uygulandı (2026-10-26, v0.28.0, dal `animasyon`). Kural metni `docs/TASARIM.md` §11, kod `src/ui/boardfx.js`. Her animasyon kendi sesinin duyulan uzunluğu kadar sürer (`sfxLen`).
+Durum: uygulandı (2026-10-26, v0.28.0, dal `animasyon`). Kural metni `docs/TASARIM.md` §11, kod `src/ui/boardfx.js`. Sesler animasyonun vuruşlarına bölündü ve o anlarda çalar (ayrıntı aşağıda, "Sesler").
 Çalışma yeri: bu klasör (`rant-yenilikler`, dal `yenilikler`). Denemeler eski yuvarlak emoji taşlarla yapıldı; bu dalda taşlar resimli piyonlara (`src/ui/pawns.js`, `assets/piyon`) geçiyor. Uygularken konum ve katman kuralları piyonlara uyarlanır.
 
 ## Karar: tur başı animasyonu "Sade" (kesin)
@@ -20,14 +20,11 @@ Kullanıcı üç denemeden (Sahne / Sade / Kamera) **Sade**'yi seçti ve her ko�
 - Tahta efektleri (halka, kenar çizgisi, etiket, toz, yıldız, düşen ev) taşların altında kalır, taşın üstüne binmez. Yalnız para (jetonlar ve +/− ₺ yazısı) taşların üstünden uçar.
 
 ## Sesler
-Oyunda olan (`src/ui/sound.js`): zar, adım, para, ödeme, kart, sıra (yalnız kendi sıran), gündem, tokmak, inşaat, yıkım, zafer, ihale.
-Eksik olanlar için ElevenLabs (eleven_text_to_sound_v2) adayları `tasks/ses-ham/` altında; kullanıcı seçti (2026-10-26), seçilenler `assets/ses` altına taşındı (satinal, set, iflas, sira-diger) ve `FILE`'a eklendi:
-- [x] Mülk alındı: **`satinal-3`** seçildi (bugün ses yok)
-- [x] Tam set: **`set-3`** seçildi (bugün ses yok)
-- [x] İflas: **`iflas-3`** seçildi (bugün yıkım sesi)
-- [x] Başkasının sırası (Sade): **`sira-diger-2`** seçildi; kendi sıranda mevcut `sira` kalır
-Kira, kat, yıkım ve maaş mevcut seslerle karşılanıyor.
-ElevenLabs akışı: https://elevenlabs.io/app/flows/KdrEk2RzPD9O2DraxQM3
+Kullanıcı (2026-10-26): ses ile görüntünün birbirine tam denk gelmesi en önemlisi; sesleri buna göre seç ya da ürettir.
+Bu yüzden her animasyon tek uzun ses yerine kısa vuruşlara bölündü. 18 vuruş ElevenLabs'te (eleven_text_to_sound_v2, süre ve prompt_influence 0.7 ile) üçer deneme üretildi; adaylar `tasks/ses-ham/fx/` altında. Seçim dalga biçimi ölçümüyle yapıldı: darbe seslerinde anında başlayan tek vuruş, sürekli seslerde (süzülme, düşüş, düdük, trombon) kesintisiz süre. Seçilenler `assets/ses/fx/`:
+zipla=hop-1, tak=tap-1, zil=bell-2, suzulme=sweep-1, muhur=stamp-2, nota=chime-3, parilti=sparkle-3, firlat=toss-1, jeton=clink-1, kasa=ding-3, dusus=slide-2, tok=thud-1, duduk=whistle-1, tikirti=rattle-2, puf=poof-3, sallanma=wobble-2, huzun=sad-3, cit=tick-1.
+Tıkırtı adaylarının hiçbiri 0,3 sn'den uzun sürmediği için koninin titremesi 0,32 sn'ye kısaltıldı. Önceki tek parça adaylar (satinal, set, iflas, sira-diger) kullanılmıyor.
+ElevenLabs akışı: https://elevenlabs.io/app/flows/KdrEk2RzPD9O2DraxQM3 (fx- ile başlayan kutular)
 
 ## Uygulanan diğer olay animasyonları
 Yeni piyonlara ve buzlu cam karelere uyarlanmış tuval (2026-10-26): https://claude.ai/artifact/N6fRTDN5jXxjywauDcwkXA — kullanıcı her birini ayrı değerlendirecek. Eski deneme: https://claude.ai/artifact/PcmrrAgHXEd7cnRdxhjVQ9

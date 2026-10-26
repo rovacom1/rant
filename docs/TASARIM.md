@@ -276,17 +276,15 @@ Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tu
 
 ## 11. Tahta animasyonları
 
-Her animasyon kendi sesiyle birlikte çalar ve sesin duyulan uzunluğu kadar sürer (süre ses dosyasından ölçülür, oyun hızına bağlı değildir). Oyun bölünmez, tahta kararmaz.
-- **Kurallar:** kare büyümez, yerinden oynamaz; vurgu karenin kenarında olur. Etiket ve tutar tahtanın üst yarısında piyonun altında, alt yarısında üstünde çıkar. Efektler piyonların altında kalır; yalnız jetonlar ve ± tutar piyonların üstünden geçer. Hareket azaltma açıksa zıplama, halka, kenar çizgisi ve uçuş olmaz; parlama, etiket ve sesler kalır.
-- **Tur başı** (kendi sıran `sira`, başkasınınki `sira-diger`): piyon iki kez seker, oyuncu renginde 3 halka yayılır, karesi iki kez parlar. Piyonun yanında piyon resmi + ad (kendi sıranda "Sıra sende!") yaklaşık 2,4 sn kalır.
-- **Mülk alındı** (`satinal`; ihalede `artirma`, pazarlıkta `para`): alıcının rengi karenin kenarını bir tur dolanır, sonra şerit soldan o renkle dolar.
-- **Tam set** (`set`, mülk animasyonundan sonra): setin karelerinin kenarı sırayla sahibinin rengine boyanır, şeritlerde yıldız belirir.
-- **Kira** (`para` / `odeme`): jetonlar ödeyenin piyonundan sahibinin piyonuna kavisle uçar; tutar iki piyonun yanında belirir.
-- **Maaş** (`para`): Başlangıç köşesi altın renkte iki kez parlar, jetonlar köşeden piyona uçar.
-- **Kat dikildi** (`insaat`): ev karenin kat rozetine düşüp seker, rozet hafifçe kabarır.
-- **Kaçak kat yıkıldı** (`yikim`): karenin kenarı kırmızı iki kez yanar, kaçak kat konisi titreyip toza dönüşür.
-- **İflas** (`iflas`): piyon sallanır, renksizleşip düşerek kaybolur; mülklerinin şeritleri sırayla griye döner.
-- Diğer para hareketleri (kart, gündem, vergi) eskisi gibi oyuncu panelleri ve banka arasında uçar.
+Her animasyonun sabit bir zaman çizelgesi var (`src/ui/boardfx.js`, `T`). Sesler animasyona denk gelecek biçimde kısa vuruşlara bölünmüştür (`assets/ses/fx`, ElevenLabs): her vuruş görüntüdeki anına çalar, darbe seslerinin en yüksek yeri tam o ana gelir. Oyun bölünmez, tahta kararmaz.
+- **Kurallar:** kare büyümez, yerinden oynamaz; vurgu karenin kenarında olur. Etiket ve tutar tahtanın üst yarısında piyonun altında, alt yarısında üstünde çıkar. Efektler piyonların altında kalır; yalnız jetonlar ve ± tutar piyonların üstünden geçer. Hareket azaltma açıksa zıplama, halka, kenar çizgisi ve uçuş olmaz; parlama, etiket ve sesler kalır. Aynı anda birkaç kare canlanırsa ses bir kez çalar.
+- **Tur başı (1 sn):** piyon zıplar (`zipla`), 0,5. sn'de konar (`tak`), küçük bir sekişle 1. sn'de yine konar; oyuncu renginde 3 halka yayılır, karesi iki kez parlar. Kendi sıranda zil de çalar (`zil`). Piyonun yanında piyon resmi + ad ("Sıra sende!") yaklaşık 2,4 sn kalır.
+- **Mülk alındı (1 sn):** alıcının rengi karenin kenarını 0,6 sn'de dolanır (`suzulme`), o anda mühür vurulur (`muhur`) ve şerit soldan o renkle dolar. İhale ve pazarlıkta kendi sesleri çalar.
+- **Tam set (1,2 sn, mülk animasyonundan sonra):** setin kareleri sırayla sahibinin rengine boyanır; her kare tamamlanınca bir nota, giderek tizleşir (`nota`); sonunda şeritlerde yıldızlar parlar (`parilti`).
+- **Kira ve maaş (0,9 sn):** jetonlar kalkarken fırlatma sesi (`firlat`), her jeton piyona konduğunda jeton sesi (`jeton`); tutar iki piyonun yanında belirir. Maaşta Başlangıç köşesi altın renkte parlar, kasa zili ilk parlamada (`kasa`). Diğer para hareketleri (kart, gündem, vergi) eskisi gibi oyuncu panelleri ve banka arasında uçar.
+- **Kat dikildi (0,8 sn):** ev yukarıdan düşer (`dusus`), 0,44. sn'de kat rozetine çarpar (`tok`), rozet kabarır, seker ve yine konar (`tak`).
+- **Kaçak kat yıkıldı (1,3 sn):** zabıta düdüğüyle (`duduk`) kenar kırmızı iki kez yanar, kaçak kat konisi titrer (`tikirti`) ve 0,8. sn'de toza dönüşür (`puf`).
+- **İflas (1,8 sn):** piyon sallanır (`sallanma`), renksizleşip düşerek kaybolur (`huzun`), mülklerinin şeritleri sırayla griye döner (her birinde `cit`).
 
 ## 12. Protokol (v1)
 

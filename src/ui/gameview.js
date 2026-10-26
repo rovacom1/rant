@@ -2,8 +2,8 @@
 // (oyuncular, el, araçlar), kare penceresi, tahtanın ortasında açılan pencereler ve olay efektleri.
 import * as E from '../engine/index.js';
 import { html, raw, setHTML, sleep } from './dom.js';
-import { play, sfxLen, isMuted, getAudio, setMusic } from './sound.js';
-import { calm, turnFx, ownFx, setFx, buildFx, demolishFx, iflasFx, shineFx } from './boardfx.js';
+import { play, isMuted, getAudio, setMusic } from './sound.js';
+import { T, calm, turnFx, ownFx, setFx, buildFx, demolishFx, iflasFx, coinSounds } from './boardfx.js';
 import { Hand, cardFace, flyToCenter, WHEN } from './hand.js';
 import { isNotifyOn, notifySupported } from './notify.js';
 import { buildBoard, updateBoard, Tokens, Dice, cellPos, isLight } from './board.js';
@@ -1084,21 +1084,22 @@ function flyBetween(a, b, n, delay, ms) {
   }
 }
 
-// Kira ve maaş: jetonlar piyonlar arasında (maaşta Başlangıç köşesinden piyona) uçar; uçuş, çalan sesin süresi kadardır.
+// Kira ve maaş: jetonlar piyonlar arasında (maaşta Başlangıç köşesinden piyona) uçar; kalkışta fırlatma, her jeton
+// konduğunda jeton sesi çalar (boardfx.coinSounds).
 function pawnFlight(v, e, delay) {
-  const me = v.you;
-  const snd = e.to === me ? 'coin' : e.from === me ? 'pay' : null;
-  const ms = sfxLen(snd || 'coin') * 1000;
+  const ms = T.flight;
+  const n = coinCount(e.amount);
   const tok = (p) => centerOf(tokens.els.get(P(v, p).id));
   const salary = e.from === null;
   const a = salary ? centerOf(cells[0]) : tok(e.from);
   const b = tok(e.to);
+  const land = (i) => i * COIN_GAP + ms * 0.92; // flyBetween'de jeton varış noktasına %92'de gelir
   setTimeout(() => {
-    if (snd) play(snd, ms / 1000);
-    if (salary) shineFx(els.board, cells[0], ms);
+    if (!els) return;
+    coinSounds(n, land, salary, els.board, cells[0]);
     if (!salary && a) floatAt(a, -e.amount);
   }, delay);
-  if (a && b && !calm()) flyBetween(a, b, coinCount(e.amount), delay, ms);
+  if (a && b && !calm()) flyBetween(a, b, n, delay, ms);
   if (b) setTimeout(() => floatAt(b, e.amount), delay + (calm() ? 0 : ms));
 }
 
@@ -1283,15 +1284,10 @@ export async function present(prev, v, events, fast) {
   // Sesler, ait oldukları canlandırmayla aynı anda ve aynı sürede çalar (jeton sesi jetonlar uçarken).
   const sfx = (name, sec) => later.push(() => play(name, sec));
   const flight = (PACE.flight * spd()) / 1000;
-  // Tahta animasyonları (boardfx.js): her biri kendi sesinin süresi kadar. Yıkım ve iflas eski kare ve piyon
-  // üstünde (later), diğerleri tahta yeni duruma çizildikten sonra (post) oynar.
+  // Tahta animasyonları (boardfx.js), sesleri görüntüyle aynı anlarda. Yıkım ve iflas eski kare ve piyon üstünde
+  // (later), diğerleri tahta yeni duruma çizildikten sonra (post) oynar. Aynı türden birkaç kare varsa ses bir kez çalar.
   const live = !fast && !!prev && !!els;
   const post = [];
-  const withSound = (name, run, fallback) => {
-    const L = sfxLen(name, fallback);
-    play(name, L);
-    run(L * 1000);
-  };
   const pawnMoney = (e) => e.type === 'money' && e.amount > 0 && e.to !== null && (e.why === 'Maaş' || (/^Kira/.test(e.why || '') && e.from !== null));
   for (const ev of events) {
     switch (ev.type) {
@@ -1308,12 +1304,12 @@ export async function present(prev, v, events, fast) {
         else if (ev.from === me) sfx('pay', flight);
         break;
       case 'build':
-        if (live) post.push(() => withSound('build', (ms) => buildFx(els.board, cells[ev.sq], !!ev.kacak, ms)));
+        if (live) post.push(() => buildFx(els.board, cells[ev.sq], !!ev.kacak));
         else sfx('build');
         break;
       case 'demolish': {
         const lost = BOARD.map((_, q) => q).filter((q) => prev && prev.props[q]?.kacak && !v.props[q]?.kacak);
-        if (live) later.push(() => withSound('crash', (ms) => lost.forEach((q) => demolishFx(els.board, cells[q], ms))));
+        if (live) later.push(() => lost.forEach((q, k) => demolishFx(els.board, cells[q], k === 0)));
         else sfx('crash');
         toast(`${P(v, ev.p).name}: ${ev.n} kaçak kat yıkıldı`, 'error', 'kacak');
         break;
@@ -1332,8 +1328,8 @@ export async function present(prev, v, events, fast) {
       case 'iflas':
         if (live) {
           const owned = BOARD.map((_, q) => q).filter((q) => prev.props[q]?.owner === ev.p).map((q) => cells[q]);
-          later.push(() => withSound('iflas', (ms) => iflasFx(els.board, tokens.els.get(P(v, ev.p).id), owned, ms), 1.8));
-        } else sfx('iflas');
+          later.push(() => iflasFx(els.board, tokens.els.get(P(v, ev.p).id), owned));
+        } else sfx('sad');
         toast(`${P(v, ev.p).name} iflas etti, oyundan çıktı`, 'error', 'iflas');
         break;
       case 'auction':
@@ -1355,7 +1351,7 @@ export async function present(prev, v, events, fast) {
       case 'turn':
         if (live && !P(v, ev.p).out) {
           const pl = P(v, ev.p);
-          post.push(() => withSound(ev.p === me ? 'turn' : 'turnOther', (ms) => turnFx(els.board, cells[pl.pos], tokens.els.get(pl.id), pl, ev.p === me, ms)));
+          post.push(() => turnFx(els.board, cells[pl.pos], tokens.els.get(pl.id), pl, ev.p === me));
         } else if (ev.p === me) play('turn');
         break;
       case 'over':
@@ -1372,20 +1368,14 @@ export async function present(prev, v, events, fast) {
   if (gained.length) {
     const has = (t) => events.some((e) => e.type === t);
     const buy = has('own'); // ihale ve pazarlık kendi sesini zaten çalıyor
-    const L = sfxLen(buy ? 'buy' : has('auction') ? 'sold' : 'coin');
     const sets = new Map();
     for (const q of gained) if (BOARD[q].group && E.inFullSet(v, q) && !E.inFullSet(prev, q)) sets.set(BOARD[q].group, v.props[q].owner);
-    post.push(() => {
-      if (buy) play('buy', L);
-      for (const q of gained) ownFx(els.board, cells[q], P(v, v.props[q].owner).color, L * 1000);
-    });
+    post.push(() => gained.forEach((q, k) => ownFx(els.board, cells[q], P(v, v.props[q].owner).color, buy && k === 0)));
     if (sets.size) {
       post.push(() => setTimeout(() => {
         if (!els) return;
-        withSound('set', (ms) => {
-          for (const [g, o] of sets) setFx(els.board, GROUP_SQUARES[g].map((q) => cells[q]), P(v, o).color, ms);
-        });
-      }, L * 1000));
+        [...sets].forEach(([g, o], k) => setFx(els.board, GROUP_SQUARES[g].map((q) => cells[q]), P(v, o).color, k === 0));
+      }, T.own.ms));
     }
   }
   const myHandBefore = prev && prev.players[me] ? prev.players[me].hand : [];
