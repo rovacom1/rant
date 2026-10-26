@@ -1075,12 +1075,11 @@ export function stageClose() {
   stageShow.done = null;
 }
 
-const GUNDEM_ART = new Set(); // gündem kartı görseli olan kimlikler (assets/gundem/<id>.jpg); görsel yoksa simge
 function showNews(v, ev) {
   const g = GUNDEM[ev.id];
   const detail = v.gundem && v.gundem.id === ev.id ? v.gundem.detail : '';
   const sum = v.summary && v.summary.round === ev.round - 1 ? summaryHTML(v, v.summary) : '';
-  const img = GUNDEM_ART.has(ev.id) ? html`<div class="nimg" style="background-image:url(assets/gundem/${ev.id}.jpg)"></div>` : html`<div class="nimg">${I(GUNDEM_IC[ev.id] || 'news')}</div>`;
+  const img = html`<div class="nimg" style="background-image:url(assets/gundem/${ev.id}.jpg)"></div>`;
   stageShow(html`<div class="news-card">${img}<div class="nbody"><span class="kicker">${ev.round}. tur · son dakika</span><span class="h28">${g.name}</span><span class="body">${g.text}</span>${detail ? html`<span class="hint" style="height:auto;padding:8px 12px;white-space:normal">${detail}</span>` : ''}${sum}</div></div>`, (sum ? 5600 : 3600) * spd());
 }
 

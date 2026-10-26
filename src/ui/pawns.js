@@ -3,7 +3,7 @@
 import { AVATARS, PAWN_NAMES } from '../engine/index.js';
 
 // Resmin görünen kısmının genişlik / yükseklik oranı (resimler bu kısma kırpılı).
-const ASPECT = { semazen: 0.764, kofte: 1.158, leblebi: 0.703, ankaray: 1.063, galata: 0.667, hitit: 1.036 };
+const ASPECT = { semazen: 0.766, kofte: 1.422, leblebi: 0.664, ankaray: 1.103, galata: 0.668, hitit: 0.918 };
 
 const kindOf = (avatar) => (ASPECT[avatar] ? avatar : AVATARS[0]);
 
