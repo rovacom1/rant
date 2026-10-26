@@ -44,7 +44,7 @@ Ev sahibi lobide üç kuralı açıp kapatabilir; hepsi varsayılan olarak açı
 
 Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi ve canlandırmaları 1,4 / 1 / 0,6 katına çeker.
 
-**Bot seviyesi** (Kolay / Normal / Zor) masadaki bütün botlara uygulanır. Kolay bot pazarlık önermez, kaçak kat dikmez, kat dikmeyi ve kart oynamayı yarı yarıya unutur, yedeğini bozacak arsayı almaz, artırmada çabuk çekilir. Zor bot eksik parçayı karşı tarafın kabul edeceği en düşük parayla ister, para yetmezse kendi işine yaramayan bir mülkü takasa koyar; artırmada tavanını şaşmadan hesaplar ve her seferinde en az artışla teklif verir.
+**Bot seviyesi** (Kolay / Normal / Zor) masadaki bütün botlara uygulanır. Kolay bot pazarlık önermez, kaçak kat dikmez, kat dikmeyi ve kart oynamayı yarı yarıya unutur, yedeğini bozacak arsayı almaz, artırmada çabuk çekilir. Zor bot kaçak kat dikmez (zabıta ve ihbar riskine girmez), eksik parçayı karşı tarafın kabul edeceği en düşük parayla ister, para yetmezse kendi işine yaramayan bir mülkü takasa koyar; artırmada tavanını şaşmadan hesaplar ve her seferinde en az artışla teklif verir.
 
 ## 3. Tahta (36 kare)
 

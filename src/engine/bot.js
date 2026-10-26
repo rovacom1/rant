@@ -187,8 +187,8 @@ function buildPlan(s, p, level) {
     .filter((q) => !R.buildBlock(s, p, q, false) && pl.cash - R.katCost(s, q) >= res)
     .sort((a, b) => R.level(s.props[a]) - R.level(s.props[b]) || GROUPS[BOARD[b].group].kat - GROUPS[BOARD[a].group].kat);
   if (legal.length && !(level === 'kolay' && noise(s, p, 9) < 0.5)) return { type: 'build', sq: legal[0] };
-  // Kaçak kat: biraz risk.
-  const kacakCap = level === 'kolay' ? 0 : 2;
+  // Kaçak kat: biraz risk. Zor bot dikmez: zabıta ve ihbarla kaybettiği, kazandığından fazla (sim: 5 kişide %22 -> %29).
+  const kacakCap = level === 'normal' ? 2 : 0;
   if (R.floorsOf(s, p).kacak < kacakCap && !s.mods.durgunluk) {
     const kacak = mine
       .filter((q) => !R.buildBlock(s, p, q, true) && pl.cash - R.kacakCost(s, q) >= res * 1.6)

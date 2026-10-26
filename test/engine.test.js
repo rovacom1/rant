@@ -574,6 +574,21 @@ test('bot seviyesi: zor bot artırmada en az artışla, kolay bot daha erken çe
   assert.equal(botAction(s, 1, 'zor').type, 'raise');
 });
 
+test('bot seviyesi: zor bot kaçak kat dikmez, normal bot bazen diker', () => {
+  const s = started(4, 23);
+  for (const uid of [...s.players[0].hand]) strip(s, 0, uid.split(':')[0]);
+  own(s, 0, 33); // set dışı tek mülk: yasal kat yok, kaçak kat mümkün
+  s.players[0].cash = 3000;
+  s.turn.step = 'free';
+  let normal = 0;
+  for (let k = 0; k < 20; k++) {
+    s.seq = k;
+    assert.notEqual(botAction(s, 0, 'zor').type, 'buildKacak');
+    if (botAction(s, 0, 'normal').type === 'buildKacak') normal++;
+  }
+  assert.ok(normal > 0, 'normal bot aynı durumda kaçak kat diker');
+});
+
 test('bot seviyesi masa ayarından gelir', () => {
   const s = started(4, 21, { botLevel: 'zor' });
   assert.equal(s.config.botLevel, 'zor');
