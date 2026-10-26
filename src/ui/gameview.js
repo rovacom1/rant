@@ -368,10 +368,13 @@ function pendingHTML(v, pd) {
       if (pd.turn !== me) return html`${head}<p>${P(v, pd.turn).name} düşünüyor: artıracak mı, çekilecek mi?</p>${timerHTML(v, [pd.turn])}`;
       const cash = P(v, me).cash;
       const quick = [...new Set([min, pd.high + step * 5, pd.high + step * 10].filter((x) => x <= cash))];
+      const torpil = P(v, me).hand.find((u) => cardId(u) === 'torpil');
+      const tCost = E.torpilCost(v, pd);
       app.ui.binds ||= {};
       if (!(Number(app.ui.binds.raise) >= min)) app.ui.binds.raise = String(min);
       return html`${head}
-        <div class="row center">${quick.map((q) => html`<button class="btn primary" data-act="raise" data-amt="${q}">${fmt(q)} ver</button>`)}<button class="btn ghost" data-act="auctionPass">Çekil</button></div>
+        <div class="row center">${quick.map((q) => html`<button class="btn primary" data-act="raise" data-amt="${q}">${fmt(q)} ver</button>`)}<button class="btn ghost" data-act="auctionPass">Çekil</button>
+          ${torpil && cash >= tCost ? html`<button class="btn gold" data-act="torpil" data-uid="${torpil}">🤫 Torpil ile kap: ${fmt(tCost)}</button>` : ''}</div>
         <div class="moneybox abox"><div class="row"><span class="muted">Özel tutar</span><b class="amount" data-show="raise"></b><div class="grow"></div><button class="btn small" data-act="raiseCustom">Ver</button></div>
           <input type="range" class="slider" min="${min}" max="${cash}" step="5" data-bind="raise" style="--c:${P(v, me).color}"></div>${timerHTML(v, [me])}`;
     }
@@ -1009,6 +1012,8 @@ function cardEffect(v, ev) {
       return 'Oynanan kartı iptal etmek istiyor.';
     case 'dayi':
       return 'Kirayı ödemiyor.';
+    case 'torpil':
+      return 'Açık artırmayı torpille kapattı.';
     default:
       return CARDS[ev.card] ? CARDS[ev.card].text : '';
   }

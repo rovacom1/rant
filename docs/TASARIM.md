@@ -140,6 +140,7 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 - Çekilen bir daha teklif veremez. Sıra lider dışındaki, çekilmemiş sonraki oyuncuya geçer.
 - Lider dışında herkes çekilince lider kazanır ve teklifini öder. Hiç teklif yokken herkes çekilirse arsa sahipsiz kalır.
 - Teklifler herkese açıktır. Her teklif sırası 15 sn; süre dolan çekilmiş sayılır.
+- **Torpil** kartı olan, artırmada sırası gelince onu oynayabilir: artırma hemen kapanır, mülkü liste fiyatının yarısına (en yüksek teklif bundan büyükse teklif + 10'a) alır. Nakdi yetmiyorsa oynanamaz.
 - (İlk sürümde aynı anda verilen gizli teklif vardı; kullanıcı testinde Monopoly'deki açık artırma istendi.)
 
 ## 5. İnşaat
@@ -158,14 +159,15 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 - Satacak bir şey kalmadıysa **Konkordato**: nakit 0 olur, oyundan çıkmazsın, sonda konkordato başına 300 puan cezası.
 - **İflas modunda** konkordato yoktur; satacak bir şey kalmayan oyuncu **iflas eder**: mülkleri katsız ve ipoteksiz olarak bankaya döner (sahipsiz, yeniden satın alınabilir), elindeki kartlar desteye gider, oyundan çıkar. Elenen oyuncunun sırası atlanır; aidat, çay parası, gündem ve sürpriz ödemelerine katılmaz; kartlara, pazarlığa ve artırmaya hedef olamaz. Sıralama: ayakta kalanlar puana göre, sonra elenenler son elenenden ilk elenene.
 
-## 7. Hamle kartları (46)
+## 7. Hamle kartları (48)
 
-Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz, Dayın Çıktı) bu sınıra girmez.
+Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz, Dayın Çıktı, Torpil) bu sınıra girmez.
 
 | Kart | Adet | Etki | Karşı hamle |
 |---|---|---|---|
 | İtiraz | 6 | TEPKİ: Sana oynanan bir Hamle'yi iptal et. İtiraz'a karşı da oynanır. | - |
 | Dayın Çıktı | 2 | TEPKİ: Ödeyeceğin bir kirayı ödemezsin. | - |
+| Torpil | 2 | TEPKİ: Açık artırmada sıran gelince oyna; artırma kapanır, mülkü liste fiyatının yarısına (teklif daha yüksekse 10 fazlasına) alırsın. | - |
 | Taksi | 2 | Zar atmadan önce: zar yerine 1-12 kare arasında istediğin kadar ilerle. | - |
 | Kestirme | 3 | Zar attıktan sonra: toplam yerine zarlardan birini seçip o kadar ilerle. | - |
 | Geri Vites | 2 | Zar atmadan önce: bu tur geri yönde ilerlersin (maaş yok). | - |

@@ -148,6 +148,7 @@ export const AMOUNTS = {
 export const CARDS = {
   itiraz: { name: 'İtiraz', icon: '✋', count: 6, type: 'tepki', text: 'Sana oynanan bir Hamle kartını iptal et. İtiraz\'a karşı da oynanır.' },
   dayi: { name: 'Dayın Çıktı', icon: '🧔', count: 2, type: 'tepki', text: 'Ödeyeceğin bir kirayı ödemezsin. "Bizim çocuk o, kira falan istemez."' },
+  torpil: { name: 'Torpil', icon: '🤫', count: 2, type: 'tepki', text: 'Açık artırmada sıran gelince oyna: artırma kapanır, mülkü liste fiyatının yarısına (teklif daha yüksekse 10 fazlasına) alırsın.' },
   taksi: { name: 'Taksi', icon: '🚕', count: 2, type: 'hamle', when: 'preroll', target: 'steps', text: 'Zar atmak yerine 1-12 kare arasında istediğin kadar ilerle.' },
   kestirme: { name: 'Kestirme', icon: '🛵', count: 3, type: 'hamle', when: 'choose', target: 'die', text: 'Zar attıktan sonra oyna: toplam yerine zarlardan birini seçip o kadar ilerle.' },
   geriVites: { name: 'Geri Vites', icon: '↩️', count: 2, type: 'hamle', when: 'preroll', target: 'none', text: 'Bu tur zarla geri yönde ilerlersin. Başlangıç Noktası\'ndan geçersen maaş yok.' },

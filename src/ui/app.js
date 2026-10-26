@@ -472,6 +472,7 @@ const A = {
     app.ui.binds.raise = '';
   },
   auctionPass: () => act({ type: 'pass' }),
+  torpil: (el) => act({ type: 'torpil', uid: el.dataset.uid }),
   react: (el) => act({ type: 'react', uid: el.dataset.uid || null }),
   tapuBuy: (el) => act({ type: 'tapuBuy', sq: el.dataset.sq === '' ? null : Number(el.dataset.sq) }),
   zabita: (el) => act({ type: 'zabitaTarget', target: Number(el.dataset.p) }),

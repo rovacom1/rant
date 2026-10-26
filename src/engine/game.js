@@ -411,6 +411,9 @@ function payRent(s, ctx, r) {
 // lider dışında herkes çekilince lider kazanır. Reddeden de katılır, nakdi olmayan katılamaz.
 export const auctionStep = (s) => R.money(s, 10);
 
+// Torpil: artırmayı hemen kapatıp kazanmanın bedeli; liste fiyatının yarısı, teklif daha yüksekse en düşük artış.
+export const torpilCost = (s, pd) => Math.max(R.round5(R.price(s, pd.sq) / 2), pd.high + auctionStep(s));
+
 function startAuction(s, ctx, sq, from) {
   const n = s.players.length;
   const order = Array.from({ length: n }, (_, k) => (from + 1 + k) % n).filter((i) => s.players[i].cash > 0);
@@ -1064,6 +1067,17 @@ const PENDING = {
       pd.out.push(p);
       emit(s, ctx, { type: 'bid', p, amount: 0, text: `${nm(s, p)} artırmadan çekildi.` });
       nextBidder(s, ctx);
+    },
+    torpil(s, p, a, ctx) {
+      const pd = s.pending;
+      need(cardId(a.uid) === 'torpil' && hasUid(s, p, a.uid), 'Torpil kartın yok.');
+      const cost = torpilCost(s, pd);
+      need(s.players[p].cash >= cost, 'Torpile paran yetmiyor.');
+      discardCard(s, p, a.uid);
+      pd.high = cost;
+      pd.leader = p;
+      emit(s, ctx, { type: 'card', p, card: 'torpil', text: `${nm(s, p)}: "Bizim orada adamımız var!" Torpille artırma kapandı.` });
+      resolveAuction(s, ctx);
     },
   },
   react: {

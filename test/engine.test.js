@@ -181,6 +181,38 @@ test('açık artırma: teklif yoksa sahipsiz kalır, süre dolunca çekilir, nak
   assert.ok(t.pending.out.includes(2));
 });
 
+test('Torpil: artırmada sırası gelen yarı fiyata hemen kazanır, teklif yüksekse teklif + 10 öder', () => {
+  let s = calm(started(4));
+  const half = Math.round(price(s, 2) / 10) * 5;
+  s = taksi(s, 0, 2);
+  s = act(s, 0, { type: 'decline' });
+  const tp = give(s, 1, 'torpil');
+  assert.throws(() => applyAction(s, 2, { type: 'torpil', uid: tp }), /sırası sende değil/);
+  const r = actEv(s, 1, { type: 'torpil', uid: tp });
+  assert.equal(r.state.pending, null, 'artırma hemen kapanır');
+  assert.equal(r.state.props[2].owner, 1);
+  assert.equal(r.state.players[1].cash, 1500 - half);
+  assert.ok(!r.state.players[1].hand.includes(tp), 'kart atılır');
+  assert.ok(r.events.some((e) => e.type === 'card' && e.card === 'torpil'));
+  // Teklif yarı fiyatı geçtiyse teklif + 10.
+  let t = calm(started(4));
+  t = taksi(t, 0, 2);
+  t = act(t, 0, { type: 'decline' });
+  t = act(t, 1, { type: 'raise', amount: half + 20 });
+  const tp2 = give(t, 2, 'torpil');
+  t = act(t, 2, { type: 'torpil', uid: tp2 });
+  assert.equal(t.players[2].cash, 1500 - half - 30);
+  // Nakdi yetmeyen oynayamaz; bot nakdi ve değeri yetince oynar.
+  let u = calm(started(4));
+  u = taksi(u, 0, 2);
+  u = act(u, 0, { type: 'decline' });
+  const tp3 = give(u, 1, 'torpil');
+  u.players[1].cash = half - 5;
+  assert.throws(() => applyAction(u, 1, { type: 'torpil', uid: tp3 }), /paran yetmiyor/);
+  u.players[1].cash = 1500;
+  assert.deepEqual(botAction(u, 1, 'normal'), { type: 'torpil', uid: tp3 });
+});
+
 test('İtiraz zinciri: itiraza karşı itiraz kartı geçirir', () => {
   let s = calm(started());
   own(s, 1, 5);

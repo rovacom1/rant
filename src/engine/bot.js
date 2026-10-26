@@ -4,7 +4,7 @@
 import { BOARD, CARDS, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS } from './data.js';
 import { nextRandom } from './rng.js';
 import * as R from './rules.js';
-import { waitingFor, moveOptions, cardBlock, cardTargets, tradeBlock, hasCard, auctionStep } from './game.js';
+import { waitingFor, moveOptions, cardBlock, cardTargets, tradeBlock, hasCard, auctionStep, torpilCost } from './game.js';
 
 const N = BOARD.length;
 
@@ -116,7 +116,7 @@ function expectedRollScore(s, p, backward = s.turn.backward) {
   return total / 36;
 }
 
-const CARD_KEEP = { kestirme: 50, itiraz: 90, dayi: 75, piyango: 150, kredi: 35, aidat: 85, kamulastirma: 70, muteahhit: 80, taksi: 55, kiraZammi: 45, tedbir: 50, ihbar: 45, takas: 40, dava: 30, pazarlik: 45, geriVites: 10 };
+const CARD_KEEP = { kestirme: 50, itiraz: 90, dayi: 75, torpil: 50, piyango: 150, kredi: 35, aidat: 85, kamulastirma: 70, muteahhit: 80, taksi: 55, kiraZammi: 45, tedbir: 50, ihbar: 45, takas: 40, dava: 30, pazarlik: 45, geriVites: 10 };
 
 function cardPlay(s, p) {
   const pl = s.players[p];
@@ -315,6 +315,8 @@ export function botAction(s, p, level = s.config.botLevel || 'normal') {
         const cap = Math.min(v, pl.cash - res * 0.5, pl.cash);
         const min = pd.high + auctionStep(s);
         if (cap < min || v < R.price(s, pd.sq) * 0.25) return { type: 'pass' };
+        const [torpil] = myCards(s, p, 'torpil');
+        if (torpil && torpilCost(s, pd) <= cap) return { type: 'torpil', uid: torpil };
         const bid = sharp ? min : Math.min(Math.floor(cap / 5) * 5, Math.max(min, R.round5(pd.high + (cap - pd.high) / 3)));
         return bid >= min ? { type: 'raise', amount: bid } : { type: 'pass' };
       }

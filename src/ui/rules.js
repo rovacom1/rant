@@ -6,7 +6,7 @@ export const RULES_HTML = `
 <ul>
 <li>Elinde 5'ten az kart varsa 1 <b>Hamle kartı</b> çekersin. Turda en fazla 1 Hamle kartı oynayabilirsin.</li>
 <li><b>Zar at</b>, toplam kadar ilerle. Çift atarsan +1 kart. <b>Kestirme</b> kartın varsa zarlardan birini seçebilirsin.</li>
-<li>Sahipsiz arsaya gelince <b>satın al</b> ya da <b>açık artırmaya</b> çıkar: sırayla herkes ya teklifi artırır ya çekilir, son kalan kazanır.</li>
+<li>Sahipsiz arsaya gelince <b>satın al</b> ya da <b>açık artırmaya</b> çıkar: sırayla herkes ya teklifi artırır ya çekilir, son kalan kazanır. <b>Torpil</b> kartın varsa sıran gelince artırmayı yarı fiyata hemen kapatırsın.</li>
 <li>Başkasının mülküne gelince kira ödersin. <b>Dayın Çıktı</b> kartın varsa ödemezsin.</li>
 <li>Kat dik, ipotek et, pazarlık teklif et, sonra <b>Turu Bitir</b>.</li>
 <li>Sıran değilken de turda bir kez pazarlık teklif edebilirsin (sıradaki oyuncu zar atmadan önce ya da turunu bitirmeden).</li>
