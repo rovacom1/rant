@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, applyAction, defaultAction, botAction, cardBlock, cardTargets, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
 import { makePlayers } from '../tools/simlib.js';
-import { started, act, actEv, give, strip, own } from './helpers.js';
+import { started, act, actEv, give, strip, stripAll, own } from './helpers.js';
 
 // Gündem kartının etkisini sıfırlayıp ekonomiyi öngörülebilir yapar.
 function calm(s) {
@@ -41,6 +41,7 @@ test("kart: Başlangıç Noktası'ndan geçince elde 5'ten az kart varsa 1 kart,
   assert.equal(pass(5).players[0].hand.length, 5, 'el 5 iken kart gelmez');
   let s = calm(started(4, 42, { rules: { surpriz: false } }));
   for (const uid of [...s.players[0].hand]) strip(s, 0, uid.split(':')[0]);
+  for (const id of ['kestirme', 'dayi']) stripAll(s, id);
   s.players[0].pos = 3;
   for (let seed = 0; seed < 400; seed++) {
     const t = structuredClone(s);
@@ -66,7 +67,7 @@ test('başkasının hamlesi ve sıra dışı hamle reddedilir', () => {
 
 test('zar: toplam kadar ilerler ve sıra serbest evreye geçer', () => {
   let s = calm(started());
-  strip(s, 0, 'kestirme');
+  stripAll(s, 'kestirme');
   const from = s.players[0].pos;
   const r = actEv(s, 0, { type: 'roll' });
   s = r.state;
@@ -148,7 +149,7 @@ test('kiraya gelen oyuncu öder; Kira Zammı ikiye katlar', () => {
   let s = calm(started());
   own(s, 1, 5);
   s.players[1].kiraZammi = true;
-  strip(s, 0, 'dayi');
+  stripAll(s, 'dayi');
   s = taksi(s, 0, 5);
   assert.equal(s.players[0].cash, 1500 - 10, 'arsa kirası 6 -> 5, zamla 10');
   assert.equal(s.players[1].cash, 1500 + 10);
@@ -164,6 +165,47 @@ test('Dayın Çıktı ile kira ödenmez', () => {
   s = act(s, 0, { type: 'react', uid: dayi });
   assert.equal(s.players[0].cash, 1500);
   assert.equal(s.pending, null);
+});
+
+test('gizli kart sızmaz: masada Dayın Çıktı ya da Kestirme varsa kartı olmayan da aynı kararı bekler', () => {
+  let s = calm(started());
+  own(s, 1, 5);
+  stripAll(s, 'dayi');
+  s = taksi(s, 0, 5);
+  assert.equal(s.pending, null, 'masada hiç Dayın Çıktı yoksa beklenmez');
+  assert.equal(s.players[0].cash, 1500 - 5);
+  s = calm(started());
+  own(s, 1, 5);
+  stripAll(s, 'dayi');
+  give(s, 2, 'dayi'); // kart üçüncü oyuncuda, kirayı ödeyen de aynı kararı görür
+  s = taksi(s, 0, 5);
+  assert.equal(s.pending.type, 'rent');
+  assert.deepEqual(waitingFor(s), [0]);
+  s = act(s, 0, { type: 'react', uid: null });
+  assert.equal(s.players[0].cash, 1500 - 5);
+  s = calm(started());
+  stripAll(s, 'kestirme');
+  give(s, 3, 'kestirme');
+  s = act(s, 0, { type: 'roll' });
+  assert.equal(s.turn.step, 'choose', 'Kestirme masadaysa zar atan, kartı olmasa da yolunu seçer');
+});
+
+test('İhtiyati Tedbir, kartı oynayanın 2 sırası boyunca sürer', () => {
+  let s = calm(started(3, 42, { rules: { surpriz: false } }));
+  own(s, 1, 28);
+  stripAll(s, 'itiraz');
+  s = act(s, 0, { type: 'playCard', uid: give(s, 0, 'tedbir'), target: { sq: 28 } });
+  assert.equal(s.props[28].tedbir, 2);
+  // Oyuncu 0'ın bir sonraki sırasının başına kadar oynat.
+  const nextTurnOf0 = () => {
+    let guard = 0;
+    while (s.turn.p === 0 && guard++ < 300) s = simpleStep(s).state;
+    while (s.turn.p !== 0 && guard++ < 600) s = simpleStep(s).state;
+  };
+  nextTurnOf0();
+  assert.equal(s.props[28].tedbir, 1, 'bir sonraki sırasında hala sürüyor');
+  nextTurnOf0();
+  assert.equal(s.props[28].tedbir, 0, 'iki sıra sonra kalkar');
 });
 
 test('açık artırma: sırayla artır ya da çekil, son kalan kazanır', () => {
@@ -238,6 +280,8 @@ test('Aidat Günü her rakipten ayrı ayrı alınır', () => {
   for (let p = 0; p < 4; p++) strip(s, p, 'itiraz');
   const it = give(s, 2, 'itiraz');
   s = act(s, 0, { type: 'playCard', uid: give(s, 0, 'aidat') });
+  assert.deepEqual(waitingFor(s), [1], 'masada İtiraz varken kartı olmayana da aynı karar sorulur');
+  s = act(s, 1, { type: 'react', uid: null });
   assert.deepEqual(waitingFor(s), [2]);
   s = act(s, 2, { type: 'react', uid: it });
   assert.equal(s.players[0].cash, 1500 + 60);
@@ -279,7 +323,7 @@ test('yasal kat set ister; kat satışı yarı fiyat; ipotek', () => {
 
 test('borç: tur bitmez, Borcu Kapat satar ve ipotek eder, gerekirse konkordato', () => {
   let s = calm(started());
-  strip(s, 0, 'kestirme');
+  stripAll(s, 'kestirme');
   own(s, 0, 1, 2);
   s.props[1].kat = 1;
   s = act(s, 0, { type: 'roll' });
@@ -336,7 +380,7 @@ test('görünüm: başkasının eli gizli', () => {
 
 test('el sınırı: fazla kart tur sonunda atılır', () => {
   let s = calm(started());
-  strip(s, 0, 'kestirme');
+  stripAll(s, 'kestirme');
   const fill = ['dava', 'takas', 'ihbar', 'tedbir', 'aidat', 'piyango'];
   for (let i = 0; s.players[0].hand.length < 9; i++) give(s, 0, fill[i % fill.length]);
   s = act(s, 0, { type: 'roll' });

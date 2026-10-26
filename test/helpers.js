@@ -30,6 +30,11 @@ export function give(s, p, id) {
   throw new Error(`kart bulunamadı: ${id}`);
 }
 
+// Masadaki herkesin elinden belirli türdeki kartları desteye koyar (tepki beklemesi açılmasın).
+export function stripAll(s, id) {
+  s.players.forEach((_, p) => strip(s, p, id));
+}
+
 // Oyuncunun elindeki belirli türdeki tüm kartları desteye geri koyar.
 export function strip(s, p, id) {
   const hand = s.players[p].hand;

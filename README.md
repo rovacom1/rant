@@ -13,7 +13,8 @@ Kurulum yok, hesap yok, sunucu yok. Biri "Oda Kur" der, davet linkini arkadaşla
 - **Açık artırma:** Almadığın arsa Monopoly'deki gibi artırmaya çıkar: sırayla artır ya da çekil.
 - **Hamle ve Tepki kartları:** Kamulaştırma, İhtiyati Tedbir, Dava Aç, Taksi, Dayın Çıktı... İtiraz'a karşı İtiraz.
 - **Endeks:** Fiyat ve kiralar enflasyonla artar, nakit erir.
-- **Konkordato:** Kimse batıp oyundan düşmez. Oyun 15 turda Seçim Günü ile biter.
+- **Konkordato:** Kimse batıp oyundan düşmez. Oyun varsayılan 20 turda Seçim Günü ile biter.
+- **Kartlar Monopoly temposunda:** Hamle kartı Başlangıç Noktası'ndan geçince ve FIRSAT karesinde gelir; her kart değerli.
 - **Oyun sonu seçimi:** tur sayısı, değer hedefi ya da Monopoly gibi son kalan (batan elenir, son kalan kazanır).
 
 Tüm kurallar: [docs/TASARIM.md](docs/TASARIM.md)
@@ -36,8 +37,8 @@ otomasyon/    sürekli geliştirme döngüsünün talimatları
 Node 20+ yeterli; npm paketi yok.
 
 ```bash
-npm test          # birim testleri + 125 tam bot oyunu
-npm run sim       # denge raporu (200 oyun)
+npm test          # birim testleri + tam bot oyunları
+npm run sim       # denge raporu (200 oyun; --tur=N, --hedef=N, --iflas)
 npm run dev       # http://127.0.0.1:4188
 ```
 

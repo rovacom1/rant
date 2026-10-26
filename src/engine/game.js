@@ -39,6 +39,8 @@ const sqName = (sq) => BOARD[sq].name;
 const others = (s, p) => R.activePlayers(s).filter((i) => i !== p);
 
 export const hasCard = (s, p, id) => s.players[p].hand.some((u) => cardId(u) === id);
+// Masada bu karttan biri var mı: tepki beklemeleri buna göre açılır, kimin elinde olduğu sızmaz.
+const tableHolds = (s, id) => s.players.some((_, p) => hasCard(s, p, id));
 const hasUid = (s, p, uid) => typeof uid === 'string' && s.players[p].hand.includes(uid);
 
 function discardCard(s, p, uid) {
@@ -107,6 +109,7 @@ function iflas(s, ctx, p) {
   s.discard.push(...pl.hand);
   pl.hand = [];
   pl.cash = 0;
+  for (const ps of s.props) if (ps && ps.tedbirBy === p) ps.tedbir = 0; // sırası gelmeyecek, tedbiri düşer
   pl.out = s.players.filter((o) => o.out).length + 1; // kaçıncı elenen
   emit(s, ctx, { type: 'iflas', p, text: `${nm(s, p)} iflas etti ve oyundan çekildi! Mülkleri bankaya döndü.` });
 }
@@ -222,7 +225,6 @@ function startRound(s, ctx) {
   s.round++;
   s.roundStart = { net: s.players.map((_, p) => R.netWorth(s, p)), owners: s.props.map((ps) => (ps ? ps.owner : null)) };
   if (s.round === 1) s.worth = [s.roundStart.net];
-  for (const ps of s.props) if (ps && ps.tedbir > 0) ps.tedbir--;
   const last = s.round === s.config.maxRounds ? ' SON TUR: Seçim Günü geliyor!' : '';
   if (!s.config.rules.gundem) {
     s.gundem = null;
@@ -249,6 +251,8 @@ function startRound(s, ctx) {
 function startTurn(s, ctx, p) {
   s.turn = { p, step: 'preroll', dice: null, hamle: false, backward: false, trades: 0 };
   s.players[p].kiraZammi = false;
+  // İhtiyati Tedbir, kartı oynayanın 2 sırası boyunca sürer (sıra başında azalır).
+  for (const ps of s.props) if (ps && ps.tedbir > 0 && ps.tedbirBy === p) ps.tedbir--;
   emit(s, ctx, { type: 'turn', p });
 }
 
@@ -392,7 +396,8 @@ function chargeRent(s, ctx, p, sq) {
   const amount = R.rentFor(s, sq) * (zam ? 2 : 1);
   if (amount <= 0) return;
   const r = { type: 'rent', p, owner, sq, amount, zam };
-  if (hasCard(s, p, 'dayi')) s.pending = r;
+  // Kartı olsun olmasın aynı karar beklenir; yalnız masada hiç Dayın Çıktı yoksa beklenmez (kimde olduğu belli olmasın).
+  if (tableHolds(s, 'dayi')) s.pending = r;
   else payRent(s, ctx, r);
 }
 
@@ -801,7 +806,7 @@ function continueReaction(s, ctx) {
     }
     pd.victim = pd.queue.shift();
     pd.chain = 0;
-    if (hasCard(s, pd.victim, 'itiraz')) {
+    if (tableHolds(s, 'itiraz')) {
       pd.responder = pd.victim;
       return;
     }
@@ -838,7 +843,7 @@ function applyCard(s, ctx, card, victim) {
       s.props[t.theirs].owner = p;
       return emit(s, ctx, { type: 'own', p, sq: t.theirs, text: `Takas tamam: ${sqName(t.theirs)} ↔ ${sqName(t.mine)}.` });
     case 'tedbir':
-      s.props[t.sq].tedbir = 2;
+      Object.assign(s.props[t.sq], { tedbir: 2, tedbirBy: card.by });
       return say(s, ctx, `${sqName(t.sq)} için ihtiyati tedbir kararı: 2 tur kira yok.`);
     case 'ihbar':
       return demolishKacak(s, ctx, victim, R.money(s, AMOUNTS.ihbarFine), 'İhbar');
@@ -913,8 +918,8 @@ const TURN = {
     s.turn.dice = d;
     s.turn.step = 'choose';
     emit(s, ctx, { type: 'dice', p, dice: d, text: `${nm(s, p)} zar attı: ${d[0]} ve ${d[1]}${d[0] === d[1] ? ', çift' : ''}` });
-    // Kestirme kartı olan oyuncu zarı görüp karar verir; yoksa doğrudan ilerler.
-    if (s.turn.hamle || !hasCard(s, p, 'kestirme')) travel(s, ctx, p, d[0] + d[1], s.turn.backward);
+    // Masada Kestirme varsa oyuncu (kartı olsun olmasın) zarı görüp karar verir; yoksa doğrudan ilerler.
+    if (s.turn.hamle || !tableHolds(s, 'kestirme')) travel(s, ctx, p, d[0] + d[1], s.turn.backward);
   },
   move(s, p, a, ctx) {
     need(s.turn.step === 'choose', 'Önce zar at.');
@@ -1041,7 +1046,7 @@ const PENDING = {
         pd.chain++;
         emit(s, ctx, { type: 'card', p, card: 'itiraz', text: `${nm(s, p)}: İTİRAZ EDİYORUM!` });
         const other = p === pd.victim ? pd.card.by : pd.victim;
-        if (hasCard(s, other, 'itiraz')) {
+        if (tableHolds(s, 'itiraz')) {
           pd.responder = other;
           return;
         }

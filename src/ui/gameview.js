@@ -308,7 +308,7 @@ function promptHTML(v) {
   const t = v.turn;
   const cur = P(v, t.p);
   if (t.p !== me) {
-    const doing = { preroll: 'zar atmak üzere', choose: 'yolunu seçiyor', free: 'işlerini hallediyor' }[t.step];
+    const doing = { preroll: 'zar atmak üzere', choose: 'zarına bakıyor', free: 'işlerini hallediyor' }[t.step];
     return html`<div class="who">${av(cur)} ${cur.name} ${doing}…</div>${timerHTML(v, [t.p])}`;
   }
   const pl = P(v, me);
@@ -385,13 +385,13 @@ function pendingHTML(v, pd) {
       const it = P(v, me).hand.find((u) => cardId(u) === 'itiraz');
       const counter = me === c.by;
       return html`${desc}<h3>${counter ? `${victim.name} itiraz etti! Karşı itiraz?` : `${attacker.name} sana ${card.name} oynadı!`}</h3>
-        <div class="row center"><button class="btn primary big" data-act="react" data-uid="${it}" data-primary>✋ ${counter ? 'Karşı İtiraz' : 'İtiraz Et'}</button><button class="btn ghost" data-act="react" data-uid="">${counter ? 'Vazgeç' : 'Kabul Et'}</button></div>${timerHTML(v, [me])}`;
+        <div class="row center">${it ? html`<button class="btn primary big" data-act="react" data-uid="${it}" data-primary>✋ ${counter ? 'Karşı İtiraz' : 'İtiraz Et'}</button>` : ''}<button class="btn ${it ? 'ghost' : 'primary big'}" data-act="react" data-uid="" ${it ? '' : 'data-primary'}>${counter ? 'Vazgeç' : 'Kabul Et'}</button></div>${timerHTML(v, [me])}`;
     }
     case 'rent': {
       if (pd.p !== me) return html`<p>${P(v, pd.p).name} ${BOARD[pd.sq].name} kirası için karar veriyor…</p>${timerHTML(v, [pd.p])}`;
       const dayi = P(v, me).hand.find((u) => cardId(u) === 'dayi');
       return html`<h3>Kira: ${fmt(pd.amount)}</h3><p>${BOARD[pd.sq].name} → ${P(v, pd.owner).name}${pd.zam ? ' (Kira Zammı!)' : ''}</p>
-        <div class="row center"><button class="btn gold big" data-act="react" data-uid="${dayi}" data-primary>🧔 Dayın Çıktı!</button><button class="btn ghost" data-act="react" data-uid="">Öde</button></div>${timerHTML(v, [me])}`;
+        <div class="row center">${dayi ? html`<button class="btn gold big" data-act="react" data-uid="${dayi}" data-primary>🧔 Dayın Çıktı!</button>` : ''}<button class="btn ${dayi ? 'ghost' : 'primary big'}" data-act="react" data-uid="" ${dayi ? '' : 'data-primary'}>Öde</button></div>${timerHTML(v, [me])}`;
     }
     case 'tapu': {
       if (pd.p !== me) return html`<p>${P(v, pd.p).name} Tapu Dairesi'nde arsa bakıyor…</p>${timerHTML(v, [pd.p])}`;

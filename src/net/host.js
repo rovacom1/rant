@@ -4,7 +4,8 @@
 import * as E from '../engine/index.js';
 import { PROTOCOL, SAVE_VERSION } from '../version.js';
 
-const PASSIVE_TIMEOUT = { auction: 15, react: 20, rent: 20, trade: 45, discard: 45 }; // sn
+// Tepki beklemeleri (İtiraz, Dayın Çıktı, Kestirme yolu) kartı olana da olmayana da aynı kısa pencere: kimde kart olduğu sızmaz.
+const PASSIVE_TIMEOUT = { auction: 15, react: 5, rent: 5, choose: 5, trade: 45, discard: 45 }; // sn
 const DISCONNECT_GRACE = 20; // sn
 const BOT_MIN = 900; // ms, botun en kısa düşünme süresi
 const MAX_SEATS = 6;
@@ -350,7 +351,7 @@ export class Host {
       }
       const since = (this.waitSince[pl.id] ??= ready);
       const pd = g.pending;
-      const passive = pd && PASSIVE_TIMEOUT[pd.type];
+      const passive = pd ? PASSIVE_TIMEOUT[pd.type] : g.turn.step === 'choose' && PASSIVE_TIMEOUT.choose;
       let limit = passive || this.config.turnLimit;
       if (!seat.connected) limit = Math.min(limit || DISCONNECT_GRACE, DISCONNECT_GRACE);
       if (!limit) continue;

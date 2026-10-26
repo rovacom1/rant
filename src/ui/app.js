@@ -658,4 +658,3 @@ document.body.classList.toggle('dark', (store.get('theme') || (matchMedia('(pref
 render();
 // Davet linkiyle girmiş oyuncu sayfayı yenilerse aynı odaya kendiliğinden döner.
 if (app.joinCode && app.joinCode === store.get('lastJoin') && profile.name) startJoin(app.joinCode);
-window.__rant = app; // hata ayıklama için
