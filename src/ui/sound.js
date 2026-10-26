@@ -90,7 +90,8 @@ function synth(name) {
   o.stop(t + 0.3);
 }
 
-export function play(name) {
+// sec: canlandırmanın süresi (sn); verilirse ses o sürede yumuşakça biter.
+export function play(name, sec) {
   if (!cfg.sfxOn || !cfg.sfx) return;
   const a = ac();
   if (!a) return;
@@ -101,7 +102,7 @@ export function play(name) {
     src.buffer = b.buf;
     const g = a.createGain();
     const vol = b.gain * (LEVEL[name] ?? 1);
-    const len = Math.min(MAX_LEN[name] || 2, b.buf.duration - b.offset);
+    const len = Math.min(sec || MAX_LEN[name] || 2, b.buf.duration - b.offset);
     const t = a.currentTime;
     g.gain.setValueAtTime(vol, t);
     g.gain.setValueAtTime(vol, t + Math.max(0, len - 0.12));

@@ -1196,6 +1196,7 @@ async function revealCard(pv, v, ev) {
   const pl = P(v, ev.p);
   const toMe = vics.includes(v.you);
   const who = vics.length === 1 ? vs(v, ev.p, vics[0]) : html`<div class="row" style="gap:8px">${PW(pl, 32)}</div>`;
+  play('card');
   const title = toMe ? `${pl.name} sana oynadı` : vics.length === 1 ? `${pl.name}, ${P(v, vics[0]).name} için oynadı` : vics.length > 1 ? `${pl.name} herkese oynadı` : `${pl.name} oynadı`;
   await stageShow(html`<div class="card-prompt reveal">${cardFace(ev.card, 'big')}<div class="opt-col">${who}<span class="h22">${title}</span><span class="line-row">${I(CARD_IC[ev.card] || 'hamle')}<span class="grow">${cardEffect(v, ev)}</span></span><span class="muted small">kapatmak için tıkla</span></div></div>`, Math.round(3500 * spd()));
 }
@@ -1221,47 +1222,53 @@ export async function present(prev, v, events, fast) {
   const later = []; // canlandırma sırası bitince gösterilecekler
   const toast = (...a) => later.push(() => showToast(...a));
   const buildFx = (sq) => later.push(() => buildFxNow(sq));
+  // Sesler, ait oldukları canlandırmayla aynı anda ve aynı sürede çalar (jeton sesi jetonlar uçarken).
+  const sfx = (name, sec) => later.push(() => play(name, sec));
+  const flight = (FLIGHT_MS * spd()) / 1000;
   for (const ev of events) {
     switch (ev.type) {
       case 'card':
-        play(ev.card === 'itiraz' ? 'itiraz' : 'card');
-        if (!fast && ev.p === me) flyMine(prev, v, ev.card);
+        // Benim kartım elden uçarken; rakibinki ortada gösterilirken (revealCard) çalar.
+        if (ev.p === me) {
+          play(ev.card === 'itiraz' ? 'itiraz' : 'card', 1.1);
+          if (!fast) flyMine(prev, v, ev.card);
+        } else if (fast) play('card');
         break;
       case 'money':
-        if (ev.to === me) play('coin');
-        else if (ev.from === me) play('pay');
+        if (ev.to === me) sfx('coin', flight);
+        else if (ev.from === me) sfx('pay', flight);
         break;
       case 'build':
-        play('build');
+        sfx('build', 1.2);
         if (!fast) buildFx(ev.sq);
         break;
       case 'demolish':
-        play('crash');
+        sfx('crash');
         toast(`${P(v, ev.p).name}: ${ev.n} kaçak kat yıkıldı`, 'error', 'kacak');
         break;
       case 'collapse':
-        play('crash');
+        sfx('crash');
         break;
       case 'target':
-        play('news');
+        sfx('news');
         toast(ev.text, '', 'trophy');
         break;
       case 'konkordato':
-        play('crash');
+        sfx('crash');
         toast(`${P(v, ev.p).name} konkordato ilan etti`, 'error', 'warning');
         break;
       case 'iflas':
-        play('crash');
+        sfx('crash');
         toast(`${P(v, ev.p).name} iflas etti, oyundan çıktı`, 'error', 'iflas');
         break;
       case 'auction':
         if (ev.winner !== null) {
-          play('sold');
+          sfx('sold');
           toast(`${BOARD[ev.sq].name}: ${P(v, ev.winner).name} aldı`, '', 'gavel');
         }
         break;
       case 'tradeDone':
-        play('coin');
+        sfx('coin', flight);
         toast('Anlaşma sağlandı', '', 'deal');
         break;
       case 'gundem':
@@ -1292,11 +1299,14 @@ export async function present(prev, v, events, fast) {
         if (e.type === 'dice' || e.type === 'dava') {
           const cap = e.type === 'dava' ? `Dava zarları: ${P(v, e.p).name} ${e.dice[0]} · ${P(v, e.victim).name} ${e.dice[1]}` : '';
           app.ui.diceUntil = Date.now() + 2500 + 1250 * spd();
-          await dice.roll(e.dice, fast, 1250 * spd(), cap);
+          await dice.roll(e.dice, fast, 1250 * spd(), cap, spd());
         } else if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast, 150 * spd());
         else if (fast) continue;
         else if (e.type === 'surpriz') await showSurpriz(v, e);
-        else if (e.card === 'itiraz' && prev.pending && prev.pending.type === 'react') toast(`${P(v, e.p).name} itiraz etti`, '', 'shield');
+        else if (e.card === 'itiraz' && prev.pending && prev.pending.type === 'react') {
+          play('itiraz');
+          toast(`${P(v, e.p).name} itiraz etti`, '', 'shield');
+        }
         else await revealCard(prev, v, e);
       }
     } finally {

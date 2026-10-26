@@ -16,7 +16,7 @@
 - Elde kartlar sağ sütunda: üstüne gelince büyür, tahtaya sürüklenip bırakılınca oynanır. Her kartın resmi var (`assets/kart`); yeni görsel `docs/GORSEL_STIL.md`'deki tarzda üretilir.
 - Düğmeler 3 boy (56/46/36 px) ve 4 tür (ana pirinç #c8912f, ikincil, hayalet, sakin). Aynı rol aynı boy, ekranda tek ana düğme. Simge yazı boyunun 1,2 katı, yazıyla aynı çizgide.
 - Para seçimi elle yazarak değil, oyuncu rengindeki kaydırma çubuğuyla yapılır. Açık artırmada büyük yazan sayı toplam tekliftir, artış ayrıca küçük yazar. Lira işareti SVG.
-- Yazı tipleri: başlık/düğme/sayı Bricolage Grotesque, metin Geist. Zarlar 3 boyutlu döner, atıştan kısa süre sonra gizlenir.
+- Yazı tipleri: başlık/düğme/sayı Bricolage Grotesque, metin Geist. Zarlar 3 boyutlu döner, yukarıdan bakılır (geçerli değer üst yüz), atıştan kısa süre sonra gizlenir. Sesler canlandırmayla aynı anda başlar ve aynı sürede biter.
 - Sesler ve müzik `assets/ses` altında; ayarı sağ üstteki ses penceresinden (müzik ve efektler ayrı, bildirim de orada).
 - Sohbet yok (kullanıcı kaldırttı). Son 3 olay tahtanın ortasının altında; zar, yürüme, maaş gibi gürültü gösterilmez. Tıklayınca turlara ayrılmış geçmiş açılır.
 - Karanlık mod var (sağ üstte ay/güneş); yeni arayüz parçaları iki temada da denenmeli.

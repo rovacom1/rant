@@ -188,7 +188,7 @@ export class Tokens {
       el.classList.remove('hop');
       void el.offsetWidth;
       el.classList.add('hop');
-      play('step');
+      play('step', stepMs / 1000);
       await sleep(stepMs);
     }
   }
@@ -202,11 +202,12 @@ export class Tokens {
 // ---- 3 boyutlu zar ----
 
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-// Küpün o yüzü öne bakması için gereken dönüş (derece): [x, y].
+// Küpün o yüzü öne bakması için gereken dönüş (derece): [x, y]. Sonra küp öne doğru 90 derece yatırılır: değer üst yüze gelir.
 const FACE_ROT = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
+const ROLL_MS = 1150; // zarın dönme süresi (normal hızda); ses de bu kadar sürer
 const face = (n) => `<div class="face f${n}">${Array.from({ length: 9 }, (_, i) => `<i class="${PIPS[n].includes(i) ? 'on' : ''}"></i>`).join('')}</div>`;
-// Zarlar biraz yandan görünür (3 boyutlu durduğu belli olsun).
-const TILT = 'rotateX(-24deg) rotateY(-32deg)';
+// Zarlara yukarıdan bakılır: geçerli yüz üstteki yüzdür, ön ve yan yüzler biraz görünür (3 boyutlu durduğu belli olsun).
+const TILT = 'rotateX(-52deg) rotateY(-28deg) rotateX(90deg)';
 
 export class Dice {
   constructor(el) {
@@ -237,14 +238,16 @@ export class Dice {
     values.forEach((v, i) => this.orient(i, v, false));
   }
 
-  // cap: zarın üstünde kısa açıklama (ör. dava zarları); boşsa yok.
-  async roll(values, fast, waitMs = 1250, cap = '') {
+  // cap: zarın üstünde kısa açıklama (ör. dava zarları); boşsa yok. k: oyun hızı çarpanı.
+  async roll(values, fast, waitMs = 1250, cap = '', k = 1) {
     if (cap) this.el.dataset.cap = cap;
     else delete this.el.dataset.cap;
     if (fast) return this.show(values);
     this.el.classList.remove('off');
     this.values = values.join();
-    play('dice');
+    const ms = Math.round(ROLL_MS * k);
+    this.el.style.setProperty('--roll', `${ms}ms`);
+    play('dice', ms / 1000);
     values.forEach((v, i) => {
       this.turns[i][0] += 2 + Math.floor(Math.random() * 2);
       this.turns[i][1] += 1 + Math.floor(Math.random() * 2);
