@@ -274,6 +274,20 @@ Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tu
 - Bağlantısı kopan oyuncunun yerine bir süre sonra bot oynar; dönünce koltuk geri verilir.
 - Motor taşıma katmanından bağımsızdır; ileride bir WebSocket sunucusu aynı protokolle eklenebilir.
 
+## 11. Tahta animasyonları
+
+Her animasyon kendi sesiyle birlikte çalar ve sesin duyulan uzunluğu kadar sürer (süre ses dosyasından ölçülür, oyun hızına bağlı değildir). Oyun bölünmez, tahta kararmaz.
+- **Kurallar:** kare büyümez, yerinden oynamaz; vurgu karenin kenarında olur. Etiket ve tutar tahtanın üst yarısında piyonun altında, alt yarısında üstünde çıkar. Efektler piyonların altında kalır; yalnız jetonlar ve ± tutar piyonların üstünden geçer. Hareket azaltma açıksa zıplama, halka, kenar çizgisi ve uçuş olmaz; parlama, etiket ve sesler kalır.
+- **Tur başı** (kendi sıran `sira`, başkasınınki `sira-diger`): piyon iki kez seker, oyuncu renginde 3 halka yayılır, karesi iki kez parlar. Piyonun yanında piyon resmi + ad (kendi sıranda "Sıra sende!") yaklaşık 2,4 sn kalır.
+- **Mülk alındı** (`satinal`; ihalede `artirma`, pazarlıkta `para`): alıcının rengi karenin kenarını bir tur dolanır, sonra şerit soldan o renkle dolar.
+- **Tam set** (`set`, mülk animasyonundan sonra): setin karelerinin kenarı sırayla sahibinin rengine boyanır, şeritlerde yıldız belirir.
+- **Kira** (`para` / `odeme`): jetonlar ödeyenin piyonundan sahibinin piyonuna kavisle uçar; tutar iki piyonun yanında belirir.
+- **Maaş** (`para`): Başlangıç köşesi altın renkte iki kez parlar, jetonlar köşeden piyona uçar.
+- **Kat dikildi** (`insaat`): ev karenin kat rozetine düşüp seker, rozet hafifçe kabarır.
+- **Kaçak kat yıkıldı** (`yikim`): karenin kenarı kırmızı iki kez yanar, kaçak kat konisi titreyip toza dönüşür.
+- **İflas** (`iflas`): piyon sallanır, renksizleşip düşerek kaybolur; mülklerinin şeritleri sırayla griye döner.
+- Diğer para hareketleri (kart, gündem, vergi) eskisi gibi oyuncu panelleri ve banka arasında uçar.
+
 ## 12. Protokol (v1)
 
 İstemci -> ev sahibi: `hello {v, name, avatar, token}`, `act {action}`, `lobby {cmd}`, `profile {...}`, `pong`.

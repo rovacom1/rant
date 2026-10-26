@@ -521,9 +521,20 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .float.plus { color: var(--pos); } .float.minus { color: var(--neg); }
 @keyframes floatUp { to { transform: translateY(-40px); opacity: 0; } }
 .coin { position: fixed; left: 0; top: 0; z-index: 71; width: 22px; height: 22px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle at 35% 30%, #fff6c8, #f4c542 45%, #c98a12 100%); border: 2px solid #a86f08; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
-.buildfx { position: fixed; z-index: 70; width: 34px; height: 34px; pointer-events: none; transform: translate(-50%, -50%); animation: buildUp 1.2s ease-out forwards; }
-.buildfx .ic { font-size: 28px; }
-@keyframes buildUp { 0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); } 25% { opacity: 1; transform: translate(-50%, -80%) scale(1.15); } 70% { opacity: 1; transform: translate(-50%, -110%) scale(1) rotate(-6deg); } 100% { opacity: 0; transform: translate(-50%, -150%) scale(0.9); } }
+/* tahta animasyonları (src/ui/boardfx.js): piyonların altında, kare büyümez */
+.fx { position: absolute; z-index: 4; pointer-events: none; box-sizing: border-box; }
+.fx-edge { border-radius: 3px; opacity: 0; box-shadow: inset 0 0 0 3px var(--c), 0 0 0 3px var(--c), 0 0 18px color-mix(in srgb, var(--c) 70%, transparent); }
+.fx-ring { border-radius: 50%; border: 3px solid var(--c); opacity: 0; }
+.fx-trace svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c) 80%, transparent)); }
+.fx-trace rect { fill: none; stroke: var(--c); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; }
+.fx-tag { display: flex; align-items: center; gap: 8px; width: auto; height: auto; padding: 4px 14px 4px 6px; border-radius: 999px; background: var(--c); color: #fff; font-family: var(--hf); font-weight: 700; font-size: 16px; white-space: nowrap; box-shadow: 0 0 0 2px var(--panel), 0 8px 18px rgba(0, 0, 0, 0.25); opacity: 0; }
+.fx-tag .pawn img { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)); }
+.fx-drop { display: grid; place-items: center; transform-origin: 50% 100%; }
+.fx-drop .ic { width: 1.2em; height: 1.2em; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.3)); }
+.fx-dust { border-radius: 50%; background: var(--muted); opacity: 0; }
+.fx-ghost { display: flex; align-items: flex-end; transform-origin: 50% 100%; }
+.float.down { animation-name: floatDown; }
+@keyframes floatDown { to { transform: translateY(40px); opacity: 0; } }
 .confetti { position: fixed; top: -10px; width: 9px; height: 14px; z-index: 80; pointer-events: none; animation: fall linear forwards; }
 @keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
 .kart-ghost { position: fixed; z-index: 75; pointer-events: none; }

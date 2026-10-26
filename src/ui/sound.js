@@ -4,9 +4,12 @@
 // Dosya yüklenemezse çok kısık, yumuşak sentez seslere düşülür.
 import { store } from './dom.js';
 
-const FILE = { dice: 'zar', step: 'adim', coin: 'para', pay: 'odeme', card: 'kart', turn: 'sira', news: 'gundem', itiraz: 'tokmak', build: 'insaat', crash: 'yikim', win: 'zafer', sold: 'artirma', tick: 'sayac', error: 'adim' };
+const FILE = {
+  dice: 'zar', step: 'adim', coin: 'para', pay: 'odeme', card: 'kart', turn: 'sira', turnOther: 'sira-diger', news: 'gundem', itiraz: 'tokmak',
+  build: 'insaat', crash: 'yikim', win: 'zafer', sold: 'artirma', tick: 'sayac', error: 'adim', buy: 'satinal', set: 'set', iflas: 'iflas',
+};
 const LEVEL = { step: 0.3, error: 0.45, pay: 0.7, card: 0.8, tick: 0.5 };
-// Her sesin en fazla çalma süresi (sn); sonunda yumuşak kapanır.
+// Her sesin en fazla çalma süresi (sn); sonunda yumuşak kapanır. Daha kısa sesler duyulan uzunlukları kadar çalar.
 const MAX_LEN = { step: 0.28, card: 1.1, coin: 1.4, pay: 1.2, dice: 1.6, turn: 1.6, itiraz: 1.3, build: 1.3, sold: 1.8, crash: 1.8, news: 2.6, win: 3.6, error: 0.3, tick: 0.9 };
 const TARGET_RMS = 0.11;
 const XFADE = 3; // müzik döngüsünde geçiş süresi (sn)
@@ -41,7 +44,7 @@ async function fetchBuf(name) {
   return ctx.decodeAudioData(await r.arrayBuffer());
 }
 
-// Baştaki sessizliği atlar, sesi ortak bir düzeye getirir.
+// Baştaki sessizliği atlar, sonundaki sessiz kuyruğu ölçer (len: duyulan uzunluk), sesi ortak bir düzeye getirir.
 function prep(buf) {
   const d = buf.getChannelData(0);
   let start = 0;
@@ -56,8 +59,10 @@ function prep(buf) {
     n++;
   }
   const rms = Math.sqrt(sum / Math.max(1, n)) || TARGET_RMS;
+  let last = d.length - 1;
+  while (last > start && Math.abs(d[last]) < peak * 0.02) last--;
   // Ortalama düzeye çek ama tepe değeri 0.9'u geçmesin (cızırtı olmasın).
-  return { buf, offset: start / buf.sampleRate, gain: Math.min(3, Math.max(0.15, Math.min(TARGET_RMS / rms, 0.9 / peak))) };
+  return { buf, offset: start / buf.sampleRate, len: Math.max(0.1, (last - start) / buf.sampleRate), gain: Math.min(3, Math.max(0.15, Math.min(TARGET_RMS / rms, 0.9 / peak))) };
 }
 
 function load() {
@@ -90,6 +95,13 @@ function synth(name) {
   o.stop(t + 0.3);
 }
 
+// Sesin çalacağı süre (sn): duyulan uzunluğu, en fazla MAX_LEN. Animasyonlar bu süreye uyar; ses yüklenmediyse fallback.
+export function sfxLen(name, fallback = 1) {
+  const b = buffers[FILE[name]];
+  const cap = MAX_LEN[name] ?? Infinity;
+  return b ? Math.min(cap, b.len) : Math.min(cap, fallback);
+}
+
 // sec: canlandırmanın süresi (sn); verilirse ses o sürede yumuşakça biter.
 export function play(name, sec) {
   if (!cfg.sfxOn || !cfg.sfx) return;
@@ -102,7 +114,7 @@ export function play(name, sec) {
     src.buffer = b.buf;
     const g = a.createGain();
     const vol = b.gain * (LEVEL[name] ?? 1);
-    const len = Math.min(sec || MAX_LEN[name] || 2, b.buf.duration - b.offset);
+    const len = Math.min(sec || sfxLen(name), b.buf.duration - b.offset);
     const t = a.currentTime;
     g.gain.setValueAtTime(vol, t);
     g.gain.setValueAtTime(vol, t + Math.max(0, len - 0.12));
