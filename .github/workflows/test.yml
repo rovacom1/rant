@@ -1,8 +1,7 @@
-# GitHub Actions testi. Etkinlestirmek icin: gh auth refresh -s workflow, sonra bu dosyayi .github/workflows/test.yml olarak tasi.
+# Her push ve pull request'te: birim testleri + bot oyunları, kısa denge raporu, metin ve emoji denetimi.
 name: test
 on:
   push:
-    branches: [main]
   pull_request:
 jobs:
   test:

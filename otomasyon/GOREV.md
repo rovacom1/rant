@@ -19,7 +19,7 @@ Repo: `C:\Dev\Rant` (tek dal `main`, uzak: github.com/rovacom1/rant, push = canl
    - Kullanıcıya soru sorma ve bekleme; belirsizlikte en basit iyi seçeneği uygula, varsayımı günlüğe yaz.
 7. **Uygula:** Küçük ve bitmiş bir değişiklik (yaklaşık 30-45 dakikalık iş). Kural değişikliğinde önce `docs/TASARIM.md`. Motor değişikliğine test ekle. `src/version.js`'de APP_VERSION'ı artır (uyumsuz protokol değişikliğinde PROTOCOL'ü de).
 8. **Doğrula:**
-   - `npm test` yeşil olmalı. Kırmızıysa düzelt; düzeltemezsen değişiklikleri geri al (`git checkout -- .`), sorunu `tasks/lessons.md` ve günlüğe yaz, push etme.
+   - `npm test` ve `npm run check` yeşil olmalı (GitHub Actions da her push'ta aynısını çalıştırır). Kırmızıysa düzelt; düzeltemezsen değişiklikleri geri al (`git checkout -- .`), sorunu `tasks/lessons.md` ve günlüğe yaz, push etme.
    - Kural ya da bot değişikliğinde `node tools/sim.js 200 5` çalıştır, öncekiyle karşılaştır.
    - Arayüz değişikliğinde yerel sunucuyu (launch adı `rant` ya da `node tools/serve.js 4188`) başlatıp tarayıcı araçlarıyla dene: ekran görüntüsü, konsol hataları, ilgili tıklamalar. Tarayıcı aracı yoksa bunu günlüğe yaz.
    - `npm run check` (şapkalı harf denetimi) temiz geçmeli.

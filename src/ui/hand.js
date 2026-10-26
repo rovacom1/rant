@@ -24,7 +24,7 @@ const GAP = 8; // kartlar arası boşluk (CSS .hand-grid gap ile aynı)
 const MAX_W = 128; // kartın en geniş hali
 const ZOOM_W = 220; // üstüne gelince kartın genişliği
 const RATIO = 1.42; // kart yüksekliği / genişliği (CSS .kart)
-const NARROW = globalThis.matchMedia?.('(max-width: 1100px)'); // tahta, el ve panel alt alta (CSS ile aynı eşik)
+const NARROW = globalThis.matchMedia?.('(max-width: 760px)'); // telefon: el yatay kayar (CSS ile aynı eşik)
 
 // n kartı w x h alana en büyük boyda yerleştiren sütun sayısı ve kart genişliği.
 // h yoksa (dar ekranda sütun içerik kadar uzar) yalnız genişliğe bakılır, kart 100 px'ten küçülmez.
