@@ -1,4 +1,4 @@
-/* RANT — Geniş Tahta tasarımı. Renkler ve ölçüler: tasarım A (pirinç ana renk, şehir başına tek renk, iki tema).
+/* Rantçı Dayı — Geniş Tahta tasarımı. Renkler ve ölçüler: tasarım A (pirinç ana renk, şehir başına tek renk, iki tema).
    Başlık, düğme ve sayılar Bricolage Grotesque; metin Geist. Emoji yok: simgeler src/ui/icons.js. */
 :root {
   --page: #ece3cf; --center: #f7f0e1; --panel: #fffaf0; --panel2: #f1e7d2; --line: #dccdab;
@@ -137,11 +137,42 @@ body.dark .box-err { background: #3a2430; color: #ffd6d0; }
 /* ---------- giriş ve lobi ---------- */
 .screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 60px; padding: 30px 70px; }
 .logo { font-family: var(--hf); font-weight: 800; letter-spacing: -0.04em; color: var(--accent); line-height: 0.9; }
-.logo.xl { font-size: 96px; }
-.logo.sm { font-size: 25px; letter-spacing: -0.02em; }
+.logo.sm { font-size: 25px; letter-spacing: -0.02em; white-space: nowrap; }
 .tagline { font-family: var(--hf); font-weight: 600; font-size: 24px; }
-.hero { flex: 1; max-width: 560px; display: flex; flex-direction: column; gap: 18px; }
-.parade { display: flex; gap: 18px; align-items: flex-end; margin-top: 16px; flex-wrap: wrap; }
+.hero { position: relative; flex: 1; max-width: 560px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+
+/* giriş sahnesi (src/ui/intro.js): arkada canlı şehir, kartın arkasında dayı. Dayının krem zemini tuvalde silinir. */
+.intro-bg, .intro-shade { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -2; display: none; }
+.intro-bg { object-fit: cover; object-position: center bottom; }
+.intro-shade { z-index: -1; background: linear-gradient(rgba(10, 15, 30, 0.8), rgba(10, 15, 30, 0.6)); }
+body.intro-on { --page: #f2ebc6; }
+body.intro-on .intro-bg { display: block; }
+body.dark.intro-on { --page: #0c1220; }
+body.dark.intro-on .intro-shade { display: block; }
+/* başlığın arkasında gök renginde hale: binalar yazıyı bozmasın */
+.home .hero::before { content: ''; position: absolute; left: 50%; top: 50%; width: 760px; height: 520px; transform: translate(-50%, -50%); z-index: -1; pointer-events: none; background: radial-gradient(closest-side, rgba(242, 235, 198, 0.94) 60%, transparent); }
+body.dark .home .hero::before { background: radial-gradient(closest-side, rgba(10, 15, 30, 0.88) 60%, transparent); }
+.title { display: flex; flex-direction: column; align-items: center; font-weight: 800; line-height: 0.9; letter-spacing: -0.03em; }
+.title .w1 { display: flex; font-size: 92px; color: var(--accent); }
+.title .w1 span { display: inline-block; }
+.title .w2 { display: inline-block; font-size: 110px; color: #e4572e; transform: rotate(-4deg); -webkit-text-stroke: 3px #1b2233; paint-order: stroke fill; text-shadow: 5px 6px 0 #1b2233; }
+body.dark .title .w2 { -webkit-text-stroke-color: #0a0f1c; text-shadow: 5px 6px 0 #0a0f1c; }
+/* dayı masada: belden aşağısı kartın arkasında, tespihli eli kartın solundan görünür */
+.desk { position: relative; padding-top: 260px; }
+.dayi-slot { position: absolute; left: -100px; top: 0; width: 340px; aspect-ratio: 1; }
+.dayi canvas { width: 100%; height: 100%; display: block; }
+.dayi video { display: none; }
+.desk .start-card { position: relative; z-index: 1; }
+/* giriş: kart gelir, dayı masanın arkasından yükselir, başlık harf harf düşer (yalnız ilk açılışta) */
+.intro-play .dayi { animation: introRise 0.8s cubic-bezier(0.3, 1.4, 0.5, 1) 0.55s backwards; }
+.intro-play .home .start-card { animation: introFade 0.45s ease-out backwards; }
+.intro-play .title .w1 span { animation: introDrop 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) backwards; animation-delay: calc(0.3s + var(--i) * 55ms); }
+.intro-play .title .w2 { animation: introStamp 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) 0.75s backwards; }
+.intro-play .home .tagline { animation: introFade 0.5s ease-out 1.1s backwards; }
+@keyframes introRise { from { transform: translateY(200px); opacity: 0; } 25% { opacity: 1; } }
+@keyframes introDrop { from { transform: translateY(-110px) rotate(-12deg); opacity: 0; } 60% { opacity: 1; } }
+@keyframes introStamp { from { transform: scale(2.4) rotate(-14deg); opacity: 0; } to { transform: scale(1) rotate(-4deg); opacity: 1; } }
+@keyframes introFade { from { opacity: 0; transform: translateY(10px); } }
 .start-card { width: 440px; padding: 24px; border-radius: 24px; background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); display: flex; flex-direction: column; gap: 14px; }
 .pawn-pick { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .pawn-pick button { appearance: none; cursor: pointer; height: 56px; border-radius: 14px; display: grid; place-items: center; border: 0; background: var(--center); box-shadow: inset 0 0 0 1px var(--line); }
@@ -514,7 +545,11 @@ body.dark .tip { background: #26324f; box-shadow: 0 0 0 1px rgba(255, 255, 255, 
    Oyuncular, el ve araçlar tahtanın altında; sayfa dikey kayar. */
 @media (max-width: 760px) {
   .screen { flex-direction: column; gap: 24px; padding: 24px 16px; }
-  .logo.xl { font-size: 64px; }
+  .title .w1 { font-size: 56px; }
+  .title .w2 { font-size: 66px; }
+  .home .hero::before { width: 420px; height: 300px; }
+  .desk { width: 100%; padding-top: 190px; }
+  .dayi-slot { left: 50%; width: 240px; margin-left: -120px; }
   .start-card { width: 100%; }
   .lobby { padding: 16px; }
   .lobby-main { flex-direction: column; }

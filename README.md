@@ -1,4 +1,4 @@
-# RANT — Kentsel Dönüşümün Kart Oyunu
+# Rantçı Dayı — Kentsel Dönüşümün Kart Oyunu
 
 Türkiye temalı, 4-5 kişilik (2-6), internetten oynanan bir emlak ve kart oyunu. Monopoly'nin tanıdık iskeleti üstüne kaçak kat, açık artırma, itiraz zinciri ve gündem kartları.
 

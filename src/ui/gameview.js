@@ -50,7 +50,7 @@ export function mountGame(root) {
     </div>
     <aside class="side">
       <div class="side-head">
-        <span class="logo sm">RANT</span><span class="round-chip" id="round"></span><span class="grow"></span>
+        <span class="logo sm">Rantçı Dayı</span><span class="round-chip" id="round"></span><span class="grow"></span>
         <button class="btn sq" data-act="audio" id="tAudio" aria-label="Ses ve bildirim ayarları"></button>
         <button class="btn sq" data-act="theme" id="tTheme" aria-label="Tema"></button>
         <button class="btn sq" data-act="rules" aria-label="Kurallar">${ic('book')}</button>

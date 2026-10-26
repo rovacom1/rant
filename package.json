@@ -2,7 +2,7 @@
   "name": "rant",
   "version": "0.16.1",
   "private": true,
-  "description": "RANT: Türkiye temalı, internetten 4-5 kişilik emlak ve kart oyunu",
+  "description": "Rantçı Dayı: Türkiye temalı, internetten 4-5 kişilik emlak ve kart oyunu",
   "type": "module",
   "scripts": {
     "test": "node --test \"test/*.test.js\"",

@@ -40,7 +40,7 @@ for (let g = 0; g < games; g++) {
 
 const avg = (a) => Math.round(a.reduce((x, y) => x + y, 0) / a.length);
 const per = (n) => (n / games).toFixed(1);
-console.log(`RANT denge raporu: ${games} oyun, ${players} bot, ${((Date.now() - t0) / 1000).toFixed(1)} sn`);
+console.log(`Rantçı Dayı denge raporu: ${games} oyun, ${players} bot, ${((Date.now() - t0) / 1000).toFixed(1)} sn`);
 console.log(`Ortalama hamle/oyun: ${per(agg.actions)}`);
 console.log(`Kazanma (oturma sırasına göre): ${winsBySeat.map((w, i) => `${i + 1}. ${Math.round((100 * w) / games)}%`).join('  ')}`);
 if (level) console.log(`${level} bot kazanma: %${Math.round((100 * levelWins) / games)} (eşit şans %${Math.round(100 / players)})`);

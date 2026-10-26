@@ -1,4 +1,4 @@
-# RANT — proje kuralları (Claude ve diğer ajanlar için)
+# Rantçı Dayı — proje kuralları (Claude ve diğer ajanlar için)
 
 ## Ürün
 - Türkiye temalı, 4-5 kişilik, internetten oynanan emlak + kart oyunu. Kullanıcı (avukat, yazılımcı değil) tüm ürün kararlarını bize bıraktı: "eğlenceli, yaratıcı, farklı mekanikler".
@@ -20,6 +20,7 @@
 - Sesler ve müzik `assets/ses` altında; ayarı sağ üstteki ses penceresinden (müzik ve efektler ayrı, bildirim de orada).
 - Sohbet yok (kullanıcı kaldırttı). Son 3 olay tahtanın ortasının altında; zar, yürüme, maaş gibi gürültü gösterilmez. Tıklayınca turlara ayrılmış geçmiş açılır.
 - Karanlık mod var (sağ üstte ay/güneş); yeni arayüz parçaları iki temada da denenmeli.
+- Oyunun adı Rantçı Dayı (depo ve adres `rant` kalır). Giriş ekranı: arkada canlı şehir videosu, solda harf harf düşen başlık, sağda "Masaya otur" kartının arkasında dayı; dört senaryo rastgele döner (`src/ui/intro.js`, `assets/giris`). Dayı videolarının krem zemini tuvalde silinir, iki temada kutu ya da madalyon yok. Yeni senaryo `docs/GORSEL_STIL.md`deki kurala göre üretilir.
 
 ## Mimari
 - Derleme adımı yok, npm bağımlılığı yok. Tarayıcıda ES modülleri; testler `node:test`.

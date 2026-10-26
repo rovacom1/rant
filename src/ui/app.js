@@ -11,6 +11,7 @@ import * as G from './gameview.js';
 import { pickClick, isBoardPickable } from './pick.js';
 import { ic } from './icons.js';
 import { pawn } from './pawns.js';
+import { mountIntro } from './intro.js';
 
 const root = document.getElementById('app');
 const SAVE = { host: 'save.host', local: 'save.local' };
@@ -37,11 +38,10 @@ function menuHTML() {
   const resume = (kind, s, label) =>
     html`<div class="box-note">${I('refresh')}<span class="grow"><b>${label}</b> · ${s.game ? (s.game.phase === 'over' ? 'bitmiş oyun' : `${s.game.round}. tur`) : 'lobide'}${kind === 'host' ? ` · ${s.code}` : ''}</span>
       <button class="btn S pri" data-act="${kind === 'host' ? 'resumeHost' : 'resumeLocal'}" ${busy ? 'disabled' : ''}>Devam et</button><button class="btn S sq ton" data-act="dropSave" data-k="${kind}" aria-label="Kaydı sil">${I('close')}</button></div>`;
-  const parade = E.AVATARS.map((a, i) => PW(a, E.PLAYER_COLORS[i], [56, 64, 72, 64, 56, 52][i]));
-  return html`<div class="screen">
-    <div class="hero"><span class="logo xl">RANT</span><span class="tagline">Arsa kap, kaçak kat çık, dayını ara.</span>
-      <div class="row" style="flex-wrap:wrap;gap:8px"><span class="hint">${I('user')}4-5 kişi</span><span class="hint">${I('timer')}40-50 dk</span><span class="hint">${I('link')}Link aç, katıl</span></div>
-      <div class="parade">${parade}</div></div>
+  return html`<div class="screen home">
+    <div class="hero"><h1 class="title" aria-label="Rantçı Dayı"><span class="w1">${[...'RANTÇI'].map((c, i) => html`<span style="--i:${i}">${c}</span>`)}</span><span class="w2">DAYI</span></h1>
+      <span class="tagline">Arsa kap, kaçak kat çık, dayını ara.</span></div>
+    <div class="desk"><div class="dayi-slot"></div>
     <div class="start-card"><span class="h22">Masaya otur</span>
       ${app.error ? html`<div class="box-err">${I('warning')}<span>${app.error}</span></div>` : ''}
       ${busy ? html`<div class="box-note"><span class="spinner"></span><span>${app.status === 'connecting' ? 'Bağlanılıyor' : app.status}</span></div>` : ''}
@@ -51,7 +51,7 @@ function menuHTML() {
       <button class="btn L pri full" data-act="host" ${busy ? 'disabled' : ''}>Oda kur</button>
       <div class="row" style="gap:8px"><input class="input code" id="codeInput" maxlength="8" placeholder="ODA KODU" aria-label="Oda kodu" value="${app.joinCode || ''}"><button class="btn sec" data-act="join" ${busy ? 'disabled' : ''}>Katıl${I('arrow')}</button></div>
       <div class="row" style="gap:8px"><button class="btn ton flex" data-act="local" ${busy ? 'disabled' : ''}>${I('bot')}Botlarla dene</button><button class="btn ton flex" data-act="rules">${I('book')}Nasıl oynanır?</button></div>
-    </div></div>${modalShell()}<div class="version">RANT ${APP_VERSION}</div>`;
+    </div></div></div>${modalShell()}<div class="version">Rantçı Dayı ${APP_VERSION}</div>`;
 }
 
 function lobbyHTML() {
@@ -72,7 +72,7 @@ function lobbyHTML() {
   const humans = L.seats.filter((s) => !s.bot).length;
   const levelName = (b) => b[0].toLocaleUpperCase('tr-TR') + b.slice(1);
   return html`<div class="lobby">
-    <div class="lobby-head"><span class="logo sm">RANT</span><span class="grow"></span><button class="btn sq" data-act="rules" aria-label="Kurallar">${I('book')}</button><button class="btn sq" data-act="theme" aria-label="Tema">${I(document.body.classList.contains('dark') ? 'sun' : 'moon')}</button><button class="btn sq" data-act="leave" aria-label="Çık">${I('door')}</button></div>
+    <div class="lobby-head"><span class="logo sm">Rantçı Dayı</span><span class="grow"></span><button class="btn sq" data-act="rules" aria-label="Kurallar">${I('book')}</button><button class="btn sq" data-act="theme" aria-label="Tema">${I(document.body.classList.contains('dark') ? 'sun' : 'moon')}</button><button class="btn sq" data-act="leave" aria-label="Çık">${I('door')}</button></div>
     <div class="lobby-main">
       <section class="panel lobby-seats">
         ${online ? html`<div class="row" style="gap:14px"><span class="label">Oda</span><span class="room-code">${L.code}</span><span class="grow"></span><button class="btn sec" data-act="copyLink">${I('link')}Davet linkini kopyala</button></div>
@@ -94,7 +94,7 @@ function lobbyHTML() {
     </div>
     ${app.error ? html`<div class="box-err">${I('warning')}<span>${app.error}</span></div>` : ''}
     <div class="lobby-foot">${host ? html`<span class="muted">${humans} oyuncu · ${L.seats.length - humans} bot</span><span class="grow"></span><button class="btn L pri" data-act="start" ${L.seats.length < 2 ? 'disabled' : ''}>${I('play')}Oyunu başlat</button>` : html`<div class="box-note grow"><span class="spinner"></span><span>Ev sahibinin oyunu başlatması bekleniyor</span></div>`}</div>
-  </div>${modalShell()}<div class="version">RANT ${APP_VERSION}</div>`;
+  </div>${modalShell()}<div class="version">Rantçı Dayı ${APP_VERSION}</div>`;
 }
 
 const modalShell = () => (app.ui.menuModal ? html`<div class="screen" style="position:fixed;inset:0;background:color-mix(in srgb, var(--page) 70%, transparent);z-index:60" data-act="backdrop">${G.rulesSheet()}</div>` : '');
@@ -103,12 +103,14 @@ function render() {
   if (app.screen === 'game' && app.view) {
     if (!G.gameMounted()) G.mountGame(root);
     G.updateGame();
+    mountIntro(null);
     return;
   }
   G.unmountGame();
   setMusic('lobby');
   const focus = document.activeElement && document.activeElement.id;
   root.innerHTML = String(app.screen === 'lobby' && app.lobby ? lobbyHTML() : menuHTML());
+  mountIntro(root);
   if (focus && document.getElementById(focus)) document.getElementById(focus).focus();
 }
 
@@ -737,7 +739,7 @@ setInterval(() => {
   const v = app.view;
   const mine = !!(v && v.phase !== 'over' && v.you >= 0 && E.waitingFor(v).includes(v.you));
   watchTurn(mine, 'Masaya dön, seni bekliyorlar.');
-  document.title = document.hidden && mine ? (document.title.startsWith('•') ? 'RANT' : '• Sıra sende! — RANT') : 'RANT — Kentsel Dönüşümün Kart Oyunu';
+  document.title = document.hidden && mine ? (document.title.startsWith('•') ? 'Rantçı Dayı' : '• Sıra sende! — Rantçı Dayı') : 'Rantçı Dayı — Kentsel Dönüşümün Kart Oyunu';
 }, 1000);
 
 window.addEventListener('beforeunload', (e) => {

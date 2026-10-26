@@ -3,7 +3,7 @@ import { ic } from './icons.js';
 
 export const RULES_HTML = `
 <div class="rules">
-<p><b>RANT</b> bir emlak ve kart oyunu. Belirlenen tur sayısı dolunca ya da biri lobide seçilen <b>değer hedefine</b> ulaşıp o tur bitince <b>Seçim Günü</b> gelir; en yüksek puanı (nakit + mülkler + katlar) toplayan kazanır. "Son kalan" modunda batan elenir, son kalan kazanır.</p>
+<p><b>Rantçı Dayı</b> bir emlak ve kart oyunu. Belirlenen tur sayısı dolunca ya da biri lobide seçilen <b>değer hedefine</b> ulaşıp o tur bitince <b>Seçim Günü</b> gelir; en yüksek puanı (nakit + mülkler + katlar) toplayan kazanır. "Son kalan" modunda batan elenir, son kalan kazanır.</p>
 <h3>Sıran geldiğinde</h3>
 <ul>
 <li><b>Hamle kartı</b>, Başlangıç Noktası'ndan geçince (elinde 5'ten az kart varsa 1) ve FIRSAT karesinde (2) gelir. Turda en fazla 1 Hamle kartı oynayabilirsin.</li>

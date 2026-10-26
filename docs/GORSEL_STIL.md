@@ -31,6 +31,19 @@ Square 1:1 card illustration, artwork only: no frame, no border, no text, no let
 Board game player token, a single compact figurine-like object, artwork only: no text, no letters, no numbers, no base, no pedestal, no ring. Match the art style of the reference image exactly (style only, not its characters or scene): bold flat vector cartoon, medium-weight dark navy outline (clear but not extra thick), flat fills only in tomato red, teal and mustard plus cream/off-white, no gradients, no texture, no shading. Compact figure that fills a roughly square area (not tall-thin, not wide-flat), no thin protruding parts, clean solid silhouette edge, readable at 36 px. Centered, whole object visible, filling about 85% of the frame, isolated on a fully transparent background, no shadow, no scenery. Subject: <figür>
 ```
 
+## Giriş ekranı videoları
+
+- Ana görsel `assets/giris/dayi.jpg` (ham: `tasks/gorsel-ham/giris/dayi-ana.png`, Higgsfield `gpt_image_2_5`). Tespihi başparmakla tutar, imame ve tek püskül altta; iki göz bebeği tek. Kullanıcı uzun, ayrıntılı komutlarla çizilen elleri "doğal değil" buldu; kısa komut ve modele inisiyatif daha iyi sonuç verdi.
+- Senaryo videosu: Kling 4.0, image-to-video, başlangıç ve bitiş karesi aynı ana görsel, 720p, 1:1, 6 sn (yaklaşık 3 kredi). Kısa komut kalıbı:
+
+```
+Flat 2D cartoon animation in the exact same style, static camera. He keeps holding the tespih exactly as in the image and it sways gently the whole time. <hareket>. He does not talk. Sunglasses stay on his head. Ends in the starting pose.
+```
+
+- Her varyant kare kare denetlenir: tek tespih ve tek püskül (iki tespih, yukarı fırlayan uç, kopan boncuk olmaz), tespih durmaz, ağız konuşmaz, gözlük başta kalır, el ağza ya da yüze kapanmaz. Tespihi "parmağın etrafında çevirme" istenmez; model boncukları çoğaltıyor.
+- Şehir arka planı `assets/giris/sehir.mp4` (8 sn döngü) ve afişi `sehir.jpg`: gökyüzü dayı videosunun zemini ile aynı krem olmalı.
+- Ham video `tasks/gorsel-ham/giris/senaryo-N.mp4` olarak kaydedilir ve `sh tools/giris_video.sh` ile küçültülür (ffmpeg gerekir; sessiz, dayı 480 px CRF 20, şehir CRF 22). Çıkan `assets/giris/dayi-N.mp4`, `src/ui/intro.js` içindeki `CLIPS` listesine yazılır.
+
 ## Tahta kareleri
 
 - Özel kareler (Başlangıç Noktası, Fırsat, SÜRPRİZ, Tapu, Çay Ocağı, Zabıta) ve ulaşım (gar, havalimanı) resim değil, `src/ui/icons.js` içindeki elle çizilmiş SVG ikonlardır (64x64). Kullanıcı yapay zeka resimlerini kalabalık buldu (v0.6); istenen, orijinal Monopoly gibi tek bakışta okunan, kalın hatlı sade ikon.

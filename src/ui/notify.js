@@ -25,7 +25,7 @@ export async function toggleNotify() {
 export function watchTurn(mine, body) {
   if (mine && !wasMine && document.hidden && isNotifyOn()) {
     try {
-      shown = new Notification('RANT — Sıra sende!', { body, tag: 'rant-turn', icon: document.querySelector('link[rel=icon]')?.href });
+      shown = new Notification('Rantçı Dayı — Sıra sende!', { body, tag: 'rant-turn', icon: document.querySelector('link[rel=icon]')?.href });
       shown.onclick = () => {
         window.focus();
         shown.close();
