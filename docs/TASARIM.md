@@ -115,6 +115,8 @@ Sahil grupları: Antalya, İzmir.
    (İlk taslakta her turda zar seçimi vardı; simülasyonda oyuncular kirayı neredeyse hiç ödemediği için karta taşındı.)
 5. **Kareye geliş** (aşağıda).
 6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**.
+
+**Açık pazarlık:** Sırası olmayan oyuncular da, sıradaki oyuncu zar öncesi ya da serbest evredeyken (bekleyen karar yokken), herhangi bir oyuncuya turda bir pazarlık teklifi yapabilir. Masada aynı anda tek teklif bulunur.
 7. Turu bitirmek için: bekleyen karar yok, nakit >= 0, elde en fazla 6 kart.
 8. **Tur sonu** (son oyuncudan sonra): Tur özeti açıklanır: net değeri en çok artan ve en çok düşen oyuncu, el değiştiren mülkler. Yalnız bilgi verir, kurala etkisi yoktur.
 
@@ -263,7 +265,7 @@ Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tu
 - Diğer oyuncular PeerJS (WebRTC) ile doğrudan ev sahibine bağlanır. Eşleşme için PeerJS'in ücretsiz sunucusu, ağ engeline karşı PeerJS'in TURN sunucuları kullanılır.
 - Her oyuncu yalnız kendi görünümünü alır (başkalarının eli gizli). Zar ve desteler ev sahibindedir.
 - Ev sahibi sayfayı yenilerse oyun tarayıcı hafızasından geri yüklenir; oyuncular otomatik yeniden bağlanır.
-- Pazarlık teklifini yalnız sırası gelen oyuncu yapar (turda en fazla 3 teklif).
+- Sırası gelen oyuncu turda en fazla 3, diğerleri turda 1 pazarlık teklifi yapar; aynı anda tek teklif bekler.
 - Bağlantısı kopan oyuncunun yerine bir süre sonra bot oynar; dönünce koltuk geri verilir.
 - Motor taşıma katmanından bağımsızdır; ileride bir WebSocket sunucusu aynı protokolle eklenebilir.
 

@@ -444,7 +444,7 @@ function slider(bind, max, color, step = 10) {
 function playersHTML(v) {
   const waiting = new Set(E.waitingFor(v));
   const conn = (app.meta && app.meta.connected) || {};
-  const manage = canManage(v);
+  const tradeOk = !E.tradeWait(v, v.you);
   return v.players
     .map((pl, i) => {
       const turn = v.phase === 'play' && v.turn && v.turn.p === i;
@@ -463,7 +463,7 @@ function playersHTML(v) {
       const tags = [i === v.you ? html`<span class="s-tag me">SEN</span>` : '', turn ? html`<span class="s-tag">SIRADA</span>` : ''];
       const acts =
         i === v.you
-          ? html`<div class="s-acts"><button class="btn small ghost" data-act="manage">🏠 Mülklerim</button><button class="btn small turq" data-act="trade" ${manage ? '' : 'disabled'} title="Sıra sendeyken pazarlık teklif edebilirsin">🤝 Pazarlık</button></div>`
+          ? html`<div class="s-acts"><button class="btn small ghost" data-act="manage">🏠 Mülklerim</button><button class="btn small turq" data-act="trade" ${tradeOk ? '' : 'disabled'} title="Sıradaki oyuncu zar atmadan önce ya da turunu bitirmeden teklif edebilirsin (sıran değilken turda bir kez)">🤝 Pazarlık</button></div>`
           : '';
       return html`<div class="seat2 ${turn ? 'turn' : ''}" style="--c:${pl.color}" data-act="player" data-p="${i}">
         <div class="s-av">${pl.avatar}</div>
@@ -613,7 +613,7 @@ function manageDialog(v) {
 function tradeDialog(v) {
   const me = v.you;
   const t = app.ui.trade;
-  const opps = v.players.map((_, i) => i).filter((i) => i !== me);
+  const opps = v.players.map((_, i) => i).filter((i) => i !== me && !P(v, i).out);
   if (t.to === null || !opps.includes(t.to)) t.to = opps[0];
   const chips = (owner, side) => {
     const qs = E.propsOf(v, owner).sort((a, b) => a - b);
@@ -628,7 +628,7 @@ function tradeDialog(v) {
     return html`<div class="trade-col" style="--c:${pl.color}"><h4>${av(pl, 'sm')} ${label}</h4>${chips(i, side)}
       <div class="moneybox"><div class="row"><span class="muted">Para</span><div class="grow"></div><b class="amount" data-show="${bind}"></b></div>${slider(bind, pl.cash, pl.color)}</div></div>`;
   };
-  const block = E.tradeBlock(v, me, tradeOffer());
+  const block = tradeReason(v);
   return html`<h2>🤝 Pazarlık</h2>
     <div class="tpartners">${opps.map((i) => html`<button class="tpartner ${t.to === i ? 'on' : ''}" data-act="tradeTo" data-p="${i}" style="--c:${P(v, i).color}">${av(P(v, i), 'sm')} ${P(v, i).name}</button>`)}</div>
     <div class="trade-cols">${col(me, 'Sen veriyorsun', 'give', 'tradeGive')}${col(t.to, `${P(v, t.to).name} veriyor`, 'take', 'tradeTake')}</div>
@@ -639,12 +639,15 @@ function tradeDialog(v) {
 // Kaydırma çubuğu oynarken pencereyi yeniden çizmeden uyarıyı ve düğmeyi günceller.
 function refreshTrade() {
   const v = app.view;
-  const block = E.tradeBlock(v, v.you, tradeOffer());
+  const block = tradeReason(v);
   const reason = els.modal.querySelector('[data-trade-reason]');
   const btn = els.modal.querySelector('[data-act="sendTrade"]');
   if (reason) reason.textContent = block || '';
   if (btn) btn.disabled = !!block;
 }
+
+// Sıra beklenirken pencere açık kalır; gönderme düğmesi teklif yapılabilene kadar kapalıdır.
+const tradeReason = (v) => E.tradeWait(v, v.you) || E.tradeBlock(v, v.you, tradeOffer());
 
 export function tradeOffer() {
   const t = app.ui.trade;
@@ -722,7 +725,7 @@ export function renderModal() {
       wide = true;
       break;
     case 'trade':
-      if (!canManage(v)) {
+      if (v.phase !== 'play' || P(v, v.you).out) {
         app.ui.dialog = null;
         return renderModal();
       }

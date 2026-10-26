@@ -9,6 +9,7 @@ export const RULES_HTML = `
 <li>Sahipsiz arsaya gelince <b>satın al</b> ya da <b>açık artırmaya</b> çıkar: sırayla herkes ya teklifi artırır ya çekilir, son kalan kazanır.</li>
 <li>Başkasının mülküne gelince kira ödersin. <b>Dayın Çıktı</b> kartın varsa ödemezsin.</li>
 <li>Kat dik, ipotek et, pazarlık teklif et, sonra <b>Turu Bitir</b>.</li>
+<li>Sıran değilken de turda bir kez pazarlık teklif edebilirsin (sıradaki oyuncu zar atmadan önce ya da turunu bitirmeden).</li>
 </ul>
 <h3>Kat ve kaçak kat</h3>
 <ul>
