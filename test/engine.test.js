@@ -721,3 +721,29 @@ test('iflas modu kapalıyken borçlu konkordato ilan eder, oyunda kalır', () =>
   assert.equal(s.players[0].out, 0);
   assert.equal(s.players[0].konkordato, 1);
 });
+
+test('Kredi Kartı: hemen 300, 2 tur sonra sırası gelince 360; aynı anda tek kredi, borç net değerden düşer', () => {
+  let s = calm(started());
+  const before = netWorth(s, 0);
+  s = act(s, 0, { type: 'playCard', uid: give(s, 0, 'kredi') });
+  assert.equal(s.players[0].cash, 1800);
+  assert.deepEqual(s.players[0].kredi, { amount: 360, due: 3 });
+  assert.equal(netWorth(s, 0), before - 60, 'faiz net değerden düşer');
+  assert.equal(scoreOf(s, 0).borc, 360);
+  s.turn.hamle = false;
+  assert.match(cardBlock(s, 0, 'kredi'), /kredi kartı borcunu/);
+  let paid = null;
+  let guard = 0;
+  while (!paid && s.phase !== 'over' && guard++ < 400) {
+    const r = simpleStep(s);
+    paid = r.events.find((e) => e.type === 'money' && e.why === 'Kredi kartı borcu') || null;
+    s = r.state;
+  }
+  assert.ok(paid, 'borç ödendi');
+  assert.equal(paid.from, 0);
+  assert.equal(paid.amount, 360);
+  assert.equal(s.round, 3);
+  assert.equal(s.turn.p, 0);
+  assert.equal(s.players[0].kredi, null);
+  assert.equal(cardBlock(s, 0, 'kredi'), null);
+});

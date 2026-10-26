@@ -107,6 +107,7 @@ function iflas(s, ctx, p) {
   s.discard.push(...pl.hand);
   pl.hand = [];
   pl.cash = 0;
+  pl.kredi = null;
   pl.out = s.players.filter((o) => o.out).length + 1; // kaçıncı elenen
   emit(s, ctx, { type: 'iflas', p, text: `${nm(s, p)} iflas etti ve oyundan çekildi! Mülkleri bankaya döndü.` });
 }
@@ -203,6 +204,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
       konkordato: 0,
       out: 0, // iflas modunda kaçıncı elendiği; 0: oyunda
       kiraZammi: false,
+      kredi: null, // { amount, due }: due turunda sırası gelince bankaya ödenir
     };
   });
   const copies = (defs) => Object.entries(defs).flatMap(([id, c]) => Array.from({ length: c.count }, (_, n) => `${id}:${n}`));
@@ -250,6 +252,11 @@ function startTurn(s, ctx, p) {
   s.turn = { p, step: 'preroll', dice: null, hamle: false, backward: false, trades: 0, side: [] };
   s.players[p].kiraZammi = false;
   emit(s, ctx, { type: 'turn', p });
+  const kr = s.players[p].kredi;
+  if (kr && s.round >= kr.due) {
+    s.players[p].kredi = null;
+    transfer(s, ctx, p, null, kr.amount, 'Kredi kartı borcu');
+  }
   if (s.players[p].hand.length < s.config.drawCap) drawCards(s, ctx, p, 1, true);
 }
 
@@ -710,6 +717,8 @@ export function cardBlock(s, p, id, t = {}) {
       if (s.mods.durgunluk) return 'Piyasa durgun: bu dönem kat dikilemez.';
       if (ps.ipotek || ps.tedbir > 0) return 'İpotekli ya da tedbirli mülke kat dikilemez.';
       return R.level(ps) >= 4 ? 'Bu mülk en üst seviyede.' : null;
+    case 'kredi':
+      return pl.kredi ? 'Önce kredi kartı borcunu ödemelisin.' : null;
     case 'piyango':
     case 'aidat':
       return null;
@@ -858,6 +867,9 @@ function applyCard(s, ctx, card, victim) {
       return emit(s, ctx, { type: 'build', p, sq: t.sq, text: `${sqName(t.sq)} üstüne ruhsatlı bedava kat çıktı.` });
     case 'piyango':
       return transfer(s, ctx, null, p, R.money(s, AMOUNTS.piyango), 'Piyango');
+    case 'kredi':
+      s.players[p].kredi = { amount: R.money(s, AMOUNTS.krediGeri), due: s.round + 2 };
+      return transfer(s, ctx, null, p, R.money(s, AMOUNTS.kredi), 'Kredi kartı');
     case 'aidat':
       return transfer(s, ctx, victim, p, R.money(s, AMOUNTS.aidat), 'Aidat');
     case 'dava': {

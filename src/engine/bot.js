@@ -116,7 +116,7 @@ function expectedRollScore(s, p, backward = s.turn.backward) {
   return total / 36;
 }
 
-const CARD_KEEP = { kestirme: 50, itiraz: 90, dayi: 75, piyango: 150, aidat: 85, kamulastirma: 70, muteahhit: 80, taksi: 55, kiraZammi: 45, tedbir: 50, ihbar: 45, takas: 40, dava: 30, pazarlik: 45, geriVites: 10 };
+const CARD_KEEP = { kestirme: 50, itiraz: 90, dayi: 75, piyango: 150, kredi: 35, aidat: 85, kamulastirma: 70, muteahhit: 80, taksi: 55, kiraZammi: 45, tedbir: 50, ihbar: 45, takas: 40, dava: 30, pazarlik: 45, geriVites: 10 };
 
 function cardPlay(s, p) {
   const pl = s.players[p];
@@ -134,6 +134,10 @@ function cardPlay(s, p) {
     switch (id) {
       case 'piyango':
         consider(uid, {}, R.money(s, AMOUNTS.piyango));
+        break;
+      case 'kredi':
+        // Faizi net değerden düşer; yalnız nakit yedeğin altındayken ve borç oyun bitmeden ödenecekse.
+        if (pl.cash < res && s.round + 2 <= s.config.maxRounds) consider(uid, {}, 30);
         break;
       case 'aidat':
         consider(uid, {}, R.money(s, AMOUNTS.aidat) * (R.activePlayers(s).length - 1));

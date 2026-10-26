@@ -158,7 +158,7 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 - Satacak bir şey kalmadıysa **Konkordato**: nakit 0 olur, oyundan çıkmazsın, sonda konkordato başına 300 puan cezası.
 - **İflas modunda** konkordato yoktur; satacak bir şey kalmayan oyuncu **iflas eder**: mülkleri katsız ve ipoteksiz olarak bankaya döner (sahipsiz, yeniden satın alınabilir), elindeki kartlar desteye gider, oyundan çıkar. Elenen oyuncunun sırası atlanır; aidat, çay parası, gündem ve sürpriz ödemelerine katılmaz; kartlara, pazarlığa ve artırmaya hedef olamaz. Sıralama: ayakta kalanlar puana göre, sonra elenenler son elenenden ilk elenene.
 
-## 7. Hamle kartları (44)
+## 7. Hamle kartları (46)
 
 Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz, Dayın Çıktı) bu sınıra girmez.
 
@@ -176,6 +176,7 @@ Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz
 | Kira Zammı | 3 | Bir sonraki sıran gelene kadar tahsil edeceğin ilk kira 2 katı. | - |
 | Müteahhit Dostu | 3 | O şehirden en az 2 mülkün varsa birine bedava 1 yasal kat (tam set şartı yok). | - |
 | Piyango | 2 | Bankadan 100 al. | - |
+| Kredi Kartı | 2 | Bankadan 300 al; 2 tur sonra sıran gelince 360 ödersin. Aynı anda tek kredi; ödenmemiş borç net değerden düşülür. | - |
 | Aidat Günü | 3 | Diğer her oyuncu sana 30 öder. | Her hedef ayrı İtiraz edebilir |
 | Dava Aç | 3 | Bir rakiple zar atarsın; büyük atan 100 alır (eşitlikte davalı). | İtiraz |
 | Pazarlık Ustası | 3 | Satın alma kararı sırasında: arsayı yarı fiyata al. | - |
@@ -256,7 +257,7 @@ SÜRPRİZ karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçili
 
 ## 9. Net Değer ve puan
 
-Net Değer = nakit + mülklerin güncel fiyatı (ipotekli ise yarısı) + yasal kat x kat fiyatı + kaçak kat x kat fiyatının yarısı.
+Net Değer = nakit - ödenmemiş kredi borcu + mülklerin güncel fiyatı (ipotekli ise yarısı) + yasal kat x kat fiyatı + kaçak kat x kat fiyatının yarısı.
 Puan = Net Değer - 300 x konkordato. Eşitlikte nakdi fazla olan kazanır.
 Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tur tur net değer çizgisi gösterilir (konkordato cezası çizgide yoktur, yalnız puanda).
 

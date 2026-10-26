@@ -114,18 +114,18 @@ function netWorthParts(s, p) {
     mulk += ps.ipotek ? mortgageValue(s, q) : price(s, q);
     if (BOARD[q].kind === 'prop') katlar += ps.kat * katValue(s, q) + ps.kacak * round5(katValue(s, q) / 2);
   }
-  return { nakit: s.players[p].cash, mulk, katlar };
+  return { nakit: s.players[p].cash, borc: s.players[p].kredi?.amount || 0, mulk, katlar };
 }
 
 export function netWorth(s, p) {
   const w = netWorthParts(s, p);
-  return w.nakit + w.mulk + w.katlar;
+  return w.nakit - w.borc + w.mulk + w.katlar;
 }
 
 export function scoreOf(s, p) {
   const parts = netWorthParts(s, p);
   const ceza = s.players[p].konkordato * s.config.konkordatoPenalty;
-  return { ...parts, ceza, total: parts.nakit + parts.mulk + parts.katlar - ceza };
+  return { ...parts, ceza, total: parts.nakit - parts.borc + parts.mulk + parts.katlar - ceza };
 }
 
 export function hasLiquidAssets(s, p) {

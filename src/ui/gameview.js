@@ -459,6 +459,7 @@ function playersHTML(v) {
         pl.bot ? html`<span data-tip="Bot oynuyor">🤖</span>` : conn[pl.id] === false ? html`<span data-tip="Bağlantısı koptu, süre dolunca bot oynar">📴</span>` : '',
         pl.konkordato ? html`<span data-tip="Konkordato: oyun sonunda ${pl.konkordato * v.config.konkordatoPenalty} puan ceza">⚠️${pl.konkordato}</span>` : '',
         pl.kiraZammi ? html`<span data-tip="Kira Zammı: tahsil edeceği ilk kira 2 katı">📈</span>` : '',
+        pl.kredi ? html`<span data-tip="Kredi kartı borcu: ${pl.kredi.due}. turda sırası gelince ${fmt(pl.kredi.amount)} ödeyecek">💳</span>` : '',
         waiting.has(i) && !turn && v.phase !== 'over' ? html`<span class="s-wait" data-tip="Karar vermesi bekleniyor"></span>` : '',
       ];
       const tags = [i === v.you ? html`<span class="s-tag me">SEN</span>` : '', turn ? html`<span class="s-tag">SIRADA</span>` : ''];
@@ -680,7 +681,7 @@ function resultsDialog(v) {
   const rows = r.ranking.map((p, k) => {
     const sc = r.scores[p];
     const pl = P(v, p);
-    const detail = pl.out ? `İflas etti (${pl.out}. elenen)` : `Nakit ${fmt(sc.nakit)} · Mülk ${fmt(sc.mulk)} · Kat ${fmt(sc.katlar)}${sc.ceza ? ` · Ceza -${fmt(sc.ceza)}` : ''}`;
+    const detail = pl.out ? `İflas etti (${pl.out}. elenen)` : `Nakit ${fmt(sc.nakit)} · Mülk ${fmt(sc.mulk)} · Kat ${fmt(sc.katlar)}${sc.borc ? ` · Kredi -${fmt(sc.borc)}` : ''}${sc.ceza ? ` · Ceza -${fmt(sc.ceza)}` : ''}`;
     return html`<div class="res ${k === 0 ? 'win' : ''} ${pl.out ? 'out' : ''}"><div class="rank">${['🥇', '🥈', '🥉'][k] || k + 1}</div>${av(pl)}
       <div><b>${pl.name}</b><div class="rb">${detail}</div></div>
       <div class="rt money">${pl.out ? '💥' : fmt(sc.total)}</div></div>`;
@@ -994,6 +995,8 @@ function cardEffect(v, ev) {
       return `${sq(t.sq)} üstüne bedava yasal kat.`;
     case 'piyango':
       return `Bankadan ${m('piyango')} aldı.`;
+    case 'kredi':
+      return `Bankadan ${m('kredi')} çekti; 2 tur sonra ${m('krediGeri')} ödeyecek.`;
     case 'taksi':
       return `Zar atmadan ${t.steps} kare ilerliyor.`;
     case 'kestirme':
