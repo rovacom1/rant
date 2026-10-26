@@ -94,6 +94,7 @@ function lobbyHTML() {
           : seg('cfgRounds', [[10, '10 tur'], [15, '15 tur'], [20, '20 tur']], L.config.maxRounds, 'Oyun uzunluğu')}
       ${seg('cfgTurn', [[60, '60 sn'], [120, '2 dk'], [180, '3 dk'], [0, 'Yok']], L.config.turnLimit, 'Sıra süresi (dolunca bot oynar)')}
       ${seg('cfgSpeed', [['slow', 'Yavaş'], ['normal', 'Normal'], ['fast', 'Hızlı']], L.config.speed || 'normal', 'Oyun hızı')}
+      ${seg('cfgBot', [['kolay', 'Kolay'], ['normal', 'Normal'], ['zor', 'Zor']], L.config.botLevel || 'normal', 'Bot seviyesi')}
     </div>
     ${rulesHTML(L.config.rules || E.DEFAULT_CONFIG.rules, host)}
     ${app.error ? html`<div class="notice error">${app.error}</div>` : ''}
@@ -426,6 +427,7 @@ const A = {
   cfgRounds: (el) => send({ t: 'lobby', cmd: 'config', maxRounds: Number(el.dataset.v) }),
   cfgTurn: (el) => send({ t: 'lobby', cmd: 'config', turnLimit: Number(el.dataset.v) }),
   cfgSpeed: (el) => send({ t: 'lobby', cmd: 'config', speed: el.dataset.v }),
+  cfgBot: (el) => send({ t: 'lobby', cmd: 'config', botLevel: el.dataset.v }),
   cfgEnd: (el) => send({ t: 'lobby', cmd: 'config', endMode: el.dataset.v }),
   cfgTarget: (el) => send({ t: 'lobby', cmd: 'config', targetScore: Number(el.dataset.v) }),
   cfgRule: (el) => {

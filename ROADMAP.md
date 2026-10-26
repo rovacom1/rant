@@ -6,8 +6,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Bot zorluk seviyesi (devam):** Motor tarafı bitti (v0.14.0, `config.botLevel`, Host `config` mesajında `botLevel`).
-  - [ ] Lobide Masa ayarlarına Kolay / Normal / Zor seçimi (yalnız ev sahibi), kurallar penceresinde bir satır; tarayıcıda iki temada dene.
 - [ ] **Açık pazarlık:** Sırası olmayan oyuncular da birbirine teklif yapabilsin (aynı anda tek teklif kuralıyla).
 - [ ] **Mobil düzen:** 400-800 px genişlikte tahta ve panelin rahat kullanımı (alt sekmeli panel). 10x10 tahtada kareler dar ekranda çok küçülüyor.
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
@@ -21,6 +19,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Lobide Bot seviyesi seçimi (Kolay / Normal / Zor, yalnız ev sahibi); kurallarda bot seviyesi satırı, eskimiş gizli hedef ve "kimse batmaz" ifadeleri düzeltildi (v0.16.2)
 - [x] Zor bot kaçak kat dikmez (zabıta ve ihbar riskine girmez); 1000 oyunda zor bot 4 kişide %24->%40, 5 kişide %25->%29 (v0.16.1)
 - [x] Bot seviyesi motoru: Kolay (pazarlık ve kaçak kat yok, kat ve kartı yarı yarıya unutur, artırmada erken çekilir) / Zor (eksik parçayı karşının kabul edeceği en ucuz teklifle ister, gerekirse mülk takası; artırmada en az artış); sim'de `node tools/sim.js N 5 zor` ile tek botu seviyeli oynatma. 1000 oyun, 5 kişi: zor %25, kolay %14, eşit şans %20 (v0.14.0)
 
