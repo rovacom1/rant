@@ -3,8 +3,9 @@
 // Bileşen olayları belgeye 'rant:card' olarak yollar: { uid, how: 'click' | 'drop' }.
 import { CARDS, cardId } from '../engine/index.js';
 import { html } from './dom.js';
+import { APP_VERSION } from '../version.js';
 
-export const cardArt = (id) => `assets/kart/${id}.jpg`;
+export const cardArt = (id) => `assets/kart/${id}.jpg?v=${APP_VERSION}`; // sürüm, yeni görselin önbellekten eskisiyle gelmesini önler
 const WHEN = { preroll: 'Zar atmadan önce', choose: 'Zar attıktan sonra', buy: 'Satın alırken' };
 
 // Tek kartın yüzü (elde, pencerede ve ortadaki gösterimde aynı tasarım).

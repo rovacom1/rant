@@ -980,7 +980,7 @@ function cardEffect(v, ev) {
     case 'ihbar':
       return `Tüm kaçak katları yıkılacak, kat başı ${m('ihbarFine')} ceza.`;
     case 'dava':
-      return `Zar atılacak; büyük atan ${m('dava')} alır, eşitlikte davalı kazanır.`;
+      return `Zar atılacak; yüksek atan ${m('dava')} alır, eşitlikte davalı kazanır.`;
     case 'aidat':
       return `Diğer herkes ona ${m('aidat')} aidat ödeyecek.`;
     case 'kiraZammi':

@@ -162,21 +162,21 @@ Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz
 
 | Kart | Adet | Etki | Karşı hamle |
 |---|---|---|---|
-| İtiraz | 6 | TEPKİ: Sana oynanan bir Hamle'yi iptal et. İtiraz'a karşı da oynanır. | - |
-| Dayın Çıktı | 2 | TEPKİ: Ödeyeceğin bir kirayı ödemezsin. | - |
-| Taksi | 2 | Zar atmadan önce: zar yerine 1-12 kare arasında istediğin kadar ilerle. | - |
-| Kestirme | 3 | Zar attıktan sonra: toplam yerine zarlardan birini seçip o kadar ilerle. | - |
-| Geri Vites | 2 | Zar atmadan önce: bu tur geri yönde ilerlersin (maaş yok). | - |
-| Kamulaştırma | 3 | Rakibin katsız, ipoteksiz, set dışı bir mülkünü fiyatını ona ödeyerek al. | İtiraz |
-| Zorla Takas | 3 | Katsız bir mülkünü rakibin katsız, set dışı bir mülküyle değiştir. | İtiraz |
-| İhtiyati Tedbir | 2 | Rakibin bir mülkü 2 tur boyunca kira alamaz, kat dikilemez. | İtiraz |
-| İhbar | 4 | Bir rakibin tüm kaçak katları yıkılır, kat başı 25 ceza. | İtiraz |
-| Kira Zammı | 3 | Bir sonraki sıran gelene kadar tahsil edeceğin ilk kira 2 katı. | - |
-| Müteahhit Dostu | 3 | O şehirden en az 2 mülkün varsa birine bedava 1 yasal kat (tam set şartı yok). | - |
+| İtiraz | 6 | TEPKİ: Sana oynanan bir Hamle'yi iptal et. İtiraz'a karşı da oynanabilir. | - |
+| Dayın Çıktı | 2 | TEPKİ: Ödemen gereken bir kirayı ödemezsin. | - |
+| Taksi | 2 | Zar atmadan önce: zar yerine 1 ile 12 arasında istediğin sayıda kare ilerle. | - |
+| Kestirme | 3 | Zar attıktan sonra: toplam yerine yalnız bir zarın gösterdiği kadar ilerle. | - |
+| Geri Vites | 2 | Zar atmadan önce: bu tur attığın zar kadar geri gidersin (maaş yok). | - |
+| Kamulaştırma | 3 | Rakibinin katsız, ipoteksiz ve tam sette olmayan bir mülkünü, bedelini ona ödeyerek al. | İtiraz |
+| Zorla Takas | 3 | Katsız bir mülkünü, rakibinin tam sette olmayan katsız bir mülküyle değiştir. | İtiraz |
+| İhtiyati Tedbir | 2 | Rakibinin seçtiğin mülkü 2 tur boyunca kira getirmez, üstüne kat da dikilemez. | İtiraz |
+| İhbar | 4 | Seçtiğin rakibin bütün kaçak katları yıkılır; rakip yıkılan her kat için 25 ceza öder. | İtiraz |
+| Kira Zammı | 3 | Sıra yeniden sana gelene kadar alacağın ilk kira 2 katına çıkar. | - |
+| Müteahhit Dostu | 3 | Aynı şehirde en az 2 mülkün varsa birine bedava 1 yasal kat dik (setin tamamı gerekmez). | - |
 | Piyango | 2 | Bankadan 100 al. | - |
-| Aidat Günü | 3 | Diğer her oyuncu sana 30 öder. | Her hedef ayrı İtiraz edebilir |
-| Dava Aç | 3 | Bir rakiple zar atarsın; büyük atan 100 alır (eşitlikte davalı). | İtiraz |
-| Pazarlık Ustası | 3 | Satın alma kararı sırasında: arsayı yarı fiyata al. | - |
+| Aidat Günü | 3 | Diğer oyuncuların her biri sana 30 öder. | Her hedef ayrı ayrı İtiraz edebilir |
+| Dava Aç | 3 | Bir rakibine dava aç, ikiniz zar atın: yüksek atan ötekinden 100 alır (eşitlikte davalı kazanır). | İtiraz |
+| Pazarlık Ustası | 3 | Bir mülkü satın alırken oyna: yarı fiyatına al. | - |
 
 Kartlardaki para miktarları Endeks ile ölçeklenir.
 
@@ -212,7 +212,7 @@ Gündem bir **dönem** boyunca geçerlidir: dönem 3 tur sürer (tüm oyuncular�
 | Ulaşıma Zam | 1 | Bu dönem gar ve havalimanı kiraları 2 katı |
 | Deprem Yönetmeliği | 1 | Yasal kat başı 15, kaçak kat başı 30 güçlendirme bedeli |
 | Emlak Vergisi | 1 | Mülk başı 10 vergi |
-| Kira Artış Sınırı | 1 | Bu dönem tüm kiralar yarıya iner |
+| Kira İndirimi | 1 | Bu dönem tüm kiralar yarıya iner |
 | Kira Artışı | 1 | Bu dönem tüm kiralar 1,5 katı |
 | Bayram İkramiyesi | 2 | Herkese 100 |
 | Kentsel Dönüşüm | 1 | Rastgele bir şehirde sahipli her mülke bedava 1 yasal kat |
@@ -240,7 +240,7 @@ SÜRPRİZ karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçili
 | Hesap Senden | Diğer her oyuncuya 20 öde. |
 | Robin Hood | Nakdi en çok olandan 100 alınır, nakdi en az olana verilir. |
 | Duvarda Çatlak | En yüksek katlı mülkünden 1 kat çöker (önce kaçak kat). |
-| Belediyeden Jest | Rastgele bir mülküne bedava 1 yasal kat. Uygun mülk yoksa 50 teselli. |
+| Belediyeden Jest | Rastgele bir mülküne bedava 1 yasal kat dikilir. Uygun mülk yoksa 50 teselli. |
 | Dededen Kalma Tarla | Sahipsiz en ucuz mülk bedavaya senin olur. Sahipsiz mülk yoksa 100 al. |
 | Bedava Uçak Bileti | İleri yöndeki ilk havalimanına uçarsın (Başlangıç Noktası'ndan geçersen maaş), o kareye gelmiş sayılırsın. |
 | Işınlanma | Rastgele bir kareye ışınlanırsın (maaş yok), o kareye gelmiş sayılırsın. SÜRPRİZ karelerine ışınlanılmaz. |

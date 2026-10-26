@@ -471,7 +471,7 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .hand-head .hand-n { color: #9fb0d4; }
 .hand-head .spacer { flex: 1; }
 .deck-chip { display: inline-flex; align-items: center; gap: 6px; letter-spacing: 0; font-family: var(--display); font-size: 13px; cursor: help; }
-.deck-chip i { width: 13px; height: 18px; border-radius: 3px; border: 1.5px solid #c9a24a; background: url(../assets/kart/arka.jpg) center / cover, linear-gradient(145deg, #1d2b4f, #00798c); }
+.deck-chip i { width: 13px; height: 18px; border-radius: 3px; border: 1.5px solid #c9a24a; background: url(../assets/kart/arka.jpg?v=2) center / cover, linear-gradient(145deg, #1d2b4f, #00798c); }
 .hand-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--cols, 3), var(--hw, 128px)); gap: 8px; align-content: start; justify-content: center; }
 .hand-grid:empty::after { content: 'Elinde kart yok'; grid-column: 1 / -1; color: rgba(255, 255, 255, 0.5); font-size: 13px; padding: 10px 0; }
 .hand-grid .kart { --w: var(--hw, 128px); }

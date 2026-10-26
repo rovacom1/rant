@@ -1,4 +1,4 @@
-# Gemini'nin ürettiği ham kart görsellerini (tasks/gorsel-ham) oyuna uygun boyuta getirir: assets/kart/<id>.jpg
+# Ham kart görsellerini (tasks/gorsel-ham) oyuna uygun boyuta getirir: assets/kart/<id>.jpg
 # Kullanım: python tools/kart_gorsel_hazirla.py
 import glob, os
 from PIL import Image

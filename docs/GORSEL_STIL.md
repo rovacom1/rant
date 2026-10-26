@@ -4,16 +4,16 @@ Yeni bir kart eklenirse görseli aynı tarzda üretilir; tutarlılık oyunun kal
 
 ## Kart görseli
 
-- Araç: Gemini (Nano Banana). `python C:\Dev\Ekip\ekip.py gemini "<komut>" --tur gorsel --gorsel tasks/gorsel-ham/<kartId>.jpg`
-  Gemini kotası dolarsa ElevenLabs bağlantısında `gemini-3.1-flash-image` modeli kullanılır (görsel başına yaklaşık 7 sent; geniş gelir, ortadan kare kırpılır).
-- Ham dosyalar `tasks/gorsel-ham/` altına (repoya girmez), sonra `python tools/kart_gorsel_hazirla.py` ile `assets/kart/<kartId>.jpg` (360x360, yaklaşık 35 KB) üretilir. Kart arkası `arka.jpg` dikey kırpılır.
+- Stil (v0.16.1, kullanıcı seçti): kalın lacivert dış çizgili düz çizgi film; yalnız domates kırmızısı, turkuaz, hardal ve krem zemin; gradyan ve doku yok. Eski Hearthstone tarzı boyalı görseller "kalabalık, yapay zeka işi" bulundu.
+- Araç: Higgsfield, `gpt_image_2_5`, `quality: medium`, 1:1 (görsel başına 0,5 kredi). Stil referansı olarak `assets/kart/itiraz.jpg` yüklenir (`image_references`); tutarlılığı bu sağlar.
+- Ham dosyalar `tasks/gorsel-ham/<kartId>.jpg` olarak kaydedilir (repoya girmez), sonra `python tools/kart_gorsel_hazirla.py` ile `assets/kart/<kartId>.jpg` (360x360, yaklaşık 27 KB) üretilir. Kart arkası `arka.jpg` 3:4 üretilir, araç onu 5:7 kırpar.
 - Komut kalıbı (değiştirmeden kullan, yalnız "Subject" kısmını yaz):
 
 ```
-Use your image generation tool. Square 1:1 trading card illustration, artwork only: no frame, no border, no text, no letters, no numbers, no watermark. Style: rich painterly digital fantasy card art like Hearthstone, warm cinematic lighting, saturated colors, slightly exaggerated cartoon proportions, strong centered subject, softly blurred detailed background. Setting: modern Turkey. Subject: <sahne>
+Square 1:1 card illustration, artwork only: no frame, no border, no text, no letters, no numbers. Match the art style of the reference image exactly (style only, not its characters or scene): bold flat vector cartoon, thick dark navy outlines, flat fills only in tomato red, teal and mustard plus a plain cream background, no gradients, no texture, big expressive caricature faces, modern indie board game look, lots of empty cream space, readable at small size. Setting: present-day Turkey, all clothing contemporary 2020s, no fez, no traditional costume. Subject: <sahne>
 ```
 
-- Sahne, kartın esprisini tek bakışta anlatmalı (ör. Dayın Çıktı: kasketli, tespihli bir dayının ev sahibini savuşturması).
+- Sahne, kartın esprisini tek bakışta anlatmalı (ör. Dayın Çıktı: deri ceketli, desenli gömlekli, altın zincirli, tespihli kıro bir dayının ev sahibini elini kaldırıp durdurması). Kıyafetler bugünün Türkiye'si: fes, şalvar, kuşak yok. Elde tutulan nesneler tek ve doğal olsun (tek sayfa fatura, bir anahtar); anlamı belli olmayan nesne (yerde zar gibi) çizilmez.
 
 ## Tahta kareleri
 
