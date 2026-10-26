@@ -267,6 +267,7 @@ Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tu
 - Diğer oyuncular PeerJS (WebRTC) ile doğrudan ev sahibine bağlanır. Eşleşme için PeerJS'in ücretsiz sunucusu, ağ engeline karşı PeerJS'in TURN sunucuları kullanılır.
 - Her oyuncu yalnız kendi görünümünü alır (başkalarının eli gizli). Zar ve desteler ev sahibindedir.
 - Ev sahibi sayfayı yenilerse oyun tarayıcı hafızasından geri yüklenir; oyuncular otomatik yeniden bağlanır.
+- **Ev sahibi devri:** ev sahibi her hamleden sonra oyunun tam halini sıradaki bağlı insan oyuncuya (yedek) da gönderir; koltuk anahtarları gönderilmez. Ev sahibi 15 saniye dönmezse yedek aynı oda koduyla ev sahibi olur, diğerleri kendiliğinden ona bağlanır; koltuklar, kimliği o koltuğa denk gelen tokenle dönene verilir. Eski ev sahibi "Devam et" derse oda başkasında açık olduğu için oyuncu olarak katılır. Bedeli: yedek oyuncunun tarayıcısı da herkesin elini tutar (ev sahibininki gibi); arkadaş masası için kabul edildi.
 - Pazarlık teklifini yalnız sırası gelen oyuncu yapar (turda en fazla 3 teklif). Teklifi alan kabul eder, reddeder ya da karşı teklif yapar: aynı pazarlık ters yönde sürer, bir pazarlıkta en fazla 2 karşı teklif olur.
 - Bağlantısı kopan oyuncunun yerine bir süre sonra bot oynar; dönünce koltuk geri verilir.
 - Motor taşıma katmanından bağımsızdır; ileride bir WebSocket sunucusu aynı protokolle eklenebilir.

@@ -103,6 +103,23 @@ export class Host {
     } catch (e) {
       console.warn('kayıt yapılamadı', e);
     }
+    this.sendBackup();
+  }
+
+  // Ev sahibi devri: oyunun tam hali sıradaki bağlı insan oyuncuya (yedek) da gider. Ev sahibi düşerse o
+  // aynı oda koduyla oyunu kendi tarayıcısında sürdürür. Koltuk anahtarları (secrets) gönderilmez: yeni ev
+  // sahibi koltukları, kimliği o koltuğa denk gelen tokenle döneni kabul ederek yeniden öğrenir.
+  backupId() {
+    const s = this.seats.find((x) => x.id !== this.hostId && !x.bot && x.connected && [...this.clients].some((c) => c.playerId === x.id && !c.local));
+    return s ? s.id : null;
+  }
+
+  sendBackup() {
+    if (!this.game || this.game.phase === 'over') return;
+    const id = this.backupId();
+    if (!id) return;
+    const snap = { ...this.snapshot(), secrets: {}, backupId: id };
+    for (const c of this.clients) if (c.playerId === id && !c.local) this.send(c, { t: 'backup', snap });
   }
 
   addSeat({ id, name, avatar, bot }) {

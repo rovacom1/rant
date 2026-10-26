@@ -168,3 +168,42 @@ test('süreler toplam süreyle ve ev sahibinin saatiyle gönderilir', () => {
   assert.equal(m.deadlines[first].span, 120000, 'sıra süresi 120 sn');
   assert.ok(m.deadlines[first].at >= m.now + 119000);
 });
+
+test('ev sahibi devri: yedek oyuncu tam kopyayı alır, ev sahibi düşünce oyunu aynı yerden sürdürür', () => {
+  const { host, me } = room();
+  const ALI = 'a'.repeat(32);
+  const ali = fakeConn();
+  host.attach(ali);
+  ali.say(hello(ALI, 'Ali'));
+  me.say({ t: 'lobby', cmd: 'addBot' });
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  const backups = ali.out.filter((m) => m.t === 'backup');
+  assert.ok(backups.length, 'yedek kopya gönderilir');
+  assert.ok(!me.out.some((m) => m.t === 'backup'), 'ev sahibinin kendisine gitmez');
+  const snap = backups.at(-1).snap;
+  assert.equal(snap.backupId, idFromToken(ALI));
+  assert.deepEqual(snap.secrets, {}, 'koltuk anahtarları gönderilmez');
+  assert.ok(!JSON.stringify(snap).includes(HOST_TOKEN), 'ev sahibinin tokeni kopyada yok');
+
+  // Ali yeni ev sahibi olur.
+  const host2 = new Host({ code: 'TEST1', hostToken: ALI, hostName: 'Ali', hostAvatar: 'galata', saved: snap });
+  const ali2 = fakeConn();
+  host2.attach(ali2, { local: true });
+  ali2.say(hello(ALI, 'Ali'));
+  clearTimeout(host2.timer);
+  assert.equal(host2.hostId, idFromToken(ALI));
+  assert.equal(host2.game.seq, host.game.seq, 'oyun kaldığı yerden sürer');
+  assert.ok(ali2.out.some((m) => m.t === 'state'));
+  // Eski ev sahibi uzaktan, kendi koltuğuna oyuncu olarak döner; başkası onun koltuğunu alamaz.
+  const ev = fakeConn();
+  host2.attach(ev);
+  ev.say(hello(HOST_TOKEN, 'Ev'));
+  clearTimeout(host2.timer);
+  assert.equal(ev.out.find((m) => m.t === 'welcome').spectator, false);
+  const evil = fakeConn();
+  host2.attach(evil);
+  evil.say(hello('z'.repeat(32), 'Sahte'));
+  clearTimeout(host2.timer);
+  assert.equal(evil.out.find((m) => m.t === 'welcome').spectator, true, 'yabancı yalnız izler');
+});

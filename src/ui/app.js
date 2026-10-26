@@ -187,6 +187,10 @@ function onMsg(m) {
     case 'ping':
       send({ t: 'pong' });
       break;
+    case 'backup':
+      // Ev sahibi düşerse oyunu sürdürecek yedek benim: son kopyayı tut.
+      if (m.snap && m.snap.backupId === app.me) app.backup = m.snap;
+      break;
     default:
   }
 }
@@ -202,13 +206,18 @@ function useConn(conn) {
   send({ t: 'hello', v: PROTOCOL, token: profile.token, name: profile.name, avatar: profile.avatar });
 }
 
+// Ev sahibi bu kadar süre dönmezse yedek oyuncu oyunu devralır (sayfasını yenileyen ev sahibine önce şans tanınır).
+const TAKEOVER_AFTER = 15000;
+
 async function reconnect() {
   app.status = 'reconnecting';
   if (G.gameMounted()) G.updateGame();
   else render();
+  const lost = Date.now();
   for (let i = 0; app.mode === 'join' && !app.leaving; i++) {
     await sleep(Math.min(8000, 2000 + i * 1000));
     if (app.mode !== 'join' || app.leaving) return;
+    if (app.backup && Date.now() - lost > TAKEOVER_AFTER && (await takeover())) return;
     try {
       const conn = await joinRoom(app.code);
       if (app.mode !== 'join' || app.leaving) return conn.close();
@@ -229,6 +238,37 @@ setInterval(() => {
     reconnect();
   }
 }, 4000);
+
+// Yedek oyuncu, ev sahibinin son kopyasıyla aynı oda kodunda ev sahibi olur. Diğerleri yeniden bağlanma
+// döngüsünde aynı koda bağlanır ve kendiliğinden yeni ev sahibine geçer. Kod hala tutuluyorsa false (sonra yine denenir).
+async function takeover() {
+  const snap = app.backup;
+  const host = new Host({ code: app.code, hostToken: profile.token, hostName: profile.name, hostAvatar: profile.avatar, save: (s) => store.set(SAVE.host, s), saved: snap });
+  let peer;
+  try {
+    peer = await openRoom(app.code, (conn) => host.attach(conn), (st) => {
+      app.status = st === 'online' ? 'online' : st === 'reconnecting' ? 'reconnecting' : app.status;
+      if (G.gameMounted()) G.updateGame();
+    });
+  } catch {
+    return false;
+  }
+  if (app.mode !== 'join' || app.leaving) {
+    peer.destroy();
+    return true;
+  }
+  const old = app.conn;
+  Object.assign(app, { mode: 'host', peer, host, backup: null, status: 'online' });
+  try {
+    old && old.close();
+  } catch {}
+  app.hb = setInterval(() => host.heartbeat(), 5000);
+  attachLocal(host);
+  host.schedule();
+  host.persist();
+  G.toast('Ev sahibi masadan kalktı; oyun artık senin tarayıcında sürüyor.', '', 'crown');
+  return true;
+}
 
 function attachLocal(host) {
   const [a, b] = localPair();
@@ -253,7 +293,16 @@ async function startHost(saved = null) {
       break;
     } catch (e) {
       if (e.type === 'unavailable-id' && saved && tries < 12) {
-        app.status = `Oda kodu ${code} henüz serbest değil, tekrar deneniyor (${tries + 1})…`;
+        // Oda başka bir ev sahibinde (devralındı) açıksa ona oyuncu olarak katıl.
+        try {
+          const conn = await joinRoom(code);
+          Object.assign(app, { mode: 'join', code, status: 'connecting' });
+          store.set('lastJoin', code);
+          history.replaceState(null, '', `#${code}`);
+          useConn(conn);
+          return;
+        } catch {}
+        app.status = `Oda kodu ${code} henüz serbest değil, tekrar deneniyor (${tries + 1})`;
         render();
         await sleep(5000);
         continue;
@@ -327,7 +376,7 @@ function leave(msg = '') {
   if (app.peer) app.peer.destroy();
   if (app.host) clearTimeout(app.host.timer);
   clearInterval(app.hb);
-  Object.assign(app, { mode: null, conn: null, host: null, peer: null, me: null, view: null, meta: null, lobby: null, screen: 'menu', status: '', error: msg });
+  Object.assign(app, { mode: null, conn: null, host: null, peer: null, me: null, view: null, meta: null, lobby: null, screen: 'menu', status: '', error: msg, backup: null });
   app.ui = freshUI();
   app.joinCode = '';
   store.del('lastJoin');
@@ -425,7 +474,7 @@ const A = {
   copyLink,
   leave() {
     const playing = app.view && app.view.phase !== 'over';
-    if (app.mode === 'host' && playing && !confirm('Ev sahibi sensin: çıkarsan oyun herkes için durur. Oyun kaydedilir, menüden "Devam et" ile sürdürebilirsin. Çıkılsın mı?')) return;
+    if (app.mode === 'host' && playing && !confirm('Ev sahibi sensin: çıkarsan oyun 15 saniye sonra masadaki bir oyuncunun tarayıcısında sürer. Menüden "Devam et" ile geri dönebilirsin. Çıkılsın mı?')) return;
     if (app.mode !== 'host' && playing && !confirm('Oyundan çıkılsın mı? Aynı linkle geri dönebilirsin.')) return;
     leave();
   },
