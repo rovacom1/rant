@@ -86,7 +86,7 @@ export const idFromToken = (token) => {
   return `p${h.toString(36)}`;
 };
 
-const cleanName = (n) => String(n || '').replace(/\s+/g, ' ').trim().slice(0, 16) || 'Oyuncu';
+const cleanName = (n) => String(n || '').replace(/\s+/g, ' ').trim().slice(0, E.NAME_MAX) || 'Oyuncu';
 const cleanAvatar = (a) => (E.AVATARS.includes(a) ? a : E.AVATARS[0]); // eski profillerdeki emoji piyona döner
 
 export class Host {

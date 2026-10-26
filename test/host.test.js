@@ -208,3 +208,16 @@ test('ev sahibi devri: yedek oyuncu tam kopyayı alır, ev sahibi düşünce oyu
   clearTimeout(host2.timer);
   assert.equal(evil.out.find((m) => m.t === 'welcome').spectator, true, 'yabancı yalnız izler');
 });
+
+test('aynı piyon iki koltukta olmaz', () => {
+  const { host } = room();
+  const ali = fakeConn();
+  host.attach(ali);
+  ali.say(hello('a'.repeat(32), 'Ali'));
+  const ev = host.seats[0].avatar;
+  ali.say({ t: 'profile', name: 'Ali', avatar: ev });
+  assert.notEqual(host.seats[1].avatar, ev, 'başka oyuncunun piyonuna geçilemez');
+  host.addBot();
+  host.addBot();
+  assert.equal(new Set(host.seats.map((s) => s.avatar)).size, host.seats.length);
+});

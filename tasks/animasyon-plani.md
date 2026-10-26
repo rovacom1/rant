@@ -1,6 +1,6 @@
 # Animasyon planı (2026-10-26)
 
-Durum: uygulandı (2026-10-26, v0.28.0, dal `animasyon`). Kural metni `docs/TASARIM.md` §11, kod `src/ui/boardfx.js`. Sesler animasyonun vuruşlarına bölündü ve o anlarda çalar (ayrıntı aşağıda, "Sesler").
+Durum: uygulandı (2026-10-26, v0.29.0). Kural metni `docs/TASARIM.md` §11, kod `src/ui/boardfx.js`. Sesler animasyonun vuruşlarına bölündü ve o anlarda çalar (ayrıntı aşağıda, "Sesler").
 Çalışma yeri: bu klasör (`rant-yenilikler`, dal `yenilikler`). Denemeler eski yuvarlak emoji taşlarla yapıldı; bu dalda taşlar resimli piyonlara (`src/ui/pawns.js`, `assets/piyon`) geçiyor. Uygularken konum ve katman kuralları piyonlara uyarlanır.
 
 ## Karar: tur başı animasyonu "Sade" (kesin)

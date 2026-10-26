@@ -43,6 +43,15 @@ export const hasCard = (s, p, id) => s.players[p].hand.some((u) => cardId(u) ===
 const tableHolds = (s, id) => s.players.some((_, p) => hasCard(s, p, id));
 const hasUid = (s, p, uid) => typeof uid === 'string' && s.players[p].hand.includes(uid);
 
+// Oyun sonu dayı yorumu için sayaçlar; eski kayıtlarda stats yoksa burada açılır. Puanı etkilemez.
+const STAT_KEYS = ['kacak', 'ihale', 'dava', 'gasp', 'yikim', 'kira'];
+const newStats = () => Object.fromEntries(STAT_KEYS.map((k) => [k, 0]));
+function stat(s, p, key, n = 1) {
+  const pl = s.players[p];
+  pl.stats ??= newStats();
+  pl.stats[key] = (pl.stats[key] || 0) + n;
+}
+
 function discardCard(s, p, uid) {
   const hand = s.players[p].hand;
   hand.splice(hand.indexOf(uid), 1);
@@ -84,7 +93,7 @@ function acquire(s, ctx, p, sq, cost, how) {
   emit(s, ctx, { type: 'own', p, sq, text: `${nm(s, p)} ${sqName(sq)} mülkünü ${how} ${fmt(cost)}.` });
 }
 
-function demolishKacak(s, ctx, victim, finePer, why) {
+function demolishKacak(s, ctx, victim, finePer, why, by) {
   let n = 0;
   for (const q of R.propsOf(s, victim)) {
     if (s.props[q].kacak) {
@@ -93,6 +102,7 @@ function demolishKacak(s, ctx, victim, finePer, why) {
     }
   }
   if (!n) return say(s, ctx, `${why}: ${nm(s, victim)} oyuncusunda kaçak kat bulunamadı.`);
+  if (by !== victim) stat(s, by, 'yikim', n);
   emit(s, ctx, { type: 'demolish', p: victim, n, text: `${why}: ${nm(s, victim)} oyuncusunun ${n} kaçak katı yıkıldı!` });
   if (finePer) transfer(s, ctx, victim, null, finePer * n, `${why} cezası`);
 }
@@ -204,6 +214,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
       pos: 0,
       hand: [],
       konkordato: 0,
+      stats: newStats(),
       out: 0, // iflas modunda kaçıncı elendiği; 0: oyunda
       kiraZammi: false,
     };
@@ -411,6 +422,7 @@ function chargeRent(s, ctx, p, sq) {
 
 function payRent(s, ctx, r) {
   if (r.zam) s.players[r.owner].kiraZammi = false;
+  stat(s, r.owner, 'kira', r.amount);
   transfer(s, ctx, r.p, r.owner, r.amount, `Kira: ${sqName(r.sq)}${r.zam ? ', zamlı' : ''}`);
 }
 
@@ -457,6 +469,7 @@ function resolveAuction(s, ctx) {
   }
   transfer(s, ctx, winner, null, pd.high, `İhale: ${sqName(pd.sq)}`, true);
   s.props[pd.sq].owner = winner;
+  stat(s, winner, 'ihale');
   emit(s, ctx, { type: 'auction', sq: pd.sq, winner, text: `Açık artırma bitti: ${sqName(pd.sq)} → ${nm(s, winner)} (${fmt(pd.high)}).` });
 }
 
@@ -845,16 +858,18 @@ function applyCard(s, ctx, card, victim) {
     case 'kamulastirma':
       transfer(s, ctx, p, victim, R.price(s, t.sq), `Kamulaştırma bedeli: ${sqName(t.sq)}`);
       s.props[t.sq].owner = p;
+      stat(s, p, 'gasp');
       return emit(s, ctx, { type: 'own', p, sq: t.sq, text: `${sqName(t.sq)} kamulaştırıldı, artık ${nm(s, p)} oyuncusunun.` });
     case 'takas':
       s.props[t.mine].owner = victim;
       s.props[t.theirs].owner = p;
+      stat(s, p, 'gasp');
       return emit(s, ctx, { type: 'own', p, sq: t.theirs, text: `Takas tamam: ${sqName(t.theirs)} ↔ ${sqName(t.mine)}.` });
     case 'tedbir':
       Object.assign(s.props[t.sq], { tedbir: 2, tedbirBy: card.by });
       return say(s, ctx, `${sqName(t.sq)} için ihtiyati tedbir kararı: 2 tur kira yok.`);
     case 'ihbar':
-      return demolishKacak(s, ctx, victim, R.money(s, AMOUNTS.ihbarFine), 'İhbar');
+      return demolishKacak(s, ctx, victim, R.money(s, AMOUNTS.ihbarFine), 'İhbar', p);
     case 'kiraZammi':
       s.players[p].kiraZammi = true;
       return;
@@ -870,6 +885,7 @@ function applyCard(s, ctx, card, victim) {
       const b = rollDie(s);
       const win = a > b ? p : victim;
       const lose = win === p ? victim : p;
+      stat(s, win, 'dava');
       emit(s, ctx, { type: 'dava', p, victim, dice: [a, b], text: `Dava zarları: ${nm(s, p)} ${a}, ${nm(s, victim)} ${b}. Kazanan ${nm(s, win)}.` });
       return transfer(s, ctx, lose, win, R.money(s, AMOUNTS.dava), 'Dava');
     }
@@ -977,6 +993,7 @@ const TURN = {
     need(!b, b);
     const cost = R.kacakCost(s, a.sq);
     s.props[a.sq].kacak = 1;
+    stat(s, p, 'kacak');
     transfer(s, ctx, p, null, cost, 'Kaçak kat', true);
     emit(s, ctx, { type: 'build', p, sq: a.sq, kacak: true, text: `${nm(s, p)} ${sqName(a.sq)} üstüne gece yarısı kaçak kat çıktı (${fmt(cost)}).` });
   },
@@ -1110,7 +1127,7 @@ const PENDING = {
     zabitaTarget(s, p, a, ctx) {
       need(s.pending.options.includes(a.target), 'Bu oyuncu ihbar edilemez.');
       s.pending = null;
-      demolishKacak(s, ctx, a.target, R.money(s, AMOUNTS.zabitaFine), 'Zabıta');
+      demolishKacak(s, ctx, a.target, R.money(s, AMOUNTS.zabitaFine), 'Zabıta', p);
     },
   },
   trade: {

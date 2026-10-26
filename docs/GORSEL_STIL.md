@@ -23,7 +23,7 @@ Square 1:1 card illustration, artwork only: no frame, no border, no text, no let
 
 ## Oyuncu piyonları
 
-- `assets/piyon/<ad>.png` (semazen, kofte, leblebi, ankaray, galata, hitit): şeffaf zemin, görünen figüre kırpılmış, uzun kenarı 256 px. Oyuncu rengi resme değil, oyunda figürün kenarına çizilir; resimde halka ya da kaide olmaz.
+- `assets/piyon/<ad>.png` (15 piyon, `AVATARS` sırası tahtadaki şehir sırası; v0.28.0'da Atakule, Kız Kulesi, Nasreddin Hoca, Kestane Şekeri, Hamsi, Trabzon Ekmeği, Caretta Caretta, İzmir Saat Kulesi ve Boyoz eklendi, her biri iki denemeden seçildi; Hamsi gerçek hamsi resmi ikinci referans verilerek üç balıklık deste olarak, İzmir Saat Kulesi de Commons'taki CC0 fotoğraf referans verilerek yeniden çizildi (gerçeğindeki gibi baştan sona krem taş; kubbe ve saatlerde mavi yok); Nasreddin Hoca eşeğine ters binmiş, eşeğin kuyruğunu dizgin gibi tutar; Hitit Güneşi Alacahöyük'ten geldiği için Çorum'da sayılır): şeffaf zemin, görünen figüre kırpılmış, uzun kenarı 256 px. Oyuncu rengi resme değil, oyunda figürün kenarına çizilir; resimde halka ya da kaide olmaz.
 - Araç ve stil referansı kartlarla aynı (`gpt_image_2_5`, `itiraz.jpg`); Hitit Güneşi için kullanıcının verdiği Ankara amblemi de referans verildi. Yeni piyon eklenirse `src/ui/pawns.js`'teki en/boy oranı tablosuna da yazılır.
 - Komut kalıbı (yalnız "Subject" değişir):
 
@@ -42,7 +42,9 @@ Flat 2D cartoon animation in the exact same style, static camera. He keeps holdi
 
 - Her varyant kare kare denetlenir: tek tespih ve tek püskül (iki tespih, yukarı fırlayan uç, kopan boncuk olmaz), tespih durmaz, ağız konuşmaz, gözlük başta kalır, el ağza ya da yüze kapanmaz. Tespihi "parmağın etrafında çevirme" istenmez; model boncukları çoğaltıyor.
 - Şehir arka planı `assets/giris/sehir.mp4` (8 sn döngü) ve afişi `sehir.jpg`: gökyüzü dayı videosunun zemini ile aynı krem olmalı.
-- Ham video `tasks/gorsel-ham/giris/senaryo-N.mp4` olarak kaydedilir ve `sh tools/giris_video.sh` ile küçültülür (ffmpeg gerekir; sessiz, dayı 480 px CRF 20, şehir CRF 22). Çıkan `assets/giris/dayi-N.mp4`, `src/ui/intro.js` içindeki `CLIPS` listesine yazılır.
+- Ham video `tasks/gorsel-ham/giris/senaryo-N.mp4` olarak kaydedilir ve `sh tools/giris_video.sh` ile küçültülür (oyun sonu videoları da; ffmpeg gerekir; sessiz, dayı 480 px CRF 20, şehir CRF 22). Çıkan `assets/giris/dayi-N.mp4`, `src/ui/intro.js` içindeki `CLIPS` listesine yazılır.
+
+- Oyun sonu videoları `assets/sonu`: `gurur` (mendille gözyaşı siler), `alkis` (tespihi bırakıp alkışlar), `para` (masanın altından zarf uzatır), `kayip` (acıyarak bozukluk uzatır). Aynı ana görselden, aynı kısa komutla; ham dosya `tasks/gorsel-ham/sonu/<ad>.mp4`.
 
 ## Tahta kareleri
 

@@ -12,7 +12,7 @@
 - Karelerde fiyat ve kira yazmaz; kareye tıklayınca tapu kartı ve kira cetveli açılır. Kendi karende kat dik / kaçak kat / kat sat / ipotek oradan; ayrıca sağ alttaki İnşaat panelinden.
 - Mülkler şehrin tek rengindeki buzlu cam ve aynı renkte set çerçevesiyle çizilir (renkler renk körlüğüne göre seçildi, oyuncu renklerine benzemez). Sahipliği yalnız iç kenardaki şerit gösterir: sahipsizken ince ve soluk, sahipliyken kalın ve sahibinin renginde. Sırası gelen oyuncunun karesi onun renginde parlar.
 - Emoji yok. Bütün simgeler SVG (`src/ui/icons.js`): kat ev simgesi ×N, kaçak kat koni. Yazı tipi okları da kullanılmaz. `npm run check` emojiyi yakalar.
-- Oyuncu piyonları resimdir (`assets/piyon`, 6 tane); oyuncu rengi halka değil, figürün kendi kenarına çizilir. Tahtada piyon kare yüksekliğinin yaklaşık yarısıdır.
+- Oyuncu piyonları resimdir (`assets/piyon`, 15 tane, şehir şehir); oyuncu rengi halka değil, figürün kendi kenarına çizilir. Tahtada piyon kare yüksekliğinin yaklaşık yarısıdır.
 - Elde kartlar sağ sütunda: üstüne gelince büyür ve resmin altında tek satırlık kısa kuralı belirir (ayrı açıklama alanı ya da "sürükle/tıkla" yazısı yok); tahtaya sürüklenip bırakılınca oynanır. Şu an oynanabilen kartın köşesinde şimşek rozeti olur, sıra sendeyken oynanamayanlar soluk durur. Her kartın resmi var (`assets/kart`); yeni görsel `docs/GORSEL_STIL.md`'deki tarzda üretilir.
 - Düğmeler 3 boy (56/46/36 px) ve 4 tür (ana pirinç #c8912f, ikincil, hayalet, sakin). Aynı rol aynı boy, ekranda tek ana düğme. Simge yazı boyunun 1,2 katı, yazıyla aynı çizgide.
 - Para seçimi elle yazarak değil, oyuncu rengindeki kaydırma çubuğuyla yapılır. Açık artırmada büyük yazan sayı toplam tekliftir, artış ayrıca küçük yazar. Lira işareti SVG.
@@ -21,6 +21,7 @@
 - Sohbet yok (kullanıcı kaldırttı). Son 3 olay tahtanın ortasının altında; zar, yürüme, maaş gibi gürültü gösterilmez. Tıklayınca turlara ayrılmış geçmiş açılır.
 - Karanlık mod var (sağ üstte ay/güneş); yeni arayüz parçaları iki temada da denenmeli.
 - Oyunun adı Rantçı Dayı (depo ve adres `rant` kalır). Giriş ekranı: arkada canlı şehir videosu, solda harf harf düşen başlık, sağda "Masaya otur" kartının arkasında dayı; dört senaryo rastgele döner (`src/ui/intro.js`, `assets/giris`). Dayı videolarının krem zemini tuvalde silinir, iki temada kutu ya da madalyon yok. Yeni senaryo `docs/GORSEL_STIL.md`deki kurala göre üretilir.
+- Oyun sonu ekranında dayı kazanana konuşur: motorun saydığı `stats` (kaçak kat, ihale, dava, gasp, yıkım, kira) kazananın öne çıktığı işi seçer, yorum ve video ona göre gelir (`src/ui/verdict.js`, `assets/sonu`). Dayı yolsuzluğu över, eleştirmez; kaybedeni yeterince yolsuz olmadığı için azarlar. Sonuncu oyuncu kendi ekranında kendi azarını büyük görür.
 
 ## Mimari
 - Derleme adımı yok, npm bağımlılığı yok. Tarayıcıda ES modülleri; testler `node:test`.
