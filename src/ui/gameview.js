@@ -2,7 +2,7 @@
 // (oyuncular, el, araçlar), kare penceresi, tahtanın ortasında açılan pencereler ve olay efektleri.
 import * as E from '../engine/index.js';
 import { html, raw, setHTML } from './dom.js';
-import { play, isMuted, getAudio, startMusic, stopMusic } from './sound.js';
+import { play, isMuted, getAudio, setMusic } from './sound.js';
 import { Hand, cardFace, flyToCenter, WHEN } from './hand.js';
 import { isNotifyOn, notifySupported } from './notify.js';
 import { buildBoard, updateBoard, Tokens, Dice, cellPos, isLight } from './board.js';
@@ -79,13 +79,12 @@ export function mountGame(root) {
   dice = new Dice(els.dice);
   hand = new Hand(els.handGrid, els.board);
   initTips();
-  startMusic();
+  setMusic('game');
 }
 
 export const gameMounted = () => !!els && document.body.contains(els.board);
 export const unmountGame = () => {
   els = null;
-  stopMusic();
 };
 
 // ---------- yardımcılar ----------
@@ -127,7 +126,8 @@ function timerHTML(v, ids) {
   const ds = ids.map((i) => dl[P(v, i)?.id]).filter((d) => d && d.at);
   if (!ds.length) return '';
   const d = ds.reduce((a, b) => (b.at < a.at ? b : a));
-  return html`<div class="timer" data-deadline="${d.at}" data-span="${d.span}" aria-label="Kalan süre"><i></i></div><div class="countdown" data-countdown="${d.at}"></div>`;
+  const mine = ids.includes(v.you) ? 'data-mine' : '';
+  return html`<div class="timer" data-deadline="${d.at}" data-span="${d.span}" ${raw(mine)} aria-label="Kalan süre"><i></i></div><div class="countdown" data-countdown="${d.at}"></div>`;
 }
 
 // Tapu kartı: şehrin renginde şerit, ad, fiyat; ladder ile kira cetveli (seviye vurgulu).
@@ -312,6 +312,10 @@ function renderPop(v) {
 const waitHTML = (v, i, text, sub = '') =>
   html`<div class="stagebox"><span class="wait-ring" style="--pc:${P(v, i).color}">${PW(P(v, i), 64)}</span><span class="h22">${text}</span>${sub ? html`<span class="muted">${sub}</span>` : ''}<div style="width:260px">${timerHTML(v, [i])}</div></div>`;
 
+// İtiraz zinciri tek görselde: asıl kart solda, gelen itirazlar sağa doğru kayarak üstüne biner (yazısız, yalnız kart).
+const chainHTML = (id, n) =>
+  n ? html`<div class="chain" style="--n:${n}">${cardFace(id, 'big')}${[...Array(n).keys()].map((k) => html`<div class="chain-it" style="--k:${k + 1}">${cardFace('itiraz', 'big')}</div>`)}<span class="chain-n">${n} itiraz</span></div>` : cardFace(id, 'big');
+
 const vs = (v, a, b) => html`<div class="row" style="gap:8px">${PW(P(v, a), 32)}<span class="muted">${I('arrow')}</span>${PW(P(v, b), 32)}</div>`;
 
 function promptHTML(v) {
@@ -398,12 +402,12 @@ function pendingHTML(v, pd) {
       const target = c.target && c.target.sq !== undefined ? deed(v, c.target.sq, { w: 150, mini: true }) : c.target && c.target.theirs !== undefined ? html`<div class="row">${deed(v, c.target.mine, { mini: true })}${I('swap2')}${deed(v, c.target.theirs, { mini: true })}</div>` : '';
       const head = html`${vs(v, c.by, pd.victim)}`;
       if (pd.responder !== me) {
-        return html`<div class="card-prompt">${cardFace(c.id, 'big')}<div class="opt-col">${head}<span class="h22">${P(v, c.by).name}, ${P(v, pd.victim).name} için</span>${target}<span class="body">${cardEffect(v, { card: c.id, target: c.target, p: c.by })}</span><span class="muted">Karar veriliyor${pd.chain ? ` · ${pd.chain} itiraz` : ''}</span>${timerHTML(v, [pd.responder])}</div></div>`;
+        return html`<div class="card-prompt">${chainHTML(c.id, pd.chain)}<div class="opt-col">${head}<span class="h22">${P(v, c.by).name}, ${P(v, pd.victim).name} için</span>${target}<span class="body">${cardEffect(v, { card: c.id, target: c.target, p: c.by })}</span><span class="muted">Karar veriliyor</span>${timerHTML(v, [pd.responder])}</div></div>`;
       }
       const it = P(v, me).hand.find((u) => cardId(u) === 'itiraz');
       const counter = me === c.by;
       const title = counter ? `${P(v, pd.victim).name} itiraz etti` : `${P(v, c.by).name} sana oynadı`;
-      return html`<div class="card-prompt">${cardFace(c.id, 'big')}<div class="opt-col">${head}<span class="h22">${title}</span>${target}<span class="body">${cardEffect(v, { card: c.id, target: c.target, p: c.by })}</span>
+      return html`<div class="card-prompt">${chainHTML(c.id, pd.chain)}<div class="opt-col">${head}<span class="h22">${title}</span>${target}<span class="body">${cardEffect(v, { card: c.id, target: c.target, p: c.by })}</span>
         <div class="row">${it ? html`<button class="btn L pri flex" data-act="react" data-uid="${it}" data-primary>${I('shield')}${counter ? 'Karşı itiraz' : 'İtiraz et'}</button>` : ''}<button class="btn L ${it ? 'sec' : 'pri flex'}" data-act="react" data-uid="" ${it ? '' : 'data-primary'}>${counter ? 'Vazgeç' : 'Kabul'}</button></div>${timerHTML(v, [me])}</div></div>`;
     }
     case 'rent': {
@@ -486,9 +490,10 @@ function tradeSummary(v, t) {
 function tradePendingHTML(v, pd) {
   const me = v.you;
   if (pd.to === me) {
-    return html`<div class="sheet W"><div class="sheet-head">${PW(P(v, pd.from), 34)}<span class="h22">${P(v, pd.from).name} teklif ediyor</span></div>
+    const more = (pd.counter || 0) < 2;
+    return html`<div class="sheet W"><div class="sheet-head">${PW(P(v, pd.from), 34)}<span class="h22">${P(v, pd.from).name} ${pd.counter ? 'karşı teklif yaptı' : 'teklif ediyor'}</span></div>
       <div class="row" style="align-items:stretch;gap:14px"><div class="trade-box"><span class="muted small">Sen alırsın</span>${tradeSide(v, pd.give)}</div><div style="display:grid;place-items:center">${I('deal')}</div><div class="trade-box"><span class="muted small">Sen verirsin</span>${tradeSide(v, pd.take)}</div></div>
-      <div class="row"><button class="btn L pri flex" data-act="tradeAccept" data-primary>Kabul</button><button class="btn L gho" data-act="tradeReject">Reddet</button></div>${timerHTML(v, [me])}</div>`;
+      <div class="row"><button class="btn L pri flex" data-act="tradeAccept" data-primary>Kabul</button>${more ? html`<button class="btn L sec" data-act="counterOpen">${I('swap2')}Karşı teklif</button>` : ''}<button class="btn L gho" data-act="tradeReject">Reddet</button></div>${timerHTML(v, [me])}</div>`;
   }
   if (pd.from === me) {
     return html`<div class="sheet S"><div class="sheet-head"><span class="spinner"></span><span class="h18">Teklifin ${P(v, pd.to).name}'da</span></div>${tradeSummary(v, pd)}${timerHTML(v, [pd.to])}
@@ -689,10 +694,13 @@ function mortgageDialog(v) {
   return html`<div class="sheet L">${sheetHead('ipotek', 'İpotek', html`<span class="muted small">koyunca fiyatın yarısı, kaldırınca %55</span>`)}<div class="sheet-body">${rows.length ? rows : html`<span class="body">Henüz mülkün yok.</span>`}</div>${lock}</div>`;
 }
 
+// Bana gelmiş, karşı teklif hakkı olan bir pazarlık var mı?
+const counterable = (v) => v.pending && v.pending.type === 'trade' && v.pending.to === v.you && (v.pending.counter || 0) < 2;
+
 function tradeDialog(v) {
   const me = v.you;
   const t = app.ui.trade;
-  const opps = v.players.map((_, i) => i).filter((i) => i !== me && !P(v, i).out);
+  const opps = t.counter ? [t.to] : v.players.map((_, i) => i).filter((i) => i !== me && !P(v, i).out);
   if (t.to === null || !opps.includes(t.to)) t.to = opps[0];
   const col = (i, title, side, bind) => {
     const pl = P(v, i);
@@ -710,12 +718,12 @@ function tradeDialog(v) {
   const offer = tradeOffer();
   const empty = !offer.give.cash && !offer.take.cash && !offer.give.props.length && !offer.take.props.length;
   const block = empty ? null : E.tradeBlock(v, me, offer);
-  return html`<div class="sheet XL" style="height:100%"><div class="sheet-head">${I('deal')}<span class="h22">Pazarlık</span><span class="grow"></span>
+  return html`<div class="sheet XL" style="height:100%"><div class="sheet-head">${I(t.counter ? 'swap2' : 'deal')}<span class="h22">${t.counter ? 'Karşı teklif' : 'Pazarlık'}</span><span class="grow"></span>
       <div class="partners">${opps.map((i) => html`<button class="btn S sec ${t.to === i ? 'on' : ''}" style="--pc:${P(v, i).color}" data-act="tradeTo" data-p="${i}">${PW(P(v, i), 24)}${P(v, i).name.split(' ')[0]}</button>`)}</div>
       <button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div>
     <div class="trade-cols">${col(me, 'Sen veriyorsun', 'give', 'tradeGive')}${col(t.to, `${P(v, t.to).name}'dan istiyorsun`, 'take', 'tradeTake')}</div>
     <div class="row"><span data-trade-sum class="grow">${empty ? html`<span class="muted small">Vermek ya da almak istediğini seç.</span>` : block ? html`<span class="reason">${block}</span>` : tradeSummary(v, offer)}</span>
-      <button class="btn gho" data-act="close">Vazgeç</button><button class="btn L pri" data-act="sendTrade" ${empty || block ? 'disabled' : ''}>Teklifi gönder</button></div></div>`;
+      <button class="btn gho" data-act="close">Vazgeç</button><button class="btn L pri" data-act="sendTrade" ${empty || block ? 'disabled' : ''}>${t.counter ? 'Karşı teklifi gönder' : 'Teklifi gönder'}</button></div></div>`;
 }
 
 // Kaydırma çubuğu oynarken pencereyi yeniden çizmeden özeti ve düğmeyi günceller.
@@ -794,9 +802,8 @@ export function renderModal() {
       body = mortgageDialog(v);
       break;
     case 'trade':
-      if (!canManage(v)) {
+      if (!(app.ui.trade && app.ui.trade.counter ? counterable(v) : canManage(v))) {
         app.ui.dialog = null;
-        toast('Pazarlık teklifini sıra sendeyken yapabilirsin.', 'info');
         return renderModal();
       }
       body = tradeDialog(v);
@@ -864,6 +871,7 @@ function stepBadges(v) {
 export function updateGame() {
   const v = app.view;
   if (!v || !els) return;
+  setMusic(v.phase === 'over' ? null : v.finalRound || v.round >= v.config.maxRounds ? 'final' : 'game');
   updateHead(v);
   if (app.ui.pick && !(v.players[v.you]?.hand.includes(app.ui.pick.uid) && canPlay(v, app.ui.pick.uid))) app.ui.pick = null;
   if (app.ui.pick) app.ui.popSq = null;
@@ -908,6 +916,12 @@ export function tickTimers() {
     const bar = el.querySelector('i');
     if (bar) bar.style.width = `${Math.min(100, (left / span) * 100)}%`;
     el.classList.toggle('late', left <= 10000);
+    // Kendi süremin son 5 saniyesinde saat tıklar.
+    const sec = Math.ceil(left / 1000);
+    if (el.hasAttribute('data-mine') && sec > 0 && sec <= 5 && tickTimers.last !== `${at}:${sec}`) {
+      tickTimers.last = `${at}:${sec}`;
+      play('tick');
+    }
   }
   for (const el of document.querySelectorAll('[data-countdown]')) {
     const left = Math.max(0, Math.ceil((Number(el.dataset.countdown) - now) / 1000));
@@ -1267,6 +1281,7 @@ export async function present(prev, v, events, fast) {
         } else if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast, 150 * spd());
         else if (fast) continue;
         else if (e.type === 'surpriz') await showSurpriz(v, e);
+        else if (e.card === 'itiraz' && prev.pending && prev.pending.type === 'react') toast(`${P(v, e.p).name} itiraz etti`, '', 'shield');
         else await revealCard(prev, v, e);
       }
     } finally {

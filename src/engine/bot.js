@@ -273,6 +273,19 @@ function sharpOffer(s, p, owner, q) {
   return best && best.t;
 }
 
+// Teklif yetmiyorsa aynı takası eksik kalan farkı nakit olarak isteyerek geri gönderir (çok büyük farkta vazgeçer).
+function counterOffer(s, p, pd, short) {
+  const extra = Math.ceil(short / 5) * 5;
+  if (extra > R.money(s, 200)) return null;
+  const pay = pd.take.cash; // botun ödemesi istenen para önce azalır
+  const t = {
+    to: pd.from,
+    give: { cash: Math.max(0, pay - extra), props: pd.take.props },
+    take: { cash: pd.give.cash + Math.max(0, extra - pay), props: pd.give.props },
+  };
+  return tradeBlock(s, p, t) ? null : { type: 'tradeCounter', give: t.give, take: t.take };
+}
+
 function tradeValue(s, p, pd) {
   const getting = p === pd.to ? pd.give : pd.take;
   const giving = p === pd.to ? pd.take : pd.give;
@@ -367,8 +380,12 @@ export function botAction(s, p, level = s.config.botLevel || 'normal') {
         const target = [...pd.options].sort((a, b) => R.floorsOf(s, b).kacak - R.floorsOf(s, a).kacak || R.netWorth(s, b) - R.netWorth(s, a))[0];
         return { type: 'zabitaTarget', target };
       }
-      case 'trade':
-        return { type: 'tradeRespond', accept: tradeValue(s, p, pd) >= R.money(s, 25) };
+      case 'trade': {
+        const val = tradeValue(s, p, pd);
+        if (val >= R.money(s, 25)) return { type: 'tradeRespond', accept: true };
+        const counter = level !== 'kolay' && (pd.counter || 0) < 2 && counterOffer(s, p, pd, R.money(s, 25) - val);
+        return counter || { type: 'tradeRespond', accept: false };
+      }
       case 'discard': {
         const sorted = [...pl.hand].sort((a, b) => CARD_KEEP[cid(a)] - CARD_KEEP[cid(b)]);
         return { type: 'discard', uids: sorted.slice(0, pd.count) };

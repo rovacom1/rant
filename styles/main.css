@@ -276,7 +276,14 @@ body.dark .delta { background: color-mix(in srgb, var(--me) 26%, transparent); c
 .layer { position: absolute; inset: var(--ch) var(--cw); z-index: 30; display: grid; place-items: center; padding: 14px; pointer-events: none; }
 .layer > * { pointer-events: auto; }
 .layer.modal-layer { background: color-mix(in srgb, var(--center) 55%, transparent); backdrop-filter: blur(2px); pointer-events: auto; }
-.layer.stage-layer { z-index: 40; }
+/* sahne (haber, sürpriz, rakip kartı) arkadaki istemi tümüyle örter: yazılar üst üste binmez */
+.layer.stage-layer { z-index: 40; background: color-mix(in srgb, var(--center) 94%, transparent); backdrop-filter: blur(4px); border-radius: 12px; }
+/* itiraz zinciri: kartlar sağa kayarak üst üste biner, yalnız resimleri görünür */
+.chain { position: relative; width: calc(160px + var(--n) * 46px); height: 224px; flex: none; }
+.chain > .kart { position: absolute; left: 0; top: 0; }
+.chain-it { position: absolute; left: calc(var(--k) * 46px); top: calc(var(--k) * 6px); transform: rotate(calc(var(--k) * 4deg)); }
+.chain-it .kart { box-shadow: -6px 8px 16px rgba(10, 14, 30, 0.45); }
+.chain-n { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); font-family: var(--hf); font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 10px; background: #d1342f; color: #fff; white-space: nowrap; z-index: 5; }
 .toasts { position: absolute; left: var(--cw); right: var(--cw); bottom: calc(var(--ch) + 12px); z-index: 45; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
 .toast { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 16px 8px 12px; border-radius: 14px; background: #1b2233; color: #f6f2e8; font-size: 15px; font-weight: 600; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25); animation: toastIn 0.25s ease-out; max-width: 100%; }
 body.dark .toast { background: #26324f; }

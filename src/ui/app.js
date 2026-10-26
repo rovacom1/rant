@@ -4,7 +4,7 @@ import { Host } from '../net/host.js';
 import { localPair, openRoom, joinRoom, randomCode, normalizeCode } from '../net/transport.js';
 import { APP_VERSION, PROTOCOL, SAVE_VERSION } from '../version.js';
 import { html, raw, $, store, sleep } from './dom.js';
-import { play, setAudio } from './sound.js';
+import { play, setAudio, setMusic } from './sound.js';
 import { toggleNotify, watchTurn } from './notify.js';
 import { app, profile, send, act, isHost } from './state.js';
 import * as G from './gameview.js';
@@ -106,6 +106,7 @@ function render() {
     return;
   }
   G.unmountGame();
+  setMusic('lobby');
   const focus = document.activeElement && document.activeElement.id;
   root.innerHTML = String(app.screen === 'lobby' && app.lobby ? lobbyHTML() : menuHTML());
   if (focus && document.getElementById(focus)) document.getElementById(focus).focus();
@@ -568,8 +569,18 @@ const A = {
     G.renderModal();
   },
   sendTrade() {
-    act({ type: 'proposeTrade', ...G.tradeOffer() });
+    const o = G.tradeOffer();
+    if (app.ui.trade.counter) act({ type: 'tradeCounter', give: o.give, take: o.take });
+    else act({ type: 'proposeTrade', ...o });
     closeDialog();
+  },
+  // Gelen teklifi tersine çevirip pazarlık penceresinde açar; oyuncu değiştirip geri gönderir.
+  counterOpen() {
+    const pd = V().pending;
+    app.ui.trade = { to: pd.from, give: { props: [...pd.take.props] }, take: { props: [...pd.give.props] }, counter: true };
+    app.ui.binds.tradeGive = String(pd.take.cash || 0);
+    app.ui.binds.tradeTake = String(pd.give.cash || 0);
+    openDialog({ type: 'trade' });
   },
   build: (el) => act({ type: 'build', sq: Number(el.dataset.sq) }),
   buildKacak: (el) => act({ type: 'buildKacak', sq: Number(el.dataset.sq) }),

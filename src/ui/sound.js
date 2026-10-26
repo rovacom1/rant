@@ -1,12 +1,13 @@
-// Ses: assets/ses altındaki kayıtlar WebAudio ile çalınır; arka planda yumuşak geçişli döngü müzik.
+// Ses: assets/ses altındaki kayıtlar WebAudio ile çalınır. Müzik: menü ve lobide lobi parçası, oyunda iki parça
+// sırayla, son turda gerilimli parça; parçalar yumuşak geçişle birbirine bağlanır.
 // Müzik ve efektlerin ayrı ses düzeyi ve aç/kapa ayarı var (tarayıcıda saklanır).
 // Dosya yüklenemezse çok kısık, yumuşak sentez seslere düşülür.
 import { store } from './dom.js';
 
-const FILE = { dice: 'zar', step: 'adim', coin: 'para', pay: 'odeme', card: 'kart', turn: 'sira', news: 'gundem', itiraz: 'tokmak', build: 'insaat', crash: 'yikim', win: 'zafer', sold: 'ihale', error: 'adim' };
-const LEVEL = { step: 0.3, error: 0.45, pay: 0.7, card: 0.8 };
+const FILE = { dice: 'zar', step: 'adim', coin: 'para', pay: 'odeme', card: 'kart', turn: 'sira', news: 'gundem', itiraz: 'tokmak', build: 'insaat', crash: 'yikim', win: 'zafer', sold: 'artirma', tick: 'sayac', error: 'adim' };
+const LEVEL = { step: 0.3, error: 0.45, pay: 0.7, card: 0.8, tick: 0.5 };
 // Her sesin en fazla çalma süresi (sn); sonunda yumuşak kapanır.
-const MAX_LEN = { step: 0.28, card: 1.1, coin: 1.4, pay: 1.2, dice: 1.6, turn: 1.6, itiraz: 1.3, build: 1.3, sold: 1.8, crash: 1.8, news: 2.6, win: 3.6, error: 0.3 };
+const MAX_LEN = { step: 0.28, card: 1.1, coin: 1.4, pay: 1.2, dice: 1.6, turn: 1.6, itiraz: 1.3, build: 1.3, sold: 1.8, crash: 1.8, news: 2.6, win: 3.6, error: 0.3, tick: 0.9 };
 const TARGET_RMS = 0.11;
 const XFADE = 3; // müzik döngüsünde geçiş süresi (sn)
 
@@ -15,8 +16,6 @@ let ctx = null;
 let sfxGain = null;
 let musicGain = null;
 const buffers = {};
-let musicBuf = null;
-let inGame = false;
 let current = null;
 let loopTimer = null;
 
@@ -67,12 +66,6 @@ function load() {
       .then((b) => (buffers[f] = prep(b)))
       .catch(() => {});
   }
-  fetchBuf('muzik')
-    .then((b) => {
-      musicBuf = b;
-      if (inGame && cfg.musicOn) startLoop(false);
-    })
-    .catch(() => {});
 }
 
 function applyVolumes() {
@@ -121,13 +114,28 @@ export function play(name) {
 
 // ---- müzik ----
 
-function startLoop(fadeIn) {
-  if (!ctx || !musicBuf) return;
+// Ortama göre çalan parçalar; oyunda liste sırayla döner.
+const PLAYLIST = { lobby: ['lobi'], game: ['oyun2', 'oyun1'], final: ['sontur'] };
+const tracks = {};
+let mode = null; // null: müzik yok
+let turn = 0;
+
+function track(name) {
+  if (!tracks[name]) tracks[name] = fetchBuf(name).catch(() => null);
+  return tracks[name];
+}
+
+async function startLoop(fadeIn) {
+  if (!ctx || !mode) return;
+  const list = PLAYLIST[mode];
+  const want = mode;
+  const buf = await track(list[turn % list.length]);
+  if (!buf || mode !== want || !cfg.musicOn || current) return;
   const src = ctx.createBufferSource();
-  src.buffer = musicBuf;
+  src.buffer = buf;
   const g = ctx.createGain();
   const now = ctx.currentTime;
-  const dur = musicBuf.duration;
+  const dur = buf.duration;
   g.gain.setValueAtTime(0, now);
   g.gain.linearRampToValueAtTime(1, now + (fadeIn ? XFADE : 2));
   g.gain.setValueAtTime(1, now + dur - XFADE);
@@ -136,7 +144,11 @@ function startLoop(fadeIn) {
   src.start(now);
   current = { src, g };
   clearTimeout(loopTimer);
-  loopTimer = setTimeout(() => inGame && cfg.musicOn && startLoop(true), Math.max(1, dur - XFADE) * 1000);
+  loopTimer = setTimeout(() => {
+    current = null;
+    turn++;
+    if (mode && cfg.musicOn) startLoop(true);
+  }, Math.max(1, dur - XFADE) * 1000);
 }
 
 function stopLoop() {
@@ -152,16 +164,13 @@ function stopLoop() {
   current = null;
 }
 
-export function startMusic() {
-  if (inGame) return;
-  inGame = true;
-  if (cfg.musicOn && ac()) startLoop(false);
-}
-
-export function stopMusic() {
-  if (!inGame) return;
-  inGame = false;
+// m: 'lobby' | 'game' | 'final' | null. Aynı ortam yeniden istenirse çalan parça sürer.
+export function setMusic(m) {
+  if (m === mode) return;
+  mode = m;
+  turn = 0;
   stopLoop();
+  if (m && cfg.musicOn && ac()) startLoop(true);
 }
 
 // ---- ayarlar ----
@@ -174,10 +183,10 @@ export function setAudio(patch) {
   Object.assign(cfg, patch);
   store.set('audio', cfg);
   applyVolumes();
-  if (!inGame) return;
+  if (!mode) return;
   if (cfg.musicOn && !wasMusic && ac()) startLoop(true);
   if (!cfg.musicOn && wasMusic) stopLoop();
 }
 
-// İlk tıklamada ses bağlamını aç (tarayıcı kuralı).
-window.addEventListener('pointerdown', () => ac(), { once: true });
+// İlk tıklamada ses bağlamını aç (tarayıcı kuralı); bekleyen müzik o zaman başlar.
+window.addEventListener('pointerdown', () => ac() && mode && !current && cfg.musicOn && startLoop(true), { once: true });

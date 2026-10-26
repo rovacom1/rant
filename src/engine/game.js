@@ -884,6 +884,8 @@ function normTrade(a) {
   return { to: a.to, give: side(a.give), take: side(a.take) };
 }
 
+const MAX_COUNTER = 2;
+
 export function tradeBlock(s, from, t) {
   if (!isOpp(s, from, t.to)) return 'Pazarlık yapacağın oyuncuyu seç.';
   const fp = s.players[from];
@@ -1095,6 +1097,16 @@ const PENDING = {
       const b = tradeBlock(s, pd.from, pd);
       need(!b, b);
       executeTrade(s, ctx, pd);
+    },
+    // Teklifi alan karşı teklif yapabilir: aynı pazarlık ters yönde sürer (en fazla MAX_COUNTER kez).
+    tradeCounter(s, p, a, ctx) {
+      const pd = s.pending;
+      need((pd.counter || 0) < MAX_COUNTER, 'Bu pazarlıkta daha fazla karşı teklif yapılamaz.');
+      const t = normTrade({ ...a, to: pd.from });
+      const b = tradeBlock(s, p, t);
+      need(!b, b);
+      s.pending = { type: 'trade', from: p, to: pd.from, give: t.give, take: t.take, counter: (pd.counter || 0) + 1 };
+      emit(s, ctx, { type: 'trade', text: `${nm(s, p)} → ${nm(s, pd.from)}: karşı teklif var.` });
     },
   },
   discard: {

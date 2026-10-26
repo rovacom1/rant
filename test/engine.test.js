@@ -368,6 +368,23 @@ test('pazarlık: kabul, ret ve katlı mülk yasağı', () => {
   assert.equal(s.players[0].cash, 1300 - 100);
 });
 
+test('pazarlık: karşı teklif ters yönde sürer, en fazla 2 kez', () => {
+  let s = calm(started());
+  own(s, 1, 10);
+  own(s, 0, 12);
+  s = act(s, 0, { type: 'proposeTrade', to: 1, give: { cash: 100, props: [] }, take: { cash: 0, props: [10] } });
+  s = act(s, 1, { type: 'tradeCounter', give: { cash: 0, props: [10] }, take: { cash: 250, props: [] } });
+  assert.deepEqual(waitingFor(s), [0], 'karşı teklif ilk teklif edene sorulur');
+  assert.equal(s.pending.from, 1);
+  assert.throws(() => applyAction(s, 0, { type: 'tradeCounter', give: { cash: 9999 }, take: { props: [10] } }), /nakdinden/);
+  s = act(s, 0, { type: 'tradeCounter', give: { cash: 180 }, take: { props: [10] } });
+  assert.throws(() => applyAction(s, 1, { type: 'tradeCounter', give: { props: [10] }, take: { cash: 200 } }), /daha fazla/);
+  s = act(s, 1, { type: 'tradeRespond', accept: true });
+  assert.equal(s.props[10].owner, 0);
+  assert.equal(s.players[0].cash, 1500 - 180);
+  assert.equal(s.turn.p, 0, 'sıra teklifi başlatan oyuncuda kalır');
+});
+
 test('görünüm: başkasının eli gizli', () => {
   const s = started(4);
   const v = viewFor(s, 1);
