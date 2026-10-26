@@ -541,7 +541,12 @@ function renderHand(v) {
   if (me < 0) return hand.render([], () => ({}));
   const pl = P(v, me);
   const discard = v.pending && v.pending.type === 'discard' && v.pending.p === me;
-  hand.render(pl.hand, (u) => ({ playable: !discard && canPlay(v, u), selected: app.ui.selected.includes(u) }), app.ui.newCards || []);
+  // Sıra bendeyken şu an oynanamayan kartlar soluk durur, oynanabilenler köşesindeki şimşekle belli olur.
+  const myTurn = v.phase === 'play' && v.turn && v.turn.p === me && !discard;
+  hand.render(pl.hand, (u) => {
+    const playable = !discard && canPlay(v, u);
+    return { playable, idle: myTurn && !playable, selected: app.ui.selected.includes(u) };
+  }, app.ui.newCards || []);
   app.ui.newCards = [];
   setHTML(els.handN, `${pl.hand.length}/${v.config.handLimit}`);
   setHTML(els.deck, html`${I('cards')}${v.deck}`);

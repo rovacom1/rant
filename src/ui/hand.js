@@ -9,12 +9,33 @@ import { APP_VERSION } from '../version.js';
 export const cardArt = (id) => `assets/kart/${id}.jpg?v=${APP_VERSION}`; // sürüm, yeni görselin önbellekten eskisiyle gelmesini önler
 export const WHEN = { preroll: 'Zar atmadan önce', choose: 'Zar attıktan sonra', buy: 'Satın alırken' };
 
-// Tek kartın yüzü: resim, türü (hamle şimşek, tepki kalkan) ve adı. Açıklaması pencerede ve ipucunda.
+// Kartın tek satırlık kısa kuralı: elde kartın üstüne gelince (kart büyüyünce) resmin altında belirir.
+export const CARD_SHORT = {
+  itiraz: 'Sana oynanan kartı iptal et',
+  dayi: 'Bir kirayı ödeme',
+  taksi: 'Zardan önce 1-12 kare git',
+  kestirme: 'Zardan sonra tek zarla git',
+  geriVites: 'Bu tur zar kadar geri git',
+  kamulastirma: 'Rakip mülkünü bedeliyle al',
+  takas: 'Mülkünü rakibinkiyle değiştir',
+  tedbir: 'Rakip mülkü 2 sıra kira almaz',
+  ihbar: 'Rakibin kaçak katları yıkılır',
+  kiraZammi: 'Alacağın ilk kira 2 katı',
+  muteahhit: 'Mülküne bedava 1 kat',
+  piyango: 'Bankadan 100 al',
+  aidat: 'Herkes sana 30 öder',
+  dava: 'Zar düellosu: kazanan 100 alır',
+  pazarlik: 'Mülkü yarı fiyatına al',
+};
+
+// Tek kartın yüzü: resim, türü (hamle şimşek, tepki kalkan), adı ve (üstüne gelince görünen) kısa kuralı.
+// Köşedeki şimşek rozeti kartın şu an oynanabildiğini gösterir (CSS .hslot.playable).
 export function cardFace(id, cls = '') {
   const c = CARDS[id];
-  return html`<div class="kart ${c.type} ${cls}" aria-label="${c.name} kartı">
-    <div class="k-art" style="background-image:url(${cardArt(id)})"></div>
+  return html`<div class="kart ${c.type} ${cls}" aria-label="${c.name} kartı: ${CARD_SHORT[id] || c.text}">
+    <div class="k-art" style="background-image:url(${cardArt(id)})"><span class="k-rule">${CARD_SHORT[id] || ''}</span></div>
     <span class="k-type">${raw(ic(c.type))}</span>
+    <span class="k-now">${raw(ic('bolt'))}</span>
     <div class="k-name">${c.name}</div>
   </div>`;
 }
@@ -83,6 +104,7 @@ export class Hand {
       }
       const st = state(uid);
       el.classList.toggle('playable', !!st.playable);
+      el.classList.toggle('idle', !!st.idle);
       el.classList.toggle('selected', !!st.selected);
     });
     // Sıra yalnız değiştiyse yeniden dizilir; yerinden oynayan kartın parıltısı baştan başlar.
