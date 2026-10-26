@@ -249,7 +249,7 @@ function startRound(s, ctx) {
 }
 
 function startTurn(s, ctx, p) {
-  s.turn = { p, step: 'preroll', dice: null, hamle: false, backward: false, trades: 0 };
+  s.turn = { p, step: 'preroll', dice: null, hamle: false, backward: false, trades: 0, side: [] };
   s.players[p].kiraZammi = false;
   // İhtiyati Tedbir, kartı oynayanın 2 sırası boyunca sürer (sıra başında azalır).
   for (const ps of s.props) if (ps && ps.tedbir > 0 && ps.tedbirBy === p) ps.tedbir--;
@@ -886,6 +886,27 @@ function normTrade(a) {
 
 const MAX_COUNTER = 2;
 
+// Açık pazarlık: bekleyen karar yokken ve sıradaki oyuncu zar öncesi ya da serbest evredeyken herkes teklif yapabilir.
+export function tradeWait(s, p) {
+  const pl = s.players[p];
+  if (s.phase !== 'play' || !s.turn || !pl || pl.out) return 'Şu an pazarlık yapamazsın.';
+  if (s.pending || !MANAGE_STEPS.includes(s.turn.step)) return 'Teklif, sıradaki oyuncu zar atmadan önce ya da turunu bitirmeden gönderilebilir.';
+  if (p === s.turn.p) return s.turn.trades < 3 ? null : 'Bir turda en fazla 3 pazarlık teklifi yapılır.';
+  return (s.turn.side || []).includes(p) ? 'Sıran değilken turda bir teklif yapabilirsin.' : null;
+}
+
+function proposeTrade(s, p, a, ctx) {
+  const w = tradeWait(s, p);
+  need(!w, w);
+  const t = normTrade(a);
+  const b = tradeBlock(s, p, t);
+  need(!b, b);
+  if (p === s.turn.p) s.turn.trades++;
+  else (s.turn.side ??= []).push(p);
+  s.pending = { type: 'trade', from: p, to: t.to, give: t.give, take: t.take };
+  emit(s, ctx, { type: 'trade', text: `${nm(s, p)} → ${nm(s, t.to)}: pazarlık teklifi var.` });
+}
+
 export function tradeBlock(s, from, t) {
   if (!isOpp(s, from, t.to)) return 'Pazarlık yapacağın oyuncuyu seç.';
   const fp = s.players[from];
@@ -970,16 +991,7 @@ const TURN = {
     s.props[a.sq].ipotek = false;
     transfer(s, ctx, p, null, cost, `İpotek kaldırma: ${sqName(a.sq)}`);
   },
-  proposeTrade(s, p, a, ctx) {
-    needManage(s);
-    need(s.turn.trades < 3, 'Bir turda en fazla 3 pazarlık teklifi yapılır.');
-    s.turn.trades++;
-    const t = normTrade(a);
-    const b = tradeBlock(s, p, t);
-    need(!b, b);
-    s.pending = { type: 'trade', from: p, to: t.to, give: t.give, take: t.take };
-    emit(s, ctx, { type: 'trade', text: `${nm(s, p)} → ${nm(s, t.to)}: pazarlık teklifi var.` });
-  },
+  proposeTrade,
   settleDebt(s, p, a, ctx) {
     needManage(s);
     need(s.players[p].cash < 0, 'Borcun yok.');
@@ -1148,6 +1160,7 @@ function handle(s, actor, a, ctx) {
     s.pending = null;
     return say(s, ctx, `${nm(s, actor)} teklifini geri çekti.`);
   }
+  if (!pd && a.type === 'proposeTrade') return proposeTrade(s, actor, a, ctx); // sırası olmayan da teklif yapabilir
   need(waitingFor(s).includes(actor), 'Şu an hamle sırası sende değil.');
   const table = pd ? PENDING[pd.type] : TURN;
   const h = Object.hasOwn(table, a.type) ? table[a.type] : null;

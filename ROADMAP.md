@@ -8,7 +8,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 - [ ] **Bot zorluk seviyesi (devam):** Motor ve lobi seçimi bitti (v0.14.0, v0.19.0).
   - [ ] Zor bot 4 kişide belirgin güçlü değil (1000 oyunda %24, eşit şans %25; 5 kişide %25/%20). Kat dikme zamanlaması ya da kart oynama sırasıyla güçlendir.
-- [ ] **Açık pazarlık:** Sırası olmayan oyuncular da birbirine teklif yapabilsin (aynı anda tek teklif kuralıyla).
 - [ ] **Mobil düzen (devam):** Temel telefon düzeni var (v0.22.0). Dar ekranda kare adları küçük; yatay ekran ve alt sekmeli panel denenebilir.
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
 - [ ] **Yeni harita: İstanbul:** İlçelerden oluşan ikinci tahta; lobide harita seçimi (tahta verisi data.js'te haritaya göre).
@@ -20,6 +19,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] main birleştirildi (açık pazarlık, lobide bot seviyesi, zor bot kaçak kat dikmez); açık pazarlık yeni pazarlık penceresinde, karşı teklifle birlikte (v0.24.0)
 - [x] Hız hissi, tek odak: zar ve yürüyüş, sonra rakip kartı/sürpriz, en son para jetonları, kat efekti ve bildirimler; istemdeki düğme çift tıklamada hata vermez (v0.23.0)
 - [x] Telefon düzeni, GitHub Actions testi, davet linki önizlemesi (v0.22.0)
 - [x] Ev sahibi devri: yedek oyuncu kopyayla 15 sn sonra aynı oda kodunda devralır (v0.21.0)
@@ -29,6 +29,9 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 - [x] Gizli kart sızıntısı kapandı, İhtiyati Tedbir 2 sıra (v0.18.0)
 - [x] Monopoly temposunda kart (yalnız Başlangıç ve FIRSAT), 20 tur, İtiraz 4, İhbar 2, bot set takası, sıra nakdi (v0.17.0)
 
+- [x] Açık pazarlık: sırası olmayan oyuncu da, sıradaki oyuncu zar öncesi ya da serbest evredeyken, turda bir teklif yapabilir; masada aynı anda tek teklif; pazarlık penceresi sıra beklerken açık kalır, gönderme düğmesi uygun ana kadar kapalı (v0.17.0)
+- [x] Lobide Bot seviyesi seçimi (Kolay / Normal / Zor, yalnız ev sahibi); kurallarda bot seviyesi satırı, eskimiş gizli hedef ve "kimse batmaz" ifadeleri düzeltildi (v0.16.2)
+- [x] Zor bot kaçak kat dikmez (zabıta ve ihbar riskine girmez); 1000 oyunda zor bot 4 kişide %24->%40, 5 kişide %25->%29 (v0.16.1)
 - [x] Bot seviyesi motoru: Kolay (pazarlık ve kaçak kat yok, kat ve kartı yarı yarıya unutur, artırmada erken çekilir) / Zor (eksik parçayı karşının kabul edeceği en ucuz teklifle ister, gerekirse mülk takası; artırmada en az artış); sim'de `node tools/sim.js N 5 zor` ile tek botu seviyeli oynatma. 1000 oyun, 5 kişi: zor %25, kolay %14, eşit şans %20 (v0.14.0)
 
 - [x] Monopoly'ye yakın denge: Monopoly kira cetveli, set dışı kat kirası yarı, kirayı atlatan kartlar azaldı, elde 5 kart varken kart gelmez, Piyango 100 (v0.12.0)

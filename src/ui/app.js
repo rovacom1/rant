@@ -465,6 +465,7 @@ const A = {
   cfgRounds: (el) => send({ t: 'lobby', cmd: 'config', maxRounds: Number(el.dataset.v) }),
   cfgTurn: (el) => send({ t: 'lobby', cmd: 'config', turnLimit: Number(el.dataset.v) }),
   cfgSpeed: (el) => send({ t: 'lobby', cmd: 'config', speed: el.dataset.v }),
+  cfgBot: (el) => send({ t: 'lobby', cmd: 'config', botLevel: el.dataset.v }),
   cfgEnd: (el) => send({ t: 'lobby', cmd: 'config', endMode: el.dataset.v }),
   cfgTarget: (el) => send({ t: 'lobby', cmd: 'config', targetScore: Number(el.dataset.v) }),
   cfgBot: (el) => send({ t: 'lobby', cmd: 'config', botLevel: el.dataset.v }),
@@ -600,7 +601,8 @@ const A = {
   history: () => openDialog({ type: 'history' }),
   manage: () => openDialog({ type: 'manage' }),
   trade() {
-    if (!G.canManage(V())) return G.toast('Pazarlık teklifini sıra sendeyken yapabilirsin.', '', 'deal');
+    const v = V();
+    if (v.phase !== 'play' || v.you < 0 || v.players[v.you].out) return;
     app.ui.trade = { to: null, give: { props: [] }, take: { props: [] } };
     app.ui.binds.tradeGive = '0';
     app.ui.binds.tradeTake = '0';

@@ -550,7 +550,7 @@ function renderHand(v) {
 function toolsHTML(v) {
   const d = app.ui.dialog?.type;
   const t = (k, icon, label, tip) => html`<button class="btn ${d === k ? 'on' : ''}" data-act="tool" data-k="${k}" data-tip="${tip}">${I(icon)}${label}</button>`;
-  return html`${t('trade', 'deal', 'Pazarlık', 'Sıra sendeyken bir rakibe mülk ve para teklif et')}${t('mortgage', 'ipotek', 'İpotek', 'Mülklerini ipotek et ya da ipoteği kaldır')}${t('build', 'build', 'İnşaat', 'Bütün setlerinde kat dik ya da sat')}`;
+  return html`${t('trade', 'deal', 'Pazarlık', 'Bir rakibe mülk ve para teklif et (sıran değilken turda bir kez)')}${t('mortgage', 'ipotek', 'İpotek', 'Mülklerini ipotek et ya da ipoteği kaldır')}${t('build', 'build', 'İnşaat', 'Bütün setlerinde kat dik ya da sat')}`;
 }
 
 function renderAudioPop() {
@@ -721,27 +721,32 @@ function tradeDialog(v) {
       <div class="trade-cash"><span class="muted small">Para</span><span data-show="${bind}">${M(val)}</span></div>
       <input type="range" class="rng" min="0" max="${Math.max(0, pl.cash)}" step="10" data-bind="${bind}" style="--c:${pl.color}" ${pl.cash > 0 ? '' : 'disabled'} aria-label="${title} para"></div>`;
   };
-  const offer = tradeOffer();
-  const empty = !offer.give.cash && !offer.take.cash && !offer.give.props.length && !offer.take.props.length;
-  const block = empty ? null : E.tradeBlock(v, me, offer);
+  const { offer, empty, block } = tradeState(v);
   return html`<div class="sheet XL" style="height:100%"><div class="sheet-head">${I(t.counter ? 'swap2' : 'deal')}<span class="h22">${t.counter ? 'Karşı teklif' : 'Pazarlık'}</span><span class="grow"></span>
       <div class="partners">${opps.map((i) => html`<button class="btn S sec ${t.to === i ? 'on' : ''}" style="--pc:${P(v, i).color}" data-act="tradeTo" data-p="${i}">${PW(P(v, i), 24)}${P(v, i).name.split(' ')[0]}</button>`)}</div>
       <button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div>
     <div class="trade-cols">${col(me, 'Sen veriyorsun', 'give', 'tradeGive')}${col(t.to, `${P(v, t.to).name}'dan istiyorsun`, 'take', 'tradeTake')}</div>
-    <div class="row"><span data-trade-sum class="grow">${empty ? html`<span class="muted small">Vermek ya da almak istediğini seç.</span>` : block ? html`<span class="reason">${block}</span>` : tradeSummary(v, offer)}</span>
+    <div class="row"><span data-trade-sum class="grow">${block ? html`<span class="reason">${block}</span>` : empty ? html`<span class="muted small">Vermek ya da almak istediğini seç.</span>` : tradeSummary(v, offer)}</span>
       <button class="btn gho" data-act="close">Vazgeç</button><button class="btn L pri" data-act="sendTrade" ${empty || block ? 'disabled' : ''}>${t.counter ? 'Karşı teklifi gönder' : 'Teklifi gönder'}</button></div></div>`;
 }
 
 // Kaydırma çubuğu oynarken pencereyi yeniden çizmeden özeti ve düğmeyi günceller.
 function refreshTrade() {
   const v = app.view;
-  const offer = tradeOffer();
-  const empty = !offer.give.cash && !offer.take.cash && !offer.give.props.length && !offer.take.props.length;
-  const block = empty ? null : E.tradeBlock(v, v.you, offer);
+  const { offer, empty, block } = tradeState(v);
   const sum = els.modal.querySelector('[data-trade-sum]');
   const btn = els.modal.querySelector('[data-act="sendTrade"]');
-  if (sum) sum.innerHTML = String(empty ? html`<span class="muted small">Vermek ya da almak istediğini seç.</span>` : block ? html`<span class="reason">${block}</span>` : tradeSummary(v, offer));
+  if (sum) sum.innerHTML = String(block ? html`<span class="reason">${block}</span>` : empty ? html`<span class="muted small">Vermek ya da almak istediğini seç.</span>` : tradeSummary(v, offer));
   if (btn) btn.disabled = empty || !!block;
+}
+
+// Teklifin durumu: boş mu, gönderilemiyorsa neden. Sıra beklenirken pencere açık kalır, düğme teklif yapılabilene kadar kapalı
+// (açık pazarlık: sırası olmayan da, sıradaki oyuncu zar öncesi ya da serbest evredeyken turda bir teklif yapar).
+function tradeState(v) {
+  const offer = tradeOffer();
+  const empty = !offer.give.cash && !offer.take.cash && !offer.give.props.length && !offer.take.props.length;
+  const wait = app.ui.trade.counter ? null : E.tradeWait(v, v.you);
+  return { offer, empty, block: wait || (empty ? null : E.tradeBlock(v, v.you, offer)) };
 }
 
 export function tradeOffer() {
@@ -808,7 +813,7 @@ export function renderModal() {
       body = mortgageDialog(v);
       break;
     case 'trade':
-      if (!(app.ui.trade && app.ui.trade.counter ? counterable(v) : canManage(v))) {
+      if (!(app.ui.trade && app.ui.trade.counter ? counterable(v) : v.phase === 'play' && !P(v, v.you).out)) {
         app.ui.dialog = null;
         return renderModal();
       }

@@ -44,7 +44,7 @@ Ev sahibi lobide üç kuralı açıp kapatabilir; hepsi varsayılan olarak açı
 
 Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi ve canlandırmaları 1,4 / 1 / 0,6 katına çeker.
 
-**Bot seviyesi** (Kolay / Normal / Zor) masadaki bütün botlara uygulanır. Kolay bot pazarlık önermez, kaçak kat dikmez, kat dikmeyi ve kart oynamayı yarı yarıya unutur, yedeğini bozacak arsayı almaz, artırmada çabuk çekilir. Zor bot eksik parçayı karşı tarafın kabul edeceği en düşük parayla ister, para yetmezse kendi işine yaramayan bir mülkü takasa koyar; artırmada tavanını şaşmadan hesaplar ve her seferinde en az artışla teklif verir.
+**Bot seviyesi** (Kolay / Normal / Zor) masadaki bütün botlara uygulanır. Kolay bot pazarlık önermez, kaçak kat dikmez, kat dikmeyi ve kart oynamayı yarı yarıya unutur, yedeğini bozacak arsayı almaz, artırmada çabuk çekilir. Zor bot kaçak kat dikmez (zabıta ve ihbar riskine girmez), eksik parçayı karşı tarafın kabul edeceği en düşük parayla ister, para yetmezse kendi işine yaramayan bir mülkü takasa koyar; artırmada tavanını şaşmadan hesaplar ve her seferinde en az artışla teklif verir.
 
 ## 3. Tahta (36 kare)
 
@@ -115,6 +115,8 @@ Sahil grupları: Antalya, İzmir.
    (İlk taslakta her turda zar seçimi vardı; simülasyonda oyuncular kirayı neredeyse hiç ödemediği için karta taşındı.)
 5. **Kareye geliş** (aşağıda).
 6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**.
+
+**Açık pazarlık:** Sırası olmayan oyuncular da, sıradaki oyuncu zar öncesi ya da serbest evredeyken (bekleyen karar yokken), herhangi bir oyuncuya turda bir pazarlık teklifi yapabilir. Masada aynı anda tek teklif bulunur.
 7. Turu bitirmek için: bekleyen karar yok, nakit >= 0, elde en fazla 6 kart.
 8. **Tur sonu** (son oyuncudan sonra): Tur özeti açıklanır: net değeri en çok artan ve en çok düşen oyuncu, el değiştiren mülkler. Yalnız bilgi verir, kurala etkisi yoktur.
 
@@ -268,7 +270,7 @@ Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tu
 - Her oyuncu yalnız kendi görünümünü alır (başkalarının eli gizli). Zar ve desteler ev sahibindedir.
 - Ev sahibi sayfayı yenilerse oyun tarayıcı hafızasından geri yüklenir; oyuncular otomatik yeniden bağlanır.
 - **Ev sahibi devri:** ev sahibi her hamleden sonra oyunun tam halini sıradaki bağlı insan oyuncuya (yedek) da gönderir; koltuk anahtarları gönderilmez. Ev sahibi 15 saniye dönmezse yedek aynı oda koduyla ev sahibi olur, diğerleri kendiliğinden ona bağlanır; koltuklar, kimliği o koltuğa denk gelen tokenle dönene verilir. Eski ev sahibi "Devam et" derse oda başkasında açık olduğu için oyuncu olarak katılır. Bedeli: yedek oyuncunun tarayıcısı da herkesin elini tutar (ev sahibininki gibi); arkadaş masası için kabul edildi.
-- Pazarlık teklifini yalnız sırası gelen oyuncu yapar (turda en fazla 3 teklif). Teklifi alan kabul eder, reddeder ya da karşı teklif yapar: aynı pazarlık ters yönde sürer, bir pazarlıkta en fazla 2 karşı teklif olur.
+- Sırası gelen oyuncu turda en fazla 3, diğerleri (sıradaki oyuncu zar atmadan önce ya da turunu bitirmeden) turda 1 pazarlık teklifi yapar; masada aynı anda tek teklif bekler. Teklifi alan kabul eder, reddeder ya da karşı teklif yapar: aynı pazarlık ters yönde sürer, bir pazarlıkta en fazla 2 karşı teklif olur.
 - Bağlantısı kopan oyuncunun yerine bir süre sonra bot oynar; dönünce koltuk geri verilir.
 - Motor taşıma katmanından bağımsızdır; ileride bir WebSocket sunucusu aynı protokolle eklenebilir.
 

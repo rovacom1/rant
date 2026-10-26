@@ -11,6 +11,7 @@ export const RULES_HTML = `
 <li>Sahipsiz arsaya gelince <b>satın al</b> ya da <b>açık artırmaya</b> çıkar: sırayla herkes ya teklifi artırır ya çekilir, son kalan kazanır.</li>
 <li>Başkasının mülküne gelince kira ödersin. <b>Dayın Çıktı</b> kartın varsa ödemezsin.</li>
 <li>Kat dik, ipotek et, pazarlık teklif et, sonra <b>Turu Bitir</b>.</li>
+<li>Sıran değilken de turda bir kez pazarlık teklif edebilirsin (sıradaki oyuncu zar atmadan önce ya da turunu bitirmeden).</li>
 </ul>
 <h3>Kat ve kaçak kat</h3>
 <ul>
@@ -36,6 +37,7 @@ export const RULES_HTML = `
 <p><b>Son kalan (iflas) modu:</b> konkordato yoktur; borcunu kapatamayan iflas eder, mülkleri bankaya döner ve oyundan çıkar. Tek oyuncu kalınca o kazanır. Oyun uzamasın diye kiralar her tur artar (10. turda 4,6 kat); en geç 40. turda ayakta kalanlardan puanı en yüksek olan kazanır.</p>
 <h3>Masa ayarları</h3>
 <p>Ev sahibi lobide açık artırmayı, SÜRPRİZ karelerini ve gündem kartlarını açıp kapatabilir; oyunun hızını da seçer. Açık artırma kapalıysa alınmayan arsa sahipsiz kalır.</p>
+<p><b>Bot seviyesi:</b> Kolay botlar pazarlık yapmaz ve sık unutur; Zor botlar eksik parçayı pazarlıkla toplar, kaçak kata girmez.</p>
 <h3>Tahtadaki işaretler</h3>
 <ul>
 <li><b>Karenin iç kenarındaki şerit</b>: ince ve soluksa sahipsiz, kalın ve renkliyse o oyuncunun. ${ic('star')} şehrin tamamı tek kişide (tam set), arsa kirası 2 katı.</li>

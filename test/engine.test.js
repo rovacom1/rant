@@ -385,6 +385,33 @@ test('pazarlık: karşı teklif ters yönde sürer, en fazla 2 kez', () => {
   assert.equal(s.turn.p, 0, 'sıra teklifi başlatan oyuncuda kalır');
 });
 
+test('açık pazarlık: sırası olmayan da turda bir teklif yapar', () => {
+  let s = calm(started());
+  own(s, 1, 10);
+  own(s, 2, 12);
+  s = act(s, 2, { type: 'proposeTrade', to: 1, give: { props: [12] }, take: { props: [10] } });
+  assert.deepEqual(waitingFor(s), [1]);
+  assert.throws(() => applyAction(s, 0, { type: 'roll' }), /hamle sırası/, 'teklif beklerken sıradaki oyuncu bekler');
+  s = act(s, 1, { type: 'tradeRespond', accept: true });
+  assert.equal(s.props[10].owner, 2);
+  assert.equal(s.props[12].owner, 1);
+  assert.throws(() => applyAction(s, 2, { type: 'proposeTrade', to: 1, give: { cash: 10 }, take: {} }), /turda bir/);
+  s = act(s, 3, { type: 'proposeTrade', to: 0, give: { cash: 10 }, take: {} });
+  assert.throws(() => applyAction(s, 1, { type: 'proposeTrade', to: 0, give: { cash: 10 }, take: {} }), /hamle sırası/, 'aynı anda tek teklif');
+  s = act(s, 3, { type: 'tradeCancel' });
+  assert.equal(s.pending, null);
+  s = act(s, 0, { type: 'proposeTrade', to: 3, give: { cash: 10 }, take: {} });
+  s = act(s, 3, { type: 'tradeRespond', accept: false });
+  assert.equal(s.turn.trades, 1, 'sıradakinin hakkı ayrı sayılır');
+  const busy = structuredClone(s);
+  busy.turn.step = 'choose';
+  assert.throws(() => applyAction(busy, 1, { type: 'proposeTrade', to: 2, give: { cash: 10 }, take: {} }), /zar atmadan/);
+  s.players[1].out = 1;
+  assert.throws(() => applyAction(s, 1, { type: 'proposeTrade', to: 2, give: { cash: 10 }, take: {} }), /yapamazsın/);
+  s = act(s, 0, { type: 'roll' });
+  assert.notEqual(s.turn.step, 'preroll');
+});
+
 test('görünüm: başkasının eli gizli', () => {
   const s = started(4);
   const v = viewFor(s, 1);
@@ -655,6 +682,21 @@ test('bot seviyesi: zor bot artırmada en az artışla, kolay bot daha erken çe
   s.pending.high = 260;
   assert.equal(botAction(s, 1, 'kolay').type, 'pass');
   assert.equal(botAction(s, 1, 'zor').type, 'raise');
+});
+
+test('bot seviyesi: zor bot kaçak kat dikmez, normal bot bazen diker', () => {
+  const s = started(4, 23);
+  for (const uid of [...s.players[0].hand]) strip(s, 0, uid.split(':')[0]);
+  own(s, 0, 33); // set dışı tek mülk: yasal kat yok, kaçak kat mümkün
+  s.players[0].cash = 3000;
+  s.turn.step = 'free';
+  let normal = 0;
+  for (let k = 0; k < 20; k++) {
+    s.seq = k;
+    assert.notEqual(botAction(s, 0, 'zor').type, 'buildKacak');
+    if (botAction(s, 0, 'normal').type === 'buildKacak') normal++;
+  }
+  assert.ok(normal > 0, 'normal bot aynı durumda kaçak kat diker');
 });
 
 test('bot seviyesi masa ayarından gelir', () => {
