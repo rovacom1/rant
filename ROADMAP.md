@@ -10,7 +10,6 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
 - [ ] **Yeni harita: İstanbul:** İlçelerden oluşan ikinci tahta; lobide harita seçimi (tahta verisi data.js'te haritaya göre).
 - [ ] **Yeni kartlar (denge simülasyonuyla):** "Kat Karşılığı" (rakibin arsasına onunla ortak kat), "Kredi Kartı" (şimdi 300 al, 2 tur sonra 360 öde), "Torpil" (ihalede ikinci en yüksek teklifle kazan).
-- [ ] **Yeni gündem kartları:** "Arsa Spekülasyonu", "Altın Rekor" ("Duvarda Çatlak" artık SÜRPRİZ etkisi).
 - [ ] **Ev sahibi devri:** Ev sahibi düşerse en eski oyuncu kayıttan oyunu devralsın (her oyuncuda son durum kopyası).
 - [ ] **PWA:** Masaüstüne kurulabilir uygulama (manifest + service worker); botlarla çevrimdışı oynama.
 - [ ] **Erişilebilirlik:** Klavyeyle tam oynanış, renk körleri için şehir desenleri, ekran okuyucu etiketleri.
@@ -18,6 +17,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Yeni gündem kartları: Altın Rekor Kırdı (herkes nakdinin %10'u kadar kazanır) ve Arsa Spekülasyonu (katsız, ipoteksiz her arsa için 20); gündem destesi 31 kart; sim 200x5 sıra %15-24, kira 21,8 (v0.18.0)
 - [x] Bakım (oturum 35): kullanılmayan CSS (.bigcard, .gundem-card, .pl .pname, .cell .pr) silindi, yalnız kendi dosyasında kullanılan 7 ad dışa kapatıldı; denge 300x5 sıra %18-23, kira 21,7/oyun; PeerJS 1.5.5 güncel (v0.17.2)
 - [x] Mobil düzen 1. dilim: 800 px ve altında üst çubuk tek satır ve yalnız ikon (142 -> 44-54 px), tahta tam genişlik (375 px'te 347 -> 367), altında 'Kartların / Oyuncular' sekmeleri (sayfa 1222 -> 855 px); izleyicide sekme yok (v0.17.1)
 - [x] Açık pazarlık: sırası olmayan oyuncu da, sıradaki oyuncu zar öncesi ya da serbest evredeyken, turda bir teklif yapabilir; masada aynı anda tek teklif; pazarlık penceresi sıra beklerken açık kalır, gönderme düğmesi uygun ana kadar kapalı (v0.17.0)
