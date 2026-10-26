@@ -4,7 +4,7 @@
 import { CARDS, cardId } from '../engine/index.js';
 import { html } from './dom.js';
 
-export const cardArt = (id) => `assets/kart/${id}.jpg`;
+const cardArt = (id) => `assets/kart/${id}.jpg`;
 const WHEN = { preroll: 'Zar atmadan önce', choose: 'Zar attıktan sonra', buy: 'Satın alırken' };
 
 // Tek kartın yüzü (elde, pencerede ve ortadaki gösterimde aynı tasarım).

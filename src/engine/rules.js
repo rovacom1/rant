@@ -106,7 +106,7 @@ export function floorsOf(s, p) {
   return { kat, kacak };
 }
 
-export function netWorthParts(s, p) {
+function netWorthParts(s, p) {
   let mulk = 0;
   let katlar = 0;
   for (const q of propsOf(s, p)) {

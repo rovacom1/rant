@@ -6,7 +6,7 @@ import { createGame, applyAction, waitingFor, botAction, CARDS, GUNDEM, BOARD, A
 const TOTAL_CARDS = Object.values(CARDS).reduce((a, c) => a + c.count, 0);
 const TOTAL_GUNDEM = Object.values(GUNDEM).reduce((a, c) => a + c.count, 0);
 
-export function checkInvariants(s) {
+function checkInvariants(s) {
   const errs = [];
   for (const pl of s.players) if (!Number.isInteger(pl.cash)) errs.push(`tam sayı olmayan nakit: ${pl.name} ${pl.cash}`);
   s.props.forEach((ps, q) => {

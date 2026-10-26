@@ -1,6 +1,6 @@
 {
   "name": "rant",
-  "version": "0.17.1",
+  "version": "0.17.2",
   "private": true,
   "description": "RANT: Türkiye temalı, internetten 4-5 kişilik emlak ve kart oyunu",
   "type": "module",

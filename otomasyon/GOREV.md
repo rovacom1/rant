@@ -14,7 +14,7 @@ Repo: `C:\Dev\Rant` (tek dal `main`, uzak: github.com/rovacom1/rant, push = canl
 4. **Senkron:** `git status` temiz değilse önceki yarım işe bak: testler geçiyorsa commit'le, geçmiyorsa `git stash push -m "autodev yarım iş"` yap ve günlüğe yaz. Sonra `git pull --rebase origin main`.
 5. **Oku:** `CLAUDE.md`, `docs/TASARIM.md`, `ROADMAP.md`, `tasks/lessons.md` ve `GELISTIRME_GUNLUGU.md`'nin son 15 satırı.
 6. **İş seç:** Günlükteki son oturum numarası +1 bu oturumun numarasıdır.
-   - Numara 5'in katıysa **bakım oturumu**: ölü kod/TODO temizliği, tekrarları sadeleştirme, `node tools/sim.js 300 5` ile denge kontrolü (bir oyuncu sırası %30'dan fazla kazanıyorsa, hedef tutturma %20'nin altına ya da %60'ın üstüne çıktıysa düzelt), PeerJS sürümü ve CDN kontrolü, metin cilası.
+   - Numara 5'in katıysa **bakım oturumu**: ölü kod/TODO temizliği, tekrarları sadeleştirme, `node tools/sim.js 300 5` ile denge kontrolü (bir oyuncu sırası %30'dan fazla kazanıyorsa, kira ödemesi oyun başına 15-25 aralığının dışına çıktıysa düzelt; gizli hedef v0.15.0'te kaldırıldı), PeerJS sürümü ve CDN kontrolü, metin cilası.
    - Değilse `ROADMAP.md` > **Sıradaki** listesinin en üstündeki işaretsiz madde. Madde büyükse ilk çalışan dilimini yap, kalanını alt madde olarak bırak.
    - Kullanıcıya soru sorma ve bekleme; belirsizlikte en basit iyi seçeneği uygula, varsayımı günlüğe yaz.
 7. **Uygula:** Küçük ve bitmiş bir değişiklik (yaklaşık 30-45 dakikalık iş). Kural değişikliğinde önce `docs/TASARIM.md`. Motor değişikliğine test ekle. `src/version.js`'de APP_VERSION'ı artır (uyumsuz protokol değişikliğinde PROTOCOL'ü de).

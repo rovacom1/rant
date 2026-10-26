@@ -36,8 +36,8 @@ body {
 }
 button { font: inherit; }
 /* Başlık, düğme ve sayılar yuvarlak hatlı Fredoka; metinler Nunito */
-h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar .stat b, .pl .pname, .gundem-card .gt,
-.bigcard .cn, input, select { font: inherit; }
+h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar .stat b,
+input, select { font: inherit; }
 .hidden { display: none !important; }
 
 /* ---------- düğmeler ---------- */
@@ -312,14 +312,6 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 .modal.wide { width: min(860px, 100%); }
 .modal h2 { margin: 0; font-size: 21px; display: flex; align-items: center; gap: 8px; }
 .modal .x { position: absolute; top: 12px; right: 12px; border: 0; background: var(--cream); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 16px; }
-.bigcard {
-  display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px;
-  background: linear-gradient(160deg, #fff, #f3e7cd); border: 2px solid #d6c39b;
-}
-.bigcard.tepki { background: linear-gradient(160deg, #fff, #fbe1e5); border-color: #e7a2ab; }
-.bigcard .ci { font-size: 54px; }
-.bigcard .cn { font-weight: 800; font-size: 20px; }
-.bigcard .ct { font-size: 14.5px; color: #444; margin-top: 4px; }
 .targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
 .targets button {
   border: 2px solid var(--line); background: #fff; border-radius: 12px; padding: 8px; cursor: pointer; text-align: left;
@@ -397,7 +389,7 @@ h1, h2, h3, h4, .btn, .money, .logo, .mini-logo, .room-code, .cell .nm, .topbar 
 @media (max-width: 640px) {
   .board { --size: calc(100vw - 20px); padding: 3px; gap: 2px; }
   .cell { font-size: calc(var(--size) / 60); }
-  .cell .city, .cell .pr { display: none; }
+  .cell .city { display: none; }
   .trade-cols { grid-template-columns: 1fr; }
 }
 

@@ -106,7 +106,7 @@ export const GROUP_SQUARES = Object.fromEntries(
   Object.keys(GROUPS).map((g) => [g, BOARD.map((s, i) => (s.group === g ? i : -1)).filter((i) => i >= 0)]),
 );
 
-export const TRANSPORT_SQUARES = BOARD.map((s, i) => (s.kind === 'transport' ? i : -1)).filter((i) => i >= 0);
+const TRANSPORT_SQUARES = BOARD.map((s, i) => (s.kind === 'transport' ? i : -1)).filter((i) => i >= 0);
 export const MODE_SQUARES = {
   air: TRANSPORT_SQUARES.filter((i) => BOARD[i].mode === 'air'),
   rail: TRANSPORT_SQUARES.filter((i) => BOARD[i].mode === 'rail'),

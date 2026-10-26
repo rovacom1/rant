@@ -101,7 +101,7 @@ const sqChip = (sq) => html`<span class="chip">${BOARD[sq].name}<small class="mu
 const scaled = (v, sq, x) => Math.round((x * (v.index / 100) * (BOARD[sq].group ? v.groupMult[BOARD[sq].group] || 1 : 1)) / 5) * 5;
 const destOf = (v, steps, backward) => (v.players[v.you].pos + (backward ? -steps : steps) + N * 2) % N;
 const myTurnFree = (v) => v.phase === 'play' && !v.pending && v.turn && v.turn.p === v.you;
-export const canManage = (v) => myTurnFree(v) && ['preroll', 'free'].includes(v.turn.step);
+const canManage = (v) => myTurnFree(v) && ['preroll', 'free'].includes(v.turn.step);
 
 function canPlay(v, uid) {
   const id = cardId(uid);
@@ -526,7 +526,7 @@ const feedRows = () => app.view.log.filter((l) => l.text && !FEED_HIDE.has(l.typ
 const feedHTML = () => feedRows().slice(-60).reverse().map(feedItem).join('');
 
 // Tahtanın ortasında son olaylar: en yenisi üstte, aşağı doğru solarak kaybolur. Tıklayınca tüm geçmiş açılır.
-export function renderFeed() {
+function renderFeed() {
   if (!els) return;
   setHTML(els.feed, feedRows().filter((l) => l.type !== 'gundem' && l.type !== 'round').slice(-6).reverse().map(feedItem).join(''));
 }
@@ -1042,7 +1042,7 @@ async function revealCard(pv, v, ev) {
   });
 }
 
-export function confetti() {
+function confetti() {
   const colors = ['#d1495b', '#edae49', '#00798c', '#2f9e66', '#24408e', '#fff'];
   for (let i = 0; i < 90; i++) {
     const el = document.createElement('div');
