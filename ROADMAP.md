@@ -9,7 +9,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 - [ ] **Mobil düzen (kalan):** Dar ekranda kare penceresi, pazarlık/artırma pencereleri ve tahta ortasındaki istem 375 px'te rahat mı; kart sürükleme dokunmatikte denenmeli; kareler çok küçük (kare adları okunmuyor, gerekirse dokununca büyüyen kare).
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
 - [ ] **Yeni harita: İstanbul:** İlçelerden oluşan ikinci tahta; lobide harita seçimi (tahta verisi data.js'te haritaya göre).
-- [ ] **Yeni kartlar (kalan, denge simülasyonuyla):** "Kat Karşılığı" (rakibin arsasına onunla ortak kat), "Torpil" (ihalede ikinci en yüksek teklifle kazan).
+- [ ] **Yeni kartlar (kalan, denge simülasyonuyla):** "Kat Karşılığı" (rakibin arsasına onunla ortak kat).
 - [ ] **Ev sahibi devri:** Ev sahibi düşerse en eski oyuncu kayıttan oyunu devralsın (her oyuncuda son durum kopyası).
 - [ ] **PWA:** Masaüstüne kurulabilir uygulama (manifest + service worker); botlarla çevrimdışı oynama.
 - [ ] **Erişilebilirlik:** Klavyeyle tam oynanış, renk körleri için şehir desenleri, ekran okuyucu etiketleri.
@@ -17,6 +17,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Torpil tepki kartı (2 adet, deste 48): açık artırmada sıran gelince oynanır, artırma kapanır, mülk liste fiyatının yarısına (teklif daha yüksekse 10 fazlasına) alınır; bot normal tavanı içindeyse oynar; sim 500x5 sıra %19-22, kira 22,4, torpil 2,0/oyun (v0.20.0)
 - [x] Kredi Kartı hamle kartı (2 adet, deste 46): bankadan hemen 300, 2 tur sonra sıra gelince 360 ödenir; aynı anda tek kredi, ödenmemiş borç net değerden düşer; bot yalnız nakdi yedeğin altındayken oynar; sim 500x5 sıra %15-22, kira 22,1 (v0.19.0)
 - [x] Yeni gündem kartları: Altın Rekor Kırdı (herkes nakdinin %10'u kadar kazanır) ve Arsa Spekülasyonu (katsız, ipoteksiz her arsa için 20); gündem destesi 31 kart; sim 200x5 sıra %15-24, kira 21,8 (v0.18.0)
 - [x] Bakım (oturum 35): kullanılmayan CSS (.bigcard, .gundem-card, .pl .pname, .cell .pr) silindi, yalnız kendi dosyasında kullanılan 7 ad dışa kapatıldı; denge 300x5 sıra %18-23, kira 21,7/oyun; PeerJS 1.5.5 güncel (v0.17.2)
