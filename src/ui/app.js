@@ -9,7 +9,8 @@ import { toggleNotify, watchTurn } from './notify.js';
 import { app, profile, send, act, isHost } from './state.js';
 import * as G from './gameview.js';
 import { pickClick, isBoardPickable } from './pick.js';
-import { RULES_HTML } from './rules.js';
+import { ic } from './icons.js';
+import { pawn } from './pawns.js';
 
 const root = document.getElementById('app');
 const SAVE = { host: 'save.host', local: 'save.local' };
@@ -25,93 +26,78 @@ function savedGame(kind) {
 
 // ---------- ekranlar ----------
 
-const SKYLINE = `<svg class="skyline" viewBox="0 0 460 130" aria-hidden="true">
-  <g fill="#24408e"><rect x="0" y="70" width="46" height="60"/><rect x="52" y="40" width="34" height="90"/><rect x="200" y="55" width="40" height="75"/><rect x="330" y="30" width="38" height="100"/><rect x="410" y="62" width="50" height="68"/></g>
-  <g fill="#00798c"><rect x="92" y="78" width="40" height="52"/><rect x="246" y="86" width="30" height="44"/><rect x="372" y="80" width="34" height="50"/></g>
-  <g fill="#1b2233"><path d="M138 130V92a32 32 0 0 1 64 0v38z"/><rect x="134" y="38" width="5" height="92"/><path d="M131 40l5.5-14 5.5 14z"/><rect x="201" y="44" width="5" height="86"/><path d="M198 46l5.5-14 5.5 14z"/><rect x="166" y="52" width="8" height="10" rx="4"/></g>
-  <g stroke="#edae49" stroke-width="3" fill="none"><path d="M290 130V18M290 22h70M290 22l-22 16M300 22l58 0"/><path d="M352 22v34" stroke-width="1.5"/></g>
-  <rect x="345" y="56" width="14" height="10" fill="#d1495b"/>
-  <g fill="#edae49" opacity=".85"><rect x="58" y="50" width="6" height="6"/><rect x="72" y="50" width="6" height="6"/><rect x="58" y="66" width="6" height="6"/><rect x="72" y="82" width="6" height="6"/><rect x="338" y="40" width="6" height="6"/><rect x="352" y="56" width="6" height="6"/><rect x="338" y="72" width="6" height="6"/><rect x="210" y="66" width="6" height="6"/><rect x="224" y="82" width="6" height="6"/><rect x="420" y="74" width="6" height="6"/><rect x="438" y="90" width="6" height="6"/></g>
-</svg>`;
+const I = (name, cls = '') => raw(ic(name, cls));
+const PW = (avatar, color, s) => raw(pawn(avatar, color, s));
+const ME_COLOR = '#2475e8';
 
 function menuHTML() {
   const host = savedGame('host');
   const local = savedGame('local');
   const busy = app.status === 'connecting' || (typeof app.status === 'string' && app.status.startsWith('Oda kodu'));
   const resume = (kind, s, label) =>
-    html`<div class="notice"><b>${label}</b>${s.game ? ` — ${s.game.phase === 'over' ? 'bitmiş oyun' : `${s.game.round}. tur`}` : ' — lobide'}${kind === 'host' ? `, oda ${s.code}` : ''}
-      <div class="row" style="margin-top:6px"><button class="btn small turq" data-act="${kind === 'host' ? 'resumeHost' : 'resumeLocal'}" ${busy ? 'disabled' : ''}>Devam et</button><button class="btn small ghost" data-act="dropSave" data-k="${kind}">Sil</button></div></div>`;
-  return html`<div class="screen"><div class="hero">
-    <div>
-      <h1 class="logo">RA<span>N</span>T</h1>
-      <p class="tagline">Kentsel dönüşümün kart oyunu. Arsa kap, kaçak kat çık, dayını ara, itiraz et.</p>
-      <div class="facts"><span>👥 4-5 kişi (2-6)</span><span>⏱ 35-45 dk</span><span>🌍 İnternetten, kurulum yok</span></div>
-      ${raw(SKYLINE)}
-    </div>
-    <div class="card-panel">
-      <h2>Masaya otur</h2>
-      <label class="field">Adın<input class="input" id="nameInput" maxlength="16" placeholder="ör. Furkan" value="${profile.name}"></label>
-      <div class="field">Simgen<div class="avatars">${E.AVATARS.map((a) => html`<button class="${a === profile.avatar ? 'on' : ''}" data-act="avatar" data-a="${a}">${a}</button>`)}</div></div>
-      ${app.error ? html`<div class="notice error">${app.error}</div>` : ''}
-      ${busy ? html`<div class="notice">⏳ ${app.status === 'connecting' ? 'Bağlanılıyor…' : app.status}</div>` : ''}
-      ${host ? resume('host', host, 'Kurduğun oda') : ''}
-      ${local ? resume('local', local, 'Bot oyunun') : ''}
-      <button class="btn primary big" data-act="host" ${busy ? 'disabled' : ''}>🏠 Oda Kur</button>
-      <div class="divider">ya da arkadaşının odasına katıl</div>
-      <div class="row"><input class="input code grow" id="codeInput" maxlength="8" placeholder="ODA KODU" value="${app.joinCode || ''}" style="flex:1;min-width:0"><button class="btn turq" data-act="join" ${busy ? 'disabled' : ''}>Katıl</button></div>
-      <div class="divider">ya da</div>
-      <div class="row"><button class="btn ghost grow" data-act="local" ${busy ? 'disabled' : ''}>🤖 Botlarla dene</button><button class="btn ghost" data-act="rules">❓ Nasıl oynanır?</button></div>
-    </div>
-  </div></div>${modalShell()}<div class="version">RANT ${APP_VERSION}</div>`;
+    html`<div class="box-note">${I('refresh')}<span class="grow"><b>${label}</b> · ${s.game ? (s.game.phase === 'over' ? 'bitmiş oyun' : `${s.game.round}. tur`) : 'lobide'}${kind === 'host' ? ` · ${s.code}` : ''}</span>
+      <button class="btn S pri" data-act="${kind === 'host' ? 'resumeHost' : 'resumeLocal'}" ${busy ? 'disabled' : ''}>Devam et</button><button class="btn S sq ton" data-act="dropSave" data-k="${kind}" aria-label="Kaydı sil">${I('close')}</button></div>`;
+  const parade = E.AVATARS.map((a, i) => PW(a, E.PLAYER_COLORS[i], [56, 64, 72, 64, 56, 52][i]));
+  return html`<div class="screen">
+    <div class="hero"><span class="logo xl">RANT</span><span class="tagline">Arsa kap, kaçak kat çık, dayını ara.</span>
+      <div class="row" style="flex-wrap:wrap;gap:8px"><span class="hint">${I('user')}4-5 kişi</span><span class="hint">${I('timer')}40-50 dk</span><span class="hint">${I('link')}Link aç, katıl</span></div>
+      <div class="parade">${parade}</div></div>
+    <div class="start-card"><span class="h22">Masaya otur</span>
+      ${app.error ? html`<div class="box-err">${I('warning')}<span>${app.error}</span></div>` : ''}
+      ${busy ? html`<div class="box-note"><span class="spinner"></span><span>${app.status === 'connecting' ? 'Bağlanılıyor' : app.status}</span></div>` : ''}
+      <label class="label">Adın<input class="input" id="nameInput" maxlength="16" placeholder="ör. Deniz" value="${profile.name}"></label>
+      <div class="label">Piyonun<div class="pawn-pick">${E.AVATARS.map((a) => html`<button class="${a === profile.avatar ? 'on' : ''}" data-act="avatar" data-a="${a}" aria-label="${E.PAWN_NAMES[a]}" data-tip="${E.PAWN_NAMES[a]}">${PW(a, ME_COLOR, 36)}</button>`)}</div></div>
+      ${host ? resume('host', host, 'Kurduğun oda') : ''}${local ? resume('local', local, 'Bot oyunun') : ''}
+      <button class="btn L pri full" data-act="host" ${busy ? 'disabled' : ''}>Oda kur</button>
+      <div class="row" style="gap:8px"><input class="input code" id="codeInput" maxlength="8" placeholder="ODA KODU" aria-label="Oda kodu" value="${app.joinCode || ''}"><button class="btn sec" data-act="join" ${busy ? 'disabled' : ''}>Katıl${I('arrow')}</button></div>
+      <div class="row" style="gap:8px"><button class="btn ton flex" data-act="local" ${busy ? 'disabled' : ''}>${I('bot')}Botlarla dene</button><button class="btn ton flex" data-act="rules">${I('book')}Nasıl oynanır?</button></div>
+    </div></div>${modalShell()}<div class="version">RANT ${APP_VERSION}</div>`;
 }
 
 function lobbyHTML() {
   const L = app.lobby;
   const host = isHost();
   const seats = L.seats.map(
-    (s) => html`<div class="seat ${s.id === app.me ? 'me' : ''}"><span class="av" style="--c:${s.color}">${s.avatar}</span>
-      <div class="grow"><b>${s.name}</b><div class="muted" style="font-size:12px">${s.id === L.hostId ? 'ev sahibi' : s.bot ? '🤖 bot' : s.connected ? 'bağlı' : '📴 bağlantı yok'}${s.id === app.me ? ' · sen' : ''}</div></div>
-      ${host && s.id !== L.hostId ? html`<button class="btn tiny ghost" data-act="removeSeat" data-id="${s.id}" title="Çıkar">✕</button>` : ''}</div>`,
+    (s) => html`<div class="seat ${s.id === app.me ? 'me' : ''} ${!s.bot && !s.connected ? 'off' : ''}" style="--pc:${s.color}">${PW(s.avatar, s.color, 32)}<span class="h16">${s.name}</span>
+      ${s.id === L.hostId ? html`<span data-tip="Ev sahibi">${I('crown')}</span>` : ''}${s.bot ? html`<span data-tip="Bot">${I('bot')}</span>` : ''}${!s.bot && !s.connected ? html`<span data-tip="Bağlantı yok">${I('plug')}</span>` : ''}${s.id === app.me ? html`<span class="muted small">sen</span>` : ''}
+      <span class="grow"></span>${host && s.id !== L.hostId ? html`<button class="btn S sq ton" data-act="removeSeat" data-id="${s.id}" aria-label="Çıkar">${I('close')}</button>` : ''}</div>`,
   );
   const empty = Math.max(0, 6 - L.seats.length);
-  for (let i = 0; i < empty; i++) {
-    seats.push(i === 0 && host ? html`<button class="seat empty" data-act="addBot" style="cursor:pointer">+ Bot ekle</button>` : html`<div class="seat empty">boş koltuk</div>`);
-  }
+  for (let i = 0; i < empty; i++) seats.push(html`<div class="seat empty">${host ? html`<button class="add" data-act="addBot">${I('plus')}Bot ekle</button>` : html`<span class="add" style="cursor:default">boş koltuk</span>`}</div>`);
   const seg = (name, opts, cur, label) =>
-    html`<div class="field">${label}<div class="seg">${opts.map(([v, t]) => html`<button class="${cur === v ? 'on' : ''}" data-act="${name}" data-v="${v}" ${host ? '' : 'disabled'}>${t}</button>`)}</div></div>`;
+    html`<div class="col" style="gap:6px"><span class="label">${label}</span><div class="seg">${opts.map(([v, t]) => html`<button class="btn S ${cur === v ? 'on' : ''}" data-act="${name}" data-v="${v}" ${host ? '' : 'disabled'}>${t}</button>`)}</div></div>`;
   const online = app.mode !== 'local';
-  return html`<div class="screen"><div class="card-panel lobby">
-    <div class="row"><h2 class="grow">${online ? 'Oda hazır' : 'Bot masası'}</h2><button class="btn small ghost" data-act="rules">❓ Kurallar</button><button class="btn small ghost" data-act="leave">Çık</button></div>
-    ${online ? html`<div class="row"><div><div class="muted" style="font-size:12px">ODA KODU</div><div class="room-code">${L.code}</div></div><div class="grow"></div><button class="btn turq" data-act="copyLink">🔗 Davet linkini kopyala</button></div>
-      <p class="muted" style="margin:0">Linki arkadaşlarına gönder. Açınca adını yazıp "Katıl"a basmaları yeter. Kurulum ya da sunucu yok.</p>` : html`<p class="muted" style="margin:0">Tek bilgisayarda botlara karşı oynarsın. Arkadaşlarla oynamak için menüden "Oda Kur".</p>`}
-    <div class="seats">${seats}</div>
-    <div class="row" style="gap:18px;align-items:flex-start">
-      ${seg('cfgEnd', [['rounds', 'Tur sayısı'], ['score', 'Değer hedefi'], ['iflas', 'Son kalan']], L.config.endMode || 'rounds', 'Oyun sonu')}
-      ${L.config.endMode === 'score'
-        ? seg('cfgTarget', E.TARGET_OPTIONS.map((t) => [t, E.fmt(t)]), L.config.targetScore, 'Hedef değer (ulaşılan tur Seçim Günü olur)')
-        : L.config.endMode === 'iflas'
-          ? html`<div class="field">Son kalan kazanır<div class="end-note">Borcunu kapatamayan iflas edip elenir. Kiralar her tur artar; en geç ${E.IFLAS_ROUND_CAP}. turda biter.</div></div>`
-          : seg('cfgRounds', E.ROUND_OPTIONS.map((r) => [r, `${r} tur`]), L.config.maxRounds, 'Oyun uzunluğu')}
-      ${seg('cfgTurn', [[60, '60 sn'], [120, '2 dk'], [180, '3 dk'], [0, 'Yok']], L.config.turnLimit, 'Sıra süresi (dolunca bot oynar)')}
-      ${seg('cfgSpeed', [['slow', 'Yavaş'], ['normal', 'Normal'], ['fast', 'Hızlı']], L.config.speed || 'normal', 'Oyun hızı')}
+  const rules = L.config.rules || E.DEFAULT_CONFIG.rules;
+  const RULE_IC = { ihale: 'gavel', surpriz: 'surpriz', gundem: 'news' };
+  const humans = L.seats.filter((s) => !s.bot).length;
+  const levelName = (b) => b[0].toLocaleUpperCase('tr-TR') + b.slice(1);
+  return html`<div class="lobby">
+    <div class="lobby-head"><span class="logo sm">RANT</span><span class="grow"></span><button class="btn sq" data-act="rules" aria-label="Kurallar">${I('book')}</button><button class="btn sq" data-act="theme" aria-label="Tema">${I(document.body.classList.contains('dark') ? 'sun' : 'moon')}</button><button class="btn sq" data-act="leave" aria-label="Çık">${I('door')}</button></div>
+    <div class="lobby-main">
+      <section class="panel lobby-seats">
+        ${online ? html`<div class="row" style="gap:14px"><span class="label">Oda</span><span class="room-code">${L.code}</span><span class="grow"></span><button class="btn sec" data-act="copyLink">${I('link')}Davet linkini kopyala</button></div>
+          <span class="muted small">Linki arkadaşlarına gönder; açıp adını yazınca masaya otururlar.</span>` : html`<span class="h18">Bot masası</span><span class="muted small">Tek bilgisayarda botlara karşı. Arkadaşlarla oynamak için menüden "Oda kur".</span>`}
+        ${seats}
+      </section>
+      <section class="panel lobby-cfg"><span class="h18">Masa${host ? '' : html` <span class="muted small">(ev sahibi seçer)</span>`}</span>
+        ${seg('cfgEnd', [['rounds', 'Tur'], ['score', 'Değer hedefi'], ['iflas', 'Son kalan']], L.config.endMode || 'rounds', 'Oyun sonu')}
+        ${L.config.endMode === 'score'
+          ? seg('cfgTarget', E.TARGET_OPTIONS.map((t) => [t, E.fmt(t).replace(' ₺', '')]), L.config.targetScore, 'Hedef değer')
+          : L.config.endMode === 'iflas'
+            ? html`<span class="note">${I('iflas')}Borcunu kapatamayan iflas edip elenir. Kiralar her tur artar; en geç ${E.IFLAS_ROUND_CAP}. turda biter.</span>`
+            : seg('cfgRounds', E.ROUND_OPTIONS.map((r) => [r, `${r} tur`]), L.config.maxRounds, 'Uzunluk')}
+        ${seg('cfgTurn', [[60, '60 sn'], [120, '2 dk'], [180, '3 dk'], [0, 'Yok']], L.config.turnLimit, 'Sıra süresi')}
+        ${seg('cfgSpeed', [['slow', 'Yavaş'], ['normal', 'Normal'], ['fast', 'Hızlı']], L.config.speed || 'normal', 'Oyun hızı')}
+        ${seg('cfgBot', E.BOT_LEVELS.map((b) => [b, levelName(b)]), L.config.botLevel || 'normal', 'Botlar')}
+        <div class="col" style="gap:6px"><span class="label">Kurallar</span><div class="rules-row">${Object.entries(E.RULE_LABELS).map(([k, r]) => html`<button class="btn S sec ${rules[k] ? '' : 'off'}" data-act="cfgRule" data-k="${k}" ${host ? '' : 'disabled'} data-tip="${rules[k] ? 'Açık' : `Kapalı: ${r.off}`}">${I(RULE_IC[k])}${r.name}</button>`)}</div></div>
+      </section>
     </div>
-    ${rulesHTML(L.config.rules || E.DEFAULT_CONFIG.rules, host)}
-    ${app.error ? html`<div class="notice error">${app.error}</div>` : ''}
-    ${host ? html`<button class="btn primary big" data-act="start" ${L.seats.length < 2 ? 'disabled' : ''}>Oyunu Başlat (${L.seats.length} oyuncu)</button>
-      <div class="muted" style="font-size:12px">Oyun 4-5 kişi için ayarlı. Eksik koltukları botla doldurabilirsin.</div>` : html`<div class="notice">Ev sahibinin oyunu başlatması bekleniyor…</div>`}
-  </div></div>${modalShell()}<div class="version">RANT ${APP_VERSION}</div>`;
+    ${app.error ? html`<div class="box-err">${I('warning')}<span>${app.error}</span></div>` : ''}
+    <div class="lobby-foot">${host ? html`<span class="muted">${humans} oyuncu · ${L.seats.length - humans} bot</span><span class="grow"></span><button class="btn L pri" data-act="start" ${L.seats.length < 2 ? 'disabled' : ''}>${I('play')}Oyunu başlat</button>` : html`<div class="box-note grow"><span class="spinner"></span><span>Ev sahibinin oyunu başlatması bekleniyor</span></div>`}</div>
+  </div>${modalShell()}<div class="version">RANT ${APP_VERSION}</div>`;
 }
 
-// Masa ayarları: ev sahibi tıklayarak açar/kapatır, diğerleri yalnız görür.
-function rulesHTML(rules, host) {
-  const items = Object.entries(E.RULE_LABELS).map(
-    ([k, r]) => html`<button class="rule ${rules[k] ? 'on' : ''}" data-act="cfgRule" data-k="${k}" ${host ? '' : 'disabled'} title="${rules[k] ? 'Açık' : `Kapalı: ${r.off}`}">
-      <span class="ri">${r.icon}</span><span class="rn">${r.name}</span><span class="rs">${rules[k] ? 'Açık' : 'Kapalı'}</span></button>`,
-  );
-  return html`<div class="field">Masa ayarları${host ? '' : ' (ev sahibi seçer)'}<div class="rules-grid">${items}</div></div>`;
-}
-
-const modalShell = () => (app.ui.menuModal ? html`<div class="modal-back" data-act="backdrop"><div class="modal"><button class="x" data-act="close">✕</button><h2>❓ Nasıl oynanır?</h2>${raw(RULES_HTML)}</div></div>` : '');
+const modalShell = () => (app.ui.menuModal ? html`<div class="screen" style="position:fixed;inset:0;background:color-mix(in srgb, var(--page) 70%, transparent);z-index:60" data-act="backdrop">${G.rulesSheet()}</div>` : '');
 
 function render() {
   if (app.screen === 'game' && app.view) {
@@ -370,7 +356,7 @@ async function copyLink() {
   const link = inviteLink();
   try {
     await navigator.clipboard.writeText(link);
-    G.toast(`Davet linki kopyalandı: ${link}`, 'good');
+    G.toast('Davet linki kopyalandı', '', 'link');
   } catch {
     prompt('Bu linki arkadaşlarına gönder:', link);
   }
@@ -428,6 +414,7 @@ const A = {
   cfgSpeed: (el) => send({ t: 'lobby', cmd: 'config', speed: el.dataset.v }),
   cfgEnd: (el) => send({ t: 'lobby', cmd: 'config', endMode: el.dataset.v }),
   cfgTarget: (el) => send({ t: 'lobby', cmd: 'config', targetScore: Number(el.dataset.v) }),
+  cfgBot: (el) => send({ t: 'lobby', cmd: 'config', botLevel: el.dataset.v }),
   cfgRule: (el) => {
     const cur = (app.lobby.config.rules || E.DEFAULT_CONFIG.rules)[el.dataset.k];
     send({ t: 'lobby', cmd: 'config', rules: { [el.dataset.k]: !cur } });
@@ -451,9 +438,36 @@ const A = {
   },
   async notify() {
     const on = await toggleNotify();
-    if (!on && Notification.permission === 'denied') G.toast('Bildirim izni tarayıcıda kapalı; adres çubuğundaki kilit simgesinden açabilirsin.', 'error');
-    else G.toast(on ? '🔔 Sıra sana gelince bildirim gelecek.' : '🔕 Bildirimler kapandı.', on ? 'good' : '');
+    if (!on && Notification.permission === 'denied') G.toast('Bildirim izni tarayıcıda kapalı; adres çubuğundaki kilit simgesinden açabilirsin.', 'error', 'bellOff');
+    else G.toast(on ? 'Sıra sana gelince bildirim gelecek.' : 'Bildirimler kapandı.', '', on ? 'bell' : 'bellOff');
     G.updateGame();
+  },
+  gundem() {
+    app.ui.gundemOpen = !app.ui.gundemOpen;
+    G.updateGame();
+  },
+  // Sağ alttaki araçlar: aynı araca yeniden basınca kapanır.
+  tool(el) {
+    const k = el.dataset.k;
+    if (app.ui.dialog && app.ui.dialog.type === k) return closeDialog();
+    if (k === 'trade') return A.trade();
+    if (k === 'build') app.ui.build = {};
+    openDialog({ type: k });
+  },
+  // İnşaat panelinde kat sayısını değiştirir (henüz gönderilmez).
+  bstep(el) {
+    const sq = Number(el.dataset.sq);
+    const b = (app.ui.build ||= {});
+    b[sq] = (b[sq] || 0) + Number(el.dataset.d);
+    G.renderModal();
+  },
+  // Seçilen katları sırayla diker ya da satar.
+  buildGo() {
+    for (const [sq, d] of Object.entries(app.ui.build || {})) {
+      for (let i = 0; i < Math.abs(d); i++) act({ type: d > 0 ? 'build' : 'sellFloor', sq: Number(sq) });
+    }
+    app.ui.build = {};
+    closeDialog();
   },
 
   roll: () => act({ type: 'roll' }),
@@ -525,10 +539,15 @@ const A = {
     app.ui.pick = null;
     G.updateGame();
   },
-  player: (el) => openDialog({ type: 'player', p: Number(el.dataset.p) }),
+  player(el) {
+    const p = Number(el.dataset.p);
+    if (app.ui.dialog && app.ui.dialog.type === 'player' && app.ui.dialog.p === p) return closeDialog();
+    openDialog({ type: 'player', p });
+  },
   history: () => openDialog({ type: 'history' }),
   manage: () => openDialog({ type: 'manage' }),
   trade() {
+    if (!G.canManage(V())) return G.toast('Pazarlık teklifini sıra sendeyken yapabilirsin.', '', 'deal');
     app.ui.trade = { to: null, give: { props: [] }, take: { props: [] } };
     app.ui.binds.tradeGive = '0';
     app.ui.binds.tradeTake = '0';
@@ -561,13 +580,21 @@ const A = {
   backdrop(el, e) {
     if (e.target === el) closeDialog();
   },
-  closeStage: (el) => el.remove(),
-  results: () => openDialog({ type: 'results' }),
+  closeStage: () => G.stageClose(),
+  results() {
+    app.ui.resultsOpen = true;
+    G.updateGame();
+  },
+  resultsClose() {
+    app.ui.resultsOpen = false;
+    G.updateGame();
+  },
   theme() {
     const dark = !document.body.classList.contains('dark');
     document.body.classList.toggle('dark', dark);
     store.set('theme', dark ? 'dark' : 'light');
-    G.updateGame();
+    if (app.screen === 'game') G.updateGame();
+    else render();
   },
 };
 
@@ -585,12 +612,16 @@ document.addEventListener('rant:card', (e) => {
 });
 
 document.addEventListener('click', (e) => {
-  if (app.ui.audioOpen && !e.target.closest('.audio-pop, #tAudio')) {
+  if (app.ui.audioOpen && !e.target.closest('.sound-pop, #tAudio')) {
     app.ui.audioOpen = false;
     G.updateGame();
   }
   // Kira penceresi dışına tıklanınca kapanır.
-  if (app.ui.popSq !== null && app.ui.popSq !== undefined && !e.target.closest('.pop, .cell')) closePop();
+  if (app.ui.popSq !== null && app.ui.popSq !== undefined && !e.target.closest('.pop, .cell, #prompt')) closePop();
+  if (app.ui.gundemOpen && !e.target.closest('#gundem')) {
+    app.ui.gundemOpen = false;
+    G.updateGame();
+  }
   const el = e.target.closest('[data-act]');
   if (!el || el.disabled) return;
   const fn = A[el.dataset.act];
@@ -603,8 +634,7 @@ document.addEventListener('input', (e) => {
   const k = e.target.dataset && e.target.dataset.audio;
   if (k) {
     setAudio({ [k]: Number(e.target.value) / 100 });
-    const show = document.querySelector(`[data-audio-show="${k}"]`);
-    if (show) show.textContent = `%${e.target.value}`;
+    e.target.style.setProperty('--p', `${e.target.value}%`);
     return;
   }
   if (G.bindsInput(e)) return;
@@ -617,6 +647,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('keydown', (e) => {
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
   if (e.key === 'Escape' && (app.ui.dialog || app.ui.menuModal)) return closeDialog();
+  if (e.key === 'Escape' && app.ui.resultsOpen) return A.resultsClose();
   if (e.key === 'Escape' && app.ui.pick) return A.pickCancel();
   if (e.key === 'Escape' && app.ui.popSq !== null && app.ui.popSq !== undefined) return closePop();
   if (e.key === 'Enter' && typing) {
@@ -639,7 +670,7 @@ setInterval(() => {
   const v = app.view;
   const mine = !!(v && v.phase !== 'over' && v.you >= 0 && E.waitingFor(v).includes(v.you));
   watchTurn(mine, 'Masaya dön, seni bekliyorlar.');
-  document.title = document.hidden && mine ? (document.title.startsWith('🔔') ? 'RANT' : '🔔 Sıra sende! — RANT') : 'RANT — Kentsel Dönüşümün Kart Oyunu';
+  document.title = document.hidden && mine ? (document.title.startsWith('•') ? 'RANT' : '• Sıra sende! — RANT') : 'RANT — Kentsel Dönüşümün Kart Oyunu';
 }, 1000);
 
 window.addEventListener('beforeunload', (e) => {

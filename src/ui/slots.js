@@ -1,19 +1,14 @@
-// Taşların karedeki yeri: kare adını kapatmasınlar diye karenin boş kenarında yan yana dizilirler. DOM yok.
-// Tüm değerler kare genişliğine/yüksekliğine oranla (0-1).
+// Piyonların karedeki yeri: piyonlar karenin üst kısmında, semt adı altta kalır (birbirini kapatmaz). DOM yok.
 
-export const TOKEN = 0.28; // taş çapı, kare genişliğine oranla
+export const PAWN = 0.47; // piyon kutusu, kare yüksekliğine oranla (76 px karede 36 px)
 
-// Taş sırasının dikey yeri. İkonlu karelerde ad üstte, ikon altta (köşelerde tersi): taşlar ikonun üstünde durur;
-// mülk karelerinde şerit iç kenarda, ad şeride yaslı: taşlar dış kenarda (üst sırada üstte, diğerlerinde altta).
-export function laneY(side, art) {
-  if (art) return side === 'c' ? 0.38 : 0.68;
-  return side === 't' ? 0.03 : 0.9;
-}
+// Piyonların üst kenarı: alt sıradaki karelerde şerit üstte olduğu için biraz aşağıda, diğerlerinde en üstte.
+export const laneTop = (side, ch) => Math.round(side === 'b' ? ch * 0.14 : ch * 0.03);
 
-// n taşın yan yana yerleri; sığmazlarsa kare genişliğini aşmadan üst üste biner.
-export function tokenSlots(n, y) {
-  if (n <= 1) return [{ x: 0.5, y }];
-  const step = Math.min(TOKEN * 1.08, (0.96 - TOKEN) / (n - 1));
-  const x0 = 0.5 - (step * (n - 1)) / 2;
-  return Array.from({ length: n }, (_, k) => ({ x: x0 + step * k, y }));
+// n piyonun kare içindeki sol kenarları (px). Sığmazlarsa kareyi aşmadan üst üste biner, ortalı durur.
+export function pawnXs(n, cw, s, pad = 4) {
+  if (n <= 1) return [Math.round((cw - s) / 2)];
+  const step = Math.min(s * 0.92, (cw - 2 * pad - s) / (n - 1));
+  const x0 = (cw - (s + step * (n - 1))) / 2;
+  return Array.from({ length: n }, (_, k) => Math.round(x0 + step * k));
 }

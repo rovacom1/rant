@@ -5,17 +5,21 @@
 - Arkadaşlar farklı şehirlerden, kendi bilgisayarlarından oynar. Kurulum ve hesap istemeyen akış kutsaldır: link aç, adını yaz, katıl.
 - Kurallar `docs/TASARIM.md`'de. Kural değişirse önce orayı güncelle, sonra kodu.
 
-## Arayüz ilkeleri (kullanıcı geri bildirimi, 2026-10-25)
+## Arayüz ilkeleri (kullanıcı kararları, 2026-10-26; tasarım A "Geniş Tahta")
+- Tasarımın kaynağı: https://claude.ai/artifact/8b2weEn38FFwrKuTF34UvG (bütün ekranlar, iki tema). Yeni ekran bu dille çizilir.
 - Ekranda az yazı ve sayı. Yeni bilgi önce bir tıklamanın arkasına (küçük pencere, ipucu) konur.
-- Karelerde fiyat ve kira yazmaz; kareye tıklayınca kaç katta kaç kira olduğunu gösteren küçük pencere açılır.
-- Sahiplik karenin iç kenarındaki şeritle gösterilir: şerit sahipsizken gri, alınınca sahibinin rengi. Karenin zemini değişmez, şehir renkleri kullanılmaz.
-- Elde kartlar ekranın altında Hearthstone tarzı yelpazedir: üstüne gelince büyür, yukarı sürüklenip bırakılınca oynanır. Her kartın resmi var (`assets/kart`); yeni kart eklenirse `docs/GORSEL_STIL.md`'deki komutla aynı tarzda görsel üretilir.
-- Sesler ve müzik `assets/ses` altında; ayarı sağ üstteki ses penceresinden (müzik ve efektler ayrı).
-- Para seçimi (pazarlık, ihale) elle yazarak değil, oyuncu rengindeki kaydırma çubuğuyla yapılır.
-- Yazı tipleri: başlık/düğme/sayı Fredoka, metin Nunito. Zarlar 3 boyutlu döner.
-- Özel kareler ve ulaşım, Monopoly tahtası gibi sade SVG ikonlarla çizilir (`src/ui/icons.js`); kare resmi kullanılmaz. Mülkler şehrin iki rengini gösteren buzlu cam ve aynı renklerde set çerçevesiyle çizilir (Trabzon bordo-mavi gibi). Alınınca cam ve çerçeve değişmez; sahibi yalnız iç kenardaki parlak şerit gösterir. Plaka rozeti ve semt fotoğrafı denendi, kullanıcı istemedi. Son olaylar tahtanın ortasının altında akar. Katlar karede 🏠×N, kaçak kat 🚧 olarak yazar.
-- Sohbet yok (kullanıcı kaldırttı). Olaylar paneli sade ve büyük yazılı: zar, yürüme, maaş gibi gürültü gösterilmez; her tur bir başlıkla ayrılır.
-- Tahtanın karanlık modu var (sağ üstte 🌙/☀️); yeni arayüz parçaları iki temada da denenmeli.
+- Yerleşim: tahta ekranın tüm yüksekliğini kaplar, genişliği en fazla yüksekliğin 1,45 katı; sağda 340 px sütun (oyuncular, el, Pazarlık/İpotek/İnşaat). Üst çubuk yok. Pencereler ve bildirimler tahtanın ortasında açılır, kenar kareleri kapatmaz.
+- Karelerde fiyat ve kira yazmaz; kareye tıklayınca tapu kartı ve kira cetveli açılır. Kendi karende kat dik / kaçak kat / kat sat / ipotek oradan; ayrıca sağ alttaki İnşaat panelinden.
+- Mülkler şehrin tek rengindeki buzlu cam ve aynı renkte set çerçevesiyle çizilir (renkler renk körlüğüne göre seçildi, oyuncu renklerine benzemez). Sahipliği yalnız iç kenardaki şerit gösterir: sahipsizken ince ve soluk, sahipliyken kalın ve sahibinin renginde. Sırası gelen oyuncunun karesi onun renginde parlar.
+- Emoji yok. Bütün simgeler SVG (`src/ui/icons.js`): kat ev simgesi ×N, kaçak kat koni. Yazı tipi okları da kullanılmaz. `npm run check` emojiyi yakalar.
+- Oyuncu piyonları resimdir (`assets/piyon`, 6 tane); oyuncu rengi halka değil, figürün kendi kenarına çizilir. Tahtada piyon kare yüksekliğinin yaklaşık yarısıdır.
+- Elde kartlar sağ sütunda: üstüne gelince büyür, tahtaya sürüklenip bırakılınca oynanır. Her kartın resmi var (`assets/kart`); yeni görsel `docs/GORSEL_STIL.md`'deki tarzda üretilir.
+- Düğmeler 3 boy (56/46/36 px) ve 4 tür (ana pirinç #c8912f, ikincil, hayalet, sakin). Aynı rol aynı boy, ekranda tek ana düğme. Simge yazı boyunun 1,2 katı, yazıyla aynı çizgide.
+- Para seçimi elle yazarak değil, oyuncu rengindeki kaydırma çubuğuyla yapılır. Açık artırmada büyük yazan sayı toplam tekliftir, artış ayrıca küçük yazar. Lira işareti SVG.
+- Yazı tipleri: başlık/düğme/sayı Bricolage Grotesque, metin Geist. Zarlar 3 boyutlu döner, atıştan kısa süre sonra gizlenir.
+- Sesler ve müzik `assets/ses` altında; ayarı sağ üstteki ses penceresinden (müzik ve efektler ayrı, bildirim de orada).
+- Sohbet yok (kullanıcı kaldırttı). Son 3 olay tahtanın ortasının altında; zar, yürüme, maaş gibi gürültü gösterilmez. Tıklayınca turlara ayrılmış geçmiş açılır.
+- Karanlık mod var (sağ üstte ay/güneş); yeni arayüz parçaları iki temada da denenmeli.
 
 ## Mimari
 - Derleme adımı yok, npm bağımlılığı yok. Tarayıcıda ES modülleri; testler `node:test`.

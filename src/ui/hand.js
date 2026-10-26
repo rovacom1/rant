@@ -2,21 +2,20 @@
 // Üstüne gelince kart büyür; oynanabilir kart tahtaya sürüklenip bırakılınca oynanır, tıklayınca ayrıntısı açılır.
 // Bileşen olayları belgeye 'rant:card' olarak yollar: { uid, how: 'click' | 'drop' }.
 import { CARDS, cardId } from '../engine/index.js';
-import { html } from './dom.js';
+import { html, raw } from './dom.js';
+import { ic } from './icons.js';
 import { APP_VERSION } from '../version.js';
 
 export const cardArt = (id) => `assets/kart/${id}.jpg?v=${APP_VERSION}`; // sürüm, yeni görselin önbellekten eskisiyle gelmesini önler
-const WHEN = { preroll: 'Zar atmadan önce', choose: 'Zar attıktan sonra', buy: 'Satın alırken' };
+export const WHEN = { preroll: 'Zar atmadan önce', choose: 'Zar attıktan sonra', buy: 'Satın alırken' };
 
-// Tek kartın yüzü (elde, pencerede ve ortadaki gösterimde aynı tasarım).
+// Tek kartın yüzü: resim, türü (hamle şimşek, tepki kalkan) ve adı. Açıklaması pencerede ve ipucunda.
 export function cardFace(id, cls = '') {
   const c = CARDS[id];
-  return html`<div class="kart ${c.type} ${cls}">
-    <div class="k-art"><span>${c.icon}</span><i style="background-image:url(${cardArt(id)})"></i></div>
-    <div class="k-gem">${c.type === 'tepki' ? 'TEPKİ' : 'HAMLE'}</div>
-    <div class="k-name"><span>${c.name}</span></div>
-    <div class="k-text">${c.text}</div>
-    <div class="k-foot">${c.type === 'tepki' ? 'Gerektiğinde sorulur' : WHEN[c.when] || 'Sıran sendeyken'}</div>
+  return html`<div class="kart ${c.type} ${cls}" aria-label="${c.name} kartı">
+    <div class="k-art" style="background-image:url(${cardArt(id)})"></div>
+    <span class="k-type">${raw(ic(c.type))}</span>
+    <div class="k-name">${c.name}</div>
   </div>`;
 }
 

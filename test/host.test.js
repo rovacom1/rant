@@ -12,7 +12,7 @@ function fakeConn() {
 }
 
 const HOST_TOKEN = 'h'.repeat(32);
-const hello = (token, name) => ({ t: 'hello', v: PROTOCOL, token, name, avatar: '🦊' });
+const hello = (token, name) => ({ t: 'hello', v: PROTOCOL, token, name, avatar: 'galata' });
 
 function room() {
   const host = new Host({ code: 'TEST1', hostToken: HOST_TOKEN, hostName: 'Ev', hostAvatar: '🦊' });

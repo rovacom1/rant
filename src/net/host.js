@@ -70,7 +70,7 @@ export const idFromToken = (token) => {
 };
 
 const cleanName = (n) => String(n || '').replace(/\s+/g, ' ').trim().slice(0, 16) || 'Oyuncu';
-const cleanAvatar = (a) => (E.AVATARS.includes(a) ? a : E.AVATARS[0]);
+const cleanAvatar = (a) => (E.AVATARS.includes(a) ? a : E.AVATARS[0]); // eski profillerdeki emoji piyona döner
 
 export class Host {
   constructor({ code, hostToken, hostName, hostAvatar, save = () => {}, saved = null }) {
@@ -108,9 +108,20 @@ export class Host {
   addSeat({ id, name, avatar, bot }) {
     const used = new Set(this.seats.map((s) => s.color));
     const color = E.PLAYER_COLORS.find((c) => !used.has(c)) || E.PLAYER_COLORS[0];
-    const seat = { id, name, avatar, color, bot, connected: bot };
+    const seat = { id, name, avatar: null, color, bot, connected: bot };
     this.seats.push(seat);
+    this.setAvatar(seat, avatar);
     return seat;
+  }
+
+  // Masada her piyon bir kez: istenen piyon bir bottaysa bot başka piyona geçer, bir insandaysa boştaki ilk piyon verilir.
+  setAvatar(seat, want) {
+    const holder = this.seats.find((s) => s !== seat && s.avatar === want);
+    const free = () => E.AVATARS.find((a) => !this.seats.some((s) => s !== seat && s.avatar === a)) || want;
+    if (holder && holder.bot && !seat.bot) {
+      seat.avatar = want;
+      holder.avatar = E.AVATARS.find((a) => !this.seats.some((s) => s.avatar === a)) || holder.avatar;
+    } else seat.avatar = holder ? free() : want;
   }
 
   // Lobiye bot oturtur; eklenemezse (oyun başladı ya da masa dolu) false.
@@ -200,7 +211,7 @@ export class Host {
     }
     if (seat && !this.game) {
       seat.name = cleanName(m.name);
-      seat.avatar = cleanAvatar(m.avatar);
+      this.setAvatar(seat, cleanAvatar(m.avatar));
     }
     client.playerId = id;
     if (seat) seat.connected = true;
@@ -215,7 +226,7 @@ export class Host {
     const seat = this.seatOf(client.playerId);
     if (!seat) return;
     seat.name = cleanName(m.name);
-    seat.avatar = cleanAvatar(m.avatar);
+    this.setAvatar(seat, cleanAvatar(m.avatar));
     this.broadcast();
   }
 

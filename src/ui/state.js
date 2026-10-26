@@ -13,7 +13,8 @@ function newToken() {
 export const profile = {
   token: store.get('token') || newToken(),
   name: store.get('name', ''),
-  avatar: store.get('avatar', AVATARS[Math.floor(Math.random() * AVATARS.length)]),
+  // Eski sürümden kalan emoji simge yeni piyonlardan birine döner.
+  avatar: AVATARS.includes(store.get('avatar')) ? store.get('avatar') : AVATARS[Math.floor(Math.random() * AVATARS.length)],
 };
 
 export const app = {

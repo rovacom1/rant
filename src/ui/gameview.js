@@ -1,20 +1,26 @@
-// Oyun ekranı: tahta, orta alan, yan panel, pencereler ve olay efektleri.
+// Oyun ekranı (tasarım A, Geniş Tahta): tahta, tahtanın ortası (istem, gündem, son olaylar), sağ sütun
+// (oyuncular, el, araçlar), kare penceresi, tahtanın ortasında açılan pencereler ve olay efektleri.
 import * as E from '../engine/index.js';
-import { html, raw, esc, $, setHTML, sleep } from './dom.js';
+import { html, raw, setHTML } from './dom.js';
 import { play, isMuted, getAudio, startMusic, stopMusic } from './sound.js';
-import { Hand, cardFace, flyToCenter } from './hand.js';
+import { Hand, cardFace, flyToCenter, WHEN } from './hand.js';
 import { isNotifyOn, notifySupported } from './notify.js';
-import { buildBoard, updateBoard, Tokens, Dice, inkFor, cellPos } from './board.js';
-import { app, act, send, isHost } from './state.js';
+import { buildBoard, updateBoard, Tokens, Dice, cellPos, isLight } from './board.js';
+import { app, isHost } from './state.js';
 import { RULES_HTML } from './rules.js';
 import { initTips } from './tip.js';
 import { SPEEDS } from '../net/host.js';
 import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
 import { coinFlights, arcPeak, COIN_GAP } from './coins.js';
 import { worthLines } from './chart.js';
+import { ic, money, CARD_IC, GUNDEM_IC, SURPRIZ_IC } from './icons.js';
+import { pawn } from './pawns.js';
 
 const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, GUNDEM_PERIOD, fmt, cardId } = E;
 const N = BOARD.length;
+const I = (name, cls = '') => raw(ic(name, cls));
+const M = (n, sign = false) => raw(money(n, sign));
+const PW = (pl, s) => raw(pawn(pl.avatar, pl.color, s));
 
 let els = null;
 let cells = null;
@@ -25,55 +31,48 @@ let animating = false;
 
 // ---------- iskelet ----------
 
-
 export function mountGame(root) {
   root.innerHTML = `
   <div class="game">
-    <header class="topbar">
-      <div class="mini-logo">RANT</div>
-      <div class="stat" data-tip="Kaçıncı turdayız (tur sayısıyla bitişte: toplam tur)">Tur<b id="tRound"></b></div>
-      <div class="stat hidden" id="tTarget" data-tip="Biri bu değere ulaşınca o tur biter, Seçim Günü gelir">Hedef<b></b></div>
-      <div class="stat hidden" id="tKira" data-tip="Son kalan modunda kiralar her tur artar; bütün kiralar bu katsayıyla çarpılır">Kira<b></b></div>
-      <div class="stat" data-tip="Fiyat ve kiraların çarpanı: 115 = her şey %15 pahalı. Enflasyon gündemiyle artar">Endeks<b id="tIndex"></b></div>
-      <div class="stat" data-tip="Başlangıç Noktası'ndan geçince ya da gelince alınan para">Maaş<b id="tSalary"></b></div>
-      <div class="spacer"></div>
-      <span class="conn" id="tConn"></span>
-      <button class="iconbtn" data-act="copyLink" id="tCode" title="Davet linkini kopyala"></button>
-      <button class="iconbtn" data-act="rules">❓ Kurallar</button>
-      <button class="iconbtn" data-act="theme" id="tTheme" title="Karanlık / aydınlık tahta"></button>
-      <button class="iconbtn" data-act="audio" id="tAudio" title="Müzik ve ses ayarları"></button>
-      <button class="iconbtn${notifySupported() ? '' : ' hidden'}" data-act="notify" id="tNotify" title="Sekme arkadayken sıra sana gelince masaüstü bildirimi"></button>
-      <button class="iconbtn" data-act="leave">Çık</button>
-    </header>
-    <main class="table">
-      <section class="board-wrap">
-        <div class="board" id="board">
-          <div class="board-center">
-            <div id="gundem"></div>
-            <div class="prompt" id="prompt"></div>
-            <div class="dice off" id="dice"></div>
-            <div class="board-feed" id="feed" data-act="history" title="Tüm olaylar"></div>
-          </div>
-          <div class="tokens" id="tokens"></div>
-          <div id="pop"></div>
-        </div>
+    <div class="board" id="board">
+      <div class="center" id="center">
+        <div id="gundem"></div>
+        <div id="banner"></div>
+        <div class="dice off" id="dice"></div>
+        <div class="prompt" id="prompt"></div>
+        <div class="events" id="feed" data-act="history" data-tip="Tüm olaylar için tıkla"></div>
+      </div>
+      <div class="tokens" id="tokens"></div>
+      <div id="pop"></div>
+      <div id="stage"></div>
+      <div id="modal"></div>
+      <div class="toasts" id="toasts"></div>
+    </div>
+    <aside class="side">
+      <div class="side-head">
+        <span class="logo sm">RANT</span><span class="round-chip" id="round"></span><span class="grow"></span>
+        <button class="btn sq" data-act="audio" id="tAudio" aria-label="Ses ve bildirim ayarları"></button>
+        <button class="btn sq" data-act="theme" id="tTheme" aria-label="Tema"></button>
+        <button class="btn sq" data-act="rules" aria-label="Kurallar">${ic('book')}</button>
+        <button class="btn sq" data-act="leave" aria-label="Oyundan çık">${ic('door')}</button>
+      </div>
+      <div class="panel players" id="players"></div>
+      <div id="audioPop"></div>
+      <section class="hand-panel" id="handPanel">
+        <div class="hand-head"><span class="kicker">Elin</span><span class="muted small" id="handN"></span><span class="grow"></span><span class="deck" id="deck" data-tip="Destede kalan kart"></span></div>
+        <div class="hand-grid" id="handGrid"></div>
       </section>
-      <aside class="side">
-        <div class="seats-panel" id="players"></div>
-        <section class="hand-panel hidden" id="handPanel">
-          <div class="hand-head">KARTLARIN<span class="hand-n" id="handN"></span><span class="spacer"></span><span class="deck-chip" id="deck" data-tip="Destede kalan kart"></span></div>
-          <div class="hand-grid" id="handGrid"></div>
-        </section>
-      </aside>
-    </main>
+      <div class="player-panel hidden" id="playerPanel"></div>
+      <div class="tools" id="tools"></div>
+    </aside>
   </div>
-  <div id="modal"></div><div class="toasts" id="toasts"></div><div id="stage"></div><div id="audioPop"></div>`;
+  <div id="results"></div>`;
   const g = (id) => document.getElementById(id);
   els = {
-    round: g('tRound'), target: g('tTarget'), kira: g('tKira'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
-    board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'),
-    players: g('players'), feed: g('feed'), handPanel: g('handPanel'), handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
-    modal: g('modal'), stage: g('stage'),
+    round: g('round'), audio: g('tAudio'), theme: g('tTheme'), board: g('board'), center: g('center'), gundem: g('gundem'), banner: g('banner'),
+    prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'), players: g('players'), feed: g('feed'), handPanel: g('handPanel'),
+    handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), audioPop: g('audioPop'), playerPanel: g('playerPanel'), tools: g('tools'),
+    modal: g('modal'), stage: g('stage'), results: g('results'),
   };
   cells = buildBoard(els.board);
   tokens = new Tokens(els.tokens, cells);
@@ -92,12 +91,10 @@ export const unmountGame = () => {
 // ---------- yardımcılar ----------
 
 const P = (v, i) => v.players[i];
-const who = (v, i) => (i === v.you ? 'Sen' : P(v, i).name);
-const av = (pl, cls = '') => html`<span class="av ${cls}" style="--c:${pl.color}">${pl.avatar}</span>`;
+const meName = (v, i) => (i === v.you ? 'Sen' : P(v, i).name);
 const cityOf = (sq) => (BOARD[sq].group ? GROUPS[BOARD[sq].group].name : E.TRANSPORT_LABEL[BOARD[sq].mode]);
-const sqChip = (sq) => html`<span class="chip">${BOARD[sq].name}<small class="muted">${cityOf(sq)}</small></span>`;
 // Endeks ve şehir çarpanıyla ölçeklenmiş tutar (kira tablosu için).
-const scaled = (v, sq, x) => Math.round((x * (v.index / 100) * (BOARD[sq].group ? v.groupMult[BOARD[sq].group] || 1 : 1)) / 5) * 5;
+const scaled = (v, sq, x) => Math.max(5, Math.round((x * (v.index / 100) * (BOARD[sq].group ? v.groupMult[BOARD[sq].group] || 1 : 1)) / 5) * 5);
 const destOf = (v, steps, backward) => (v.players[v.you].pos + (backward ? -steps : steps) + N * 2) % N;
 const myTurnFree = (v) => v.phase === 'play' && !v.pending && v.turn && v.turn.p === v.you;
 export const canManage = (v) => myTurnFree(v) && ['preroll', 'free'].includes(v.turn.step);
@@ -117,93 +114,108 @@ function canPlay(v, uid) {
   }
   return E.cardTargets(v, v.you, id).length > 0;
 }
+export { canPlay };
 
 // Oyun hızı çarpanı (lobi ayarı); animasyon süreleri ev sahibinin beklemesiyle aynı oranda uzar.
 const spd = () => SPEEDS[app.lobby?.config?.speed] || 1;
 const hostNow = () => Date.now() + (app.clockOffset || 0);
 
-// Süre çubuğu: toplam süre (span) ev sahibinden gelir, işaretleme her çizimde aynı kalır, çubuk zıplamaz.
+// Süre çubuğu: ince ve sakin; saniye yalnız son 10 saniyede görünür. Toplam süre ev sahibinden gelir.
 function timerHTML(v, ids) {
   const dl = app.meta && app.meta.deadlines;
   if (!dl) return '';
   const ds = ids.map((i) => dl[P(v, i)?.id]).filter((d) => d && d.at);
   if (!ds.length) return '';
   const d = ds.reduce((a, b) => (b.at < a.at ? b : a));
-  return html`<div class="timer" data-deadline="${d.at}" data-span="${d.span}"><i></i></div><div class="muted" style="font-size:12px" data-countdown="${d.at}"></div>`;
+  return html`<div class="timer" data-deadline="${d.at}" data-span="${d.span}" aria-label="Kalan süre"><i></i></div><div class="countdown" data-countdown="${d.at}"></div>`;
 }
 
-// ---------- üst çubuk ----------
+// Tapu kartı: şehrin renginde şerit, ad, fiyat; ladder ile kira cetveli (seviye vurgulu).
+function deed(v, sq, o = {}) {
+  const s = BOARD[sq];
+  const tr = s.kind === 'transport';
+  const color = tr ? (document.body.classList.contains('dark') ? '#5b6b8c' : '#3b465c') : GROUPS[s.group].color;
+  const ps = v.props[sq];
+  const cls = ['deed', tr ? 'tr' : '', !tr && isLight(color) ? 'lt' : '', o.mini ? 'mini' : '', o.sel ? 'sel' : '', o.off ? 'off' : '', o.cls || ''].join(' ');
+  const style = `--dc:${color}${o.w ? `;--dw:${o.w}px` : ''}`;
+  let body;
+  if (o.mini) body = html`<span class="dname">${s.name}</span><span class="dprice">${M(E.price(v, sq))}</span>`;
+  else {
+    let rows;
+    if (tr) {
+      const n = ps.owner !== null ? E.transportCount(v, ps.owner, s.mode) : 0;
+      rows = E.TRANSPORT_RENT[s.mode].slice(1).map((x, l) => html`<div class="lrow ${n === l + 1 && o.level !== undefined ? 'cur' : ''}"><span>${l + 1} ${E.TRANSPORT_LABEL[s.mode].toLowerCase()}</span><b>${M(E.money(v, x))}</b></div>`);
+    } else {
+      const lv = o.level;
+      rows = [
+        html`<div class="lrow ${lv === 0 ? 'cur' : ''}"><span>Arsa</span><b>${M(scaled(v, sq, s.rents[0]))}</b></div>`,
+        html`<div class="lrow ${lv === 0.5 ? 'cur' : ''}"><span>${I('star')} Set</span><b>${M(scaled(v, sq, s.rents[0] * 2))}</b></div>`,
+        ...[1, 2, 3, 4].map((n) => html`<div class="lrow ${lv === n ? 'cur' : ''}"><span>${I('house')} ${n} kat</span><b>${M(scaled(v, sq, s.rents[n]))}</b></div>`),
+      ];
+    }
+    const compact = tr
+      ? html`<span class="dcompact"><span>Kira <b>${M(E.money(v, E.TRANSPORT_RENT[s.mode][1]))}</b></span><span>${s.mode === 'air' ? 'her biri 2 katı' : 'gar başına artar'}</span></span>`
+      : html`<span class="dcompact"><span>Kira <b>${M(scaled(v, sq, s.rents[0]))}</b></span><span>${I('star')} <b>${M(scaled(v, sq, s.rents[0] * 2))}</b></span></span>`;
+    const foot = tr ? '' : html`<div class="dfoot">${I('house')} Kat <b>${M(E.katCost(v, sq))}</b><span class="grow"></span>${I('kacak')} Kaçak <b>${M(E.kacakCost(v, sq))}</b></div>`;
+    body = html`<span class="dname">${s.name}</span><span class="dprice">${M(E.price(v, sq))}</span>${o.ladder ? html`<div class="ladder">${rows}${foot}</div>` : compact}`;
+  }
+  const attrs = o.attrs ? raw(o.attrs) : '';
+  return html`<div class="${cls}" style="${style}" ${attrs}><div class="band">${tr ? I(s.mode) : ''}<span>${cityOf(sq)}</span>${o.sel ? html`<span class="grow"></span>${I('check')}` : ''}</div><div class="dbody">${body}</div>${ps && ps.ipotek && !o.mini ? html`<div class="dmort">${I('ipotek')}<span>İpotekli</span></div>` : ''}</div>`;
+}
 
-export { canPlay };
+// Mülkün şu anki seviyesi tapu cetvelinde hangi satır: arsa 0, tam set 0.5, katlar 1-4.
+function levelRow(v, sq) {
+  const ps = v.props[sq];
+  if (!ps || ps.owner === null) return undefined;
+  if (BOARD[sq].kind !== 'prop') return 1;
+  const L = E.level(ps);
+  return L ? L : E.ownsGroup(v, ps.owner, BOARD[sq].group) ? 0.5 : 0;
+}
+
+// ---------- sağ sütun üstü ----------
 
 const MOD_LABEL = {
-  turizm: '🏖️ Turizm', ulasimZam: '🎫 Ulaşım x2', kiraTavani: '🧯 Kira yarı', kiraArtisi: '🔥 Kira x1,5', grev: '🪧 Maaş yok',
-  durgunluk: '🥶 Kat yok', kampanya: '🏷️ Kat yarı fiyat', faizIndirimi: '📉 İpotek indirimi', zabitaIzinde: '🏝️ Zabıta izinde',
+  turizm: 'Antalya, İzmir kira ×2', ulasimZam: 'Gar ve havalimanı ×2', kiraTavani: 'Kiralar yarı', kiraArtisi: 'Kiralar ×1,5', grev: 'Maaş yok',
+  durgunluk: 'Kat dikilmez', kampanya: 'Kat yarı fiyat', faizIndirimi: 'İpotek kaldırma yarı', zabitaIzinde: 'Zabıta izinde',
 };
 
-function updateTopbar(v) {
+function updateHead(v) {
   const goal = v.config.targetScore;
-  els.round.textContent = v.round ? (goal ? `${v.round}` : `${v.round}/${v.config.maxRounds}`) : '-';
-  els.target.classList.toggle('hidden', !goal);
-  if (goal) els.target.lastElementChild.textContent = fmt(goal);
-  els.kira.classList.toggle('hidden', !v.config.iflas);
-  if (v.config.iflas) els.kira.lastElementChild.textContent = `×${E.iflasMult(v).toLocaleString('tr-TR', { maximumFractionDigits: 1 })}`;
-  els.index.textContent = v.index;
-  els.salary.textContent = fmt(v.salary);
-  els.code.textContent = app.mode === 'local' ? '🤖 Yerel oyun' : `🔗 Oda ${app.code}`;
-  els.audio.textContent = isMuted() ? '🔇' : '🔊';
-  els.theme.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
-  els.notify.textContent = isNotifyOn() ? '🔔' : '🔕';
-  const st = app.status;
-  els.conn.textContent = st === 'reconnecting' ? '⚠ Bağlantı koptu, yeniden bağlanılıyor…' : st === 'online' ? '● Bağlı' : '';
-  els.conn.classList.toggle('bad', st === 'reconnecting');
+  const r = v.round || 0;
+  const tail = goal ? html`<span class="muted small" data-tip="Biri bu değere ulaşınca o tur biter, Seçim Günü gelir">· ${M(goal)}</span>` : html`<span class="muted small">/${v.config.maxRounds}</span>`;
+  const iflas = v.config.iflas ? html`${I('up')}<b class="num small" data-tip="Son kalan modunda kiralar her tur artar">×${E.iflasMult(v).toLocaleString('tr-TR', { maximumFractionDigits: 1 })}</b>` : '';
+  setHTML(els.round, html`<b class="num">${r}</b>${tail}${iflas}`);
+  setHTML(els.audio, I(isMuted() ? 'mute' : 'sound'));
+  setHTML(els.theme, I(document.body.classList.contains('dark') ? 'sun' : 'moon'));
+  els.audio.classList.toggle('on', !!app.ui.audioOpen);
 }
 
-// ---------- orta alan ----------
-
-const ringHTML = (p, big, small, tip = '') => html`<div class="ring" style="--p:${p}" data-tip="${tip}"><div><b>${big}</b><span>${small}</span></div></div>`;
-
-// Bitişe ne kaldı: tur sayısında kalan tur, değer hedefinde en zengin oyuncunun hedefe yakınlığı.
-function progressRing(v) {
-  const max = v.config.maxRounds;
-  const goal = v.config.targetScore;
-  if (v.finalRound || (v.round && v.round >= max)) return ringHTML(100, 'SON', 'TUR', 'Bu tur bitince Seçim Günü');
-  if (v.config.iflas) {
-    const alive = E.activePlayers(v).length;
-    const n = v.players.length;
-    return ringHTML(Math.round(((n - alive) / (n - 1)) * 100), `${alive}/${n}`, 'AYAKTA', `Son kalan kazanır. ${n - alive} oyuncu iflas etti; en geç ${max}. turda biter.`);
-  }
-  if (goal) {
-    const worth = v.players.map((_, p) => E.netWorth(v, p));
-    const lead = worth.indexOf(Math.max(...worth));
-    const pct = Math.min(99, Math.round((worth[lead] / goal) * 100));
-    return ringHTML(pct, `%${pct}`, 'HEDEFE', `En zengin ${P(v, lead).name}: değeri ${fmt(worth[lead])} / ${fmt(goal)}`);
-  }
-  return v.round ? ringHTML(Math.round((v.round / max) * 100), max - v.round, 'TUR KALDI', `${max} turun ${v.round}. turu`) : ringHTML(0, max, 'TUR');
-}
+// ---------- tahtanın ortası ----------
 
 function gundemHTML(v) {
   const max = v.config.maxRounds;
-  const goal = v.config.targetScore ? `İlk ${fmt(v.config.targetScore)} değer turu bitirir` : '';
-  const ring = progressRing(v);
+  const last = v.finalRound || (v.round && v.round >= max);
   if (!v.gundem) {
     const left = max - v.round;
-    const road = v.finalRound || !left ? 'Son tur: Seçim Günü geliyor' : v.config.iflas ? 'Son kalan kazanır' : goal || `Seçime ${left} tur var`;
-    return html`<div class="news-bar"><div class="nb-ic">🗳️</div><div><div class="nb-k">${v.round}. TUR</div><div class="nb-t">${road}</div><div class="nb-x">Bu masada gündem kartları kapalı.</div></div>${ring}</div>`;
+    const road = last ? 'Son tur: Seçim Günü geliyor' : v.config.iflas ? `Son kalan kazanır · ayakta ${E.activePlayers(v).length}` : v.config.targetScore ? `İlk ${fmt(v.config.targetScore)} değer turu bitirir` : `Seçime ${left} tur var`;
+    return html`<div class="gpill" aria-label="${road}">${I('trophy')}<span class="h16">${road}</span></div>`;
   }
   const g = GUNDEM[v.gundem.id];
-  const modTip = (m) => Object.values(GUNDEM).find((x) => x.mod === m)?.text || '';
-  const mods = Object.keys(v.mods).map((m) => html`<span class="chip" data-tip="${modTip(m)}">${MOD_LABEL[m] || m}</span>`);
-  // Gündem GUNDEM_PERIOD tur sürer; oyunun son turunda "değişir" demek yanıltır.
-  const left = v.gundem.until - v.round;
-  const tail = v.finalRound || v.round >= max ? '' : left > 0 ? ` · ${left} TUR DAHA` : ' · TUR SONUNDA DEĞİŞİR';
-  return html`<div class="news-bar"><div class="nb-ic">${g.icon}</div>
-    <div><div class="nb-k" data-tip="Gündem ${GUNDEM_PERIOD} turda bir değişir; kuralları o ${GUNDEM_PERIOD} tur boyunca geçerlidir.">GÜNDEM · ${v.round}. TUR${tail}</div><div class="nb-t">${g.name}</div><div class="nb-x">${g.text}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</div>${mods.length ? html`<div class="nb-mods">${mods}</div>` : ''}</div>
-    ${ring}</div>`;
+  const mods = Object.keys(v.mods).map((m) => MOD_LABEL[m]).filter(Boolean);
+  const left = Math.max(0, v.gundem.until - v.round) + 1;
+  const ring = last ? html`<span class="ring" data-tip="Son tur">${I('trophy')}</span>` : html`<span class="ring" data-tip="Gündem ${GUNDEM_PERIOD} turda bir değişir; bu gündemin ${left} turu kaldı">${left}</span>`;
+  const open = app.ui.gundemOpen;
+  return html`<button class="gpill" data-act="gundem" aria-expanded="${open ? 'true' : 'false'}" aria-label="Gündem: ${g.name}, ayrıntı">${I(GUNDEM_IC[v.gundem.id] || 'news')}<span class="h16">${g.name}</span>${mods.length ? html`<span class="chip">${mods[0]}</span>` : ''}${ring}</button>
+    ${open ? html`<div class="gdetail sheet"><div class="sheet-head">${I('news')}<span class="h18">${g.name}</span><span class="grow"></span><button class="btn S sq ton" data-act="gundem" aria-label="Kapat">${I('close')}</button></div><span class="body">${g.text}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</span>${mods.length > 1 ? html`<div class="row" style="flex-wrap:wrap">${mods.map((m) => html`<span class="chip">${m}</span>`)}</div>` : ''}<span class="note">${I('timer')}Gündem ${GUNDEM_PERIOD} turda bir değişir.${last ? ' Bu son tur.' : ` ${left} tur daha geçerli.`}</span></div>` : ''}`;
+}
+
+function bannerHTML() {
+  if (app.status !== 'reconnecting') return '';
+  return html`<div class="banner" role="status">${I('plug')}<span class="h16">Bağlantı koptu</span><span class="muted small">yeniden bağlanılıyor</span><span class="spinner"></span></div>`;
 }
 
 const SPECIAL_INFO = {
-  start: 'Buradan geçince ya da buraya gelince maaş alırsın.',
+  start: "Buradan geçince ya da buraya gelince maaş alırsın. Elinde 5'ten az kart varsa 1 Hamle kartı da gelir.",
   chance: 'Buraya gelince 2 Hamle kartı çekersin.',
   surpriz: 'Rastgele bir sürpriz hemen uygulanır: miras, ceza, düğün, ışınlanma, kapkaç…',
   tapu: 'Tahtadaki sahipsiz herhangi bir arsayı fiyatına alabilirsin.',
@@ -211,46 +223,62 @@ const SPECIAL_INFO = {
   zabita: 'Kaçak katı olan bir rakibi ihbar edersin: kaçakları yıkılır.',
 };
 
-const TRANSPORT_NOTE = { air: 'Her yeni havalimanı kirayı ikiye katlar.', rail: 'Kira elindeki gar sayısıyla orantılı artar.' };
-
-// Kareye tıklayınca açılan küçük bilgi penceresi: kaç katta kaç kira.
+// Kareye tıklayınca açılan pencere: tapu kartı ve kira cetveli. Kendi karende kat dik / kaçak kat / kat sat / ipotek.
 function popHTML(v, sq) {
   const s = BOARD[sq];
   const ps = v.props[sq];
-  const close = html`<button class="x" data-act="popClose" title="Kapat">✕</button>`;
-  if (!ps) return html`<div class="ph" style="--pc:#34405f;--ink:#fff"><b>${s.icon} ${s.name}</b>${close}</div><div class="pn" style="padding-top:9px">${SPECIAL_INFO[s.kind]}</div>`;
+  const close = html`<button class="btn S sq ton" data-act="popClose" aria-label="Kapat">${I('close')}</button>`;
+  if (!ps) {
+    return html`<div class="pop-side" style="width:260px"><div class="row">${I(s.kind)}<span class="h16">${s.name}</span><span class="grow"></span>${close}</div><span class="body">${SPECIAL_INFO[s.kind]}</span></div>`;
+  }
+  const me = v.you;
   const owner = ps.owner === null ? null : P(v, ps.owner);
-  const head = owner ? `--pc:${owner.color};--ink:${inkFor(owner.color)}` : '--pc:#8a8d96;--ink:#fff';
-  let rows;
+  const full = owner && s.kind === 'prop' && E.ownsGroup(v, ps.owner, s.group);
+  const card = deed(v, sq, { w: 240, ladder: true, level: levelRow(v, sq) });
+  const tapu = tapuSquares(v)?.includes(sq);
+  if (ps.owner !== me || me < 0) {
+    const head = owner
+      ? html`<div class="row" style="gap:8px">${PW(owner, 24)}<span class="h16">${owner.name}</span>${full ? I('star') : ''}<span class="grow"></span>${close}</div>`
+      : html`<div class="row" style="gap:8px"><span class="h16">Sahipsiz</span><span class="grow"></span>${close}</div>`;
+    const notes = [];
+    if (owner && s.kind === 'prop' && !full && E.level(ps)) notes.push('Set tamamlanmadığı için kat kiraları yarı.');
+    if (ps.tedbir > 0) notes.push(`İhtiyati tedbir: ${ps.tedbir} sıra kira yok.`);
+    return html`<div class="col" style="gap:8px">${head}${card}${notes.map((n) => html`<span class="note">${I('info')}${n}</span>`)}${tapu ? html`<button class="btn pri full" data-act="tapuBuy" data-sq="${sq}">${I('tapu')}Tapudan al ${M(E.price(v, sq))}</button>` : ''}</div>`;
+  }
+  // Benim karem: işlemler yalnız sıra bendeyken.
+  const manage = canManage(v);
+  const lock = manage ? '' : html`<span class="note">${I('timer')}Kat ve ipotek işlemleri sıra sendeyken.</span>`;
+  const side = [];
+  side.push(html`<div class="row" style="gap:6px"><span class="h16">Senin</span>${full ? html`${I('star')}<span class="muted small">${GROUPS[s.group].name} seti</span>` : ''}<span class="grow"></span>${close}</div>`);
   if (s.kind === 'prop') {
     const L = E.level(ps);
-    const full = owner && E.ownsGroup(v, ps.owner, s.group);
-    const list = [[full ? 'Arsa (tam set ★)' : 'Arsa', s.rents[0] * (full ? 2 : 1)], ['1 kat', s.rents[1]], ['2 kat', s.rents[2]], ['3 kat', s.rents[3]], ['4 kat', s.rents[4]]];
-    // Set tamamlanmadan katların kirası yarıdır; tablo bu mülkün şu anki durumuna göre.
-    rows = list.map(([k, x], l) => html`<tr class="${owner && L === l ? 'cur' : ''}"><td>${k}</td><td>${fmt(Math.max(5, scaled(v, sq, l > 0 && !full ? x / 2 : x)))}</td></tr>`);
-  } else {
-    const n = owner ? E.transportCount(v, ps.owner, s.mode) : 0;
-    const label = E.TRANSPORT_LABEL[s.mode].toLowerCase();
-    rows = E.TRANSPORT_RENT[s.mode].slice(1).map((x, l) => html`<tr class="${n === l + 1 ? 'cur' : ''}"><td>${l + 1} ${label}</td><td>${fmt(E.money(v, x))}</td></tr>`);
+    const legal = E.buildBlock(v, me, sq, false);
+    const kacak = E.buildBlock(v, me, sq, true);
+    if (!legal && L < 4) {
+      const now = E.rentFor(v, sq);
+      const next = scaled(v, sq, s.rents[L + 1]);
+      side.push(html`<div class="preview">${I('house')}${L}${I('arrow')}${L + 1} kat<span class="grow"></span>kira <b class="num">${now}</b>${I('arrow')}<b class="num">${next}</b></div>`);
+    }
+    side.push(html`<button class="btn pri full" data-act="build" data-sq="${sq}" ${!manage || legal ? 'disabled' : ''} data-tip="${legal || ''}">${I('house')}Kat dik ${M(E.katCost(v, sq))}</button>`);
+    side.push(html`<button class="btn sec full" data-act="buildKacak" data-sq="${sq}" ${!manage || kacak ? 'disabled' : ''} data-tip="${kacak || ''}">${I('kacak')}Kaçak kat ${M(E.kacakCost(v, sq))}</button>`);
+    side.push(html`<span class="muted small">${legal && legal.includes('tüm mülkleri') ? 'Yasal kat için şehrin hepsi sende olmalı. ' : ''}Kaçak kat ucuz ama Zabıta ve İhbar ile yıkılır.</span>`);
+    const sell = L > 0 ? html`<button class="btn ton flex" data-act="sellFloor" data-sq="${sq}" ${manage ? '' : 'disabled'}>Kat sat ${M(Math.round(E.katValue(v, sq) / (ps.kacak ? 20 : 10)) * 5, true)}</button>` : '';
+    side.push(html`<div class="row" style="gap:6px">${sell}${mortBtn(v, sq, manage)}</div>`);
+  } else side.push(html`<div class="row" style="gap:6px">${mortBtn(v, sq, manage)}</div>`);
+  if (ps.tedbir > 0) side.push(html`<span class="note">${I('tedbir')}İhtiyati tedbir: ${ps.tedbir} sıra kira yok, kat dikilmez.</span>`);
+  side.push(lock);
+  return html`${card}<div class="pop-side">${side}</div>`;
+}
+
+function mortBtn(v, sq, manage) {
+  const ps = v.props[sq];
+  if (ps.ipotek) {
+    const cost = E.unmortgageCost(v, sq);
+    const poor = P(v, v.you).cash < cost;
+    return html`<button class="btn ton flex" data-act="unmortgage" data-sq="${sq}" ${!manage || poor ? 'disabled' : ''} data-tip="${poor ? 'Paran yetmiyor.' : ''}">${I('ipotek')}Kaldır ${M(-cost)}</button>`;
   }
-  const status = owner
-    ? html`<span class="dot" style="--c:${owner.color}"></span> ${owner.name}${ps.ipotek ? ' · ipotekli' : ''}${ps.tedbir ? ` · tedbir ${ps.tedbir} tur` : ''}`
-    : html`Sahipsiz · fiyatı <b>${fmt(E.price(v, sq))}</b>`;
-  const note = s.kind === 'prop' ? `Kat ${fmt(E.katCost(v, sq))}, kaçak kat ${fmt(E.kacakCost(v, sq))}. Kat sayısına kaçak kat da girer.${owner && !E.ownsGroup(v, ps.owner, s.group) ? ' Set tamamlanmadığı için kat kiraları yarı.' : ''}` : TRANSPORT_NOTE[s.mode];
-  const legend = [];
-  if (s.kind === 'prop') {
-    if (ps.kat || ps.kacak) legend.push(`Şu an: ${[ps.kat ? `${ps.kat} yasal kat 🏠` : '', ps.kacak ? '1 kaçak kat 🚧' : ''].filter(Boolean).join(' + ')}`);
-    legend.push('🏠 Yasal kat: şehrin tüm mülkleri sende olmalı.');
-    legend.push('🚧 Kaçak kat: set istemez, yarı fiyat; İhbar, Zabıta ve Belediye operasyonu yıkar.');
-    legend.push('★ Tam set: şehrin tümü tek kişide, arsa kirası 2 katı.');
-  }
-  if (ps.ipotek) legend.push(`🔒 İpotekli: kira alınmaz. Kaldırmak ${fmt(E.unmortgageCost(v, sq))}.`);
-  else if (owner) legend.push(`İpotek değeri ${fmt(E.mortgageValue(v, sq))}.`);
-  if (ps.tedbir) legend.push(`⚖️ İhtiyati tedbir: ${ps.tedbir} tur kira yok, kat dikilmez.`);
-  const acts = [...propActions(v, sq)];
-  if (tapuSquares(v)?.includes(sq)) acts.push(html`<button class="btn tiny turq" data-act="tapuBuy" data-sq="${sq}">📜 Tapudan al</button>`);
-  return html`<div class="ph" style="${head}"><b>${s.name}</b><span>${cityOf(sq)}</span>${close}</div>
-    <div class="po">${status}</div><table>${rows}</table><div class="pn">${note}</div>${legend.length ? html`<ul class="pl">${legend.map((x) => html`<li>${x}</li>`)}</ul>` : ''}${acts.length ? html`<div class="pa">${acts}</div>` : ''}`;
+  const floors = E.level(ps) > 0;
+  return html`<button class="btn ton flex" data-act="mortgage" data-sq="${sq}" ${!manage || floors ? 'disabled' : ''} data-tip="${floors ? 'Önce katları sat.' : ''}">${I('ipotek')}İpotek ${M(E.mortgageValue(v, sq), true)}</button>`;
 }
 
 function renderPop(v) {
@@ -262,32 +290,29 @@ function renderPop(v) {
   }
   setHTML(els.pop, popHTML(v, sq));
   els.pop.className = 'pop';
+  els.pop.setAttribute('role', 'dialog');
   const c = cells[sq];
   const pw = els.pop.offsetWidth;
   const ph = els.pop.offsetHeight;
   const bw = els.board.clientWidth;
   const bh = els.board.clientHeight;
   const side = cellPos(sq).side;
-  // Pencere karenin tahta ortasına bakan tarafında açılır.
-  const toward = (pos, size, len, total) => (pos < total / 2 ? pos + size + 6 : pos - len - 6);
+  // Pencere karenin tahta ortasına bakan tarafında açılır, kareleri kapatmamaya çalışır.
+  const toward = (pos, size, len, total) => (pos < total / 2 ? pos + size + 8 : pos - len - 8);
   let x = c.offsetLeft + c.offsetWidth / 2 - pw / 2;
   let y = c.offsetTop + c.offsetHeight / 2 - ph / 2;
   if (side === 'b' || side === 't' || side === 'c') y = toward(c.offsetTop, c.offsetHeight, ph, bh);
   if (side === 'l' || side === 'r' || side === 'c') x = toward(c.offsetLeft, c.offsetWidth, pw, bw);
-  els.pop.style.left = `${Math.max(6, Math.min(bw - pw - 6, x))}px`;
-  els.pop.style.top = `${Math.max(6, Math.min(bh - ph - 6, y))}px`;
+  // Sığıyorsa tahtanın ortasında kalır (kenar kareleri kapatmaz), sığmazsa tahtanın içinde.
+  const clamp = (val, len, total, edge) => (len + 2 * edge + 12 <= total ? Math.max(edge + 6, Math.min(total - edge - len - 6, val)) : Math.max(6, Math.min(total - len - 6, val)));
+  els.pop.style.left = `${clamp(x, pw, bw, c.offsetWidth)}px`;
+  els.pop.style.top = `${clamp(y, ph, bh, c.offsetHeight)}px`;
 }
 
-// Satın alma ve ihale istemi için sade kart: ad, şehir, temel kira, şehirdeki diğer sahipler.
-function buyCard(v, sq) {
-  const s = BOARD[sq];
-  const others = s.group ? GROUP_SQUARES[s.group].filter((q) => q !== sq && v.props[q].owner !== null).map((q) => P(v, v.props[q].owner)) : [];
-  const rent = s.kind === 'transport' ? E.money(v, E.TRANSPORT_RENT[s.mode][1]) : scaled(v, sq, s.rents[0]);
-  const grows = s.kind === 'prop' ? ', katlarla artar' : s.mode === 'air' ? ', her yeni havalimanıyla 2 katı' : ', gar başına artar';
-  return html`<div class="buycard"><div class="bn">${s.icon || ''} ${s.name}</div><div class="bc">${cityOf(sq)}</div>
-    <div class="bp">Kira ${fmt(rent)}${grows}</div>
-    ${others.length ? html`<div class="bo">Şehrin diğer sahipleri: ${others.map((o) => html`<span class="dot" style="--c:${o.color}" title="${o.name}"></span>`)}</div>` : ''}</div>`;
-}
+const waitHTML = (v, i, text, sub = '') =>
+  html`<div class="stagebox"><span class="wait-ring" style="--pc:${P(v, i).color}">${PW(P(v, i), 64)}</span><span class="h22">${text}</span>${sub ? html`<span class="muted">${sub}</span>` : ''}<div style="width:260px">${timerHTML(v, [i])}</div></div>`;
+
+const vs = (v, a, b) => html`<div class="row" style="gap:8px">${PW(P(v, a), 32)}<span class="muted">${I('arrow')}</span>${PW(P(v, b), 32)}</div>`;
 
 function promptHTML(v) {
   const me = v.you;
@@ -295,355 +320,414 @@ function promptHTML(v) {
   if (v.phase === 'over') {
     const w = P(v, v.results.ranking[0]);
     const why = E.activePlayers(v).length === 1 ? 'Rakiplerin hepsi iflas etti.' : 'Seçim Günü geldi, sandıklar açıldı.';
-    return html`<div class="who">🏆 ${av(w)} ${w.name} kazandı!</div><p>${why}</p>
-      <div class="row center"><button class="btn primary big" data-act="results">Sonuçları Gör</button>${isHost() ? html`<button class="btn turq" data-act="newGame">Yeni Oyun</button>` : ''}</div>`;
+    return html`<div class="stagebox">${I('crown')}<span class="wait-ring" style="--pc:${w.color}">${PW(w, 64)}</span><span class="h28">${w.name} kazandı</span><span class="muted">${why}</span>
+      <div class="row"><button class="btn L pri" data-act="results" data-primary>${I('trophy')}Sonuçlar</button></div></div>`;
   }
   if (app.ui.pick) {
-    const c = CARDS[cardId(app.ui.pick.uid)];
-    const step = c.target === 'swap' ? (app.ui.swapMine === null ? ' 1) Vereceğin mülkü seç.' : ` 2) ${BOARD[app.ui.swapMine].name} karşılığı alacağın mülkü seç.`) : '';
-    return html`<h3>${c.icon} ${c.name}</h3><p>Parlayan karelerden birine tıkla.${step}</p>
-      <button class="btn" data-act="pickCancel">Vazgeç</button>${timerHTML(v, [me])}`;
+    const id = cardId(app.ui.pick.uid);
+    const c = CARDS[id];
+    const step = c.target === 'swap' ? (app.ui.swapMine === null ? '1) Vereceğin mülkü seç' : `2) ${BOARD[app.ui.swapMine].name} karşılığı alacağını seç`) : 'Parlayan bir mülke tıkla';
+    return html`<div class="card-prompt">${cardFace(id, 'big glow')}<div class="opt-col"><span class="h22">${c.name}</span><span class="hint">${I('target')}${step}</span><span class="body">${c.text}</span><button class="btn sec" data-act="pickCancel" style="align-self:flex-start">Vazgeç</button>${timerHTML(v, [me])}</div></div>`;
   }
   if (pd) return pendingHTML(v, pd);
   const t = v.turn;
-  const cur = P(v, t.p);
   if (t.p !== me) {
     const doing = { preroll: 'zar atmak üzere', choose: 'zarına bakıyor', free: 'işlerini hallediyor' }[t.step];
-    return html`<div class="who">${av(cur)} ${cur.name} ${doing}…</div>${timerHTML(v, [t.p])}`;
+    return waitHTML(v, t.p, `${P(v, t.p).name} ${doing}`);
   }
   const pl = P(v, me);
   if (t.step === 'preroll') {
-    return html`<h3>Sıra sende!</h3>${t.backward ? html`<p>↩️ Geri vitestesin, bu tur geri gideceksin.</p>` : ''}
-      <button class="btn primary big" data-act="roll" data-primary>🎲 Zar At</button>${timerHTML(v, [me])}`;
+    return html`<div class="stagebox"><div class="who">${PW(pl, 30)}Sıra sende</div>${t.backward ? html`<span class="hint">${I('arrowL')}Geri vitestesin: bu tur geri gideceksin</span>` : ''}
+      <button class="btn L pri" style="min-width:240px" data-act="roll" data-primary>${I('dice')}Zar At</button><div style="width:260px">${timerHTML(v, [me])}</div></div>`;
   }
   if (t.step === 'choose') {
     const [a, b] = t.dice;
-    const kes = pl.hand.find((u) => cardId(u) === 'kestirme');
-    const opt = (steps, label, actName, extra = '') =>
-      html`<button class="btn ${actName === 'moveSum' ? 'primary big' : 'gold'}" data-act="${actName}" ${raw(extra)}>${label}: ${steps} kare → ${BOARD[destOf(v, steps, t.backward)].name}</button>`;
-    return html`<h3>Nereye gidiyorsun?</h3>
-      <div class="row center">${opt(a + b, 'Toplam', 'moveSum', 'data-primary')}</div>
-      ${kes ? html`<p>🛵 Kestirme kartınla zarlardan birini seçebilirsin:</p><div class="row center">${opt(a, '1. zar', 'kestirme', `data-die="0" data-uid="${kes}"`)}${opt(b, '2. zar', 'kestirme', `data-die="1" data-uid="${kes}"`)}</div>` : ''}${timerHTML(v, [me])}`;
+    const kes = !t.hamle && pl.hand.find((u) => cardId(u) === 'kestirme');
+    const go = (n) => BOARD[destOf(v, n, t.backward)].name;
+    const sum = html`<button class="btn L pri full" data-act="moveSum" data-primary>Toplam ${a + b} kare ${I('arrow')}${go(a + b)}</button>`;
+    if (!kes) return html`<div class="stagebox"><span class="h22">Nereye gidiyorsun?</span>${sum}<div style="width:300px">${timerHTML(v, [me])}</div></div>`;
+    return html`<div class="card-prompt">${cardFace('kestirme', 'big glow')}<div class="opt-col"><span class="h22">Nereye gidiyorsun?</span>${sum}<span class="kicker">Kestirme ile</span>
+      <div class="row">${[0, 1].map((d) => html`<button class="btn L sec flex" data-act="kestirme" data-die="${d}" data-uid="${kes}">${t.dice[d]}${I('arrow')}${go(t.dice[d])}</button>`)}</div>${timerHTML(v, [me])}</div></div>`;
   }
   // serbest evre
-  if (pl.cash < 0) {
-    return html`<h3>Borçtasın: ${fmt(pl.cash)}</h3><p>Sıranı bitirmeden borcunu kapat.${v.config.iflas ? ' Kapatamazsan iflas edip oyundan çıkarsın.' : ''}</p>
-      <div class="row center"><button class="btn primary big" data-act="settleDebt" data-primary>Borcu Kapat (otomatik)</button><button class="btn ghost" data-act="manage">Mülklerim</button></div>`;
-  }
+  if (pl.cash < 0) return debtHTML(v);
   const hints = [];
-  if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push('yeşil parlayan bir kartı tahtaya sürükleyip ya da tıklayıp oynayabilir');
-  if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false) || !E.buildBlock(v, me, q, true))) hints.push('kat dikebilirsin');
-  return html`<h3>${BOARD[pl.pos].icon || ''} ${BOARD[pl.pos].name}</h3>${hints.length ? html`<p>İstersen ${hints.join(' ya da ')}.</p>` : ''}
-    <div class="row center"><button class="btn primary big" data-act="endTurn" data-primary>Turu Bitir ➜</button></div>${timerHTML(v, [me])}`;
+  if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push(html`<span class="hint">${I('bolt')}Kart oynayabilirsin</span>`);
+  if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false))) hints.push(html`<span class="hint">${I('home')}Kat dikebilirsin</span>`);
+  return html`<div class="stagebox"><div class="who">${PW(pl, 30)}${BOARD[pl.pos].name}</div>${hints.length ? html`<div class="row">${hints}</div>` : ''}
+    <button class="btn L pri" style="min-width:240px" data-act="endTurn" data-primary>Turu bitir ${I('arrow')}</button><div style="width:260px">${timerHTML(v, [me])}</div></div>`;
+}
+
+// Borç: satılabilecekler sırasıyla, otomatik kapat ya da kendin seç (İnşaat/İpotek).
+function debtHTML(v) {
+  const me = v.you;
+  const pl = P(v, me);
+  const rows = [];
+  for (const q of E.propsOf(v, me)) {
+    const ps = v.props[q];
+    if (ps.kacak) rows.push(html`<div class="line-row">${I('kacak')}<span class="grow">${BOARD[q].name} kaçak katı</span><b class="num pos">+${Math.round(E.katValue(v, q) / 20) * 5}</b></div>`);
+    else if (ps.kat) rows.push(html`<div class="line-row">${I('house')}<span class="grow">${BOARD[q].name} katı</span><b class="num pos">+${Math.round(E.katValue(v, q) / 10) * 5}</b></div>`);
+    else if (!ps.ipotek) rows.push(html`<div class="line-row">${I('ipotek')}<span class="grow">${BOARD[q].name} ipotek</span><b class="num pos">+${E.mortgageValue(v, q)}</b></div>`);
+  }
+  return html`<div class="sheet W"><div class="sheet-head">${I('warning')}<span class="h22">Borçtasın</span><span class="h22 neg">${M(pl.cash)}</span></div>
+    <span class="body">Sıranı bitirmeden kapat. Önce kaçak katlar, sonra katlar, sonra ipotek.</span>
+    ${rows.length ? html`<div class="sheet-body" style="max-height:200px">${rows.slice(0, 6)}</div>` : ''}
+    <div class="row"><button class="btn L pri flex" data-act="settleDebt" data-primary>Borcu kapat</button><button class="btn L sec" data-act="tool" data-k="build">Kendim seçeyim</button></div>
+    <div class="note">${I('iflas')}${v.config.iflas ? 'Satacak bir şey kalmazsa iflas edip oyundan çıkarsın.' : `Satacak bir şey kalmazsa konkordato: borç silinir, sonda −${v.config.konkordatoPenalty} puan.`}</div></div>`;
 }
 
 function pendingHTML(v, pd) {
   const me = v.you;
   switch (pd.type) {
     case 'buy': {
-      if (pd.p !== me) return html`<div class="who">${av(P(v, pd.p))} ${P(v, pd.p).name}</div><p>${BOARD[pd.sq].name} için karar veriyor: ${v.config.rules.ihale ? 'alacak mı, açık artırmaya mı çıkaracak?' : 'alacak mı?'}</p>${timerHTML(v, [pd.p])}`;
+      if (pd.p !== me) return waitHTML(v, pd.p, `${P(v, pd.p).name} karar veriyor`, `${BOARD[pd.sq].name}: ${v.config.rules.ihale ? 'alacak mı, artırmaya mı çıkaracak?' : 'alacak mı?'}`);
       const cost = E.price(v, pd.sq);
       const cash = P(v, me).cash;
       const paz = P(v, me).hand.find((u) => cardId(u) === 'pazarlik');
-      return html`${buyCard(v, pd.sq)}
-        <div class="row center"><button class="btn green big" data-act="buy" data-primary ${cash < cost ? 'disabled' : ''}>Satın Al ${fmt(cost)}</button>
-        <button class="btn ghost" data-act="decline">${v.config.rules.ihale ? '🔨 Açık Artırmaya Çıkar' : 'Alma'}</button>
-        ${paz && !v.turn.hamle && cash >= Math.round(cost / 10) * 5 ? html`<button class="btn gold" data-act="pazarlik" data-uid="${paz}">🤝 Pazarlık Ustası: ${fmt(Math.round(cost / 10) * 5)}</button>` : ''}</div>
-        ${cash < cost ? html`<p class="reason">${v.config.rules.ihale ? 'Nakdin yetmiyor; açık artırmaya çıkarabilirsin.' : 'Nakdin yetmiyor.'}</p>` : ''}${timerHTML(v, [me])}`;
+      const half = Math.round(cost / 10) * 5;
+      return html`<div class="card-prompt" style="gap:34px">${deed(v, pd.sq, { w: 270 })}<div class="opt-col" style="width:260px">
+        <button class="btn L pri full" data-act="buy" data-primary ${cash < cost ? 'disabled' : ''}>Satın al ${M(cost)}</button>
+        <button class="btn L sec full" data-act="decline">${v.config.rules.ihale ? html`${I('gavel')}Açık artırma` : 'Alma'}</button>
+        ${paz && !v.turn.hamle && cash >= half ? html`<button class="btn sec full" data-act="pazarlik" data-uid="${paz}">${I('deal')}Pazarlık Ustası ${M(half)}</button>` : ''}
+        ${cash < cost ? html`<p class="reason">Nakdin yetmiyor${v.config.rules.ihale ? '; artırmaya çıkarabilirsin.' : '.'}</p>` : ''}${timerHTML(v, [me])}</div></div>`;
     }
-    case 'auction': {
-      // Açık artırma: herkes en yüksek teklifi ve kimin çekildiğini görür; sırası gelen artırır ya da çekilir.
-      const step = E.auctionStep(v);
-      const min = pd.high + step;
-      const lead = pd.leader !== null ? P(v, pd.leader) : null;
-      const who = (i) => (i === me ? 'Sen' : P(v, i).name);
-      const people = pd.order.map((i) => {
-        const st = i === pd.leader ? `en yüksek ${fmt(pd.high)}` : pd.out.includes(i) ? 'çekildi' : i === pd.turn ? 'sırada' : 'bekliyor';
-        return html`<span class="abid ${pd.out.includes(i) ? 'out' : ''} ${i === pd.leader ? 'lead' : ''} ${i === pd.turn ? 'now' : ''}" style="--c:${P(v, i).color}">${P(v, i).avatar} ${who(i)} · ${st}</span>`;
-      });
-      const head = html`<h3>🔨 Açık artırma · ${BOARD[pd.sq].name} <small class="muted">${cityOf(pd.sq)} · liste ${fmt(E.price(v, pd.sq))}</small></h3>
-        <div class="ahigh">${lead ? html`En yüksek teklif <b>${fmt(pd.high)}</b> · ${who(pd.leader)}` : 'Henüz teklif yok'}</div>
-        <div class="abids">${people}</div>`;
-      if (pd.turn !== me) return html`${head}<p>${P(v, pd.turn).name} düşünüyor: artıracak mı, çekilecek mi?</p>${timerHTML(v, [pd.turn])}`;
-      const cash = P(v, me).cash;
-      const quick = [...new Set([min, pd.high + step * 5, pd.high + step * 10].filter((x) => x <= cash))];
-      app.ui.binds ||= {};
-      if (!(Number(app.ui.binds.raise) >= min)) app.ui.binds.raise = String(min);
-      return html`${head}
-        <div class="row center">${quick.map((q) => html`<button class="btn primary" data-act="raise" data-amt="${q}">${fmt(q)} ver</button>`)}<button class="btn ghost" data-act="auctionPass">Çekil</button></div>
-        <div class="moneybox abox"><div class="row"><span class="muted">Özel tutar</span><b class="amount" data-show="raise"></b><div class="grow"></div><button class="btn small" data-act="raiseCustom">Ver</button></div>
-          <input type="range" class="slider" min="${min}" max="${cash}" step="5" data-bind="raise" style="--c:${P(v, me).color}"></div>${timerHTML(v, [me])}`;
-    }
+    case 'auction':
+      return auctionHTML(v, pd);
     case 'react': {
       const c = pd.card;
-      const card = CARDS[c.id];
-      const attacker = P(v, c.by);
-      const victim = P(v, pd.victim);
-      const what = c.target && c.target.sq !== undefined ? ` (${BOARD[c.target.sq].name})` : c.target && c.target.theirs !== undefined ? ` (${BOARD[c.target.mine].name} ↔ ${BOARD[c.target.theirs].name})` : '';
-      const desc = html`<div class="react-card">${cardFace(c.id)}<div><b>${attacker.name} → ${victim.name}</b><div class="muted">${card.name}${what}${pd.chain ? ` · ${pd.chain} itiraz` : ''}</div></div></div>`;
-      if (pd.responder !== me) return html`${desc}<p>${P(v, pd.responder).name} karar veriyor…</p>${timerHTML(v, [pd.responder])}`;
+      const target = c.target && c.target.sq !== undefined ? deed(v, c.target.sq, { w: 150, mini: true }) : c.target && c.target.theirs !== undefined ? html`<div class="row">${deed(v, c.target.mine, { mini: true })}${I('swap2')}${deed(v, c.target.theirs, { mini: true })}</div>` : '';
+      const head = html`${vs(v, c.by, pd.victim)}`;
+      if (pd.responder !== me) {
+        return html`<div class="card-prompt">${cardFace(c.id, 'big')}<div class="opt-col">${head}<span class="h22">${P(v, c.by).name}, ${P(v, pd.victim).name} için</span>${target}<span class="body">${cardEffect(v, { card: c.id, target: c.target, p: c.by })}</span><span class="muted">Karar veriliyor${pd.chain ? ` · ${pd.chain} itiraz` : ''}</span>${timerHTML(v, [pd.responder])}</div></div>`;
+      }
       const it = P(v, me).hand.find((u) => cardId(u) === 'itiraz');
       const counter = me === c.by;
-      return html`${desc}<h3>${counter ? `${victim.name} itiraz etti! Karşı itiraz?` : `${attacker.name} sana ${card.name} oynadı!`}</h3>
-        <div class="row center">${it ? html`<button class="btn primary big" data-act="react" data-uid="${it}" data-primary>✋ ${counter ? 'Karşı İtiraz' : 'İtiraz Et'}</button>` : ''}<button class="btn ${it ? 'ghost' : 'primary big'}" data-act="react" data-uid="" ${it ? '' : 'data-primary'}>${counter ? 'Vazgeç' : 'Kabul Et'}</button></div>${timerHTML(v, [me])}`;
+      const title = counter ? `${P(v, pd.victim).name} itiraz etti` : `${P(v, c.by).name} sana oynadı`;
+      return html`<div class="card-prompt">${cardFace(c.id, 'big')}<div class="opt-col">${head}<span class="h22">${title}</span>${target}<span class="body">${cardEffect(v, { card: c.id, target: c.target, p: c.by })}</span>
+        <div class="row">${it ? html`<button class="btn L pri flex" data-act="react" data-uid="${it}" data-primary>${I('shield')}${counter ? 'Karşı itiraz' : 'İtiraz et'}</button>` : ''}<button class="btn L ${it ? 'sec' : 'pri flex'}" data-act="react" data-uid="" ${it ? '' : 'data-primary'}>${counter ? 'Vazgeç' : 'Kabul'}</button></div>${timerHTML(v, [me])}</div></div>`;
     }
     case 'rent': {
-      if (pd.p !== me) return html`<p>${P(v, pd.p).name} ${BOARD[pd.sq].name} kirası için karar veriyor…</p>${timerHTML(v, [pd.p])}`;
+      const owner = P(v, pd.owner);
+      const info = html`<div class="row" style="gap:10px">${deed(v, pd.sq, { mini: true, w: 130 })}<span class="row muted" style="gap:6px">${PW(owner, 24)}${owner.name}${pd.zam ? ' · Kira Zammı ×2' : ''}</span></div>`;
+      if (pd.p !== me) return html`<div class="stagebox"><span class="row" style="gap:10px">${PW(P(v, pd.p), 40)}<span class="h22">${P(v, pd.p).name} kira ödüyor</span><span class="big-num" style="font-size:34px">${M(pd.amount)}</span></span>${info}<span class="muted">Karar veriliyor</span><div style="width:300px">${timerHTML(v, [pd.p])}</div></div>`;
       const dayi = P(v, me).hand.find((u) => cardId(u) === 'dayi');
-      return html`<h3>Kira: ${fmt(pd.amount)}</h3><p>${BOARD[pd.sq].name} → ${P(v, pd.owner).name}${pd.zam ? ' (Kira Zammı!)' : ''}</p>
-        <div class="row center">${dayi ? html`<button class="btn gold big" data-act="react" data-uid="${dayi}" data-primary>🧔 Dayın Çıktı!</button>` : ''}<button class="btn ${dayi ? 'ghost' : 'primary big'}" data-act="react" data-uid="" ${dayi ? '' : 'data-primary'}>Öde</button></div>${timerHTML(v, [me])}`;
+      const col = html`<div class="opt-col"><div class="row" style="align-items:baseline"><span class="h22">Kira</span><span class="big-num">${M(pd.amount)}</span></div>${info}
+        <div class="row">${dayi ? html`<button class="btn L pri flex" data-act="react" data-uid="${dayi}" data-primary>${I('shield')}Dayın Çıktı</button>` : ''}<button class="btn L ${dayi ? 'sec' : 'pri flex'}" data-act="react" data-uid="" ${dayi ? '' : 'data-primary'}>Öde</button></div>${timerHTML(v, [me])}</div>`;
+      return dayi ? html`<div class="card-prompt">${cardFace('dayi', 'big glow')}${col}</div>` : col;
     }
     case 'tapu': {
-      if (pd.p !== me) return html`<p>${P(v, pd.p).name} Tapu Dairesi'nde arsa bakıyor…</p>${timerHTML(v, [pd.p])}`;
-      return html`<h3>📜 Tapu Dairesi</h3><p>Parlayan arsalardan birine tıkla, fiyatını gör ve tapudan al.</p>
-        <button class="btn ghost" data-act="tapuBuy" data-sq="">Bir şey alma</button>${timerHTML(v, [me])}`;
+      if (pd.p !== me) return waitHTML(v, pd.p, `${P(v, pd.p).name} Tapu Dairesi'nde`, 'sahipsiz bir arsa seçiyor');
+      const sel = app.ui.popSq;
+      const pick = sel !== null && sel !== undefined && tapuSquares(v)?.includes(sel) ? sel : null;
+      return html`<div class="card-prompt"><div class="opt-col" style="width:260px"><div class="row">${I('tapu')}<span class="h22">Tapu Dairesi</span></div><span class="hint">${I('target')}Parlayan bir arsa seç</span>
+        ${pick !== null ? html`<button class="btn L pri full" data-act="tapuBuy" data-sq="${pick}">Tapudan al ${M(E.price(v, pick))}</button>` : ''}
+        <button class="btn gho" data-act="tapuBuy" data-sq="">Bir şey alma</button>${timerHTML(v, [me])}</div>${pick !== null ? deed(v, pick, { w: 230, ladder: true }) : ''}</div>`;
     }
     case 'zabita': {
-      if (pd.p !== me) return html`<p>🚨 ${P(v, pd.p).name} zabıtaya kimi ihbar edecek?</p>${timerHTML(v, [pd.p])}`;
-      return html`<h3>🚨 Zabıta geldi</h3><p>Kimin kaçak katlarını ihbar ediyorsun? Hepsi yıkılır, kat başı ceza öder.</p>
-        <div class="row center">${pd.options.map((o) => html`<button class="btn primary" data-act="zabita" data-p="${o}">${P(v, o).avatar} ${P(v, o).name} (${E.floorsOf(v, o).kacak} kaçak)</button>`)}</div>${timerHTML(v, [me])}`;
+      if (pd.p !== me) return waitHTML(v, pd.p, `${P(v, pd.p).name} zabıtaya kimi ihbar edecek?`);
+      return html`<div class="stagebox"><span class="art" style="width:56px;height:56px">${raw(ic('zabita'))}</span><span class="h22">Kimi ihbar ediyorsun?</span><span class="body">Kaçak katları yıkılır, kat başı ceza öder.</span>
+        <div class="row" style="flex-wrap:wrap;justify-content:center">${pd.options.map((o) => html`<button class="btn sec" style="--pc:${P(v, o).color};box-shadow:inset 0 0 0 2px var(--pc);padding-left:8px" data-act="zabita" data-p="${o}">${PW(P(v, o), 28)}${P(v, o).name}<span class="chip">${I('kacak')}${E.floorsOf(v, o).kacak}</span></button>`)}</div>
+        <div style="width:300px">${timerHTML(v, [me])}</div></div>`;
     }
-    case 'trade': {
-      const desc = tradeDesc(v, pd);
-      if (pd.to === me) {
-        return html`<h3>🤝 ${P(v, pd.from).name} sana teklif yaptı</h3>${desc}
-          <div class="row center"><button class="btn green big" data-act="tradeAccept" data-primary>Kabul</button><button class="btn ghost" data-act="tradeReject">Reddet</button></div>${timerHTML(v, [me])}`;
-      }
-      if (pd.from === me) return html`<h3>Teklifin gönderildi</h3>${desc}<p>${P(v, pd.to).name} düşünüyor…</p><button class="btn ghost" data-act="tradeCancel">Teklifi geri çek</button>${timerHTML(v, [pd.to])}`;
-      return html`<h3>🤝 Pazarlık</h3><p>${P(v, pd.from).name} → ${P(v, pd.to).name}</p>${desc}`;
-    }
+    case 'trade':
+      return tradePendingHTML(v, pd);
     case 'discard': {
-      if (pd.p !== me) return html`<p>${P(v, pd.p).name} elindeki fazla kartları atıyor…</p>${timerHTML(v, [pd.p])}`;
+      if (pd.p !== me) return waitHTML(v, pd.p, `${P(v, pd.p).name} fazla kartlarını atıyor`);
       const n = app.ui.selected.length;
-      return html`<h3>Elinde fazla kart var</h3><p>Sağdaki elinden <b>${pd.count}</b> kart seç ve at (seçili: ${n}).</p>
-        <button class="btn primary big" data-act="discardGo" ${n !== pd.count ? 'disabled' : ''} data-primary>Seçilenleri At</button>${timerHTML(v, [me])}`;
+      return html`<div class="stagebox">${I('cards')}<span class="h22">Elinde ${P(v, me).hand.length} kart var</span><span class="body">Sağdaki elinden ${pd.count} kart seç (seçili ${n}).</span>
+        <button class="btn L pri" data-act="discardGo" ${n !== pd.count ? 'disabled' : ''} data-primary>Seçileni at</button><div style="width:260px">${timerHTML(v, [me])}</div></div>`;
     }
     default:
       return '';
   }
 }
 
-function tradeDesc(v, pd) {
-  const side = (x) => [...x.props.map((q) => sqChip(q)), x.cash ? html`<span class="chip">💵 ${fmt(x.cash)}</span>` : ''].filter(Boolean);
-  const give = side(pd.give);
-  const take = side(pd.take);
-  return html`<div class="trade-cols" style="width:min(520px,100%)">
-    <div class="trade-col"><h4>${P(v, pd.from).name} verir</h4><div class="row">${give.length ? give : html`<span class="muted">hiçbir şey</span>`}</div></div>
-    <div class="trade-col"><h4>${P(v, pd.to).name} verir</h4><div class="row">${take.length ? take : html`<span class="muted">hiçbir şey</span>`}</div></div></div>`;
+// Açık artırma: mülkün tapu kartı (üstüne gelince kira cetveli), teklif verenler piyonlarıyla, oyuncu renginde çubuk.
+// Büyük sayı TOPLAM teklif; yanında ne kadar artırdığın ayrıca yazar.
+function auctionHTML(v, pd) {
+  const me = v.you;
+  const step = E.auctionStep(v);
+  const min = pd.high + step;
+  const lead = pd.leader !== null ? P(v, pd.leader) : null;
+  const bidders = pd.order.map((i) => {
+    const st = pd.out.includes(i) ? 'out' : i === pd.leader ? 'lead' : i === pd.turn ? 'turn' : '';
+    const say = st === 'out' ? 'çekildi' : st === 'lead' ? 'en yüksek teklif' : st === 'turn' ? 'sırada' : 'bekliyor';
+    return html`<span class="bidder ${st}" style="--pc:${P(v, i).color}" data-tip="${meName(v, i)}: ${say}">${PW(P(v, i), 30)}</span>`;
+  });
+  const high = html`<div class="col" style="align-items:flex-end;gap:2px"><span class="kicker">En yüksek</span>${lead ? html`<span class="row" style="gap:6px">${PW(lead, 24)}<span class="h22">${M(pd.high)}</span></span>` : html`<span class="muted">henüz yok</span>`}</div>`;
+  const card = html`<div class="deed-wrap">${deed(v, pd.sq, { w: 230 })}${deed(v, pd.sq, { w: 230, ladder: true, cls: 'hoverladder' })}</div>`;
+  const head = html`<div class="row">${I('gavel')}<span class="h22">Açık artırma</span></div><div class="bidders">${bidders}</div>`;
+  if (pd.turn !== me) {
+    return html`<div class="card-prompt">${card}<div class="opt-col wide">${head}<div class="row" style="align-items:flex-end"><span class="h18">${P(v, pd.turn).name} düşünüyor</span><span class="grow"></span>${high}</div>${timerHTML(v, [pd.turn])}</div></div>`;
+  }
+  const cash = P(v, me).cash;
+  app.ui.binds ||= {};
+  let bid = Number(app.ui.binds.raise);
+  if (!(bid >= min) || bid > cash) bid = Math.min(min, cash);
+  app.ui.binds.raise = String(bid);
+  const can = cash >= min;
+  return html`<div class="card-prompt">${card}<div class="opt-col wide">${head}
+    <div class="row" style="align-items:flex-end;gap:16px"><div class="col" style="gap:2px"><span class="kicker">Teklifin</span><span class="big-num" data-show="raise">${M(bid)}</span></div><span class="delta" data-delta="raise" data-base="${pd.high}">+${bid - pd.high}</span><span class="grow"></span>${high}</div>
+    ${can ? html`<input type="range" class="rng" min="${min}" max="${cash}" step="5" data-bind="raise" aria-label="Toplam teklif" style="--c:${P(v, me).color}"><div class="rng-scale"><span>en az ${fmt(min).replace(' ₺', '')}</span><span>nakdin ${fmt(cash).replace(' ₺', '')}</span></div>` : html`<p class="reason">Nakdin en az teklife (${fmt(min)}) yetmiyor.</p>`}
+    <div class="row"><button class="btn L pri flex" data-act="raiseCustom" ${can ? '' : 'disabled'} data-primary><span data-show="raise">${M(bid)}</span> ile artır</button><button class="btn L gho" data-act="auctionPass">Çekil</button></div>${timerHTML(v, [me])}</div></div>`;
 }
 
-// Kaydırma çubuğu: değer app.ui.binds[bind] içinde, yanındaki [data-show] canlı güncellenir.
-function slider(bind, max, color, step = 10) {
-  const top = Math.max(0, max);
-  return html`<input type="range" class="slider" min="0" max="${top}" step="${step}" data-bind="${bind}" style="--c:${color}" ${top ? '' : 'disabled'}>
-    <div class="row slider-scale"><span>0</span><div class="grow"></div><span>${fmt(top)}</span></div>`;
+function tradeSide(v, x) {
+  const items = x.props.map((q) => deed(v, q, { mini: true }));
+  if (x.cash) items.push(html`<span class="cash-chip">${M(x.cash, true)}</span>`);
+  return items.length ? items : [html`<span class="muted small">hiçbir şey</span>`];
 }
 
-// ---------- yan panel ----------
+function tradeSummary(v, t) {
+  const side = (x) => [...x.props.map((q) => BOARD[q].name), x.cash ? fmt(x.cash) : ''].filter(Boolean).join(' + ') || 'hiçbir şey';
+  return html`<span class="sum-row">${side(t.give)} ${I('swap2')} ${side(t.take)}</span>`;
+}
+
+function tradePendingHTML(v, pd) {
+  const me = v.you;
+  if (pd.to === me) {
+    return html`<div class="sheet W"><div class="sheet-head">${PW(P(v, pd.from), 34)}<span class="h22">${P(v, pd.from).name} teklif ediyor</span></div>
+      <div class="row" style="align-items:stretch;gap:14px"><div class="trade-box"><span class="muted small">Sen alırsın</span>${tradeSide(v, pd.give)}</div><div style="display:grid;place-items:center">${I('deal')}</div><div class="trade-box"><span class="muted small">Sen verirsin</span>${tradeSide(v, pd.take)}</div></div>
+      <div class="row"><button class="btn L pri flex" data-act="tradeAccept" data-primary>Kabul</button><button class="btn L gho" data-act="tradeReject">Reddet</button></div>${timerHTML(v, [me])}</div>`;
+  }
+  if (pd.from === me) {
+    return html`<div class="sheet S"><div class="sheet-head"><span class="spinner"></span><span class="h18">Teklifin ${P(v, pd.to).name}'da</span></div>${tradeSummary(v, pd)}${timerHTML(v, [pd.to])}
+      <button class="btn sec" data-act="tradeCancel" style="align-self:flex-start">Teklifi geri çek</button></div>`;
+  }
+  return waitHTML(v, pd.to, `${P(v, pd.from).name}, ${P(v, pd.to).name} ile pazarlıkta`);
+}
+
+// ---------- sağ sütun ----------
 
 function playersHTML(v) {
   const waiting = new Set(E.waitingFor(v));
   const conn = (app.meta && app.meta.connected) || {};
-  const manage = canManage(v);
   return v.players
     .map((pl, i) => {
       const turn = v.phase === 'play' && v.turn && v.turn.p === i;
-      if (pl.out) {
-        return html`<div class="seat2 out" style="--c:${pl.color}" data-act="player" data-p="${i}">
-          <div class="s-av">${pl.avatar}</div>
-          <div><div class="s-name">${pl.name} ${i === v.you ? html`<span class="s-tag me">SEN</span>` : ''}<span class="s-tag out">İFLAS</span></div>
-            <div class="s-meta">${pl.out}. elenen oyuncu</div></div></div>`;
-      }
-      const flags = [
-        pl.bot ? html`<span data-tip="Bot oynuyor">🤖</span>` : conn[pl.id] === false ? html`<span data-tip="Bağlantısı koptu, süre dolunca bot oynar">📴</span>` : '',
-        pl.konkordato ? html`<span data-tip="Konkordato: oyun sonunda ${pl.konkordato * v.config.konkordatoPenalty} puan ceza">⚠️${pl.konkordato}</span>` : '',
-        pl.kiraZammi ? html`<span data-tip="Kira Zammı: tahsil edeceği ilk kira 2 katı">📈</span>` : '',
-        waiting.has(i) && !turn && v.phase !== 'over' ? html`<span class="s-wait" data-tip="Karar vermesi bekleniyor"></span>` : '',
-      ];
-      const tags = [i === v.you ? html`<span class="s-tag me">SEN</span>` : '', turn ? html`<span class="s-tag">SIRADA</span>` : ''];
-      const acts =
-        i === v.you
-          ? html`<div class="s-acts"><button class="btn small ghost" data-act="manage">🏠 Mülklerim</button><button class="btn small turq" data-act="trade" ${manage ? '' : 'disabled'} title="Sıra sendeyken pazarlık teklif edebilirsin">🤝 Pazarlık</button></div>`
-          : '';
-      return html`<div class="seat2 ${turn ? 'turn' : ''}" style="--c:${pl.color}" data-act="player" data-p="${i}">
-        <div class="s-av">${pl.avatar}</div>
-        <div><div class="s-name">${pl.name} ${tags} ${flags}</div>
-          <div class="s-meta"><span data-tip="Mülk sayısı (gar ve havalimanı dahil)">📜 ${E.propsOf(v, i).length} mülk</span><span class="s-backs" data-tip="Elindeki kart sayısı"><i></i>${pl.handCount} kart</span></div></div>
-        <div class="s-cash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}"><span data-tip="Nakit">${fmt(pl.cash)}</span><small data-tip="Net değer: nakit + mülk + katlar. Oyun sonu puanı bundan konkordato cezası düşülerek bulunur">değer ${fmt(E.netWorth(v, i))}</small></div>${acts}</div>`;
+      const tags = [];
+      if (pl.out) tags.push(html`<span data-tip="İflas etti, ${pl.out}. elenen">${I('iflas')}</span>`);
+      else if (pl.bot) tags.push(html`<span data-tip="Bot oynuyor">${I('bot')}</span>`);
+      else if (conn[pl.id] === false) tags.push(html`<span data-tip="Bağlantısı koptu, süre dolunca bot oynar">${I('plug')}</span>`);
+      if (pl.konkordato) tags.push(html`<span data-tip="Konkordato: oyun sonunda ${pl.konkordato * v.config.konkordatoPenalty} puan ceza">${I('warning')}</span>`);
+      if (pl.kiraZammi) tags.push(html`<span data-tip="Kira Zammı: tahsil edeceği ilk kira 2 katı">${I('up')}</span>`);
+      const wait = waiting.has(i) && !turn && v.phase !== 'over' ? html`<span class="pwait" data-tip="Karar vermesi bekleniyor"></span>` : '';
+      const label = `${pl.name}${i === v.you ? ' (sen)' : ''}, ${pl.out ? 'iflas etti' : `${fmt(pl.cash)}`}`;
+      return html`<button class="prow ${turn ? 'turn' : ''} ${pl.out ? 'out' : ''}" style="--pc:${pl.color}" data-act="player" data-p="${i}" aria-label="${label}">
+        <span class="disc">${PW(pl, 30)}</span><span class="pname">${pl.name}</span><span class="ptag">${tags}</span>${wait}<span class="grow"></span>
+        <span class="pcash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${pl.out ? 'elendi' : fmt(pl.cash).replace(' ₺', '')}</span></button>`;
     })
     .join('');
 }
 
-// Sağ sütundaki el ve deste. İzleyicinin eli yoktur.
+// Sağ sütundaki el ve deste. İzleyicinin eli yoktur. Oyuncu ayrıntısı açıksa elin yerinde durur.
 function renderHand(v) {
   const me = v.you;
-  els.handPanel.classList.toggle('hidden', me < 0);
+  const panel = app.ui.dialog && app.ui.dialog.type === 'player';
+  els.handPanel.classList.toggle('hidden', me < 0 || panel);
+  els.playerPanel.classList.toggle('hidden', !panel);
+  if (panel) setHTML(els.playerPanel, playerPanelHTML(v, app.ui.dialog.p));
   if (me < 0) return hand.render([], () => ({}));
   const pl = P(v, me);
   const discard = v.pending && v.pending.type === 'discard' && v.pending.p === me;
   hand.render(pl.hand, (u) => ({ playable: !discard && canPlay(v, u), selected: app.ui.selected.includes(u) }), app.ui.newCards || []);
   app.ui.newCards = [];
-  setHTML(els.handN, ` · ${pl.hand.length}`);
-  setHTML(els.deck, html`<i></i>${v.deck}`);
+  setHTML(els.handN, `${pl.hand.length}/${v.config.handLimit}`);
+  setHTML(els.deck, html`${I('cards')}${v.deck}`);
+}
+
+function toolsHTML(v) {
+  const d = app.ui.dialog?.type;
+  const t = (k, icon, label, tip) => html`<button class="btn ${d === k ? 'on' : ''}" data-act="tool" data-k="${k}" data-tip="${tip}">${I(icon)}${label}</button>`;
+  return html`${t('trade', 'deal', 'Pazarlık', 'Sıra sendeyken bir rakibe mülk ve para teklif et')}${t('mortgage', 'ipotek', 'İpotek', 'Mülklerini ipotek et ya da ipoteği kaldır')}${t('build', 'build', 'İnşaat', 'Bütün setlerinde kat dik ya da sat')}`;
 }
 
 function renderAudioPop() {
   if (!app.ui.audioOpen) return setHTML(els.audioPop, '');
   const a = getAudio();
-  const row = (k, label, color) =>
-    html`<div class="audio-row"><label><input type="checkbox" data-act="audioToggle" data-k="${k}" ${a[`${k}On`] ? 'checked' : ''}> ${label}</label><span class="muted small" data-audio-show="${k}">%${Math.round(a[k] * 100)}</span>
-      <input type="range" class="slider" min="0" max="100" step="5" value="${Math.round(a[k] * 100)}" data-audio="${k}" style="--c:${color}"></div>`;
-  setHTML(els.audioPop, html`<div class="audio-pop"><h4>🎵 Ses ayarları</h4>${row('music', '🎶 Müzik', '#00798c')}${row('sfx', '🔔 Efektler', '#d1495b')}</div>`);
+  const row = (k, icon, label, color) =>
+    html`<div class="col" style="gap:6px"><div class="row" style="gap:8px">${I(icon)}<span style="font-weight:600">${label}</span><span class="grow"></span><input type="checkbox" class="sw" style="--c:${color}" data-act="audioToggle" data-k="${k}" ${a[`${k}On`] ? 'checked' : ''} aria-label="${label} açık"></div>
+      <input type="range" class="rng" min="0" max="100" step="5" value="${Math.round(a[k] * 100)}" data-audio="${k}" style="--c:${color};--p:${Math.round(a[k] * 100)}%" aria-label="${label} sesi"></div>`;
+  const online = app.mode !== 'local';
+  setHTML(els.audioPop, html`<div class="sound-pop" role="dialog" aria-label="Ses ayarları"><span class="h16">Ses</span>${row('music', 'music', 'Müzik', '#c8912f')}${row('sfx', 'sound', 'Efektler', '#2475e8')}
+    ${notifySupported() ? html`<div class="row" style="gap:8px;padding-top:8px;border-top:1px solid var(--line)">${I(isNotifyOn() ? 'bell' : 'bellOff')}<span class="small">Sıra bana gelince bildir</span><span class="grow"></span><input type="checkbox" class="sw" data-act="notify" ${isNotifyOn() ? 'checked' : ''} aria-label="Bildirim"></div>` : ''}
+    ${online ? html`<button class="btn S ton" data-act="copyLink">${I('link')}Davet linkini kopyala · ${app.code}</button>` : ''}</div>`);
 }
 
-// Olaylar: sade, büyük yazı; zar, yürüme, maaş gibi gürültü gizlenir. Her tur bir başlıkla ayrılır.
-const FEED_ICON = { iflas: '💥', target: '🏁', surpriz: '❓', collapse: '🏚️', card: '🃏', own: '🏠', auction: '🔨', build: '🏗️', demolish: '🚜', konkordato: '⚠️', tradeDone: '🤝', over: '🏆', summary: '📊' };
+// Olaylar: sade, büyük yazı; zar, yürüme, maaş gibi gürültü gizlenir. Ortada son 3 olay, geçmişte turlara ayrılmış hepsi.
+const FEED_IC = { iflas: 'iflas', target: 'trophy', surpriz: 'surpriz', collapse: 'kacak', card: 'hamle', own: 'tapu', auction: 'gavel', build: 'build', demolish: 'kacak', konkordato: 'warning', tradeDone: 'deal', over: 'trophy', summary: 'news', gundem: 'news' };
 const FEED_HIDE = new Set(['dice', 'move', 'bid', 'draw', 'turn', 'trade', 'auctionStart']);
+const cardChip = (id) => html`<span class="cchip ${CARDS[id].type}" data-card="${id}">${CARDS[id].name}</span>`;
 
-function feedItem(l) {
-  if (l.type === 'gundem' || l.type === 'round') {
-    const m = /Gündem: ([^.]+)\./.exec(l.text);
-    return html`<div class="ev-round"><b>${l.r}. TUR</b>${m ? html`<span>${m[1]}</span>` : ''}</div>`;
-  }
-  let icon = FEED_ICON[l.type] || '•';
-  if (l.type === 'money') icon = / \+/.test(l.text) ? '💰' : '💸';
-  return html`<div class="ev t-${l.type}"><span class="ev-i">${icon}</span><span>${feedText(l)}</span></div>`;
+function feedIcon(l) {
+  if (l.type === 'card' && l.card) return CARDS[l.card].type;
+  if (l.type === 'money') return / \+/.test(l.text) ? 'coin' : 'coin';
+  return FEED_IC[l.type] || 'info';
 }
 
-// Kart adı türüne göre renkli bir çip olur (Hamle kırmızı, Tepki mavi); üzerine gelince kartın kendisi görünür.
-const cardChip = (id) => html`<span class="cchip ${CARDS[id].type}" data-card="${id}">${CARDS[id].icon} ${CARDS[id].name}</span>`;
+// Motorun günlük metnindeki ok karakterleri SVG oka döner (yazı tipi okları kullanılmaz).
+const ARROWS = { '\u2192': 'arrow', '\u2194': 'swap2' };
+const arrows = (t) => html`${t.split(/(\u2192|\u2194)/).map((x) => (ARROWS[x] ? I(ARROWS[x], 'arr') : x))}`;
 
 function feedText(l) {
   const c = l.card && CARDS[l.card];
-  if (!c) return l.text;
+  if (!c) return arrows(l.text);
   const i = l.text.indexOf(c.name);
-  return i < 0 ? html`${l.text} ${cardChip(l.card)}` : html`${l.text.slice(0, i)}${cardChip(l.card)}${l.text.slice(i + c.name.length)}`;
+  return i < 0 ? html`${arrows(l.text)} ${cardChip(l.card)}` : html`${arrows(l.text.slice(0, i))}${cardChip(l.card)}${arrows(l.text.slice(i + c.name.length))}`;
 }
 
 const feedRows = () => app.view.log.filter((l) => l.text && !FEED_HIDE.has(l.type) && !/\((Maaş|Kat|Kaçak kat)\)$/.test(l.text));
-const feedHTML = () => feedRows().slice(-60).reverse().map(feedItem).join('');
 
-// Tahtanın ortasında son olaylar: en yenisi üstte, aşağı doğru solarak kaybolur. Tıklayınca tüm geçmiş açılır.
 export function renderFeed() {
   if (!els) return;
-  setHTML(els.feed, feedRows().filter((l) => l.type !== 'gundem' && l.type !== 'round').slice(-6).reverse().map(feedItem).join(''));
+  const rows = feedRows().filter((l) => l.type !== 'gundem' && l.type !== 'round').slice(-3).reverse();
+  const r = app.view.round;
+  setHTML(els.feed, rows.length ? html`<span class="kicker">${r}. tur</span>${rows.map((l) => html`<div class="ev">${I(feedIcon(l))}<span>${feedText(l)}</span></div>`)}` : '');
+  els.feed.classList.toggle('hidden', !rows.length || !!app.ui.dialog || app.view.phase === 'over');
 }
 
-// ---------- pencereler ----------
+function historyHTML() {
+  const rows = [];
+  let round = null;
+  for (const l of feedRows().slice(-80).reverse()) {
+    if (l.r !== round) {
+      round = l.r;
+      rows.push(html`<span class="kicker" style="padding-top:6px">${round}. tur</span>`);
+    }
+    if (l.type === 'round') continue;
+    rows.push(html`<div class="hist-row">${I(feedIcon(l))}<span>${feedText(l)}</span></div>`);
+  }
+  return html`<div class="sheet L" style="max-height:100%"><div class="sheet-head">${I('history')}<span class="h22">Son olaylar</span><span class="grow"></span><button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div><div class="sheet-body">${rows}</div></div>`;
+}
+
+// ---------- pencereler (tahtanın ortasında) ----------
+
+const sheetHead = (icon, title, extra = '') => html`<div class="sheet-head">${I(icon)}<span class="h22">${title}</span>${extra}<span class="grow"></span><button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div>`;
 
 function cardDialog(v, uid) {
   const id = cardId(uid);
   const c = CARDS[id];
   const me = v.you;
-  const playable = canPlay(v, uid);
-  const big = cardFace(id, 'big');
-  if (!playable) {
+  const timing = c.type === 'tepki' ? 'Gerektiğinde sana sorulur' : WHEN[c.when] || 'Sıra sendeyken';
+  const top = html`<div class="row">${I(c.type)}<span class="h22">${c.name}</span><span class="grow"></span><button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div><span class="card-text">${c.text}</span><span class="chip" style="align-self:flex-start">${I('timer')}${timing}</span>`;
+  if (!canPlay(v, uid)) {
     let why = 'Bu kart şu an oynanamaz.';
-    if (c.type === 'tepki') why = 'Bu bir tepki kartı; zamanı gelince sana sorulacak.';
-    else if (v.turn && v.turn.p === me && v.turn.hamle) why = 'Bu tur zaten bir Hamle kartı oynadın.';
-    else if (v.turn && v.turn.p === me && !v.pending && E.cardTargets(v, me, id).length === 0) why = 'Bu kart için uygun hedef yok.';
-    return html`<div class="cdlg">${big}<div class="cdlg-r"><h2>${c.name}</h2><p class="reason">${why}</p></div></div>`;
+    if (c.type === 'tepki') why = 'Bu bir tepki kartı; zamanı gelince sana sorulur.';
+    else if (!v.turn || v.turn.p !== me) why = 'Hamle kartları sıra sendeyken oynanır.';
+    else if (v.turn.hamle) why = 'Bu tur zaten bir Hamle kartı oynadın.';
+    else if (!v.pending && E.cardTargets(v, me, id).length === 0) why = 'Bu kart için uygun hedef yok.';
+    return html`<div class="sheet W"><div class="card-prompt" style="align-items:flex-start">${cardFace(id, 'big')}<div class="opt-col" style="width:auto;flex:1">${top}<span class="note">${I('info')}${why}</span></div></div></div>`;
   }
   const targets = E.cardTargets(v, me, id);
-  const play = (t, label) => html`<button data-act="play" data-uid="${uid}" data-t="${JSON.stringify(t)}">${label}</button>`;
+  const play = (t, label, cls = 'btn sec full') => html`<button class="${cls}" data-act="play" data-uid="${uid}" data-t="${JSON.stringify(t)}">${label}</button>`;
   let body;
   switch (c.target) {
     case 'steps':
-      body = html`<p>Kaç kare gideceksin?</p><div class="steps">${targets.map((t) => html`<button data-act="play" data-uid="${uid}" data-t="${JSON.stringify(t)}"><b>${t.steps}</b>${BOARD[destOf(v, t.steps, false)].name}</button>`)}</div>`;
+      body = html`<span class="h18">Kaç kare gideceksin?</span><div class="steps">${targets.map((t) => html`<button data-act="play" data-uid="${uid}" data-t="${JSON.stringify(t)}"><b>${t.steps}</b><span>${BOARD[destOf(v, t.steps, false)].name}</span></button>`)}</div>`;
       break;
     case 'die':
-      body = html`<div class="row center">${targets.map((t) => html`<button class="btn gold" data-act="play" data-uid="${uid}" data-t="${JSON.stringify(t)}">${t.die + 1}. zar: ${v.turn.dice[t.die]} kare → ${BOARD[destOf(v, v.turn.dice[t.die], v.turn.backward)].name}</button>`)}</div>`;
-      break;
-    case 'opp-prop':
-    case 'self-prop':
-      body = html`<p>Hangi mülk?</p><div class="targets">${targets.map((t) => {
-        const o = v.props[t.sq].owner;
-        const extra = id === 'kamulastirma' ? `Bedel ${fmt(E.price(v, t.sq))}` : id === 'tedbir' ? `Kira ${fmt(E.rentFor(v, t.sq))}` : `${E.level(v.props[t.sq])} kat`;
-        return play(t, html`${sqChip(t.sq)}<span class="muted">${o !== me ? P(v, o).name : ''} · ${extra}</span>`);
-      })}</div>`;
+      body = html`<div class="row">${targets.map((t) => play(t, html`${v.turn.dice[t.die]}${I('arrow')}${BOARD[destOf(v, v.turn.dice[t.die], v.turn.backward)].name}`, 'btn L sec flex'))}</div>`;
       break;
     case 'opp-player':
-      body = html`<p>Kime?</p><div class="targets">${targets.map((t) => play(t, html`<b>${P(v, t.player).avatar} ${P(v, t.player).name}</b><span class="muted">${fmt(P(v, t.player).cash)}${id === 'ihbar' ? ` · ${E.floorsOf(v, t.player).kacak} kaçak` : ''}</span>`))}</div>`;
+      body = html`<span class="h18">Kime?</span><div class="col" style="gap:8px">${targets.map((t) => play(t, html`${PW(P(v, t.player), 26)}${P(v, t.player).name}<span class="grow"></span>${id === 'ihbar' ? html`${I('kacak')}${E.floorsOf(v, t.player).kacak}` : M(P(v, t.player).cash)}`))}</div>`;
       break;
-    case 'swap': {
-      const mine = [...new Set(targets.map((t) => t.mine))];
-      const sel = app.ui.swapMine;
-      body = html`<p>1) Vereceğin mülk:</p><div class="targets">${mine.map((q) => html`<button class="${sel === q ? 'on' : ''}" data-act="swapMine" data-sq="${q}">${sqChip(q)}</button>`)}</div>
-        ${sel !== null && mine.includes(sel) ? html`<p>2) Alacağın mülk:</p><div class="targets">${targets.filter((t) => t.mine === sel).map((t) => play(t, html`${sqChip(t.theirs)}<span class="muted">${P(v, v.props[t.theirs].owner).name}</span>`))}</div>` : ''}`;
+    case 'none':
+      body = html`<button class="btn L pri full" data-act="play" data-uid="${uid}" data-t="{}" data-primary>${I('bolt')}Oyna</button>`;
       break;
-    }
     default:
-      body = html`<div class="row center"><button class="btn primary big" data-act="play" data-uid="${uid}" data-t="{}">Oyna</button></div>`;
+      body = html`<button class="btn L pri full" data-act="pickBoard" data-uid="${uid}" data-primary>${I('target')}Tahtadan seç</button>`;
   }
-  const fromBoard = isBoardPickable(uid) ? html`<div class="row center"><button class="btn turq" data-act="pickBoard" data-uid="${uid}">🎯 Tahtadan seç</button></div>` : '';
-  return html`<div class="cdlg">${big}<div class="cdlg-r"><h2>${c.name}</h2>${body}${fromBoard}</div></div>`;
+  return html`<div class="sheet W" style="width:600px"><div class="card-prompt" style="align-items:flex-start">${cardFace(id, 'big glow')}<div class="opt-col" style="width:auto;flex:1">${top}${body}</div></div></div>`;
 }
 
-function propActions(v, sq) {
+// İnşaat paneli: bütün setler tek yerde, kare başına +/- (yasal kat), toplam ve "İnşa et".
+function buildDialog(v) {
   const me = v.you;
-  const ps = v.props[sq];
-  if (!ps || ps.owner !== me) return '';
   const manage = canManage(v);
-  const b = (actName, label, block) => html`<button class="btn tiny ${actName === 'buildKacak' ? 'gold' : actName === 'build' ? 'green' : ''}" data-act="${actName}" data-sq="${sq}" ${!manage || block ? 'disabled' : ''} title="${block || ''}">${label}</button>`;
-  const out = [];
-  if (BOARD[sq].kind === 'prop') {
-    out.push(b('build', `+ Kat ${fmt(E.katCost(v, sq))}`, E.buildBlock(v, me, sq, false)));
-    out.push(b('buildKacak', `+ Kaçak ${fmt(E.kacakCost(v, sq))}`, E.buildBlock(v, me, sq, true)));
-    if (E.level(ps) > 0) out.push(b('sellFloor', `Kat sat +${fmt(Math.round(E.katValue(v, sq) / (ps.kacak ? 20 : 10)) * 5)}`, null));
-  }
-  if (!ps.ipotek) out.push(b('mortgage', `İpotek +${fmt(E.mortgageValue(v, sq))}`, E.level(ps) > 0 ? 'Önce katları sat.' : null));
-  else out.push(b('unmortgage', `İpotek kaldır ${fmt(E.unmortgageCost(v, sq))}`, P(v, me).cash < E.unmortgageCost(v, sq) ? 'Paran yetmiyor.' : null));
-  return out;
+  const st = (app.ui.build ||= {});
+  const mine = E.propsOf(v, me).filter((q) => BOARD[q].kind === 'prop');
+  const groups = Object.keys(GROUPS).filter((g) => mine.some((q) => BOARD[q].group === g));
+  let total = 0;
+  const sets = groups.map((g) => {
+    const full = E.ownsGroup(v, me, g);
+    const qs = GROUP_SQUARES[g].filter((q) => v.props[q].owner === me);
+    const rows = qs.map((q) => {
+      const ps = v.props[q];
+      const d = st[q] || 0;
+      const lvl = E.level(ps) + d;
+      total += d > 0 ? d * E.katCost(v, q) : d < 0 ? d * Math.round(E.katValue(v, q) / 10) * 5 : 0;
+      const plusBlock = !full ? 'Yasal kat için şehrin hepsi gerekir.' : lvl >= 4 ? 'En üst seviye.' : d === 0 ? E.buildBlock(v, me, q, false) : null;
+      const minusOk = ps.kat + Math.min(0, d) > 0 || d > 0;
+      const now = E.rentFor(v, q);
+      const icons = [...Array(Math.min(4, Math.max(0, ps.kat + d))).keys()].map(() => I('house'));
+      if (ps.kacak) icons.push(I('kacak'));
+      const kac = !full && !ps.kacak && !E.buildBlock(v, me, q, true) ? html`<button class="btn S sec" data-act="buildKacak" data-sq="${q}" ${manage ? '' : 'disabled'}>${I('kacak')}${M(E.kacakCost(v, q))}</button>` : '';
+      return html`<div class="build-row"><span class="bname">${BOARD[q].name}</span><span class="blvl">${icons}</span>
+        <button class="btn S sec sq" data-act="bstep" data-sq="${q}" data-d="-1" ${manage && minusOk ? '' : 'disabled'} aria-label="Azalt">${I('minus')}</button><span class="bval">${ps.kat + d}</span>
+        <button class="btn S pri sq" data-act="bstep" data-sq="${q}" data-d="1" ${manage && !plusBlock ? '' : 'disabled'} data-tip="${plusBlock || ''}" aria-label="Artır">${I('plus')}</button>${kac}
+        <span class="brent">kira ${now}${d ? html`${I('arrow')}${scaled(v, q, BOARD[q].rents[Math.min(4, E.level(ps) + d)])}` : ''}</span></div>`;
+    });
+    return html`<div class="col" style="gap:4px"><div class="set-head"><span class="cdot" style="--dc:${GROUPS[g].color}"></span>${GROUPS[g].name}<span class="muted small">${full ? `set tamam · kat ${fmt(E.katCost(v, qs[0]))}` : 'set yok · yalnız kaçak'}</span></div>${rows}</div>`;
+  });
+  const empty = !sets.length ? html`<span class="body">Henüz mülkün yok. Sahipsiz bir arsaya gelince satın alabilirsin.</span>` : '';
+  const lock = manage ? '' : html`<span class="note">${I('timer')}Kat dikmek ve satmak yalnız sıra sendeyken.</span>`;
+  const changed = Object.values(st).some((d) => d);
+  return html`<div class="sheet L">${sheetHead('build', 'İnşaat', html`<span class="muted small">bütün setlerin tek yerde</span>`)}<div class="sheet-body">${sets}${empty}</div>${lock}
+    <div class="sheet-foot"><span class="muted small">Toplam</span><span class="h28">${M(-total)}</span><span class="grow"></span><button class="btn gho" data-act="close">Vazgeç</button><button class="btn pri" data-act="buildGo" ${manage && changed && total <= P(v, me).cash ? '' : 'disabled'}>${I('build')}İnşa et</button></div></div>`;
 }
 
-function manageDialog(v) {
+function mortgageDialog(v) {
   const me = v.you;
+  const manage = canManage(v);
   const mine = E.propsOf(v, me).sort((a, b) => a - b);
-  const note = canManage(v) ? '' : html`<p class="notice">Kat dikmek ve ipotek işlemleri yalnız sıra sendeyken yapılır.</p>`;
-  if (!mine.length) return html`<h2>🏠 Mülklerim</h2>${note}<p class="muted">Henüz mülkün yok. Sahipsiz bir arsaya gelince satın alabilirsin.</p>`;
   const rows = mine.map((q) => {
     const ps = v.props[q];
-    const lvl = [ps.kat ? `🏠×${ps.kat}` : '', ps.kacak ? '🚧' : ''].join(' ').trim();
-    return html`<tr><td>${sqChip(q)}${ps.ipotek ? html` <span class="chip">ipotekli</span>` : ''}${ps.tedbir ? html` <span class="chip">⚖️</span>` : ''}</td><td>${lvl || '-'}</td><td class="money">${ps.ipotek ? '-' : fmt(E.rentFor(v, q))}</td><td class="acts">${propActions(v, q)}</td></tr>`;
+    const status = ps.ipotek ? 'İpotekli: kira almaz' : E.level(ps) ? 'Önce katları sat' : `Kira ${fmt(E.rentFor(v, q))}`;
+    return html`<div class="build-row" style="height:auto;padding:8px 10px">${deed(v, q, { mini: true, w: 110 })}<span class="col" style="gap:2px;flex:1"><span class="muted small">${status}</span></span>${mortBtn(v, q, manage)}</div>`;
   });
-  return html`<h2>🏠 Mülklerim</h2>${note}<table class="mgr"><tr><th>Mülk</th><th>Kat</th><th>Kira</th><th></th></tr>${rows}</table>
-    <p class="muted" style="font-size:12px">🏠 yasal kat, 🚧 kaçak kat. Yasal kat için şehrin tüm mülkleri sende olmalı. Kaçak kat yarı fiyat ama yıkılabilir.</p>`;
+  const lock = manage ? '' : html`<span class="note">${I('timer')}İpotek işlemleri yalnız sıra sendeyken.</span>`;
+  return html`<div class="sheet L">${sheetHead('ipotek', 'İpotek', html`<span class="muted small">koyunca fiyatın yarısı, kaldırınca %55</span>`)}<div class="sheet-body">${rows.length ? rows : html`<span class="body">Henüz mülkün yok.</span>`}</div>${lock}</div>`;
 }
 
 function tradeDialog(v) {
   const me = v.you;
   const t = app.ui.trade;
-  const opps = v.players.map((_, i) => i).filter((i) => i !== me);
+  const opps = v.players.map((_, i) => i).filter((i) => i !== me && !P(v, i).out);
   if (t.to === null || !opps.includes(t.to)) t.to = opps[0];
-  const chips = (owner, side) => {
-    const qs = E.propsOf(v, owner).sort((a, b) => a - b);
-    if (!qs.length) return html`<div class="muted small">Mülk yok</div>`;
-    return html`<div class="tchips">${qs.map((q) => {
-      const ok = E.level(v.props[q]) === 0;
-      return html`<button class="tchip ${t[side].props.includes(q) ? 'on' : ''}" data-act="tradePick" data-side="${side}" data-sq="${q}" ${ok ? '' : 'disabled'} title="${ok ? '' : 'Katlı mülk takas edilemez'}">${BOARD[q].name}<small>${cityOf(q)}</small></button>`;
-    })}</div>`;
-  };
-  const col = (i, label, side, bind) => {
+  const col = (i, title, side, bind) => {
     const pl = P(v, i);
-    return html`<div class="trade-col" style="--c:${pl.color}"><h4>${av(pl, 'sm')} ${label}</h4>${chips(i, side)}
-      <div class="moneybox"><div class="row"><span class="muted">Para</span><div class="grow"></div><b class="amount" data-show="${bind}"></b></div>${slider(bind, pl.cash, pl.color)}</div></div>`;
+    const qs = E.propsOf(v, i).sort((a, b) => a - b);
+    const props = qs.map((q) => {
+      const ok = E.level(v.props[q]) === 0;
+      return deed(v, q, { mini: true, sel: t[side].props.includes(q), off: !ok, attrs: ok ? `data-act="tradePick" data-side="${side}" data-sq="${q}" role="button" tabindex="0"` : 'data-tip="Katlı mülk takas edilemez"' });
+    });
+    const val = Number((app.ui.binds || {})[bind]) || 0;
+    return html`<div class="trade-col" style="--pc:${pl.color}"><div class="row" style="gap:8px">${PW(pl, 24)}<span class="h16">${title}</span></div>
+      <div class="trade-props">${props.length ? props : html`<span class="muted small">Mülk yok</span>`}</div>
+      <div class="trade-cash"><span class="muted small">Para</span><span data-show="${bind}">${M(val)}</span></div>
+      <input type="range" class="rng" min="0" max="${Math.max(0, pl.cash)}" step="10" data-bind="${bind}" style="--c:${pl.color}" ${pl.cash > 0 ? '' : 'disabled'} aria-label="${title} para"></div>`;
   };
-  const block = E.tradeBlock(v, me, tradeOffer());
-  return html`<h2>🤝 Pazarlık</h2>
-    <div class="tpartners">${opps.map((i) => html`<button class="tpartner ${t.to === i ? 'on' : ''}" data-act="tradeTo" data-p="${i}" style="--c:${P(v, i).color}">${av(P(v, i), 'sm')} ${P(v, i).name}</button>`)}</div>
-    <div class="trade-cols">${col(me, 'Sen veriyorsun', 'give', 'tradeGive')}${col(t.to, `${P(v, t.to).name} veriyor`, 'take', 'tradeTake')}</div>
-    <p class="reason" data-trade-reason>${block || ''}</p>
-    <div class="row"><div class="grow"></div><button class="btn ghost" data-act="close">Vazgeç</button><button class="btn primary" data-act="sendTrade" ${block ? 'disabled' : ''}>Teklifi Gönder</button></div>`;
+  const offer = tradeOffer();
+  const empty = !offer.give.cash && !offer.take.cash && !offer.give.props.length && !offer.take.props.length;
+  const block = empty ? null : E.tradeBlock(v, me, offer);
+  return html`<div class="sheet XL" style="height:100%"><div class="sheet-head">${I('deal')}<span class="h22">Pazarlık</span><span class="grow"></span>
+      <div class="partners">${opps.map((i) => html`<button class="btn S sec ${t.to === i ? 'on' : ''}" style="--pc:${P(v, i).color}" data-act="tradeTo" data-p="${i}">${PW(P(v, i), 24)}${P(v, i).name.split(' ')[0]}</button>`)}</div>
+      <button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div>
+    <div class="trade-cols">${col(me, 'Sen veriyorsun', 'give', 'tradeGive')}${col(t.to, `${P(v, t.to).name}'dan istiyorsun`, 'take', 'tradeTake')}</div>
+    <div class="row"><span data-trade-sum class="grow">${empty ? html`<span class="muted small">Vermek ya da almak istediğini seç.</span>` : block ? html`<span class="reason">${block}</span>` : tradeSummary(v, offer)}</span>
+      <button class="btn gho" data-act="close">Vazgeç</button><button class="btn L pri" data-act="sendTrade" ${empty || block ? 'disabled' : ''}>Teklifi gönder</button></div></div>`;
 }
 
-// Kaydırma çubuğu oynarken pencereyi yeniden çizmeden uyarıyı ve düğmeyi günceller.
+// Kaydırma çubuğu oynarken pencereyi yeniden çizmeden özeti ve düğmeyi günceller.
 function refreshTrade() {
   const v = app.view;
-  const block = E.tradeBlock(v, v.you, tradeOffer());
-  const reason = els.modal.querySelector('[data-trade-reason]');
+  const offer = tradeOffer();
+  const empty = !offer.give.cash && !offer.take.cash && !offer.give.props.length && !offer.take.props.length;
+  const block = empty ? null : E.tradeBlock(v, v.you, offer);
+  const sum = els.modal.querySelector('[data-trade-sum]');
   const btn = els.modal.querySelector('[data-act="sendTrade"]');
-  if (reason) reason.textContent = block || '';
-  if (btn) btn.disabled = !!block;
+  if (sum) sum.innerHTML = String(empty ? html`<span class="muted small">Vermek ya da almak istediğini seç.</span>` : block ? html`<span class="reason">${block}</span>` : tradeSummary(v, offer));
+  if (btn) btn.disabled = empty || !!block;
 }
 
 export function tradeOffer() {
@@ -653,62 +737,48 @@ export function tradeOffer() {
   return { to: t.to, give: { cash: cash(b.tradeGive), props: t.give.props }, take: { cash: cash(b.tradeTake), props: t.take.props } };
 }
 
-function playerDialog(v, p) {
+function playerPanelHTML(v, p) {
   const pl = P(v, p);
   const byGroup = {};
-  for (const q of E.propsOf(v, p)) {
-    const g = BOARD[q].group || BOARD[q].mode;
-    (byGroup[g] ||= []).push(q);
-  }
-  const groups = Object.entries(byGroup).map(
-    ([g, qs]) =>
-      html`<div class="row"><b style="min-width:90px">${GROUPS[g] ? GROUPS[g].name : E.TRANSPORT_LABEL[g]}${GROUPS[g] && E.ownsGroup(v, p, g) ? ' ★' : ''}</b>${qs.map((q) => html`<span class="chip">${BOARD[q].name}${v.props[q].kat ? ` 🏠×${v.props[q].kat}` : ''}${v.props[q].kacak ? ' 🚧' : ''}${v.props[q].ipotek ? ' (ipotek)' : ''}</span>`)}</div>`,
-  );
-  return html`<h2>${av(pl)} ${pl.name}</h2>
-    <div class="row"><span class="chip">💵 ${fmt(pl.cash)}</span><span class="chip">Net değer ${fmt(E.netWorth(v, p))}</span><span class="chip">🂠 ${pl.handCount} kart</span>${pl.konkordato ? html`<span class="chip">Konkordato ×${pl.konkordato}</span>` : ''}</div>
-    ${groups.length ? groups : html`<p class="muted">Mülkü yok.</p>`}
-    <p class="muted" style="font-size:12px">★ tamamlanmış şehir seti.</p>`;
-}
-
-function resultsDialog(v) {
-  const r = v.results;
-  const rows = r.ranking.map((p, k) => {
-    const sc = r.scores[p];
-    const pl = P(v, p);
-    const detail = pl.out ? `İflas etti (${pl.out}. elenen)` : `Nakit ${fmt(sc.nakit)} · Mülk ${fmt(sc.mulk)} · Kat ${fmt(sc.katlar)}${sc.ceza ? ` · Ceza -${fmt(sc.ceza)}` : ''}`;
-    return html`<div class="res ${k === 0 ? 'win' : ''} ${pl.out ? 'out' : ''}"><div class="rank">${['🥇', '🥈', '🥉'][k] || k + 1}</div>${av(pl)}
-      <div><b>${pl.name}</b><div class="rb">${detail}</div></div>
-      <div class="rt money">${pl.out ? '💥' : fmt(sc.total)}</div></div>`;
+  for (const q of E.propsOf(v, p)) (byGroup[BOARD[q].group || BOARD[q].mode] ||= []).push(q);
+  const groups = Object.entries(byGroup).map(([g, qs]) => {
+    const color = GROUPS[g] ? GROUPS[g].color : '#3b465c';
+    const items = qs.map((q) => {
+      const ps = v.props[q];
+      return html`<span class="pchip">${BOARD[q].name}${ps.kat ? html`${I('house')}×${ps.kat}` : ''}${ps.kacak ? I('kacak') : ''}${ps.ipotek ? I('ipotek') : ''}</span>`;
+    });
+    return html`<div class="col" style="gap:4px"><div class="row" style="gap:6px"><span class="cdot" style="--dc:${color}"></span><b class="small">${GROUPS[g] ? GROUPS[g].name : E.TRANSPORT_LABEL[g]}</b>${GROUPS[g] && E.ownsGroup(v, p, g) ? I('star') : ''}</div><div class="row" style="flex-wrap:wrap;gap:4px">${items}</div></div>`;
   });
-  return html`<h2>${v.config.iflas ? '🏁 Oyun sonu' : '🗳️ Seçim Günü sonuçları'}</h2><div class="results">${rows}</div>${worthChart(v)}
-    ${isHost() ? html`<div class="row"><div class="grow"></div><button class="btn turq" data-act="newGame">Aynı masayla yeni oyun</button></div>` : ''}`;
+  return html`<div class="row" style="gap:10px">${PW(pl, 40)}<span class="h22">${pl.name}</span><span class="grow"></span><button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div>
+    <div class="stat3"><div class="stat" data-tip="Nakit">${I('coin')}<b class="num">${fmt(pl.cash).replace(' ₺', '')}</b></div><div class="stat" data-tip="Net değer: nakit + mülk + katlar">${I('up')}<b class="num">${fmt(E.netWorth(v, p)).replace(' ₺', '')}</b></div><div class="stat" data-tip="Elindeki kart">${I('cards')}<b class="num">${pl.handCount}</b></div></div>
+    ${pl.konkordato ? html`<span class="note">${I('warning')}Konkordato ×${pl.konkordato}: sonda −${pl.konkordato * v.config.konkordatoPenalty} puan</span>` : ''}
+    ${groups.length ? groups : html`<span class="muted">Mülkü yok.</span>`}`;
 }
 
-// Tur tur net değer çizgisi (konkordato cezası yok; kazananın çizgisi kalın).
-function worthChart(v) {
-  const W = 420;
-  const H = 150;
-  const c = worthLines(v.worth, W, H);
-  if (!c) return '';
-  const win = v.results.ranking[0];
-  const order = [...c.lines.keys()].sort((a, b) => (a === win) - (b === win));
-  const lines = order.map((p) => html`<polyline points="${c.lines[p]}" style="--c:${P(v, p).color}" class="${p === win ? 'win' : ''}"><title>${P(v, p).name}</title></polyline>`);
-  return html`<div class="worth"><div class="worth-h">📈 Tur tur net değer <span class="muted">${fmt(c.hi)} en yüksek</span></div>
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Tur tur net değer grafiği">
-      <line x1="0" x2="${W}" y1="${c.zero}" y2="${c.zero}" class="zero"></line>${lines}</svg>
-    <div class="worth-x"><span>Başlangıç</span><span>${c.rounds}. tur</span></div></div>`;
-}
+const RULE_ITEMS = [
+  ['dice', 'Zar at, ilerle', 'Sahipsiz arsayı al ya da artırmaya çıkar.'],
+  ['star', 'Seti tamamla', 'Şehrin hepsi sende: kira 2 kat, yasal kat dikebilirsin.'],
+  ['house', 'Kat dik', 'Karena tıkla ya da İnşaat. En fazla 4 kat.'],
+  ['kacak', 'Kaçak kat', 'Set şart değil, yarı fiyat; ama Zabıta ve İhbar yıkar.'],
+  ['hamle', 'Hamle kartları', 'Sıra sendeyken turda 1 kart. Başlangıç ve Fırsat kart verir.'],
+  ['tepki', 'İtiraz ve Dayın Çıktı', 'Sana oynanan karta ya da kiraya karşı.'],
+  ['news', 'Gündem', `${GUNDEM_PERIOD} turda bir haber çıkar, kuralları değiştirir.`],
+  ['trophy', 'Seçim Günü', 'Son turun sonunda puanı en yüksek olan kazanır.'],
+];
+
+export const rulesSheet = () =>
+  html`<div class="sheet XL" style="max-height:100%">${sheetHead('book', 'Nasıl oynanır?')}<div class="sheet-body"><div class="rules-grid">${RULE_ITEMS.map(([icn, h, t]) => html`<div class="rule-item">${I(icn)}<span class="col" style="gap:2px"><b class="h16">${h}</b><span class="body" style="font-size:14px">${t}</span></span></div>`)}</div>
+    <details class="rules-more"><summary>Bütün kurallar</summary>${raw(RULES_HTML)}</details></div></div>`;
 
 export function renderModal() {
   if (!els) return;
   const v = app.view;
   const d = app.ui.dialog;
-  if (!d || !v) {
+  if (!d || !v || d.type === 'player') {
     setHTML(els.modal, '');
     return;
   }
   let body = '';
-  let wide = false;
   switch (d.type) {
     case 'card':
       if (!v.players[v.you]?.hand.includes(d.uid)) {
@@ -717,40 +787,35 @@ export function renderModal() {
       }
       body = cardDialog(v, d.uid);
       break;
-    case 'manage':
-      body = manageDialog(v);
-      wide = true;
+    case 'build':
+      body = buildDialog(v);
+      break;
+    case 'mortgage':
+      body = mortgageDialog(v);
       break;
     case 'trade':
       if (!canManage(v)) {
         app.ui.dialog = null;
+        toast('Pazarlık teklifini sıra sendeyken yapabilirsin.', 'info');
         return renderModal();
       }
       body = tradeDialog(v);
-      wide = true;
-      break;
-    case 'player':
-      body = playerDialog(v, d.p);
-      break;
-    case 'results':
-      body = resultsDialog(v);
-      wide = true;
       break;
     case 'rules':
-      body = html`<h2>❓ Nasıl oynanır?</h2>${raw(RULES_HTML)}`;
+      body = rulesSheet();
       break;
     case 'history':
-      body = html`<h2>📜 Olay geçmişi</h2><div class="feed-list">${raw(feedHTML())}</div>`;
+      body = historyHTML();
       break;
     default:
   }
-  renderKeep(els.modal, html`<div class="modal-back" data-act="backdrop"><div class="modal ${wide ? 'wide' : ''}"><button class="x" data-act="close">✕</button>${body}</div></div>`);
+  renderKeep(els.modal, html`<div class="layer modal-layer" data-act="backdrop">${body}</div>`);
 }
 
 // İçerik değişince girişleri (teklif, para) kaybetmeden yeniden çizer.
 function renderKeep(el, content) {
   const focused = document.activeElement && el.contains(document.activeElement) ? document.activeElement.dataset.bind : null;
-  const scrollers = () => el.querySelectorAll('.modal, .feed-list, .mgr');
+  const scrollers = () => el.querySelectorAll('.sheet-body, .trade-props');
   const tops = [...scrollers()].map((n) => n.scrollTop);
   setHTML(el, content);
   [...scrollers()].forEach((n, i) => tops[i] && (n.scrollTop = tops[i]));
@@ -758,46 +823,80 @@ function renderKeep(el, content) {
   for (const inp of el.querySelectorAll('[data-bind]')) {
     const key = inp.dataset.bind;
     let val = app.ui.binds[key];
-    if (inp.type === 'range' && (val === undefined || val === '')) val = app.ui.binds[key] = '0';
+    if (inp.type === 'range' && (val === undefined || val === '')) val = app.ui.binds[key] = inp.min || '0';
     if (val !== undefined && inp.value !== String(val)) inp.value = val;
+    paintRange(inp);
     if (focused && key === focused && document.activeElement !== inp) inp.focus();
   }
-  for (const out of el.querySelectorAll('[data-show]')) out.textContent = fmt(Number(app.ui.binds[out.dataset.show]) || 0);
+  for (const out of el.querySelectorAll('[data-show]')) showBind(out);
 }
+
+const paintRange = (inp) => {
+  const lo = Number(inp.min) || 0;
+  const hi = Number(inp.max) || 0;
+  inp.style.setProperty('--p', `${hi > lo ? ((Number(inp.value) - lo) / (hi - lo)) * 100 : 0}%`);
+};
+const showBind = (out) => {
+  out.innerHTML = money(Number(app.ui.binds[out.dataset.show]) || 0);
+};
 
 // ---------- ana çizim ----------
 
 function highlightOf(v) {
   const pd = v.pending;
-  if (pd && (pd.type === 'buy' || pd.type === 'auction')) return pd.sq;
-  if (pd && pd.type === 'rent') return pd.sq;
+  if (pd && (pd.type === 'buy' || pd.type === 'auction' || pd.type === 'rent')) return pd.sq;
   return -1;
+}
+
+// Taksi ve yol seçiminde gidilebilecek karelerde sayı rozeti.
+function stepBadges(v) {
+  const t = v.turn;
+  if (!t || t.p !== v.you || v.pending || t.step !== 'choose' || !t.dice) return null;
+  const [a, b] = t.dice;
+  const o = { [destOf(v, a + b, t.backward)]: a + b };
+  if (!t.hamle && P(v, v.you).hand.some((u) => cardId(u) === 'kestirme')) {
+    o[destOf(v, a, t.backward)] = a;
+    o[destOf(v, b, t.backward)] = b;
+  }
+  return o;
 }
 
 export function updateGame() {
   const v = app.view;
   if (!v || !els) return;
-  updateTopbar(v);
+  updateHead(v);
   if (app.ui.pick && !(v.players[v.you]?.hand.includes(app.ui.pick.uid) && canPlay(v, app.ui.pick.uid))) app.ui.pick = null;
   if (app.ui.pick) app.ui.popSq = null;
-  updateBoard(cells, v, highlightOf(v), app.ui.pick ? pickSquares(v, app.ui.pick.uid, app.ui.swapMine) : tapuSquares(v), app.ui.popSq);
-  tokens.sync(v.players, v.turn ? v.turn.p : -1);
+  const turnPl = v.phase === 'play' && v.turn ? P(v, v.turn.p) : null;
+  updateBoard(cells, v, {
+    highlight: highlightOf(v),
+    pick: app.ui.pick ? pickSquares(v, app.ui.pick.uid, app.ui.swapMine) : tapuSquares(v),
+    open: app.ui.popSq,
+    turn: turnPl && !turnPl.out ? { sq: turnPl.pos, color: turnPl.color } : null,
+    steps: stepBadges(v),
+  });
+  tokens.sync(v.players);
   if (!animating) tokens.settle(v.players);
   setHTML(els.gundem, gundemHTML(v));
+  setHTML(els.banner, bannerHTML());
   renderKeep(els.prompt, promptHTML(v));
-  if (!animating) dice.show(v.pending || !v.turn ? null : v.turn.dice);
+  if (!animating) dice.show(showDice(v) ? v.turn.dice : null);
   renderPop(v);
   setHTML(els.players, playersHTML(v));
   renderHand(v);
+  setHTML(els.tools, toolsHTML(v));
   renderAudioPop();
   renderFeed();
   renderModal();
+  renderResults(v);
   tickTimers();
-  if (v.phase === 'over' && !app.ui.seenOver) {
-    app.ui.seenOver = true;
-    app.ui.dialog = { type: 'results' };
-    renderModal();
-  }
+}
+
+// Zarlar atıştan sonra 2,5 saniye görünür; yol seçerken de görünür kalır.
+function showDice(v) {
+  if (!v.turn || !v.turn.dice || v.phase !== 'play') return false;
+  if (v.turn.step === 'choose') return true;
+  return Date.now() < (app.ui.diceUntil || 0);
 }
 
 export function tickTimers() {
@@ -808,23 +907,77 @@ export function tickTimers() {
     const left = Math.max(0, at - now);
     const bar = el.querySelector('i');
     if (bar) bar.style.width = `${Math.min(100, (left / span) * 100)}%`;
+    el.classList.toggle('late', left <= 10000);
   }
   for (const el of document.querySelectorAll('[data-countdown]')) {
     const left = Math.max(0, Math.ceil((Number(el.dataset.countdown) - now) / 1000));
-    el.textContent = left ? `⏱ ${left} sn` : '⏱ süre doldu';
+    el.textContent = left && left <= 10 ? `${left} sn` : '';
   }
+  if (els && app.view && !animating && app.ui.diceUntil && Date.now() > app.ui.diceUntil) {
+    app.ui.diceUntil = 0;
+    dice.show(showDice(app.view) ? app.view.turn.dice : null);
+  }
+}
+
+// ---------- sonuç ekranı ----------
+
+function renderResults(v) {
+  if (!app.ui.resultsOpen || v.phase !== 'over') return setHTML(els.results, '');
+  const r = v.results;
+  const iflas = v.config.iflas;
+  const sub = (p) => {
+    const pl = P(v, p);
+    const sc = r.scores[p];
+    if (pl.out) return `${pl.out}. elenen`;
+    return sc.ceza ? `konkordato −${fmt(sc.ceza).replace(' ₺', '')}` : `nakit ${fmt(sc.nakit).replace(' ₺', '')} · mülk ${fmt(sc.mulk).replace(' ₺', '')}`;
+  };
+  const score = (p) => (P(v, p).out ? '—' : fmt(r.scores[p].total).replace(' ₺', ''));
+  const podOrder = [r.ranking[1], r.ranking[0], r.ranking[2]].filter((x) => x !== undefined);
+  const H = { 0: 170, 1: 128, 2: 96 };
+  const podium = podOrder.map((p) => {
+    const k = r.ranking.indexOf(p);
+    const pl = P(v, p);
+    return html`<div class="pod" style="--pc:${pl.color}">${k === 0 ? I('crown') : ''}${PW(pl, k === 0 ? 84 : 64)}<span class="h18">${pl.name}</span><div class="block" style="height:${H[k]}px"><span class="h28">${score(p)}</span><span class="rank">${k + 1}</span></div></div>`;
+  });
+  const rows = r.ranking.map((p, k) => {
+    const pl = P(v, p);
+    return html`<div class="rank-row ${k === 0 ? 'first' : ''} ${pl.out ? 'out' : ''}" style="--pc:${pl.color}"><span class="rank-n">${k + 1}</span><span class="disc">${PW(pl, 30)}</span>
+      <span class="col grow" style="gap:0;min-width:0"><span class="h16">${pl.name}</span><span class="muted small">${sub(p)}</span></span>${pl.out ? I('iflas') : ''}<span class="h22">${score(p)}</span></div>`;
+  });
+  const winner = P(v, r.ranking[0]).name;
+  setHTML(els.results, html`<div class="results" role="dialog" aria-label="Oyun sonu">
+    <div class="left"><span class="kicker">${iflas ? 'Son kalan' : `${v.round} tur bitti`}</span><span class="logo" style="font-size:52px">${iflas ? `${winner} kazandı` : 'Seçim Günü'}</span><div class="podium">${podium}</div><span class="grow"></span>
+      <div class="row">${isHost() ? html`<button class="btn L pri" data-act="newGame">${I('refresh')}Aynı masayla yeni oyun</button>` : ''}<button class="btn L sec" data-act="resultsClose">Tahtaya dön</button><button class="btn L gho" data-act="leave">Ana menü</button></div></div>
+    <div class="right">${rows}${worthChart(v)}</div></div>`);
+}
+
+// Tur tur net değer çizgisi (konkordato cezası yok; kazananın çizgisi kalın).
+function worthChart(v) {
+  const W = 520;
+  const H = 120;
+  const c = worthLines(v.worth, W, H);
+  if (!c) return '';
+  const win = v.results.ranking[0];
+  const order = [...c.lines.keys()].sort((a, b) => (a === win) - (b === win));
+  const lines = order.map((p) => html`<polyline points="${c.lines[p]}" style="--c:${P(v, p).color}" class="${p === win ? 'win' : ''}"><title>${P(v, p).name}</title></polyline>`);
+  return html`<div class="panel worth" style="padding:12px 14px;display:flex;flex-direction:column;gap:6px"><span class="kicker">Tur tur net değer</span>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Tur tur net değer grafiği">${lines}</svg></div>`;
 }
 
 // ---------- olay efektleri ----------
 
-export function toast(text, kind = '') {
-  const box = document.getElementById('toasts');
+// Bildirimler tahtanın ortasının altında belirir, aynı metin üst üste gelmez.
+export function toast(text, kind = '', icon = '') {
+  const box = els && document.getElementById('toasts');
   if (!box) return;
+  if ([...box.children].some((c) => c.dataset.text === text)) return;
   const el = document.createElement('div');
-  el.className = `toast ${kind}`;
-  el.textContent = text;
+  el.className = `toast ${kind === 'error' ? 'bad' : ''}`;
+  el.dataset.text = text;
+  el.setAttribute('role', 'status');
+  el.innerHTML = `${icon ? ic(icon) : ''}<span>${String(html`${text}`)}</span>`;
   box.appendChild(el);
-  while (box.children.length > 4) box.firstChild.remove();
+  while (box.children.length > 3) box.firstChild.remove();
   setTimeout(() => el.remove(), 3800);
 }
 
@@ -834,8 +987,9 @@ function floatMoney(p, delta) {
   const r = anchor.getBoundingClientRect();
   const el = document.createElement('div');
   el.className = `float ${delta > 0 ? 'plus' : 'minus'}`;
-  el.textContent = `${delta > 0 ? '+' : ''}${fmt(delta)}`;
-  el.style.left = `${r.left + r.width / 2 - 30}px`;
+  el.textContent = `${delta > 0 ? '+' : '−'}${Math.abs(delta)}`;
+  // Paneldeki sayının solunda belirir, sayıyı kapatmaz.
+  el.style.left = `${r.left - 70}px`;
   el.style.top = `${r.top}px`;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1500);
@@ -846,7 +1000,7 @@ const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 // Oyuncunun para kutusu ya da banka (tahtanın ortası) ekrandaki merkez noktası.
 function moneyPoint(p) {
-  const el = p === null ? els && els.board : document.querySelector(`[data-cash="${p}"]`);
+  const el = p === null ? els && els.center : document.querySelector(`[data-cash="${p}"]`);
   if (!el) return null;
   const r = el.getBoundingClientRect();
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -879,41 +1033,57 @@ function flyCoins({ from, to, amount, n, delay }) {
 function buildFx(sq) {
   const cell = cells && cells[sq];
   if (!cell || calm()) return;
-  cell.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12) translateY(-4%)', offset: 0.35 }, { transform: 'scale(0.97)', offset: 0.7 }, { transform: 'scale(1)' }], { duration: 650, easing: 'ease-out' });
+  cell.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.1) translateY(-4%)', offset: 0.35 }, { transform: 'scale(0.97)', offset: 0.7 }, { transform: 'scale(1)' }], { duration: 650, easing: 'ease-out' });
   const r = cell.getBoundingClientRect();
   const el = document.createElement('div');
   el.className = 'buildfx';
-  el.textContent = '🏗️';
+  el.innerHTML = ic('build');
   el.style.left = `${r.left + r.width / 2}px`;
   el.style.top = `${r.top + r.height / 2}px`;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1300);
 }
 
+// Sahne katmanı: haber, sürpriz ve rakip kartı tahtanın ortasında, kareleri kapatmadan gösterilir.
+function stageShow(content, ms, click = true) {
+  setHTML(els.stage, html`<div class="layer stage-layer" ${click ? raw('data-act="closeStage"') : ''}>${content}</div>`);
+  clearTimeout(stageShow.t);
+  return new Promise((done) => {
+    stageShow.done = done;
+    stageShow.t = setTimeout(stageClose, ms);
+  });
+}
+export function stageClose() {
+  if (!els) return;
+  clearTimeout(stageShow.t);
+  setHTML(els.stage, '');
+  if (stageShow.done) stageShow.done();
+  stageShow.done = null;
+}
+
+const GUNDEM_ART = new Set(); // gündem kartı görseli olan kimlikler (assets/gundem/<id>.jpg); görsel yoksa simge
 function showNews(v, ev) {
   const g = GUNDEM[ev.id];
   const detail = v.gundem && v.gundem.id === ev.id ? v.gundem.detail : '';
   const sum = v.summary && v.summary.round === ev.round - 1 ? summaryHTML(v, v.summary) : '';
-  els.stage.innerHTML = html`<div class="stage" data-act="closeStage"><div class="news"><div class="kicker">${ev.round}. TUR · SON DAKİKA</div><div class="gi">${g.icon}</div><div class="gt">${g.name}</div><div class="gx">${g.text}</div>${detail ? html`<div class="gd">${detail}</div>` : ''}${sum}<div class="nhint">kapatmak için tıkla</div></div></div>`.toString();
-  clearTimeout(showNews.t);
-  showNews.t = setTimeout(() => (els.stage.innerHTML = ''), (sum ? 5600 : 3600) * spd());
+  const img = GUNDEM_ART.has(ev.id) ? html`<div class="nimg" style="background-image:url(assets/gundem/${ev.id}.jpg)"></div>` : html`<div class="nimg">${I(GUNDEM_IC[ev.id] || 'news')}</div>`;
+  stageShow(html`<div class="news-card">${img}<div class="nbody"><span class="kicker">${ev.round}. tur · son dakika</span><span class="h28">${g.name}</span><span class="body">${g.text}</span>${detail ? html`<span class="hint" style="height:auto;padding:8px 12px;white-space:normal">${detail}</span>` : ''}${sum}</div></div>`, (sum ? 5600 : 3600) * spd());
 }
 
 // Geçen turun özeti: en çok kazanan/kaybeden ve el değiştiren mülkler (en fazla 3).
 function summaryHTML(v, sm) {
-  const sign = (x) => `${x > 0 ? '+' : ''}${fmt(x)}`;
   const rows = [];
   if (sm.best !== null) {
-    rows.push(html`<div>📈 <b>${P(v, sm.best).name}</b> ${sign(sm.deltas[sm.best])}</div>`);
-    rows.push(html`<div>📉 <b>${P(v, sm.worst).name}</b> ${sign(sm.deltas[sm.worst])}</div>`);
+    rows.push(html`<div class="recap-row">${I('up')}${PW(P(v, sm.best), 20)}${P(v, sm.best).name}<b class="num pos">${M(sm.deltas[sm.best], true)}</b></div>`);
+    rows.push(html`<div class="recap-row">${I('down')}${PW(P(v, sm.worst), 20)}${P(v, sm.worst).name}<b class="num neg">${M(sm.deltas[sm.worst], true)}</b></div>`);
   }
-  for (const c of sm.changes.slice(0, 3)) rows.push(html`<div>🔁 ${BOARD[c.sq].name}: ${P(v, c.from).name} → ${c.to === null ? 'Banka' : P(v, c.to).name}</div>`);
-  if (sm.changes.length > 3) rows.push(html`<div>… ve ${sm.changes.length - 3} mülk daha</div>`);
-  return rows.length ? html`<div class="recap"><div class="rk">${sm.round}. TURUN ÖZETİ</div>${rows}</div>` : '';
+  for (const c of sm.changes.slice(0, 3)) rows.push(html`<div class="recap-row">${I('deal')}${BOARD[c.sq].name} · ${P(v, c.from).name}${I('arrow')}${c.to === null ? 'Banka' : P(v, c.to).name}</div>`);
+  if (sm.changes.length > 3) rows.push(html`<div class="recap-row muted">ve ${sm.changes.length - 3} mülk daha</div>`);
+  return rows.length ? html`<div class="recap"><span class="kicker">${sm.round}. turun özeti</span>${rows}</div>` : '';
 }
 
 function boardCenter() {
-  const r = els.board.getBoundingClientRect();
+  const r = els.center.getBoundingClientRect();
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
 
@@ -926,24 +1096,12 @@ function flyMine(prev, v, id) {
   if (from) flyToCenter(cardFace(id), from, boardCenter());
 }
 
-// SÜRPRİZ: tahtanın ortasında soru işaretli kart döner, etkisi görünür.
+// SÜRPRİZ: kartın arka yüzü ve etkisi tahtanın ortasında.
 async function showSurpriz(v, ev) {
   const sur = E.SURPRIZ[ev.id];
   const pl = P(v, ev.p);
-  document.querySelectorAll('.surp').forEach((r) => r.remove());
-  const c = boardCenter();
-  const el = document.createElement('div');
-  const dur = Math.round(3000 * spd());
-  el.className = 'surp';
-  el.style.left = `${c.x}px`;
-  el.style.top = `${c.y}px`;
-  el.style.setProperty('--dur', `${dur}ms`);
-  el.innerHTML = String(html`<div class="who">${av(pl, 'sm')} ${pl.name} · Sürpriz!</div>
-    <div class="sflip"><div class="sface sfront"><b>?</b></div><div class="sface sback"><div class="si">${sur.icon}</div><div class="sn">${sur.name}</div><div class="sx">${sur.text}</div></div></div>`);
-  document.body.appendChild(el);
   play('card');
-  await sleep(dur);
-  el.remove();
+  await stageShow(html`<div class="surp"><div class="sback" style="background-image:url(assets/kart/surpriz.jpg)"></div><div class="scard"><div class="row" style="gap:8px">${PW(pl, 28)}<span class="h16">${pl.name} · Sürpriz</span></div>${I(SURPRIZ_IC[ev.id] || 'surpriz')}<span class="h28">${sur.name}</span><span class="body">${sur.text}</span></div></div>`, Math.round(3000 * spd()));
 }
 
 // Kartın kime oynandığı (oynamadan önceki duruma göre).
@@ -974,7 +1132,7 @@ function cardEffect(v, ev) {
     case 'kamulastirma':
       return `${sq(t.sq)} mülkünü fiyatını ödeyerek almak istiyor.`;
     case 'tedbir':
-      return `${sq(t.sq)} 2 tur kira alamayacak, üstüne kat dikilemeyecek.`;
+      return `${sq(t.sq)} 2 sıra kira alamayacak, üstüne kat dikilemeyecek.`;
     case 'takas':
       return `${sq(t.mine)} ile ${sq(t.theirs)} el değiştirecek.`;
     case 'ihbar':
@@ -1006,39 +1164,19 @@ function cardEffect(v, ev) {
   }
 }
 
-// Başkasının oynadığı kart ortada büyük gösterilir. Kimin kime ne yaptığı yazar; üzerine gelince durur, tıklayınca kapanır.
+// Başkasının oynadığı kart ortada gösterilir: kimin kime ne yaptığı. Üzerine gelince durur, tıklayınca kapanır.
 async function revealCard(pv, v, ev) {
-  // Tur başı haber kartı ekrandaysa onun kapanmasını bekle (üst üste binmesin).
-  for (let k = 0; els && els.stage.firstChild && k < 15; k++) await sleep(400);
   if (!els) return;
-  document.querySelectorAll('.reveal').forEach((r) => r.remove());
-  const c = boardCenter();
-  const dur = Math.round(3500 * spd());
   const vics = victimsOf(pv, ev).filter((i) => Number.isInteger(i));
-  const toMe = vics.includes(v.you);
   const pl = P(v, ev.p);
-  const to = toMe ? ' sana oynadı!' : vics.length === 1 ? ` → ${P(v, vics[0]).name}` : vics.length > 1 ? ' → herkese' : ' oynadı';
-  const el = document.createElement('div');
-  el.className = `reveal${toMe ? ' me' : ''}`;
-  el.style.left = `${c.x}px`;
-  el.style.top = `${c.y}px`;
-  el.style.setProperty('--dur', `${dur}ms`);
-  el.innerHTML = String(html`<div class="who">${av(pl, 'sm')} ${pl.name}${to}</div>${cardFace(ev.card, 'big')}<div class="eff">${cardEffect(v, ev)}</div><div class="rhint">üzerine gel: dur · tıkla: kapat</div>`);
-  document.body.appendChild(el);
-  await new Promise((done) => {
-    const end = () => {
-      clearTimeout(cap);
-      el.remove();
-      done();
-    };
-    el.addEventListener('animationend', (e) => e.target === el && end());
-    el.addEventListener('click', end);
-    const cap = setTimeout(end, dur + 8000); // üzerinde bekletilse de en fazla 8 sn fazladan
-  });
+  const toMe = vics.includes(v.you);
+  const who = vics.length === 1 ? vs(v, ev.p, vics[0]) : html`<div class="row" style="gap:8px">${PW(pl, 32)}</div>`;
+  const title = toMe ? `${pl.name} sana oynadı` : vics.length === 1 ? `${pl.name}, ${P(v, vics[0]).name} için oynadı` : vics.length > 1 ? `${pl.name} herkese oynadı` : `${pl.name} oynadı`;
+  await stageShow(html`<div class="card-prompt reveal">${cardFace(ev.card, 'big')}<div class="opt-col">${who}<span class="h22">${title}</span><span class="line-row">${I(CARD_IC[ev.card] || 'hamle')}<span class="grow">${cardEffect(v, ev)}</span></span><span class="muted small">kapatmak için tıkla</span></div></div>`, Math.round(3500 * spd()));
 }
 
 export function confetti() {
-  const colors = ['#d1495b', '#edae49', '#00798c', '#2f9e66', '#24408e', '#fff'];
+  const colors = ['#d1342f', '#c8912f', '#0e9f80', '#2475e8', '#5a2d9c', '#f4b400', '#fff'];
   for (let i = 0; i < 90; i++) {
     const el = document.createElement('div');
     el.className = 'confetti';
@@ -1071,30 +1209,32 @@ export async function present(prev, v, events, fast) {
         break;
       case 'demolish':
         play('crash');
-        toast(`🚜 ${P(v, ev.p).name}: ${ev.n} kaçak kat yıkıldı!`, 'error');
+        toast(`${P(v, ev.p).name}: ${ev.n} kaçak kat yıkıldı`, 'error', 'kacak');
         break;
       case 'collapse':
         play('crash');
         break;
       case 'target':
         play('news');
-        toast(`🏁 ${ev.text}`, 'good');
+        toast(ev.text, '', 'trophy');
         break;
       case 'konkordato':
         play('crash');
-        toast(`⚠️ ${P(v, ev.p).name} konkordato ilan etti!`, 'error');
+        toast(`${P(v, ev.p).name} konkordato ilan etti`, 'error', 'warning');
         break;
       case 'iflas':
         play('crash');
-        toast(`💥 ${P(v, ev.p).name} iflas etti, oyundan çıktı!`, 'error');
+        toast(`${P(v, ev.p).name} iflas etti, oyundan çıktı`, 'error', 'iflas');
         break;
       case 'auction':
-        if (ev.winner !== null) play('sold');
-        if (ev.winner !== null) toast(`🔨 ${BOARD[ev.sq].name} → ${P(v, ev.winner).name}`, 'good');
+        if (ev.winner !== null) {
+          play('sold');
+          toast(`${BOARD[ev.sq].name}: ${P(v, ev.winner).name} aldı`, '', 'gavel');
+        }
         break;
       case 'tradeDone':
         play('coin');
-        toast('🤝 Anlaşma sağlandı!', 'good');
+        toast('Anlaşma sağlandı', '', 'deal');
         break;
       case 'gundem':
         if (!fast) {
@@ -1103,10 +1243,7 @@ export async function present(prev, v, events, fast) {
         }
         break;
       case 'turn':
-        if (ev.p === me) {
-          play('turn');
-          toast('Sıra sende!', 'good');
-        }
+        if (ev.p === me) play('turn'); // "Sıra sende" yazısı ortada; ayrı bildirim yok
         break;
       case 'over':
         play('win');
@@ -1124,7 +1261,8 @@ export async function present(prev, v, events, fast) {
     try {
       for (const e of seq) {
         if (e.type === 'dice' || e.type === 'dava') {
-          const cap = e.type === 'dava' ? `⚖️ Dava zarları: ${P(v, e.p).name} ${e.dice[0]} · ${P(v, e.victim).name} ${e.dice[1]}` : '';
+          const cap = e.type === 'dava' ? `Dava zarları: ${P(v, e.p).name} ${e.dice[0]} · ${P(v, e.victim).name} ${e.dice[1]}` : '';
+          app.ui.diceUntil = Date.now() + 2500 + 1250 * spd();
           await dice.roll(e.dice, fast, 1250 * spd(), cap);
         } else if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast, 150 * spd());
         else if (fast) continue;
@@ -1135,6 +1273,10 @@ export async function present(prev, v, events, fast) {
       animating = false;
     }
   }
+  if (v.phase === 'over' && !app.ui.seenOver) {
+    app.ui.seenOver = true;
+    app.ui.resultsOpen = true;
+  }
   updateGame();
 }
 
@@ -1143,7 +1285,9 @@ export function bindsInput(e) {
   if (!el.dataset || !el.dataset.bind) return false;
   app.ui.binds ||= {};
   app.ui.binds[el.dataset.bind] = el.value;
-  for (const out of document.querySelectorAll(`[data-show="${el.dataset.bind}"]`)) out.textContent = fmt(Number(el.value) || 0);
+  paintRange(el);
+  for (const out of document.querySelectorAll(`[data-show="${el.dataset.bind}"]`)) showBind(out);
+  for (const d of document.querySelectorAll(`[data-delta="${el.dataset.bind}"]`)) d.textContent = `+${Number(el.value) - Number(d.dataset.base)}`;
   if (app.ui.dialog && app.ui.dialog.type === 'trade') refreshTrade();
   return true;
 }

@@ -1,10 +1,12 @@
-// Tahta: 10x10 ızgaranın kenarındaki 36 kare, oyuncu taşları ve 3 boyutlu zarlar.
-// Karenin iç kenarındaki şerit sahipsizken gri, alınınca sahibinin rengi; karede fiyat/kira yazmaz (kareye tıklayınca açılır).
+// Tahta: 10x10 ızgaranın kenarındaki 36 kare (genişliği yüksekliğinden fazla), piyonlar ve 3 boyutlu zarlar.
+// Mülk: şehrin tek rengindeki buzlu cam ve aynı renkte set çerçevesi; sahibi yalnız iç kenardaki şerit gösterir
+// (sahipsizken ince ve soluk, sahipliyken kalın ve sahibinin renginde). Karede fiyat/kira yazmaz; tıklayınca açılır.
 import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
 import { html, raw, sleep } from './dom.js';
 import { play } from './sound.js';
-import { icon } from './icons.js';
-import { TOKEN, laneY, tokenSlots } from './slots.js';
+import { icon, ic } from './icons.js';
+import { pawn } from './pawns.js';
+import { PAWN, laneTop, pawnXs } from './slots.js';
 
 // Izgara kenarı G kare; köşeler 0, K, 2K, 3K. Kare 0 sağ altta, sıra saat yönünde.
 export const G = BOARD.length / 4 + 1;
@@ -19,34 +21,31 @@ export function cellPos(i) {
   return { row: 1 + i - 3 * K, col: G, side: 'r' };
 }
 
-// Açık renkli oyuncuda koyu yazı, koyu renkli oyuncuda beyaz yazı.
-export function inkFor(hex) {
+const lum = (hex) => {
   const n = parseInt(hex.slice(1), 16);
-  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return lum > 0.62 ? '#1b2233' : '#ffffff';
-}
+  return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+};
+// Açık renk zeminde koyu yazı, koyu renk zeminde beyaz yazı.
+export const inkFor = (hex) => (lum(hex) > 0.62 ? '#1b2233' : '#ffffff');
+export const isLight = (hex) => lum(hex) > 0.55;
 
-// Mülk: şehir renkli buzlu cam. Diğer kareler: sade ikon ve ad (src/ui/icons.js).
-const iconOf = (sq) => (sq.kind === 'transport' ? sq.mode : sq.kind);
+const artOf = (sq) => (sq.kind === 'transport' ? sq.mode : sq.kind);
 
-function cellStatic(sq, corner) {
-  if (sq.kind === 'prop') {
-    const g = GROUPS[sq.group];
-    return html`<div class="frost"></div><div class="band"></div><div class="nm">${sq.name}</div><div class="city">${g.name}</div><div class="floors"></div>`;
-  }
-  const label = html`<div class="lbl">${sq.name}</div>`;
-  const ic = html`<div class="ic">${raw(icon(iconOf(sq)))}</div>`;
-  const body = corner ? html`${ic}${label}` : html`${label}${ic}`;
-  return sq.kind === 'transport' ? html`<div class="band"></div>${body}` : body;
+function cellStatic(sq) {
+  const name = html`<span class="nm">${sq.name}</span>`;
+  if (sq.kind === 'prop') return html`<span class="strip"></span>${name}<span class="floors"></span>`;
+  const art = html`<span class="art">${raw(icon(artOf(sq)))}</span>`;
+  return sq.kind === 'transport' ? html`<span class="strip"></span>${art}${name}` : html`${art}${name}`;
 }
 
 export function buildBoard(boardEl) {
   const cells = BOARD.map((sq, i) => {
     const pos = cellPos(i);
-    const corner = pos.side === 'c';
-    const kind = sq.kind === 'prop' || sq.kind === 'transport' ? `buyable k-${sq.kind}` : `special k-${sq.kind}`;
-    const vars = sq.kind === 'prop' ? `;--gc:${GROUPS[sq.group].color};--gt:${GROUPS[sq.group].tint}` : '';
-    return `<div class="cell ${corner ? 'corner' : `side-${pos.side}`} ${kind}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}${vars}">${cellStatic(sq, corner)}</div>`;
+    const kind = sq.kind === 'prop' || sq.kind === 'transport' ? `buyable k-${sq.kind}${sq.mode ? ` k-${sq.mode}` : ''}` : `special k-${sq.kind}`;
+    const g = sq.kind === 'prop' ? GROUPS[sq.group] : null;
+    const vars = g ? `;--gc:${g.color}` : '';
+    const dk = g && !isLight(g.color) ? ' dk' : '';
+    return `<div class="cell ${pos.side === 'c' ? 'corner side-c' : `side-${pos.side}`} ${kind}${dk}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}${vars}">${cellStatic(sq)}</div>`;
   }).join('');
   boardEl.insertAdjacentHTML('afterbegin', cells);
   const fit = () => fitNames(boardEl);
@@ -55,51 +54,65 @@ export function buildBoard(boardEl) {
   return [...boardEl.querySelectorAll('.cell')];
 }
 
-// Uzun semt adı (ör. Konyaaltı, Karşıyaka) kareye sığmazsa kelime ortasından bölünmez, yazısı küçülür.
+// Uzun semt adı kareye sığmazsa kelime ortasından bölünmez, yazısı küçülür.
 function fitNames(boardEl) {
-  for (const n of boardEl.querySelectorAll('.cell .nm')) {
+  for (const n of boardEl.querySelectorAll('.cell.k-prop .nm')) {
     n.style.fontSize = '';
     const c = n.parentElement;
     const cs = getComputedStyle(c);
-    const room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 6;
     if (n.offsetWidth > room) n.style.fontSize = `${((parseFloat(getComputedStyle(n).fontSize) * room) / n.offsetWidth).toFixed(2)}px`;
   }
 }
 
-// pick: tahtadan hedef seçilirken parlayacak kareler (yoksa null). open: bilgi penceresi açık kare.
-export function updateBoard(cells, v, highlight, pick = null, open = null) {
+// o: { highlight, pick: parlayacak kareler ya da null, open: penceresi açık kare, turn: { sq, color } sırası gelenin karesi,
+//      steps: { kare: '5' } gidilebilecek karelerde sayı rozeti }
+export function updateBoard(cells, v, o = {}) {
+  const pick = o.pick || null;
   cells[0].parentElement.classList.toggle('picking', !!pick);
   cells.forEach((el, i) => {
     const sq = BOARD[i];
     const ps = v.props[i];
-    el.classList.toggle('hl', highlight === i);
+    el.classList.toggle('hl', o.highlight === i);
     el.classList.toggle('pick', !!pick && pick.includes(i));
-    el.classList.toggle('open', open === i);
-    if (!ps) return;
+    el.classList.toggle('open', o.open === i);
+    const turn = o.turn && o.turn.sq === i;
+    el.classList.toggle('turnsq', !!turn);
+    if (turn) el.style.setProperty('--tc', o.turn.color);
+    let step = el.querySelector('.stepn');
+    const want = o.steps && o.steps[i];
+    if (want && !step) el.insertAdjacentHTML('beforeend', `<span class="stepn">${want}</span>`);
+    else if (!want && step) step.remove();
+    else if (want && step) step.textContent = want;
+    if (!ps) {
+      el.setAttribute('aria-label', sq.name);
+      return;
+    }
     const owner = ps.owner === null ? null : v.players[ps.owner];
+    const full = !!owner && inFullSet(v, i);
     el.classList.toggle('owned', !!owner);
-    el.classList.toggle('mortgaged', ps.ipotek);
-    el.classList.toggle('fullset', !!owner && inFullSet(v, i));
     el.style.setProperty('--pc', owner ? owner.color : '');
-    let badge = el.querySelector('.badge');
-    if (ps.tedbir > 0) {
-      if (!badge) {
-        badge = document.createElement('div');
-        badge.className = 'badge';
-        el.appendChild(badge);
-      }
-      badge.textContent = '⚖️';
-      badge.dataset.tip = `İhtiyati tedbir: ${ps.tedbir} tur kira yok, kat dikilmez`;
-    } else if (badge) badge.remove();
+    setPart(el, 'fullstar', full && sq.kind === 'prop', () => ic('star'));
+    setPart(el, 'mort', ps.ipotek, () => ic('ipotek'));
+    setPart(el, 'ted', ps.tedbir > 0, () => ic('tedbir'));
     const floors = el.querySelector('.floors');
-    if (floors) floors.innerHTML = (ps.kat ? `<b data-tip="${ps.kat} yasal kat">🏠×${ps.kat}</b>` : '') + (ps.kacak ? '<b class="k" data-tip="Kaçak kat: İhbar, Zabıta ya da Belediye operasyonu yıkabilir">🚧</b>' : '');
-    const band = el.querySelector('.band');
-    if (band) band.dataset.tip = ps.ipotek ? 'İpotekli: kira alınmaz' : owner && inFullSet(v, i) ? `${owner.name} · tam set ★: arsa kirası 2 katı` : owner ? `Sahibi: ${owner.name}` : 'Sahipsiz';
-    el.title = `${sq.name}${owner ? ` — ${owner.name}` : ' — sahipsiz'}${ps.ipotek ? ' (ipotekli)' : ''}`;
+    if (floors) {
+      const f = (ps.kat ? `${ic('house')}×${ps.kat}` : '') + (ps.kacak ? ic('kacak') : '');
+      if (floors.innerHTML !== f) floors.innerHTML = f;
+    }
+    const tip = [sq.name, owner ? `sahibi ${owner.name}` : 'sahipsiz', full ? 'tam set' : '', ps.kat ? `${ps.kat} kat` : '', ps.kacak ? 'kaçak kat' : '', ps.ipotek ? 'ipotekli' : '', ps.tedbir > 0 ? 'ihtiyati tedbir' : ''];
+    el.setAttribute('aria-label', tip.filter(Boolean).join(', '));
   });
 }
 
-// ---- taşlar ----
+// Karedeki küçük işaret (yıldız, ipotek, tedbir): gerekiyorsa ekler, gerekmiyorsa kaldırır.
+function setPart(el, cls, on, make) {
+  const cur = el.querySelector(`.${cls}`);
+  if (on && !cur) el.insertAdjacentHTML('beforeend', `<span class="${cls}">${make()}</span>`);
+  else if (!on && cur) cur.remove();
+}
+
+// ---- piyonlar ----
 
 export class Tokens {
   constructor(layer, cells) {
@@ -107,11 +120,12 @@ export class Tokens {
     this.cells = cells;
     this.els = new Map();
     this.pos = new Map();
+    this.size = 0;
     new ResizeObserver(() => this.layoutAll()).observe(layer);
   }
 
-  sync(players, active) {
-    players.forEach((pl, i) => {
+  sync(players) {
+    players.forEach((pl) => {
       let el = this.els.get(pl.id);
       if (!el) {
         el = document.createElement('div');
@@ -119,11 +133,12 @@ export class Tokens {
         this.layer.appendChild(el);
         this.els.set(pl.id, el);
       }
-      el.textContent = pl.avatar;
-      el.title = pl.name;
-      el.style.setProperty('--pc', pl.color);
-      el.classList.toggle('active', i === active);
-      el.classList.toggle('out', !!pl.out); // iflas eden oyuncunun taşı tahtadan kalkar
+      const key = `${pl.avatar}|${pl.color}|${this.size}`;
+      if (el.dataset.key !== key) {
+        el.dataset.key = key;
+        el.innerHTML = pawn(pl.avatar, pl.color, this.size || 36);
+      }
+      el.classList.toggle('out', !!pl.out); // iflas eden oyuncunun piyonu tahtadan kalkar
       this.pos.set(pl.id, this.pos.get(pl.id) ?? pl.pos);
     });
     this.players = players;
@@ -136,6 +151,12 @@ export class Tokens {
 
   layoutAll() {
     if (!this.players) return;
+    const ch = this.cells[1].offsetHeight;
+    const size = Math.round(ch * PAWN);
+    if (size !== this.size) {
+      this.size = size;
+      this.sync(this.players);
+    }
     const groups = new Map();
     for (const pl of this.players) {
       if (pl.out) continue;
@@ -143,14 +164,15 @@ export class Tokens {
       if (!groups.has(sq)) groups.set(sq, []);
       groups.get(sq).push(pl.id);
     }
-    this.layer.style.setProperty('--tk', `${this.cells[1].offsetWidth * TOKEN}px`);
     for (const [sq, ids] of groups) {
       const c = this.cells[sq];
-      const slots = tokenSlots(ids.length, laneY(cellPos(sq).side, BOARD[sq].kind !== 'prop'));
+      const xs = pawnXs(ids.length, c.offsetWidth, size);
+      const top = c.offsetTop + laneTop(cellPos(sq).side, c.offsetHeight);
       ids.forEach((id, k) => {
         const el = this.els.get(id);
-        el.style.left = `${c.offsetLeft + c.offsetWidth * slots[k].x}px`;
-        el.style.top = `${c.offsetTop + c.offsetHeight * slots[k].y}px`;
+        el.style.left = `${c.offsetLeft + xs[k]}px`;
+        el.style.top = `${top}px`;
+        el.style.zIndex = 5 + k;
       });
     }
   }
@@ -183,6 +205,8 @@ const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6,
 // Küpün o yüzü öne bakması için gereken dönüş (derece): [x, y].
 const FACE_ROT = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
 const face = (n) => `<div class="face f${n}">${Array.from({ length: 9 }, (_, i) => `<i class="${PIPS[n].includes(i) ? 'on' : ''}"></i>`).join('')}</div>`;
+// Zarlar biraz yandan görünür (3 boyutlu durduğu belli olsun).
+const TILT = 'rotateX(-24deg) rotateY(-32deg)';
 
 export class Dice {
   constructor(el) {
@@ -191,9 +215,7 @@ export class Dice {
       [0, 0],
       [0, 0],
     ];
-    el.innerHTML = [0, 1]
-      .map((i) => `<div class="die3d ${i ? 'red' : ''}"><div class="cube">${[1, 2, 3, 4, 5, 6].map(face).join('')}</div><div class="dshadow"></div></div>`)
-      .join('');
+    el.innerHTML = [0, 1].map(() => `<div class="die3d"><div class="cube">${[1, 2, 3, 4, 5, 6].map(face).join('')}</div><div class="dshadow"></div></div>`).join('');
     this.cubes = [...el.querySelectorAll('.cube')];
     this.wraps = [...el.querySelectorAll('.die3d')];
     this.values = null;
@@ -203,7 +225,7 @@ export class Dice {
     const [x, y] = FACE_ROT[value];
     const c = this.cubes[i];
     c.style.transition = animate ? '' : 'none';
-    c.style.transform = `rotateX(${x + this.turns[i][0] * 360}deg) rotateY(${y + this.turns[i][1] * 360}deg)`;
+    c.style.transform = `${TILT} rotateX(${x + this.turns[i][0] * 360}deg) rotateY(${y + this.turns[i][1] * 360}deg)`;
   }
 
   // Anlık gösterim (null: gizle).
