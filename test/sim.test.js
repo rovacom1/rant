@@ -14,7 +14,7 @@ for (const n of [2, 3, 4, 5, 6]) {
 }
 
 test('kısa ve uzun oyun seçenekleri', () => {
-  for (const maxRounds of [10, 20]) {
+  for (const maxRounds of [15, 25]) {
     const { state } = playBotGame(77, 4, { maxRounds });
     assert.equal(state.round, maxRounds);
   }

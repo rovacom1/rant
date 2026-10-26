@@ -20,16 +20,16 @@ RANT'a özgü olanlar:
 | **Açık artırma** | Almadığın arsa Monopoly'deki gibi açık artırmaya çıkar: sırayla artır ya da çekil | Herkes teklifi görür, pazarlık gerilimi |
 | **Enflasyon Endeksi** | Fiyatlar ve kiralar endeksle artar, nakit erir | Erken yatırımı ödüllendirir |
 | **Konkordato** | Batan oyuncu oyundan çıkmaz; borcu silinir, sonda ceza alır (iflas modunda batan elenir) | Kimse 20. dakikada izleyici olmaz |
-| **Seçim Günü** | Oyun sabit tur sayısında (varsayılan 15) biter | Monopoly'nin bitmeyen oyun sorunu yok |
+| **Seçim Günü** | Oyun sabit tur sayısında (varsayılan 20) biter | Monopoly'nin bitmeyen oyun sorunu yok |
 
 ## 2. Temel bilgiler
 
 - Oyuncu: 2-6 (denge 4-5 için ayarlı). Boş koltuklar botla doldurulabilir.
 - Süre: ev sahibi lobide oyunun nasıl biteceğini seçer:
-  - **Tur sayısıyla**: 10, 15 (varsayılan) ya da 20 tur. 15 tur 5 kişiyle yaklaşık 35-45 dakika.
+  - **Tur sayısıyla**: 15, 20 (varsayılan) ya da 25 tur. 20 tur 5 kişiyle yaklaşık 40-50 dakika (kartlar seyrek geldiği için 15 turluk eski oyunla aşağı yukarı aynı süre).
   - **Değer hedefiyle**: 2.500, 3.500 ya da 5.000 ₺. Bir oyuncunun değeri (nakit + mülk + katlar, oyuncu panelinde görünen) hedefe ulaşınca o tur tamamlanır ve Seçim Günü gelir; herkes eşit sayıda oynamış olur. Bot simülasyonunda yaklaşık 9, 15 ve 22 tur sürer. Oyun en geç 30. turda biter.
   - **Son kalan (iflas)**: Monopoly'deki gibi. Borcunu kapatamayan oyuncu konkordato yerine **iflas eder** ve oyundan çıkar (bkz. §6). Tek oyuncu kalınca oyun hemen biter, o kazanır. Oyun sonsuza uzamasın diye bu modda **kiralar her tur artar**: kira çarpanı 1. turda 1, sonra her tur 0,4 artar (5. tur 2,6; 10. tur 4,6; 20. tur 8,6 kat); çarpan üst çubukta görünür. Oyun en geç 40. turda biter; o zaman ayakta kalanlar arasında puanı en yüksek olan kazanır. Bot simülasyonunda (300 oyun) 5 kişiyle oyunların %96'sı, 4 kişiyle %98'i son kalanla biter, ortanca 25-26 tur. Çarpan olmadan yalnız %4'ü bitiyordu: maaş ve banka parası her tur herkesi zenginleştirdiğinden kimse batmıyordu.
-- Başlangıç: 1500 TL nakit, 3 Hamle kartı.
+- Başlangıç: 1500 TL nakit, 3 Hamle kartı. Oturma sırası rastgeledir; sonra oynayan her oyuncu 30 fazla nakitle başlar (5 kişide 1500, 1530, 1560, 1590, 1620), çünkü ilk mülklere geç kalır. Kartlar seyrek gelince ilk oyuncu %24, beşinci %15 kazanıyordu; farkla hepsi %19-21.
 - Kazanan: Seçim Günü'nde (son turun sonunda) en yüksek **puan**a sahip oyuncu. Değer hedefine ilk ulaşan değil, Seçim Günü'nde puanı en yüksek olan kazanır. İflas modunda kazanan son kalan oyuncudur.
 
 ### Masa ayarları
@@ -53,7 +53,7 @@ Her kenarda 5 mülk, 1 gar, 1 havalimanı ve 1 FIRSAT ya da SÜRPRİZ karesi var
 
 | # | Kare | Tür | Fiyat |
 |---|---|---|---|
-| 0 | BAŞLANGIÇ NOKTASI | köşe | geçince ya da gelince maaş |
+| 0 | BAŞLANGIÇ NOKTASI | köşe | geçince ya da gelince maaş ve 1 kart |
 | 1 | İskilip (Çorum) | mülk | 60 |
 | 2 | Osmancık (Çorum) | mülk | 80 |
 | 3 | SÜRPRİZ | sürpriz | rastgele etki, hemen uygulanır |
@@ -108,10 +108,10 @@ Sahil grupları: Antalya, İzmir.
 
 ## 4. Tur akışı
 
-1. **Tur başı** (ilk oyuncudan önce): 1., 4., 7., 10. ve 13. turda yeni Gündem kartı açılır ve uygulanır; önceki gündemin dönem kuralları biter. Tedbir sayaçları her tur 1 azalır.
-2. **Sıra başı**: Elinde 5'ten az kart varsa 1 Hamle kartı çekersin (kart birikmesin). Kira Zammı etkin kaldıysa burada biter.
+1. **Tur başı** (ilk oyuncudan önce): her dönem başında (1., 4., 7. ... tur) yeni Gündem kartı açılır ve uygulanır; önceki gündemin dönem kuralları biter. Tedbir sayaçları her tur 1 azalır.
+2. **Sıra başı**: Kart çekilmez. Kira Zammı etkin kaldıysa burada biter.
 3. **Zar öncesi**: Hamle kartı oynayabilir (turda en fazla 1), kat dikebilir, ipotek yapabilir, pazarlık teklif edebilirsin.
-4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift gelirse, elinde 5'ten az kart varsa +1 kart.
+4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift zar kart vermez.
    (İlk taslakta her turda zar seçimi vardı; simülasyonda oyuncular kirayı neredeyse hiç ödemediği için karta taşındı.)
 5. **Kareye geliş** (aşağıda).
 6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**.
@@ -125,7 +125,7 @@ Sahil grupları: Antalya, İzmir.
 - **Kendi mülkün**: bir şey olmaz.
 - **FIRSAT**: 2 Hamle kartı çek.
 - **SÜRPRİZ**: Rastgele bir Sürpriz etkisi açılır ve **hemen** uygulanır, seçim yapılmaz (bkz. bölüm 8b).
-- **BAŞLANGIÇ NOKTASI**: İleri yönde geçince ya da gelince maaş (200; Asgari Ücret zammıyla artar).
+- **BAŞLANGIÇ NOKTASI**: İleri yönde geçince ya da gelince maaş (200; Asgari Ücret zammıyla artar) ve elinde 5'ten az kart varsa 1 Hamle kartı. Kart, maaş ödenmeyen dönemde de (Bankacılar Grevde) verilir.
 - **TAPU DAİRESİ**: Tahtadaki sahipsiz herhangi bir mülkü fiyatına alabilirsin. Alacak yoksa 1 kart.
 - **ÇAY OCAĞI**: Diğer her oyuncu sana 25 çay parası öder (nakdi yettiği kadar).
 - **ZABITA**: Kaçak katı olan bir rakibi seç; tüm kaçak katları yıkılır, kat başı 25 ceza öder.
@@ -156,13 +156,13 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 - Satacak bir şey kalmadıysa **Konkordato**: nakit 0 olur, oyundan çıkmazsın, sonda konkordato başına 300 puan cezası.
 - **İflas modunda** konkordato yoktur; satacak bir şey kalmayan oyuncu **iflas eder**: mülkleri katsız ve ipoteksiz olarak bankaya döner (sahipsiz, yeniden satın alınabilir), elindeki kartlar desteye gider, oyundan çıkar. Elenen oyuncunun sırası atlanır; aidat, çay parası, gündem ve sürpriz ödemelerine katılmaz; kartlara, pazarlığa ve artırmaya hedef olamaz. Sıralama: ayakta kalanlar puana göre, sonra elenenler son elenenden ilk elenene.
 
-## 7. Hamle kartları (44)
+## 7. Hamle kartları (40)
 
 Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz, Dayın Çıktı) bu sınıra girmez.
 
 | Kart | Adet | Etki | Karşı hamle |
 |---|---|---|---|
-| İtiraz | 6 | TEPKİ: Sana oynanan bir Hamle'yi iptal et. İtiraz'a karşı da oynanabilir. | - |
+| İtiraz | 4 | TEPKİ: Sana oynanan bir Hamle'yi iptal et. İtiraz'a karşı da oynanabilir. | - |
 | Dayın Çıktı | 2 | TEPKİ: Ödemen gereken bir kirayı ödemezsin. | - |
 | Taksi | 2 | Zar atmadan önce: zar yerine 1 ile 12 arasında istediğin sayıda kare ilerle. | - |
 | Kestirme | 3 | Zar attıktan sonra: toplam yerine yalnız bir zarın gösterdiği kadar ilerle. | - |
@@ -170,7 +170,7 @@ Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz
 | Kamulaştırma | 3 | Rakibinin katsız, ipoteksiz ve tam sette olmayan bir mülkünü, bedelini ona ödeyerek al. | İtiraz |
 | Zorla Takas | 3 | Katsız bir mülkünü, rakibinin tam sette olmayan katsız bir mülküyle değiştir. | İtiraz |
 | İhtiyati Tedbir | 2 | Rakibinin seçtiğin mülkü 2 tur boyunca kira getirmez, üstüne kat da dikilemez. | İtiraz |
-| İhbar | 4 | Seçtiğin rakibin bütün kaçak katları yıkılır; rakip yıkılan her kat için 25 ceza öder. | İtiraz |
+| İhbar | 2 | Seçtiğin rakibin bütün kaçak katları yıkılır; rakip yıkılan her kat için 25 ceza öder. | İtiraz |
 | Kira Zammı | 3 | Sıra yeniden sana gelene kadar alacağın ilk kira 2 katına çıkar. | - |
 | Müteahhit Dostu | 3 | Aynı şehirde en az 2 mülkün varsa birine bedava 1 yasal kat dik (setin tamamı gerekmez). | - |
 | Piyango | 2 | Bankadan 100 al. | - |
@@ -197,7 +197,7 @@ Kalan bedava paranın çoğu gündemden geliyordu (Bayram, Seçim vaadi). Günde
 
 ## 8. Gündem kartları (29)
 
-Gündem bir **dönem** boyunca geçerlidir: dönem 3 tur sürer (tüm oyuncuların 3 kez oynaması). Kart 1., 4., 7., 10. ve 13. turun başında açılır; 15 turluk oyunda 5 gündem görülür. Para, kat ve endeks kartları açıldıkları anda bir kez uygulanır. "Bu dönem" diye başlayan kurallar dönem bitene kadar, yani 3 tur boyunca geçerlidir. Haber kartı yalnız gündem değişince ekrana gelir; aradaki turlarda gündem çubuğu kaç tur kaldığını gösterir. Ev sahibi gündemi lobiden tümüyle kapatabilir.
+Gündem bir **dönem** boyunca geçerlidir: dönem 3 tur sürer (tüm oyuncuların 3 kez oynaması). Kart 1., 4., 7., 10., 13., 16. ve 19. turun başında açılır; 20 turluk oyunda 7 gündem görülür. Para, kat ve endeks kartları açıldıkları anda bir kez uygulanır. "Bu dönem" diye başlayan kurallar dönem bitene kadar, yani 3 tur boyunca geçerlidir. Haber kartı yalnız gündem değişince ekrana gelir; aradaki turlarda gündem çubuğu kaç tur kaldığını gösterir. Ev sahibi gündemi lobiden tümüyle kapatabilir.
 
 Ölçüm (300 bot oyunu, 5 kişi, her tur yerine 3 turda bir): oyun başına gündem 15 -> 5; oyun sonu Endeks ortalaması 123 -> 109; gündemden oyunculara giren para 715 -> 219, çıkan 559 -> 174; bedava banka parası maaşın %47'si -> %31'i; konkordato 0,33 (değişmedi). Bir dönem kuralının geçerli olduğu turların payı aynı kaldı (%31): kurallar daha seyrek gelir ama 3 kat uzun sürer.
 

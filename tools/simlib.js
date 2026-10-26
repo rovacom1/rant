@@ -1,7 +1,7 @@
 // Botlarla tam oyun oynatır ve her adımda tutarlılık denetimi yapar.
 // Hem testler (test/sim.test.js) hem denge raporu (tools/sim.js) kullanır.
 
-import { createGame, applyAction, waitingFor, botAction, CARDS, GUNDEM, BOARD, AVATARS, PLAYER_COLORS, BOT_NAMES } from '../src/engine/index.js';
+import { createGame, applyAction, waitingFor, botAction, cardId, ownsGroup, CARDS, GUNDEM, GROUPS, BOARD, AVATARS, PLAYER_COLORS, BOT_NAMES } from '../src/engine/index.js';
 
 const TOTAL_CARDS = Object.values(CARDS).reduce((a, c) => a + c.count, 0);
 const TOTAL_GUNDEM = Object.values(GUNDEM).reduce((a, c) => a + c.count, 0);
@@ -31,7 +31,8 @@ export function makePlayers(n) {
 // levels: koltuk başına bot seviyesi (verilmeyen koltuk masa ayarını kullanır).
 export function playBotGame(seed, nPlayers = 5, config = {}, levels = [], maxActions = 30000) {
   let s = createGame({ players: makePlayers(nPlayers), seed, config });
-  const counts = { actions: 0, cards: {}, trades: 0, tradesAccepted: 0, kacak: 0, builds: 0, auctions: 0, konkordato: 0, rentTotal: 0, rentMax: 0, rentCount: 0 };
+  const counts = { actions: 0, cards: {}, trades: 0, tradesAccepted: 0, kacak: 0, builds: 0, auctions: 0, konkordato: 0, rentTotal: 0, rentMax: 0, rentCount: 0, drawn: 0, salary: 0, turns: 0, dupTurns: 0, setless: 0 };
+  let lastTurn = null;
   while (s.phase !== 'over') {
     if (counts.actions++ > maxActions) throw new Error(`oyun bitmedi (tohum ${seed})`);
     const seat = waitingFor(s)[0];
@@ -46,6 +47,8 @@ export function playBotGame(seed, nPlayers = 5, config = {}, levels = [], maxAct
     s = res.state;
     for (const ev of res.events) {
       if (ev.type === 'card') counts.cards[ev.card] = (counts.cards[ev.card] || 0) + 1;
+      if (ev.type === 'draw') counts.drawn += ev.n;
+      if (ev.type === 'money' && ev.why === 'Maaş') counts.salary += ev.amount;
       if (ev.type === 'tradeDone') counts.tradesAccepted++;
       if (ev.type === 'trade') counts.trades++;
       if (ev.type === 'build') ev.kacak ? counts.kacak++ : counts.builds++;
@@ -57,8 +60,15 @@ export function playBotGame(seed, nPlayers = 5, config = {}, levels = [], maxAct
         counts.rentMax = Math.max(counts.rentMax, ev.amount);
       }
     }
+    if (s.turn && s.turn !== lastTurn && s.phase !== 'over') {
+      lastTurn = s.turn;
+      counts.turns++;
+      const ids = s.players[s.turn.p].hand.map(cardId);
+      if (new Set(ids).size < ids.length) counts.dupTurns++;
+    }
     const errs = checkInvariants(s);
     if (errs.length) throw new Error(`tutarlılık hatası (tohum ${seed}, hamle ${JSON.stringify(action)}): ${errs.join('; ')}`);
   }
+  counts.setless = s.players.filter((_, p) => !Object.keys(GROUPS).some((g) => ownsGroup(s, p, g))).length;
   return { state: s, counts };
 }

@@ -91,7 +91,7 @@ function lobbyHTML() {
         ? seg('cfgTarget', E.TARGET_OPTIONS.map((t) => [t, E.fmt(t)]), L.config.targetScore, 'Hedef değer (ulaşılan tur Seçim Günü olur)')
         : L.config.endMode === 'iflas'
           ? html`<div class="field">Son kalan kazanır<div class="end-note">Borcunu kapatamayan iflas edip elenir. Kiralar her tur artar; en geç ${E.IFLAS_ROUND_CAP}. turda biter.</div></div>`
-          : seg('cfgRounds', [[10, '10 tur'], [15, '15 tur'], [20, '20 tur']], L.config.maxRounds, 'Oyun uzunluğu')}
+          : seg('cfgRounds', E.ROUND_OPTIONS.map((r) => [r, `${r} tur`]), L.config.maxRounds, 'Oyun uzunluğu')}
       ${seg('cfgTurn', [[60, '60 sn'], [120, '2 dk'], [180, '3 dk'], [0, 'Yok']], L.config.turnLimit, 'Sıra süresi (dolunca bot oynar)')}
       ${seg('cfgSpeed', [['slow', 'Yavaş'], ['normal', 'Normal'], ['fast', 'Hızlı']], L.config.speed || 'normal', 'Oyun hızı')}
     </div>

@@ -86,7 +86,7 @@ export class Host {
       for (const s of this.seats) s.connected = !!s.bot;
     } else {
       this.seats = [];
-      this.config = { maxRounds: 15, turnLimit: 120, endMode: 'rounds', targetScore: 3500, speed: 'normal', botLevel: 'normal', rules: { ...E.DEFAULT_CONFIG.rules } };
+      this.config = { maxRounds: E.DEFAULT_CONFIG.maxRounds, turnLimit: 120, endMode: 'rounds', targetScore: 3500, speed: 'normal', botLevel: 'normal', rules: { ...E.DEFAULT_CONFIG.rules } };
       this.game = null;
       this.addSeat({ id: this.hostId, name: cleanName(hostName), avatar: cleanAvatar(hostAvatar), bot: false });
     }

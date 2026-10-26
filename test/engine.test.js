@@ -26,7 +26,29 @@ test('kurulum: el ve ilk tur, oyun hemen başlar', () => {
   assert.ok(s.gundem.id);
   assert.equal(s.turn.p, 0);
   assert.equal(s.turn.step, 'preroll');
-  assert.ok(s.players[0].hand.length >= 4, 'sıra başında kart çekilir');
+  assert.equal(s.players[0].hand.length, 3, 'sıra başında kart çekilmez');
+});
+
+test("kart: Başlangıç Noktası'ndan geçince elde 5'ten az kart varsa 1 kart, çift zar kart vermez", () => {
+  const pass = (fill) => {
+    const s = calm(started(4, 42, { rules: { surpriz: false } }));
+    for (const uid of [...s.players[0].hand]) strip(s, 0, uid.split(':')[0]);
+    for (const id of ['piyango', 'aidat', 'dava', 'kiraZammi', 'muteahhit'].slice(0, fill)) give(s, 0, id);
+    s.players[0].pos = 30;
+    return taksi(s, 0, 8); // 30 -> 2, Başlangıç'tan geçer; taksi elden çıkar
+  };
+  assert.equal(pass(0).players[0].hand.length, 1, 'boş ele 1 kart');
+  assert.equal(pass(5).players[0].hand.length, 5, 'el 5 iken kart gelmez');
+  let s = calm(started(4, 42, { rules: { surpriz: false } }));
+  for (const uid of [...s.players[0].hand]) strip(s, 0, uid.split(':')[0]);
+  s.players[0].pos = 3;
+  for (let seed = 0; seed < 400; seed++) {
+    const t = structuredClone(s);
+    t.rng = seed;
+    const r = applyAction(t, 0, { type: 'roll' }).state;
+    if (r.turn.dice[0] === r.turn.dice[1] && BOARD[r.players[0].pos].kind === 'prop') return assert.equal(r.players[0].hand.length, 0, 'çift zar kart vermez');
+  }
+  assert.fail('çift zar bulunamadı');
 });
 
 test('aynı tohum aynı oyunu üretir', () => {
@@ -360,7 +382,7 @@ test('oyun son turun sonunda biter ve sıralama üretir', () => {
   assert.equal(s.results.ranking.length, 3);
   assert.ok(viewFor(s, 0).players[1].hand, 'oyun sonunda eller açılır');
   assert.equal(s.worth.length, 3, 'oyun başı + her tur sonu net değer');
-  assert.deepEqual(s.worth[0], [s.config.startCash, s.config.startCash, s.config.startCash]);
+  assert.deepEqual(s.worth[0], [0, 1, 2].map((seat) => s.config.startCash + seat * s.config.seatBonus), 'sonra oynayan biraz fazla nakitle başlar');
   assert.deepEqual(s.worth[2], s.players.map((_, p) => netWorth(s, p)));
   assert.deepEqual(viewFor(s, 1).worth, s.worth);
 });
@@ -528,7 +550,7 @@ test('günlükte kart olayları kartı ve oynayanı taşır', () => {
   assert.equal(l.p, 0);
 });
 
-test('denge: en az 5 kira, Müteahhit için şehirde 2 mülk, elde 5 kart varken sıra başı kartı gelmez', () => {
+test('denge: en az 5 kira, Müteahhit için şehirde 2 mülk, sıra başında kart gelmez', () => {
   const s = calm(started());
   own(s, 1, 1);
   assert.equal(rentFor(s, 1), 5, 'İskilip arsa kirası 2, en az 5');
@@ -541,7 +563,7 @@ test('denge: en az 5 kira, Müteahhit için şehirde 2 mülk, elde 5 kart varken
   let guard = 0;
   while (t.turn.p === 0 && guard++ < 60) t = simpleStep(t).state;
   assert.equal(t.turn.p, 1);
-  assert.equal(t.players[1].hand.length, 5, 'el 5 iken kart çekilmez');
+  assert.equal(t.players[1].hand.length, 5, 'sıra başında kart çekilmez');
 });
 
 test('bot seviyesi: zor bot eksik parçaya mülk + az para önerir, normal ve kolay önermez', () => {

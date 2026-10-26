@@ -189,7 +189,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
     results: null,
   };
   const order = shuffle(s, players.map((_, i) => i));
-  s.players = order.map((i) => {
+  s.players = order.map((i, seat) => {
     const p = players[i];
     return {
       id: p.id,
@@ -197,7 +197,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
       color: p.color,
       avatar: p.avatar,
       bot: !!p.bot,
-      cash: cfg.startCash,
+      cash: cfg.startCash + seat * cfg.seatBonus, // sonra oynayan, ilk mülklere geç kaldığı için biraz fazla nakitle başlar
       pos: 0,
       hand: [],
       konkordato: 0,
@@ -250,7 +250,6 @@ function startTurn(s, ctx, p) {
   s.turn = { p, step: 'preroll', dice: null, hamle: false, backward: false, trades: 0 };
   s.players[p].kiraZammi = false;
   emit(s, ctx, { type: 'turn', p });
-  if (s.players[p].hand.length < s.config.drawCap) drawCards(s, ctx, p, 1, true);
 }
 
 // Tur sonu özeti: net değer farkları ve el değiştiren mülkler (bankadan ilk satın alma sayılmaz).
@@ -333,6 +332,8 @@ function travel(s, ctx, p, steps, backward) {
   for (let i = 0; i < passed; i++) {
     if (s.mods.grev) say(s, ctx, 'Bankacılar grevde: maaş yatmadı.');
     else transfer(s, ctx, null, p, s.salary, 'Maaş');
+    // Monopoly'deki gibi tur atlamanın küçük ödülü: kart yalnız buradan (ve FIRSAT'tan) gelir.
+    if (pl.hand.length < s.config.drawCap) drawCards(s, ctx, p, 1, true);
   }
   s.turn.step = 'free';
   land(s, ctx, p);
@@ -911,9 +912,7 @@ const TURN = {
     const d = [rollDie(s), rollDie(s)];
     s.turn.dice = d;
     s.turn.step = 'choose';
-    const bonus = d[0] === d[1] && s.players[p].hand.length < s.config.drawCap;
-    emit(s, ctx, { type: 'dice', p, dice: d, text: `${nm(s, p)} zar attı: ${d[0]} ve ${d[1]}${d[0] === d[1] ? (bonus ? ', çift! +1 kart' : ', çift') : ''}` });
-    if (bonus) drawCards(s, ctx, p, 1, true);
+    emit(s, ctx, { type: 'dice', p, dice: d, text: `${nm(s, p)} zar attı: ${d[0]} ve ${d[1]}${d[0] === d[1] ? ', çift' : ''}` });
     // Kestirme kartı olan oyuncu zarı görüp karar verir; yoksa doğrudan ilerler.
     if (s.turn.hamle || !hasCard(s, p, 'kestirme')) travel(s, ctx, p, d[0] + d[1], s.turn.backward);
   },

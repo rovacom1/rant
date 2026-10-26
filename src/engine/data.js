@@ -3,12 +3,13 @@
 export const RULES_VERSION = 1;
 
 export const DEFAULT_CONFIG = {
-  maxRounds: 15,
+  maxRounds: 20,
   startCash: 1500,
+  seatBonus: 30, // sıra sırasına göre başlangıç nakdi farkı (ilk oyuncu 1500, beşinci 1620)
   salary: 200,
   startHand: 3,
   handLimit: 6,
-  drawCap: 5, // sıra başı ve çift zar kartı yalnız elde bundan az kart varken gelir (kart birikmesin)
+  drawCap: 5, // Başlangıç Noktası'ndan geçince kart yalnız elde bundan az kart varken gelir (kart birikmesin)
   konkordatoPenalty: 300,
   targetScore: 0, // 0: tur sayısıyla biter; >0: biri bu değere ulaşınca o tur sonunda biter
   iflas: false, // true: borcunu kapatamayan konkordato yerine iflas edip elenir, son kalan kazanır
@@ -26,7 +27,7 @@ export const RULE_LABELS = {
   gundem: { name: 'Gündem kartları', icon: '📰', off: 'Tur başında haber kartı açılmaz.' },
 };
 
-export const ROUND_OPTIONS = [10, 15, 20];
+export const ROUND_OPTIONS = [15, 20, 25];
 // Değer hedefi seçenekleri (bot simülasyonunda yaklaşık 9, 15, 22 tur) ve hedef hiç tutmazsa en geç biteceği tur.
 export const TARGET_OPTIONS = [2500, 3500, 5000];
 export const TARGET_ROUND_CAP = 30;
@@ -143,7 +144,7 @@ export const AMOUNTS = {
 // when: preroll (zardan önce) | choose (zardan sonra, ilerlemeden önce) | buy (satın alma kararında) | yoksa serbest
 // react: true ise hedef İtiraz ile cevap verebilir.
 export const CARDS = {
-  itiraz: { name: 'İtiraz', icon: '✋', count: 6, type: 'tepki', text: 'Sana oynanan bir Hamle kartını iptal et. İtiraz\'a karşı da oynanabilir.' },
+  itiraz: { name: 'İtiraz', icon: '✋', count: 4, type: 'tepki', text: 'Sana oynanan bir Hamle kartını iptal et. İtiraz\'a karşı da oynanabilir.' },
   dayi: { name: 'Dayın Çıktı', icon: '🧔', count: 2, type: 'tepki', text: 'Ödemen gereken bir kirayı ödemezsin. "O bizim yeğen, ondan kira alınmaz!"' },
   taksi: { name: 'Taksi', icon: '🚕', count: 2, type: 'hamle', when: 'preroll', target: 'steps', text: 'Zar atmadan 1 ile 12 arasında istediğin sayıda kare ilerle.' },
   kestirme: { name: 'Kestirme', icon: '🛵', count: 3, type: 'hamle', when: 'choose', target: 'die', text: 'Zar attıktan sonra oyna: toplam yerine yalnız bir zarın gösterdiği kadar ilerle.' },
@@ -151,7 +152,7 @@ export const CARDS = {
   kamulastirma: { name: 'Kamulaştırma', icon: '🏛️', count: 3, type: 'hamle', target: 'opp-prop', react: true, text: 'Rakibinin katsız, ipoteksiz ve tam sette olmayan bir mülkünü, bedelini ona ödeyerek al.' },
   takas: { name: 'Zorla Takas', icon: '🔁', count: 3, type: 'hamle', target: 'swap', react: true, text: 'Katsız bir mülkünü, rakibinin tam sette olmayan katsız bir mülküyle değiştir.' },
   tedbir: { name: 'İhtiyati Tedbir', icon: '⚖️', count: 2, type: 'hamle', target: 'opp-prop', react: true, text: 'Rakibinin seçtiğin mülkü 2 tur boyunca kira getirmez, üstüne kat da dikilemez.' },
-  ihbar: { name: 'İhbar', icon: '📢', count: 4, type: 'hamle', target: 'opp-player', react: true, text: 'Seçtiğin rakibin bütün kaçak katları yıkılır; rakip yıkılan her kat için 25 ceza öder.' },
+  ihbar: { name: 'İhbar', icon: '📢', count: 2, type: 'hamle', target: 'opp-player', react: true, text: 'Seçtiğin rakibin bütün kaçak katları yıkılır; rakip yıkılan her kat için 25 ceza öder.' },
   kiraZammi: { name: 'Kira Zammı', icon: '📈', count: 3, type: 'hamle', target: 'none', text: 'Sıra yeniden sana gelene kadar alacağın ilk kira 2 katına çıkar.' },
   muteahhit: { name: 'Müteahhit Dostu', icon: '👷', count: 3, type: 'hamle', target: 'self-prop', text: 'Aynı şehirde en az 2 mülkün varsa birine bedava 1 yasal kat dik. Ruhsatı dostun halletti.' },
   piyango: { name: 'Piyango', icon: '🎟️', count: 2, type: 'hamle', target: 'none', text: 'Yılbaşı biletin tuttu: bankadan 100 al.' },

@@ -48,7 +48,10 @@ function squareScore(s, p, sq, path) {
   const sqd = BOARD[sq];
   const pl = s.players[p];
   let score = 0;
-  if (path.includes(0) && !s.mods.grev) score += s.salary * 0.4;
+  if (path.includes(0)) {
+    if (!s.mods.grev) score += s.salary * 0.4;
+    if (pl.hand.length < s.config.drawCap) score += 25; // geçince kart
+  }
   switch (sqd.kind) {
     case 'prop':
     case 'transport': {
@@ -200,9 +203,39 @@ function buildPlan(s, p, level) {
   return null;
 }
 
-// Rakibin elindeki tek eksik parçayı nakitle almayı dene (turda bir kez). Kolay bot pazarlık önermez.
+// Bir şehirde tek eksiği olan oyuncunun eksik, katsız parçası (yoksa null).
+function lastPiece(s, p, g) {
+  const missing = GROUP_SQUARES[g].filter((q) => s.props[q].owner !== p);
+  if (missing.length !== 1 || GROUP_SQUARES[g].length < 2) return null;
+  const q = missing[0];
+  return s.props[q].owner !== null && R.level(s.props[q]) === 0 ? q : null;
+}
+
+// Monopoly'deki gibi iki tarafa da set tamamlatan takas: benim eksiğim onda, onun eksiği bende.
+// Değer farkı nakitle kapatılır; karşı taraf kabul etmezse teklif yapılmaz.
+function swapPlan(s, p) {
+  const spare = s.players[p].cash - reserve(s, p);
+  for (const g of Object.keys(GROUPS)) {
+    const a = lastPiece(s, p, g);
+    if (a === null) continue;
+    const o = s.props[a].owner;
+    for (const h of Object.keys(GROUPS)) {
+      const b = h === g ? null : lastPiece(s, o, h);
+      if (b === null || s.props[b].owner !== p) continue;
+      const t = { to: o, give: { cash: 0, props: [b] }, take: { cash: 0, props: [a] } };
+      const short = R.money(s, 25) - tradeValue(s, o, { from: p, ...t });
+      if (short > 0) t.give.cash = Math.ceil(short / 5) * 5;
+      if (t.give.cash <= Math.max(0, spare) && tradeValue(s, p, { from: p, ...t }) > 0 && !tradeBlock(s, p, t)) return t;
+    }
+  }
+  return null;
+}
+
+// Önce karşılıklı set takası, sonra rakibin elindeki tek eksik parçayı nakitle almayı dene (turda bir kez). Kolay bot pazarlık önermez.
 function tradePlan(s, p, level) {
   if (s.turn.trades || level === 'kolay') return null;
+  const swap = swapPlan(s, p);
+  if (swap) return { type: 'proposeTrade', ...swap };
   const pl = s.players[p];
   for (const g of Object.keys(GROUPS)) {
     const qs = GROUP_SQUARES[g];
@@ -216,7 +249,7 @@ function tradePlan(s, p, level) {
       if (t && !tradeBlock(s, p, t)) return { type: 'proposeTrade', ...t };
       continue;
     }
-    const offer = R.round5(R.price(s, q) * 2.3);
+    const offer = R.round5(R.price(s, q) * 2.6);
     if (pl.cash - offer < reserve(s, p)) continue;
     const t = { to: owner, give: { cash: offer, props: [] }, take: { cash: 0, props: [q] } };
     if (!tradeBlock(s, p, t)) return { type: 'proposeTrade', ...t };
@@ -246,11 +279,13 @@ function tradeValue(s, p, pd) {
   const other = p === pd.to ? pd.from : pd.to;
   let v = getting.cash - giving.cash;
   for (const q of getting.props) v += propValue(s, p, q);
+  // Takas benim setimi de tamamlıyorsa rakibe set vermek ek ceza sayılmaz (karşılıklı set takası).
+  const mineToo = getting.props.some((q) => BOARD[q].group && GROUP_SQUARES[BOARD[q].group].every((x) => x === q || s.props[x].owner === p));
   for (const q of giving.props) {
     v -= propValue(s, p, q);
     // Rakibin setini tamamlatmak ekstra pahalı.
     const g = BOARD[q].group;
-    if (g && GROUP_SQUARES[g].every((x) => x === q || s.props[x].owner === other)) v -= R.price(s, q) * 0.8;
+    if (!mineToo && g && GROUP_SQUARES[g].every((x) => x === q || s.props[x].owner === other)) v -= R.price(s, q) * 0.8;
   }
   return v;
 }
