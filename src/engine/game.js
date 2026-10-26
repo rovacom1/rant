@@ -561,6 +561,15 @@ function applyGundem(s, ctx, id) {
     case 'dolar':
       for (const p of all) transfer(s, ctx, p, null, R.round5(Math.max(0, s.players[p].cash) * 0.1), 'Dolar kuru');
       break;
+    case 'altin':
+      for (const p of all) transfer(s, ctx, null, p, R.round5(Math.max(0, s.players[p].cash) * 0.1), 'Altın rekoru');
+      break;
+    case 'spekulasyon':
+      for (const p of all) {
+        const n = R.propsOf(s, p).filter((q) => BOARD[q].kind === 'prop' && !s.props[q].ipotek && !R.level(s.props[q])).length;
+        transfer(s, ctx, null, p, n * R.money(s, AMOUNTS.spekulasyon), 'Arsa spekülasyonu');
+      }
+      break;
     case 'asgari':
       s.salary += AMOUNTS.asgari;
       s.gundem.detail = `Maaş artık ${fmt(s.salary)}.`;

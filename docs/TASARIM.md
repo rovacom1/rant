@@ -197,7 +197,7 @@ Kira oyunu sürüklemiyordu: kirayı atlatan kartlar çok, kart birikiyordu, bed
 
 Kalan bedava paranın çoğu gündemden geliyordu (Bayram, Seçim vaadi). Gündem 3 turda bir değişince bu da azaldı (bkz. §8).
 
-## 8. Gündem kartları (29)
+## 8. Gündem kartları (31)
 
 Gündem bir **dönem** boyunca geçerlidir: dönem 3 tur sürer (tüm oyuncuların 3 kez oynaması). Kart 1., 4., 7., 10. ve 13. turun başında açılır; 15 turluk oyunda 5 gündem görülür. Para, kat ve endeks kartları açıldıkları anda bir kez uygulanır. "Bu dönem" diye başlayan kurallar dönem bitene kadar, yani 3 tur boyunca geçerlidir. Haber kartı yalnız gündem değişince ekrana gelir; aradaki turlarda gündem çubuğu kaç tur kaldığını gösterir. Ev sahibi gündemi lobiden tümüyle kapatabilir.
 
@@ -207,6 +207,8 @@ Gündem bir **dönem** boyunca geçerlidir: dönem 3 tur sürer (tüm oyuncular�
 |---|---|---|
 | Enflasyon Açıklandı | 3 | Endeks +15 (kalıcı) |
 | Dolar Rekor Kırdı | 1 | Herkes nakdinin %10'unu kaybeder |
+| Altın Rekor Kırdı | 1 | Herkes nakdinin %10'u kadar kazanır (Dolar'ın tersi) |
+| Arsa Spekülasyonu | 1 | Katsız ve ipoteksiz her arsa (şehir mülkü) için 20 al |
 | Asgari Ücrete Zam | 2 | Maaş +50 (kalıcı) |
 | İmar Affı | 1 | Tüm kaçak katlar yasallaşır |
 | Belediye Operasyonu | 1 | Tüm kaçak katlar yıkılır |

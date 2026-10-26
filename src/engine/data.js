@@ -127,6 +127,7 @@ export const AMOUNTS = {
   secimVaadi: 250,
   rantVergisi: 200,
   faizUctu: 20,
+  spekulasyon: 20,
   asgari: 50,
   enflasyon: 15,
   surMiras: 150,
@@ -166,6 +167,8 @@ export const GUNDEM_PERIOD = 3;
 export const GUNDEM = {
   enflasyon: { name: 'Enflasyon Açıklandı', icon: '📊', count: 3, text: 'Endeks 15 puan arttı. Fiyatlar ve kiralar kalıcı olarak yükseldi.' },
   dolar: { name: 'Dolar Rekor Kırdı', icon: '💵', count: 1, text: 'Herkes nakdinin %10\'unu kaybeder.' },
+  altin: { name: 'Altın Rekor Kırdı', icon: '🪙', count: 1, text: 'Yastık altındaki altın değerlendi: herkes nakdinin %10\'u kadar kazanır.' },
+  spekulasyon: { name: 'Arsa Spekülasyonu', icon: '🏜️', count: 1, text: 'Boş arsalar değerlendi: katsız ve ipoteksiz her arsan için 20 al.' },
   asgari: { name: 'Asgari Ücrete Zam', icon: '🧾', count: 2, text: 'Maaş kalıcı olarak 50 arttı.' },
   imarAffi: { name: 'İmar Affı', icon: '🎉', count: 1, text: 'Tüm kaçak katlar yasallaştı!' },
   operasyon: { name: 'Belediye Operasyonu', icon: '🚜', count: 1, text: 'Kepçeler geldi: tüm kaçak katlar yıkıldı.' },

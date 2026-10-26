@@ -530,6 +530,43 @@ test('gündem dönemi oyunun son turunu aşmaz', () => {
   assert.equal(t.gundem.until, 5);
 });
 
+// Dönemi bitirip verilen gündem kartını açtırır; açıldığı hamlenin olaylarını döndürür.
+function openGundem(s, id) {
+  s.gundem.until = s.round;
+  s.gundemDeck.push(`${id}:0`);
+  const round = s.round;
+  let guard = 0;
+  while (guard++ < 5000) {
+    const seat = waitingFor(s)[0];
+    const r = applyAction(s, seat, botAction(s, seat));
+    s = r.state;
+    if (s.round > round) return { s, log: r.events };
+  }
+  throw new Error('tur bitmedi');
+}
+
+test('Altın Rekor Kırdı: herkes nakdinin %10\'u kadar kazanır', () => {
+  const { s, log } = openGundem(started(4, 7), 'altin');
+  assert.equal(s.gundem.id, 'altin');
+  const pays = log.filter((l) => l.type === 'money' && l.why === 'Altın rekoru');
+  assert.ok(pays.length > 0);
+  for (const m of pays) assert.equal(m.amount, Math.round(((s.players[m.to].cash - m.amount) * 0.1) / 5) * 5);
+});
+
+test('Arsa Spekülasyonu: katsız ve ipoteksiz her arsa için 20 (endeksle)', () => {
+  const s0 = started(4, 7);
+  // Her şehirden bir mülk: set tamamlanmasın, bot kat dikemesin.
+  const props = BOARD.map((_, i) => i).filter((i, _, all) => BOARD[i].kind === 'prop' && all.find((j) => BOARD[j].group === BOARD[i].group) === i);
+  own(s0, 1, props[0], props[1], props[2], props[3], BOARD.findIndex((q) => q.kind === 'transport'));
+  s0.props[props[1]].kat = 1;
+  s0.props[props[2]].ipotek = true;
+  const { s, log } = openGundem(s0, 'spekulasyon');
+  const got = log.filter((l) => l.type === 'money' && l.why === 'Arsa spekülasyonu' && l.to === 1).reduce((a, m) => a + m.amount, 0);
+  const free = s.props.filter((ps, q) => ps && ps.owner === 1 && BOARD[q].kind === 'prop' && !ps.ipotek && !ps.kat && !ps.kacak).length;
+  assert.ok(free >= 1 && free < 4, 'katlı mülk ve ulaşım sayılmaz');
+  assert.equal(got, free * Math.round((20 * s.index) / 100 / 5) * 5);
+});
+
 test('değer hedefi: hedefe ulaşılan tur tamamlanınca Seçim Günü gelir', () => {
   let s = started(4, 42, { targetScore: 2500 });
   assert.equal(s.config.maxRounds, 30, 'değer hedefi tutmazsa en geç 30. turda biter');
