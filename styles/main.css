@@ -803,3 +803,31 @@ body.dark .card-panel { --line: #d8c9a8; --muted: #6b6f7d; --btn-base: #1b2233; 
 .moneybox.abox { padding: 8px 12px; width: min(360px, 100%); }
 .moneybox.abox .amount { font-size: 18px; margin-left: 8px; }
 .prompt h3 small { font-family: var(--font); font-size: 12.5px; font-weight: 600; }
+
+/* ================= Telefon ve dar tablet (800 px ve altı) ================= */
+/* Üst çubuk tek satır, tahta tam genişlik; altında el ve oyuncular sekmeli (side-tabs). */
+.side-tabs { display: none; }
+@media (max-width: 800px) {
+  .topbar { gap: 8px; padding: 6px 8px; flex-wrap: nowrap; }
+  .topbar .mini-logo { display: none; }
+  .topbar .stat { font-size: 10px; }
+  .topbar .stat b { font-size: 14px; white-space: nowrap; }
+  .topbar .tb-lbl { display: none; }
+  .topbar .conn:not(.bad) { display: none; }
+  .topbar .conn.bad { max-width: 34vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .iconbtn { padding: 6px 7px; }
+  .table { padding: 6px 4px 0; gap: 8px; }
+  .board { --size: min(calc(100vw - 8px), 800px); }
+  .side { gap: 8px; }
+  .side-tabs { display: flex; gap: 4px; background: rgba(8, 12, 24, 0.45); border-radius: 14px; padding: 4px; }
+  .side-tabs button { flex: 1; border: 0; border-radius: 10px; padding: 9px 6px; background: transparent; color: #c7d2ea; font-family: var(--display); font-weight: 600; font-size: 15px; cursor: pointer; }
+  .side-tabs button.on { background: var(--paper); color: var(--ink); }
+  .side[data-tab='hand'] .seats-panel, .side[data-tab='players'] .hand-panel { display: none; }
+  /* izleyicinin eli yok: sekme yerine oyuncular */
+  .side:has(.hand-panel.hidden) .side-tabs { display: none; }
+  .side:has(.hand-panel.hidden) .seats-panel { display: flex; }
+  .hand-panel { order: 0; }
+}
+@media (max-width: 640px) {
+  .board { --size: calc(100vw - 8px); padding: 4px; gap: 2px; }
+}

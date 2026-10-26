@@ -16,6 +16,7 @@
 - Özel kareler ve ulaşım, Monopoly tahtası gibi sade SVG ikonlarla çizilir (`src/ui/icons.js`); kare resmi kullanılmaz. Mülkler şehrin iki rengini gösteren buzlu cam ve aynı renklerde set çerçevesiyle çizilir (Trabzon bordo-mavi gibi). Alınınca cam ve çerçeve değişmez; sahibi yalnız iç kenardaki parlak şerit gösterir. Plaka rozeti ve semt fotoğrafı denendi, kullanıcı istemedi. Son olaylar tahtanın ortasının altında akar. Katlar karede 🏠×N, kaçak kat 🚧 olarak yazar.
 - Sohbet yok (kullanıcı kaldırttı). Olaylar paneli sade ve büyük yazılı: zar, yürüme, maaş gibi gürültü gösterilmez; her tur bir başlıkla ayrılır.
 - Tahtanın karanlık modu var (sağ üstte 🌙/☀️); yeni arayüz parçaları iki temada da denenmeli.
+- 800 px ve altında üst çubuk tek satır (yalnız ikonlar), tahta tam genişlik, altında 'Kartların / Oyuncular' sekmeleri; yeni arayüz parçaları 375 px genişlikte de denenmeli.
 
 ## Mimari
 - Derleme adımı yok, npm bağımlılığı yok. Tarayıcıda ES modülleri; testler `node:test`.

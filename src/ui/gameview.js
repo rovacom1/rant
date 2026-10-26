@@ -39,7 +39,7 @@ export function mountGame(root) {
       <div class="spacer"></div>
       <span class="conn" id="tConn"></span>
       <button class="iconbtn" data-act="copyLink" id="tCode" title="Davet linkini kopyala"></button>
-      <button class="iconbtn" data-act="rules">❓ Kurallar</button>
+      <button class="iconbtn" data-act="rules">❓<span class="tb-lbl"> Kurallar</span></button>
       <button class="iconbtn" data-act="theme" id="tTheme" title="Karanlık / aydınlık tahta"></button>
       <button class="iconbtn" data-act="audio" id="tAudio" title="Müzik ve ses ayarları"></button>
       <button class="iconbtn${notifySupported() ? '' : ' hidden'}" data-act="notify" id="tNotify" title="Sekme arkadayken sıra sana gelince masaüstü bildirimi"></button>
@@ -58,7 +58,8 @@ export function mountGame(root) {
           <div id="pop"></div>
         </div>
       </section>
-      <aside class="side">
+      <aside class="side" data-tab="hand">
+        <nav class="side-tabs"><button data-act="sideTab" data-tab="hand" class="on">🃏 Kartların<span id="tabHandN"></span></button><button data-act="sideTab" data-tab="players">👥 Oyuncular</button></nav>
         <div class="seats-panel" id="players"></div>
         <section class="hand-panel hidden" id="handPanel">
           <div class="hand-head">KARTLARIN<span class="hand-n" id="handN"></span><span class="spacer"></span><span class="deck-chip" id="deck" data-tip="Destede kalan kart"></span></div>
@@ -72,7 +73,7 @@ export function mountGame(root) {
   els = {
     round: g('tRound'), target: g('tTarget'), kira: g('tKira'), index: g('tIndex'), salary: g('tSalary'), conn: g('tConn'), code: g('tCode'), audio: g('tAudio'), notify: g('tNotify'),
     board: g('board'), gundem: g('gundem'), prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'),
-    players: g('players'), feed: g('feed'), handPanel: g('handPanel'), handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
+    players: g('players'), tabHandN: g('tabHandN'), feed: g('feed'), handPanel: g('handPanel'), handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), audioPop: g('audioPop'), theme: g('tTheme'),
     modal: g('modal'), stage: g('stage'),
   };
   cells = buildBoard(els.board);
@@ -150,7 +151,7 @@ function updateTopbar(v) {
   if (v.config.iflas) els.kira.lastElementChild.textContent = `×${E.iflasMult(v).toLocaleString('tr-TR', { maximumFractionDigits: 1 })}`;
   els.index.textContent = v.index;
   els.salary.textContent = fmt(v.salary);
-  els.code.textContent = app.mode === 'local' ? '🤖 Yerel oyun' : `🔗 Oda ${app.code}`;
+  setHTML(els.code, app.mode === 'local' ? html`🤖<span class="tb-lbl"> Yerel oyun</span>` : html`🔗<span class="tb-lbl"> Oda</span> ${app.code}`);
   els.audio.textContent = isMuted() ? '🔇' : '🔊';
   els.theme.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
   els.notify.textContent = isNotifyOn() ? '🔔' : '🔕';
@@ -484,6 +485,7 @@ function renderHand(v) {
   hand.render(pl.hand, (u) => ({ playable: !discard && canPlay(v, u), selected: app.ui.selected.includes(u) }), app.ui.newCards || []);
   app.ui.newCards = [];
   setHTML(els.handN, ` · ${pl.hand.length}`);
+  setHTML(els.tabHandN, ` · ${pl.hand.length}`);
   setHTML(els.deck, html`<i></i>${v.deck}`);
 }
 

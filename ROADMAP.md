@@ -6,7 +6,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Mobil düzen:** 400-800 px genişlikte tahta ve panelin rahat kullanımı (alt sekmeli panel). 10x10 tahtada kareler dar ekranda çok küçülüyor.
+- [ ] **Mobil düzen (kalan):** Dar ekranda kare penceresi, pazarlık/artırma pencereleri ve tahta ortasındaki istem 375 px'te rahat mı; kart sürükleme dokunmatikte denenmeli; kareler çok küçük (kare adları okunmuyor, gerekirse dokununca büyüyen kare).
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
 - [ ] **Yeni harita: İstanbul:** İlçelerden oluşan ikinci tahta; lobide harita seçimi (tahta verisi data.js'te haritaya göre).
 - [ ] **Yeni kartlar (denge simülasyonuyla):** "Kat Karşılığı" (rakibin arsasına onunla ortak kat), "Kredi Kartı" (şimdi 300 al, 2 tur sonra 360 öde), "Torpil" (ihalede ikinci en yüksek teklifle kazan).
@@ -18,6 +18,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Mobil düzen 1. dilim: 800 px ve altında üst çubuk tek satır ve yalnız ikon (142 -> 44-54 px), tahta tam genişlik (375 px'te 347 -> 367), altında 'Kartların / Oyuncular' sekmeleri (sayfa 1222 -> 855 px); izleyicide sekme yok (v0.17.1)
 - [x] Açık pazarlık: sırası olmayan oyuncu da, sıradaki oyuncu zar öncesi ya da serbest evredeyken, turda bir teklif yapabilir; masada aynı anda tek teklif; pazarlık penceresi sıra beklerken açık kalır, gönderme düğmesi uygun ana kadar kapalı (v0.17.0)
 - [x] Lobide Bot seviyesi seçimi (Kolay / Normal / Zor, yalnız ev sahibi); kurallarda bot seviyesi satırı, eskimiş gizli hedef ve "kimse batmaz" ifadeleri düzeltildi (v0.16.2)
 - [x] Zor bot kaçak kat dikmez (zabıta ve ihbar riskine girmez); 1000 oyunda zor bot 4 kişide %24->%40, 5 kişide %25->%29 (v0.16.1)

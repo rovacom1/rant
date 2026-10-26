@@ -565,6 +565,11 @@ const A = {
   },
   closeStage: (el) => el.remove(),
   results: () => openDialog({ type: 'results' }),
+  // Dar ekranda tahtanın altındaki sekmeler: el ya da oyuncular. Geniş ekranda ikisi birden görünür.
+  sideTab(el) {
+    el.closest('.side').dataset.tab = el.dataset.tab;
+    for (const b of el.parentElement.children) b.classList.toggle('on', b === el);
+  },
   theme() {
     const dark = !document.body.classList.contains('dark');
     document.body.classList.toggle('dark', dark);
