@@ -344,6 +344,20 @@ body.dark .deed .dmort { background: repeating-linear-gradient(135deg, rgba(10, 
 .kart.glow { border-color: #ffd166; box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.55), 0 0 22px rgba(255, 209, 102, 0.75), 0 10px 18px rgba(0, 0, 0, 0.35); }
 .kart.big { --w: 160px; }
 .card-text { font-size: 15px; line-height: 1.45; color: var(--muted); }
+.kart.mini { --w: 64px; }
+.kart.mini .k-name, .kart.mini .k-type { display: none; }
+
+/* dava düellosu */
+.duel { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 24px; border-radius: 22px; background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); }
+.duel-row { display: flex; align-items: center; gap: 22px; }
+.duel-side { width: 210px; padding: 16px 12px; border-radius: 18px; background: color-mix(in srgb, var(--pc) 10%, var(--center)); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pc) 45%, transparent); display: flex; flex-direction: column; align-items: center; gap: 8px; transition: opacity 0.4s, box-shadow 0.4s, transform 0.4s; }
+.duel-die { height: 96px; display: grid; place-items: center; }
+.duel-die .die3d { --d: 64px; }
+.duel-res { font-family: var(--hf); font-weight: 800; font-size: 26px; min-height: 32px; }
+.duel-vs { font-family: var(--hf); font-weight: 800; font-size: 34px; color: var(--muted); width: 40px; text-align: center; }
+.duel.won-plaintiff .plaintiff, .duel.won-defendant .defendant { box-shadow: inset 0 0 0 3px var(--gold), 0 0 22px rgba(245, 197, 66, 0.6); transform: scale(1.04); }
+.duel.won-plaintiff .defendant, .duel.won-defendant .plaintiff { opacity: 0.5; }
+.duel.tie .duel-tie { color: var(--accent); font-weight: 700; }
 
 /* zar */
 .dice { display: flex; gap: 18px; justify-content: center; position: relative; }

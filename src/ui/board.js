@@ -211,13 +211,11 @@ const face = (n) => `<div class="face f${n}">${Array.from({ length: 9 }, (_, i) 
 const TILT = 'rotateX(-52deg) rotateY(-28deg) rotateX(90deg)';
 
 export class Dice {
-  constructor(el) {
+  // n: zar sayısı (oyun zarı 2, dava düellosunda her oyuncunun kendi tek zarı).
+  constructor(el, n = 2) {
     this.el = el;
-    this.turns = [
-      [0, 0],
-      [0, 0],
-    ];
-    el.innerHTML = [0, 1].map(() => `<div class="die3d"><div class="cube">${[1, 2, 3, 4, 5, 6].map(face).join('')}</div><div class="dshadow"></div></div>`).join('');
+    this.turns = Array.from({ length: n }, () => [0, 0]);
+    el.innerHTML = Array.from({ length: n }, () => `<div class="die3d"><div class="cube">${[1, 2, 3, 4, 5, 6].map(face).join('')}</div><div class="dshadow"></div></div>`).join('');
     this.cubes = [...el.querySelectorAll('.cube')];
     this.wraps = [...el.querySelectorAll('.die3d')];
     this.values = null;

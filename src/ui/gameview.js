@@ -502,7 +502,7 @@ function tradePendingHTML(v, pd) {
       <div class="row"><button class="btn L pri flex" data-act="tradeAccept" data-primary>Kabul</button>${more ? html`<button class="btn L sec" data-act="counterOpen">${I('swap2')}Karşı teklif</button>` : ''}<button class="btn L gho" data-act="tradeReject">Reddet</button></div>${timerHTML(v, [me])}</div>`;
   }
   if (pd.from === me) {
-    return html`<div class="sheet S"><div class="sheet-head"><span class="spinner"></span><span class="h18">Teklifin ${P(v, pd.to).name}'da</span></div>${tradeSummary(v, pd)}${timerHTML(v, [pd.to])}
+    return html`<div class="sheet S"><div class="sheet-head"><span class="spinner"></span><span class="h18">Teklifin gönderildi</span><span class="row muted" style="gap:6px">${PW(P(v, pd.to), 24)}${P(v, pd.to).name} düşünüyor</span></div>${tradeSummary(v, pd)}${timerHTML(v, [pd.to])}
       <button class="btn sec" data-act="tradeCancel" style="align-self:flex-start">Teklifi geri çek</button></div>`;
   }
   return waitHTML(v, pd.to, `${P(v, pd.from).name}, ${P(v, pd.to).name} ile pazarlıkta`);
@@ -725,7 +725,7 @@ function tradeDialog(v) {
   return html`<div class="sheet XL" style="height:100%"><div class="sheet-head">${I(t.counter ? 'swap2' : 'deal')}<span class="h22">${t.counter ? 'Karşı teklif' : 'Pazarlık'}</span><span class="grow"></span>
       <div class="partners">${opps.map((i) => html`<button class="btn S sec ${t.to === i ? 'on' : ''}" style="--pc:${P(v, i).color}" data-act="tradeTo" data-p="${i}">${PW(P(v, i), 24)}${P(v, i).name.split(' ')[0]}</button>`)}</div>
       <button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div>
-    <div class="trade-cols">${col(me, 'Sen veriyorsun', 'give', 'tradeGive')}${col(t.to, `${P(v, t.to).name}'dan istiyorsun`, 'take', 'tradeTake')}</div>
+    <div class="trade-cols">${col(me, 'Sen veriyorsun', 'give', 'tradeGive')}${col(t.to, `${P(v, t.to).name} veriyor`, 'take', 'tradeTake')}</div>
     <div class="row"><span data-trade-sum class="grow">${block ? html`<span class="reason">${block}</span>` : empty ? html`<span class="muted small">Vermek ya da almak istediğini seç.</span>` : tradeSummary(v, offer)}</span>
       <button class="btn gho" data-act="close">Vazgeç</button><button class="btn L pri" data-act="sendTrade" ${empty || block ? 'disabled' : ''}>${t.counter ? 'Karşı teklifi gönder' : 'Teklifi gönder'}</button></div></div>`;
 }
@@ -1190,6 +1190,33 @@ function cardEffect(v, ev) {
   }
 }
 
+// Dava düellosu: davacı ve davalı yan yana, her birinin kendi zarı kendi altında. Zarlar dönünce kazanan
+// altınla parlar, kaybeden soluklaşır, tutarlar yazar. Eşitlikte davalı kazanır (not hep görünür).
+export async function showDava(v, e) {
+  const [a, b] = e.dice;
+  const pl = P(v, e.p);
+  const df = P(v, e.victim);
+  const amt = E.money(v, E.AMOUNTS.dava);
+  const side = (who, cls, label) => html`<div class="duel-side ${cls}" style="--pc:${who.color}"><span class="kicker">${label}</span>${PW(who, 56)}<span class="h18">${who.name}</span><div class="duel-die"></div><span class="duel-res"></span></div>`;
+  const shown = stageShow(html`<div class="duel"><div class="row" style="gap:12px">${cardFace('dava', 'mini')}<span class="h22">Dava açıldı</span></div>
+    <div class="duel-row">${side(pl, 'plaintiff', 'Davacı')}<span class="duel-vs">VS</span>${side(df, 'defendant', 'Davalı')}</div>
+    <span class="note duel-tie">${I('tedbir')}Eşitlikte davalı kazanır</span></div>`, Math.round((PACE.dice + PACE.card) * spd()));
+  const root = els.stage.querySelector('.duel');
+  if (!root) return shown;
+  const slots = root.querySelectorAll('.duel-die');
+  const dA = new Dice(slots[0], 1);
+  const dB = new Dice(slots[1], 1);
+  await Promise.all([dA.roll([a], false, PACE.dice * spd(), '', spd()), dB.roll([b], false, PACE.dice * spd(), '', spd())]);
+  if (!root.isConnected) return shown;
+  const win = a > b ? 'plaintiff' : 'defendant';
+  root.querySelector('.duel-vs').textContent = a > b ? '>' : a < b ? '<' : '=';
+  root.classList.add(`won-${win}`, a === b ? 'tie' : 'clear');
+  root.querySelector(`.${win} .duel-res`).innerHTML = `<span class="pos">${money(amt, true)}</span>`;
+  root.querySelector(`.${win === 'plaintiff' ? 'defendant' : 'plaintiff'} .duel-res`).innerHTML = `<span class="neg">${money(-amt)}</span>`;
+  play(win === 'plaintiff' && e.p === v.you ? 'coin' : 'sold');
+  return shown;
+}
+
 // Başkasının oynadığı kart ortada gösterilir: kimin kime ne yaptığı. Üzerine gelince durur, tıklayınca kapanır.
 async function revealCard(pv, v, ev) {
   if (!els) return;
@@ -1297,10 +1324,11 @@ export async function present(prev, v, events, fast) {
     animating = true;
     try {
       for (const e of seq) {
-        if (e.type === 'dice' || e.type === 'dava') {
-          const cap = e.type === 'dava' ? `Dava zarları: ${P(v, e.p).name} ${e.dice[0]} · ${P(v, e.victim).name} ${e.dice[1]}` : '';
+        if (e.type === 'dice') {
           app.ui.diceUntil = Date.now() + (PACE.diceShow + PACE.dice) * spd();
-          await dice.roll(e.dice, fast, PACE.dice * spd(), cap, spd());
+          await dice.roll(e.dice, fast, PACE.dice * spd(), '', spd());
+        } else if (e.type === 'dava') {
+          if (!fast) await showDava(v, e);
         } else if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast, PACE.step * spd());
         else if (fast) continue;
         else if (e.type === 'surpriz') await showSurpriz(v, e);
