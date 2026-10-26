@@ -426,9 +426,11 @@ async function copyLink() {
 
 const V = () => app.view;
 const closeDialog = () => {
+  // Oyuncu ayrıntısı pencere değil, sağ sütunda elin yerinde durur; kapanınca sütun da yeniden çizilir.
+  const panel = app.ui.dialog && app.ui.dialog.type === 'player';
   app.ui.dialog = null;
   app.ui.menuModal = false;
-  if (app.screen === 'game') G.renderModal();
+  if (app.screen === 'game') panel ? G.updateGame() : G.renderModal();
   else render();
 };
 const openDialog = (d) => {
