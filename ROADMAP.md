@@ -6,18 +6,18 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
-- [ ] **Arayüz denemesi (v0.21-0.22):** Kat Karşılığı kare rozeti (🏗️), kare penceresindeki ortak satırı, hedef seçimi ve rakip kart açıklaması; sonuç ekranındaki unvan çipleri ve ipuçları tarayıcıda denenmedi (League açıktı); iki temada ve 375 px'te bak.
+- [ ] **Arayüz denemesi (v0.21-0.22):** Kat Karşılığı kare rozeti (🏗️), kare penceresindeki ortak satırı, hedef seçimi ve rakip kart açıklaması; sonuç ekranındaki unvan çipleri ve ipuçları; lobideki 'Hızlı' oyun sonu seçeneği ve açıklaması (v0.23) tarayıcıda denenmedi (League açıktı); iki temada ve 375 px'te bak.
 - [ ] **Mobil düzen (kalan):** Kart sürükleme dokunmatikte denenmeli; 375 px'te kare adları ~5 px (okunmuyor; dokununca açılan pencere adı gösteriyor, gerekirse kısaltılmış ad ya da dokununca büyüyen kare); dar ekranda gündem açıklaması gizli (gündem çubuğuna dokununca açıklama penceresi düşünülebilir).
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
 - [ ] **Yeni harita: İstanbul:** İlçelerden oluşan ikinci tahta; lobide harita seçimi (tahta verisi data.js'te haritaya göre).
 - [ ] **Ev sahibi devri:** Ev sahibi düşerse en eski oyuncu kayıttan oyunu devralsın (her oyuncuda son durum kopyası).
 - [ ] **PWA:** Masaüstüne kurulabilir uygulama (manifest + service worker); botlarla çevrimdışı oynama.
 - [ ] **Erişilebilirlik:** Klavyeyle tam oynanış, renk körleri için şehir desenleri, ekran okuyucu etiketleri.
-- [ ] **Hızlı oyun:** Lobide 'Hızlı' seçeneği: 8 tur, herkes 2 rastgele sahipsiz mülkle başlar; 20-25 dakikalık oyun.
 - [ ] **İsteğe bağlı sunucu:** P2P'nin çalışmadığı ağlar için aynı protokolle küçük bir WebSocket aktarıcısı (Cloudflare Workers + Durable Objects), varsayılan kapalı.
 
 ## Tamamlananlar
 
+- [x] Hızlı oyun: lobide 4. oyun sonu seçeneği 'Hızlı', 8 tur, herkes farklı şehirlerden 2 rastgele sahipsiz mülkle bedava başlar (set yok, ulaşım yok); sim 300x5 hamle 332 -> 200/oyun, sıra %15-26, tur başı kira aynı (v0.23.0)
 - [x] Oyun sonu unvanları: motor açık istatistik sayar (toplanan kira, ortak payı dahil; ödenen kira; kaçak kat; itiraz), sonuç ekranında 👑 Kira Kralı, 🚧 Kaçak Ustası, ✋ İtirazcı, 😩 Ev Sahibi Mağduru çipleri, eşitlikte hepsi alır, puana etkisi yok (v0.22.0)
 - [x] Kat Karşılığı hamle kartı (2 adet, deste 50): rakibin arsasına kat parasını sen ödersin, sahibine bedava yasal kat çıkar, o mülkün kirası bundan sonra ikinize yarı yarıya; mülk başına tek ortak, İtiraz edilebilir, ortak iflas edince biter; sim 300x5 sıra %17-22, kira 22,6, kart 0,9/oyun (v0.21.0)
 - [x] Bakım (oturum 40): kullanılmayan .wait kuralı silindi, rng.js rand dışa kapatıldı, Nasıl oynanır puan tanımına ödenmemiş kredi ve Hamle listesine Kredi Kartı eklendi; denge 300x5 sıra %18-21, kira 22,3/oyun; PeerJS 1.5.5 güncel, CDN 200 (v0.20.2)

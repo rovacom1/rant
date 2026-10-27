@@ -872,3 +872,26 @@ test('oyun sonu unvanları: kira, kaçak kat ve itiraz sayılır; en yüksek al�
   assert.equal(kira.reduce((a, b) => a + b), state.players.reduce((a, pl) => a + pl.st.odenen, 0), 'toplanan kira = ödenen kira');
   for (const x of state.results.unvanlar) assert.ok(x.value > 0 && x.players.length > 0);
 });
+
+test('hızlı oyun: 8 tur, herkes farklı şehirlerden 2 sahipsiz mülkle başlar, set yok', () => {
+  for (const seed of [1, 2, 3, 42, 99]) {
+    const s = started(5, seed, { hizli: true, iflas: true, targetScore: 5000 });
+    assert.equal(s.config.maxRounds, 8);
+    assert.equal(s.config.iflas, false);
+    assert.equal(s.config.targetScore, 0);
+    s.players.forEach((_, p) => {
+      const mine = s.props.flatMap((ps, i) => (ps && ps.owner === p ? [i] : []));
+      assert.equal(mine.length, 2);
+      assert.ok(mine.every((i) => BOARD[i].kind === 'prop' && s.props[i].kat === 0 && !s.props[i].ipotek));
+      assert.notEqual(BOARD[mine[0]].group, BOARD[mine[1]].group);
+    });
+  }
+  const normal = started(5, 1);
+  assert.equal(normal.props.filter((ps) => ps && ps.owner !== null).length, 0);
+});
+
+test('hızlı oyun botlarla 8. turda Seçim Günü ile biter', () => {
+  const { state } = playBotGame(7, 5, { hizli: true });
+  assert.equal(state.phase, 'over');
+  assert.equal(state.round, 8);
+});

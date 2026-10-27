@@ -1,10 +1,11 @@
-// Denge raporu: node tools/sim.js [oyun sayısı] [oyuncu sayısı] [seviye]
+// Denge raporu: node tools/sim.js [oyun sayısı] [oyuncu sayısı] [seviye] [hizli]
 // Seviye verilirse (kolay/zor) her oyunda bir bot o seviyede oynar (koltuğu oyundan oyuna döner), diğerleri normal.
 import { playBotGame } from './simlib.js';
 
 const games = Number(process.argv[2] || 200);
 const players = Number(process.argv[3] || 5);
-const level = process.argv[4];
+const level = ['kolay', 'zor'].includes(process.argv[4]) ? process.argv[4] : undefined;
+const config = process.argv.includes('hizli') ? { hizli: true } : {}; // Hızlı oyun modu
 let levelWins = 0;
 const t0 = Date.now();
 
@@ -17,7 +18,7 @@ const endCash = [];
 
 for (let g = 0; g < games; g++) {
   const levels = level ? Object.assign([], { [g % players]: level }) : [];
-  const { state, counts } = playBotGame(1000 + g, players, {}, levels);
+  const { state, counts } = playBotGame(1000 + g, players, config, levels);
   const { ranking, scores } = state.results;
   winsBySeat[ranking[0]]++;
   if (level && ranking[0] === g % players) levelWins++;

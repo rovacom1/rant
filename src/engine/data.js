@@ -12,6 +12,7 @@ export const DEFAULT_CONFIG = {
   konkordatoPenalty: 300,
   targetScore: 0, // 0: tur sayısıyla biter; >0: biri bu değere ulaşınca o tur sonunda biter
   iflas: false, // true: borcunu kapatamayan konkordato yerine iflas edip elenir, son kalan kazanır
+  hizli: false, // true: HIZLI.rounds tur, herkes HIZLI.props rastgele sahipsiz şehir mülküyle başlar
   iflasKira: 0.4, // iflas modunda kira çarpanı her tur bu kadar artar (rules.js iflasMult)
   // Masa ayarları: ev sahibi lobide açıp kapatır (docs/TASARIM.md 2. bölüm).
   rules: { ihale: true, surpriz: true, gundem: true },
@@ -32,6 +33,8 @@ export const TARGET_OPTIONS = [2500, 3500, 5000];
 export const TARGET_ROUND_CAP = 30;
 // İflas modunda tek oyuncu kalmazsa oyun en geç bu turda biter.
 export const IFLAS_ROUND_CAP = 40;
+// Hızlı oyun: kısa tur sayısı ve oyuncu başı bedava başlangıç mülkü (farklı şehirlerden, kimse set tamamlamaz).
+export const HIZLI = { rounds: 8, props: 2 };
 
 // gen: şehrin ilgi hali ("Konya'nın"), metinlerde kullanılır. tint: karenin buzlu camındaki ikinci renk.
 export const GROUPS = {

@@ -1,7 +1,7 @@
 // Oyun durum makinesi. applyAction(state, oyuncu, hamle) yeni state ve olay listesi döndürür.
 // Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste) içermez.
 
-import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP, IFLAS_ROUND_CAP, UNVANLAR } from './data.js';
+import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP, IFLAS_ROUND_CAP, HIZLI, UNVANLAR } from './data.js';
 import { randInt, rollDie, shuffle } from './rng.js';
 import * as R from './rules.js';
 
@@ -160,6 +160,7 @@ function autoLiquidate(s, ctx, p) {
 export function createGame({ players, config = {}, seed = 1 }) {
   need(players.length >= 2 && players.length <= 6, 'Oyun 2-6 kişiyle oynanır.');
   const cfg = { ...DEFAULT_CONFIG, ...config, rules: { ...DEFAULT_CONFIG.rules, ...config.rules } };
+  if (cfg.hizli) Object.assign(cfg, { targetScore: 0, iflas: false, maxRounds: HIZLI.rounds });
   if (cfg.iflas) Object.assign(cfg, { targetScore: 0, maxRounds: IFLAS_ROUND_CAP });
   if (cfg.targetScore) cfg.maxRounds = TARGET_ROUND_CAP;
   const s = {
@@ -215,9 +216,24 @@ export function createGame({ players, config = {}, seed = 1 }) {
   const ctx = { events: [] };
   s.players.forEach((_, p) => drawCards(s, ctx, p, cfg.startHand, true));
   say(s, ctx, 'Masa kuruldu, oyun başlıyor.');
+  if (cfg.hizli) dealStartProps(s, ctx);
   startRound(s, ctx);
   startTurn(s, ctx, 0);
   return s;
+}
+
+// Hızlı oyun: herkes sırayla karışık desteden, elindekilerle aynı şehirden olmayan sahipsiz mülkler alır.
+function dealStartProps(s, ctx) {
+  const pool = shuffle(s, BOARD.flatMap((q, i) => (q.kind === 'prop' ? [i] : [])));
+  s.players.forEach((pl, p) => {
+    const got = [];
+    for (const sq of pool) {
+      if (got.length === HIZLI.props) break;
+      if (s.props[sq].owner === null && !got.some((g) => BOARD[g].group === BOARD[sq].group)) got.push(sq);
+    }
+    for (const sq of got) s.props[sq].owner = p;
+    say(s, ctx, `${nm(s, p)} hızlı başlangıçta ${got.map((sq) => BOARD[sq].name).join(' ve ')} tapusunu aldı.`);
+  });
 }
 
 // ---------- tur akışı ----------
