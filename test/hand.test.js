@@ -28,6 +28,12 @@ test('el ızgarası: dar ekranda yalnız genişliğe bakılır, kart 100 pikseld
   assert.deepEqual(fitGrid(6, 340, 0), { cols: 3, w: 108 });
 });
 
+test('el ızgarası: alçak ekranda kart alanın boyunu aşmaz, fazlası dikey kayar', () => {
+  assert.deepEqual(fitGrid(5, 240, 150, true), { cols: 2, w: 105 });
+  assert.deepEqual(fitGrid(1, 240, 150, true), { cols: 1, w: 105 });
+  assert.deepEqual(fitGrid(4, 300, 60, true), { cols: 4, w: 64 }); // 64 pikselden küçülmez
+});
+
 test('kartlar: her kartın türü ve kısa kuralı var, kural harf sınırını aşmaz', () => {
   for (const id of Object.keys(CARDS)) {
     assert.ok(CARD_GROUPS[CARD_GROUP[id]], `${id}: tür`);

@@ -674,6 +674,19 @@ const A = {
     app.ui.resultsOpen = false;
     G.updateGame();
   },
+  // Telefonda tam ekran ve yatay kilit. Kilit desteklenmezse tam ekran yine kalır.
+  async fullscreen() {
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+      await screen.orientation.lock('landscape');
+    } catch {
+      // desteklenmiyor ya da reddedildi: oyuncu telefonu kendisi çevirir
+    }
+  },
+  // Dikey ekranda "yan çevir" perdesini bu oturumda kapatır.
+  portraitOk() {
+    document.body.classList.add('portrait-ok');
+  },
   theme() {
     const dark = !document.body.classList.contains('dark');
     document.body.classList.toggle('dark', dark);

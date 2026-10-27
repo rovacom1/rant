@@ -149,7 +149,7 @@ body.dark .disc { background: color-mix(in srgb, var(--pc) 22%, transparent); }
 body.dark .box-err { background: #3a2430; color: #ffd6d0; }
 
 /* ---------- giriş ve lobi ---------- */
-.screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 60px; padding: 30px 70px; }
+.screen { min-height: 100dvh; display: flex; align-items: center; justify-content: center; gap: 60px; padding: 30px 70px; }
 .logo { font-family: var(--hf); font-weight: 800; letter-spacing: -0.04em; color: var(--accent); line-height: 0.9; }
 .logo.sm { font-size: 25px; letter-spacing: -0.02em; white-space: nowrap; }
 .tagline { font-family: var(--hf); font-weight: 600; font-size: 24px; }
@@ -197,7 +197,7 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 .pawn-pick button:disabled:not(.on) { opacity: 0.3; filter: grayscale(1); }
 .pawn-pick .pawn img { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
 .version { position: fixed; right: 12px; bottom: 8px; font-size: 12px; color: var(--muted); }
-.lobby { width: min(1240px, 100%); min-height: 100vh; margin: 0 auto; display: flex; flex-direction: column; padding: 26px 44px; gap: 18px; }
+.lobby { width: min(1240px, 100%); min-height: 100dvh; margin: 0 auto; display: flex; flex-direction: column; padding: 26px 44px; gap: 18px; }
 .lobby-head { display: flex; align-items: center; gap: 12px; }
 .lobby-main { display: flex; gap: 20px; flex: 1; min-height: 0; align-items: flex-start; }
 .panel { border-radius: 18px; background: var(--panel); box-shadow: 0 0 0 1px var(--line); }
@@ -219,7 +219,7 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 /* ---------- oyun ---------- */
 .game {
   /* Tahta yüksekliği ekranın tamamı, genişliği en fazla yüksekliğin 1,45 katı; sağda 340 px sütun. */
-  --bh: min(calc(100vh - 28px), calc(100vw - 360px));
+  --bh: min(calc(100dvh - 28px), calc(100vw - 360px));
   --bw: min(calc(var(--bh) * 1.45), calc(100vw - 360px));
   --cw: calc(var(--bw) / 10); --ch: calc(var(--bh) / 10);
   position: fixed; inset: 0; display: flex; gap: 8px; padding: 14px 6px; justify-content: center; background: var(--page);
@@ -358,7 +358,7 @@ body.dark .deed .dmort { background: repeating-linear-gradient(135deg, rgba(10, 
 .dice[data-cap]::before { content: attr(data-cap); position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); white-space: nowrap; padding: 4px 12px; border-radius: 999px; background: #1b2233; color: #fff; font-weight: 700; font-size: 13px; }
 
 /* ---------- sağ sütun ---------- */
-.side { width: 340px; flex: none; height: calc(100vh - 28px); display: flex; flex-direction: column; gap: 10px; min-height: 0; position: relative; }
+.side { width: 340px; flex: none; height: calc(100dvh - 28px); display: flex; flex-direction: column; gap: 10px; min-height: 0; position: relative; }
 .side-head { height: 48px; display: flex; align-items: center; gap: 8px; flex: none; }
 .round-chip { display: inline-flex; align-items: baseline; gap: 2px; padding: 5px 10px; border-radius: 12px; background: var(--chip); font-family: var(--hf); }
 .round-chip .ic { align-self: center; font-size: 13px; margin-left: 6px; }
@@ -381,7 +381,7 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .hand-grid:empty::after { content: 'Elinde kart yok. Başlangıç Noktası\'ndan geçince ve FIRSAT karesinde kart gelir.'; grid-column: 1 / -1; color: var(--muted); font-size: 14px; text-align: center; padding: 10px; }
 .hand-grid .kart { --w: var(--hw, 110px); }
 .hslot { position: relative; z-index: 1; transition: transform 0.22s cubic-bezier(0.22, 0.8, 0.32, 1); cursor: pointer; touch-action: none; }
-.hslot:hover { z-index: 50; transform: scale(var(--zoom, 1.6)); }
+@media (hover: hover) { .hslot:hover { z-index: 50; transform: scale(var(--zoom, 1.6)); } }
 .hslot.dragging { transform: translate(var(--dx), var(--dy)) scale(1.1); transition: none; z-index: 200; cursor: grabbing; }
 .hslot.dragging.armed .kart { box-shadow: 0 0 0 3px #fff3c4, 0 0 34px #ffd166; }
 .hslot.selected { transform: translateY(-8px); }
@@ -500,10 +500,27 @@ body.dark .tip { background: #26324f; box-shadow: 0 0 0 1px rgba(255, 255, 255, 
   .btn:hover:not(:disabled) { translate: none; }
 }
 
-/* ---------- telefon (dar ekran) ----------
-   Tahta tam genişlikte ve biraz uzun; istem, pencere ve kare penceresi alttan açılan tam genişlik bir sayfada.
-   Oyuncular, el ve araçlar tahtanın altında; sayfa dikey kayar. */
-@media (max-width: 760px) {
+/* ---------- telefon ----------
+   Oyun telefonda yatay oynanır: dikey tutulunca "yan çevir" perdesi çıkar (geçilebilir; o zaman dikey düzen).
+   Giriş, lobi ve sonuç ekranı dar ya da alçak ekranda tek sütun olur ve dikey kayar. */
+.fs-btn, .turn-phone { display: none; }
+@media (hover: none) {
+  /* uzun basma yazı seçmez, menü açmaz; dokunulan yer mavi parlamaz */
+  .game, .turn-phone { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+}
+@media (hover: none) and (orientation: portrait) and (max-width: 760px) {
+  body:not(.portrait-ok) .turn-phone {
+    position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    padding: 24px; text-align: center; background: var(--page);
+  }
+  body:not(.portrait-ok) .game { visibility: hidden; }
+  body.can-fs .turn-phone .fs-btn { display: inline-flex; }
+  .turn-phone .body { max-width: 300px; }
+  .tp-ic { font-size: 64px; line-height: 0; color: var(--accent); animation: tpTurn 2.4s cubic-bezier(0.6, 0, 0.3, 1) infinite; }
+}
+@keyframes tpTurn { 0%, 20% { rotate: -90deg; } 55%, 100% { rotate: 0deg; } }
+
+@media (max-width: 760px), (orientation: landscape) and (max-height: 520px) {
   .screen { flex-direction: column; gap: 24px; padding: 24px 16px; }
   .title .w1 { font-size: 56px; }
   .title .w2 { font-size: 66px; }
@@ -518,37 +535,6 @@ body.dark .tip { background: #26324f; box-shadow: 0 0 0 1px rgba(255, 255, 255, 
   .pawn-pick { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .room-code { font-size: 26px; }
   .seg { flex-wrap: wrap; }
-  .game {
-    --bw: calc(100vw - 8px); --bh: calc(var(--bw) * 1.3);
-    position: static; flex-direction: column; align-items: center; min-height: 100vh; padding-bottom: 46vh;
-  }
-  /* tahtanın ortası alttan açılan sayfa olur */
-  .center { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; max-height: 46vh; overflow: auto; padding: 12px 14px 16px; background: var(--panel); border-radius: 20px 20px 0 0; box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2); }
-  .center .events, .gpill .chip { display: none; }
-  .card-prompt { flex-direction: column; gap: 12px; text-align: center; }
-  .opt-col, .opt-col.wide { width: 100%; }
-  .kart.big { --w: 110px; }
-  .chain { transform: scale(0.7); transform-origin: top center; height: 160px; }
-  .deed { --dw: min(240px, 80vw); }
-  .big-num { font-size: 36px; }
-  .layer { position: fixed; inset: auto 0 0 0; max-height: 92vh; padding: 0; z-index: 60; display: block; overflow: auto; }
-  .layer.modal-layer, .layer.stage-layer { inset: 0; display: flex; align-items: flex-end; }
-  .sheet, .sheet.S, .sheet.M, .sheet.W, .sheet.L, .sheet.XL { width: 100%; max-height: 92vh; border-radius: 20px 20px 0 0; padding: 16px; }
-  .trade-cols { flex-direction: column; }
-  .news-card { flex-direction: column; }
-  .news-card .nimg { width: 100%; height: 160px; }
-  .surp { flex-direction: column; }
-  .pop { position: fixed !important; left: 0 !important; right: 0; top: auto !important; bottom: 0; z-index: 70; border-radius: 20px 20px 0 0; flex-direction: column; max-height: 80vh; overflow: auto; }
-  .pop-side { width: 100%; }
-  .toasts { position: fixed; left: 8px; right: 8px; bottom: calc(46vh + 8px); }
-  .side { width: calc(100vw - 8px); height: auto; }
-  .players { flex-direction: row; overflow-x: auto; }
-  .prow { width: auto; flex: none; height: 48px; padding: 0 10px 0 4px; }
-  .prow .pname { max-width: 90px; }
-  .hand-panel { flex: none; }
-  .hand-grid { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: var(--hw, 100px); overflow-x: auto; justify-content: start; padding: 4px 2px; }
-  .hslot:hover { transform: none; }
-  .sound-pop { position: fixed; left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; }
   .results { flex-direction: column; padding: 20px 16px; }
   .verdict { flex-direction: column; }
   .verdict-dayi { width: 200px; }
@@ -558,5 +544,125 @@ body.dark .tip { background: #26324f; box-shadow: 0 0 0 1px rgba(255, 255, 255, 
   .podium { width: 100%; justify-content: center; gap: 8px; }
   .pod { width: 31%; }
   .results .left .row { flex-wrap: wrap; justify-content: center; }
+}
+/* yatay telefonda giriş yan yana kalır: solda başlık, sağda kart; dayı kartın solundan bakar */
+@media (orientation: landscape) and (max-height: 520px) {
+  .home.screen { flex-direction: row; gap: 72px; padding: 4px 16px; }
+  .home .hero { flex: 0 1 auto; gap: 10px; }
+  .home .hero::before { width: 360px; height: 260px; }
+  .title .w1 { font-size: 50px; }
+  .title .w2 { font-size: 58px; }
+  .tagline { font-size: 16px; }
+  .desk { width: auto; padding-top: 0; }
+  .dayi-slot { left: -112px; top: auto; bottom: -8px; width: 160px; margin-left: 0; }
+  .start-card { width: min(380px, 54vw); padding: 10px 14px; gap: 6px; }
+  .start-card .h22 { font-size: 19px; }
+  .start-card .input { height: 38px; font-size: 17px; }
+  .start-card .btn.L { height: 46px; font-size: 17px; }
+  .start-card .btn:not(.L, .S) { height: 38px; padding: 0 10px; font-size: 15px; }
+  .seat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Dikey telefon (perde geçildiyse) ve dar pencere: tahta tam genişlikte ve biraz uzun; istem, pencere ve kare penceresi
+   alttan açılan tam genişlik bir sayfada. Oyuncular, el ve araçlar tahtanın altında; sayfa dikey kayar. */
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px) {
+  .game {
+    --bw: calc(100vw - 8px); --bh: calc(var(--bw) * 1.3);
+    position: static; flex-direction: column; align-items: center; min-height: 100dvh; padding-bottom: 46dvh;
+  }
+  /* tahtanın ortası alttan açılan sayfa olur */
+  .center { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; max-height: 46dvh; overflow: auto; padding: 12px 14px 16px; background: var(--panel); border-radius: 20px 20px 0 0; box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2); }
+  .center .events, .gpill .chip { display: none; }
+  .card-prompt { flex-direction: column; gap: 12px; text-align: center; }
+  .opt-col, .opt-col.wide { width: 100%; }
+  .kart.big { --w: 110px; }
+  .chain { transform: scale(0.7); transform-origin: top center; height: 160px; }
+  .deed { --dw: min(240px, 80vw); }
+  .big-num { font-size: 36px; }
+  .layer { position: fixed; inset: auto 0 0 0; max-height: 92dvh; padding: 0; z-index: 60; display: block; overflow: auto; }
+  .layer.modal-layer, .layer.stage-layer { inset: 0; display: flex; align-items: flex-end; }
+  .sheet, .sheet.S, .sheet.M, .sheet.W, .sheet.L, .sheet.XL { width: 100%; max-height: 92dvh; border-radius: 20px 20px 0 0; padding: 16px; }
+  .trade-cols { flex-direction: column; }
+  .news-card { flex-direction: column; }
+  .news-card .nimg { width: 100%; height: 160px; }
+  .surp { flex-direction: column; }
+  .pop { position: fixed !important; left: 0 !important; right: 0; top: auto !important; bottom: 0; z-index: 70; border-radius: 20px 20px 0 0; flex-direction: column; max-height: 80dvh; overflow: auto; }
+  .pop-side { width: 100%; }
+  .toasts { position: fixed; left: 8px; right: 8px; bottom: calc(46dvh + 8px); }
+  .side { width: calc(100vw - 8px); height: auto; }
+  .players { flex-direction: row; overflow-x: auto; }
+  .prow { width: auto; flex: none; height: 48px; padding: 0 10px 0 4px; }
+  .prow .pname { max-width: 90px; }
+  .hand-panel { flex: none; }
+  /* el yatay kayar; kart yukarı, tahtaya doğru sürüklenince oynanır */
+  .hand-grid { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: var(--hw, 100px); overflow-x: auto; justify-content: start; padding: 4px 2px; }
+  .hslot { touch-action: pan-x; }
+  .sound-pop { position: fixed; left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; }
   .gdetail { position: fixed; left: 8px; right: 8px; top: 8px; width: auto; }
 }
+
+/* Yatay telefon (alçak ekran): tahta ekranın tüm yüksekliğinde, sağda dar sütun. Sayfa hiç kaymaz.
+   Sütunda oyuncular tek sıra (piyon ve para; dokununca ayrıntı), el dikey kayan ızgara, araçlar küçük.
+   Pencereler ekranın ortasında, kare penceresi sağ sütunun üstünde açılır; tahta görünür kalır. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .game {
+    --sw: clamp(220px, calc(100vw - 145dvh - 16px), 320px);
+    --bh: calc(100dvh - 8px);
+    --bw: min(calc(var(--bh) * 1.45), calc(100vw - var(--sw) - 14px));
+    padding: 4px; gap: 6px;
+  }
+  body.can-fs .side-head .fs-btn { display: inline-flex; }
+  :root:fullscreen .side-head .fs-btn { display: none; }
+  .board { border-radius: 10px; }
+  .center { padding: 6px 10px; gap: 4px; }
+  .center .events, .gpill .chip { display: none; }
+  .gpill { height: 34px; gap: 6px; padding: 0 6px 0 10px; }
+  .gpill .ring { width: 24px; height: 24px; font-size: 12px; }
+  .center .btn.L { height: 46px; padding: 0 18px; font-size: 17px; }
+  .center .stagebox { gap: 6px; }
+  /* istemler dar ortaya sığsın: tapu küçük, seçenekler kalan genişlikte */
+  .center .card-prompt { gap: 10px !important; }
+  .center .card-prompt > :is(.deed, .deed-wrap) { zoom: 0.6; }
+  .center .bidder { width: 34px; height: 34px; border-radius: 10px; }
+  .center .bidder .pawn { scale: 0.8; }
+  .center .rng-scale { display: none; }
+  .center .opt-col { width: auto !important; flex: 1 1 0; min-width: 0; gap: 6px; }
+  .center .h22 { font-size: 19px; }
+  .center .big-num { font-size: 30px; }
+  .center .who { font-size: 17px; }
+  .center .wait-ring { width: 72px; height: 72px; }
+  .center .wait-ring .pawn { scale: 0.7; }
+  .side { width: var(--sw); height: calc(100dvh - 8px); gap: 6px; }
+  .side-head { height: 36px; gap: 4px; }
+  .side-head .logo { display: none; }
+  .side-head .btn.sq { width: 36px; height: 36px; border-radius: 10px; }
+  .players { flex-direction: row; padding: 4px; gap: 4px; }
+  .prow { position: relative; flex: 1 1 0; min-width: 0; height: auto; flex-direction: column; gap: 2px; padding: 4px 2px; }
+  .prow .pname, .prow .ptag, .prow .grow { display: none; }
+  .prow .disc { width: 32px; height: 32px; }
+  .prow .pcash { font-size: 13px; }
+  .prow .pwait { position: absolute; top: 4px; right: 4px; }
+  .hand-panel { padding: 6px 8px 8px; gap: 4px; border-radius: 14px; }
+  /* el dikey kayar; kart sola, tahtaya doğru sürüklenince oynanır */
+  .hand-grid { overflow-y: auto; align-content: start; padding: 2px; scrollbar-width: none; }
+  .hslot { touch-action: pan-y; }
+  .player-panel { padding: 10px; border-radius: 14px; }
+  .tools { gap: 4px; container-type: inline-size; }
+  .tools .btn { height: 36px; padding: 0 6px; gap: 4px; font-size: 13px; border-radius: 10px; }
+  .sound-pop { left: 0; right: 0; top: 42px; width: auto; }
+  .gdetail { position: fixed; left: 8px; top: 8px; z-index: 56; width: min(420px, calc(var(--bw) - 8px)); }
+  .layer, .layer.modal-layer, .layer.stage-layer { position: fixed; inset: 0; z-index: 60; padding: 8px; border-radius: 0; }
+  .layer { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .sheet { max-height: calc(100dvh - 16px); max-width: 100%; padding: 14px; gap: 10px; }
+  .sheet .btn.L { height: 46px; padding: 0 18px; font-size: 17px; }
+  .sheet-head .h22 { font-size: 19px; }
+  .partners { min-width: 0; }
+  .trade-col { padding: 10px; gap: 6px; }
+  .trade-props { flex: 1; min-height: 0; max-height: none; }
+  .card-prompt .kart.big { --w: 96px; }
+  .pop { position: fixed !important; left: auto !important; top: 4px !important; right: 4px; bottom: 4px; width: var(--sw); z-index: 55; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; overflow: auto; }
+  .pop-side { width: 100%; }
+  .pop .deed { --dw: 100%; }
+}
+/* çok dar sütunda araç düğmeleri yalnız yazı */
+@container (max-width: 250px) { .tools .btn .ic { display: none; } }

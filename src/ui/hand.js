@@ -153,12 +153,21 @@ const GAP = 8; // kartlar arası boşluk (CSS .hand-grid gap ile aynı)
 const MAX_W = 128; // kartın en geniş hali
 const ZOOM_W = 220; // üstüne gelince kartın genişliği
 const RATIO = 1.42; // kart yüksekliği / genişliği (CSS .kart)
-const PHONE = globalThis.matchMedia?.('(max-width: 760px)'); // telefon: el yatay kayar (CSS ile aynı eşik)
+// Telefon düzenleri (CSS ile aynı eşikler, styles/main.css): dikeyde el yatay bir şeritte kayar, yatayda (alçak ekran)
+// sağ sütunda dikey kayar. İkisinde de kart, kaydırılan yönün tersine sürüklenince oynanır (tarayıcı kaydırmayı yapar).
+const SHORT = globalThis.matchMedia?.('(orientation: landscape) and (max-height: 520px)');
+const PHONE = globalThis.matchMedia?.('(max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px)');
 
 // n kartı w x h alana en büyük boyda yerleştiren sütun sayısı ve kart genişliği.
 // h yoksa (dar ekranda sütun içerik kadar uzar) yalnız genişliğe bakılır, kart 100 px'ten küçülmez.
-export function fitGrid(n, w, h) {
+// scroll: alçak ekranda kart en fazla h boyunda olur, sığmayan satırlar dikey kayar.
+export function fitGrid(n, w, h, scroll = false) {
   if (!n) return { cols: 1, w: MAX_W };
+  if (scroll) {
+    const cw = Math.max(64, Math.min(MAX_W, h / RATIO));
+    const cols = Math.max(1, Math.min(n, Math.floor((w + GAP) / (cw + GAP))));
+    return { cols, w: Math.floor(Math.min(cw, (w - (cols - 1) * GAP) / cols)) };
+  }
   if (!h) {
     const cols = Math.max(1, Math.min(n, Math.floor((w + GAP) / (100 + GAP))));
     return { cols, w: Math.floor(Math.min(MAX_W, (w - (cols - 1) * GAP) / cols)) };
@@ -189,8 +198,10 @@ export class Hand {
     el.addEventListener('pointerleave', () => this.untilt());
     window.addEventListener('pointermove', (e) => this.move(e));
     window.addEventListener('pointerup', (e) => this.up(e));
+    // Tarayıcı dokunuşu kaydırmaya çevirince: ne sürükleme ne tıklama.
+    window.addEventListener('pointercancel', () => this.cancel());
     new ResizeObserver(() => this.layout()).observe(el);
-    PHONE?.addEventListener('change', () => this.layout());
+    for (const q of [PHONE, SHORT]) q?.addEventListener('change', () => this.layout());
   }
 
   // uids: eldeki kartlar; state(uid) -> { playable, selected }; fresh: yeni gelenler (desteden dönerek gelir).
@@ -250,7 +261,9 @@ export class Hand {
 
   layout() {
     const n = this.order.length;
-    const { cols, w } = fitGrid(n, this.el.clientWidth, PHONE?.matches ? 0 : this.el.clientHeight);
+    const short = !!SHORT?.matches;
+    // Alçak ekranda ızgaranın iç boşluğu düşülür; tek satır kart kaydırma çubuğu çıkarmasın.
+    const { cols, w } = fitGrid(n, this.el.clientWidth - (short ? 4 : 0), PHONE?.matches && !short ? 0 : this.el.clientHeight - (short ? 6 : 0), short);
     this.el.style.setProperty('--cols', cols);
     this.el.style.setProperty('--hw', `${w}px`);
     this.el.style.setProperty('--zoom', Math.max(1, ZOOM_W / w).toFixed(3));
@@ -279,7 +292,7 @@ export class Hand {
     if (e.button !== 0) return;
     const el = e.target.closest('.hslot');
     if (!el) return;
-    this.drag = { el, uid: el.dataset.uid, x0: e.clientX, y0: e.clientY, moving: false };
+    this.drag = { el, uid: el.dataset.uid, x0: e.clientX, y0: e.clientY, moving: false, moved: false };
   }
 
   move(e) {
@@ -288,7 +301,9 @@ export class Hand {
     const dx = e.clientX - d.x0;
     const dy = e.clientY - d.y0;
     if (!d.moving) {
-      if (Math.hypot(dx, dy) < DRAG_START || !d.el.classList.contains('playable')) return;
+      if (Math.hypot(dx, dy) < DRAG_START) return;
+      d.moved = true; // parmak kaydı: bırakınca kart açılmaz
+      if (!d.el.classList.contains('playable')) return;
       d.moving = true;
       this.untilt();
       d.el.classList.add('dragging');
@@ -300,15 +315,22 @@ export class Hand {
   }
 
   up(e) {
-    const d = this.drag;
+    const d = this.cancel();
     if (!d) return;
-    this.drag = null;
     const armed = d.moving && this.overDrop(e);
+    if (d.moved && !armed) return;
+    document.dispatchEvent(new CustomEvent('rant:card', { detail: { uid: d.uid, how: armed ? 'drop' : 'click' } }));
+  }
+
+  // Sürüklemeyi bırakır, kartı yerine koyar; bırakılan sürüklemeyi döndürür.
+  cancel() {
+    const d = this.drag;
+    if (!d) return null;
+    this.drag = null;
     d.el.classList.remove('dragging', 'armed');
     document.body.classList.remove('carddrag');
     d.el.style.removeProperty('--dx');
     d.el.style.removeProperty('--dy');
-    if (d.moving && !armed) return;
-    document.dispatchEvent(new CustomEvent('rant:card', { detail: { uid: d.uid, how: armed ? 'drop' : 'click' } }));
+    return d;
   }
 }

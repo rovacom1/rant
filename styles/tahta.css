@@ -226,7 +226,8 @@ body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0
 }
 
 /* ---------- telefon ---------- */
-@media (max-width: 760px) {
+/* dikey (ya da dar pencere): tahtanın kareleri küçük, ortası alttan açılan sayfa */
+@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px) {
   .cell .face { padding: 0 1px 2px; }
   .cell .bld { margin-top: calc(var(--band) + 8px); }
   .board { --nmf: max(7px, calc(var(--ch) * 0.16)); }
@@ -238,4 +239,14 @@ body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0
   .citymap { inset: calc(var(--ch) + 2px) calc(var(--cw) + 2px); }
   .map-btn { display: none; }
   .center { padding-top: 12px; padding-bottom: 16px; }
+}
+/* yatay telefon: kare boyu ekranın yüksekliğiyle ölçeklenir; yazılar okunur kalsın diye en az 8 px */
+@media (orientation: landscape) and (max-height: 520px) {
+  .cell .face { padding: 0 1px 2px; }
+  .cell .bld { margin-top: calc(var(--band) + 6px); }
+  .board { --nmf: max(8px, calc(var(--ch) * 0.22)); }
+  .cell.special .nm, .cell.k-transport .nm { font-size: 7.5px; letter-spacing: 0; }
+  .cell.corner .nm { font-size: 7px; letter-spacing: 0; }
+  .strip { left: 4px; right: 4px; }
+  .cell.owned .strip { height: 4px; }
 }

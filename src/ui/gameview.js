@@ -60,6 +60,7 @@ export function mountGame(root) {
     <aside class="side">
       <div class="side-head">
         <span class="logo sm">Rantçı Dayı</span><span class="round-chip" id="round"></span><span class="grow"></span>
+        <button class="btn sq fs-btn" data-act="fullscreen" aria-label="Tam ekran">${ic('expand')}</button>
         <button class="btn sq" data-act="audio" id="tAudio" aria-label="Ses ve bildirim ayarları"></button>
         <button class="btn sq" data-act="theme" id="tTheme" aria-label="Tema"></button>
         <button class="btn sq" data-act="rules" aria-label="Kurallar">${ic('book')}</button>
@@ -75,6 +76,13 @@ export function mountGame(root) {
       <div class="tools" id="tools"></div>
     </aside>
   </div>
+  <div class="turn-phone" role="dialog" aria-label="Telefonu yan çevir">
+    <span class="tp-ic">${ic('rotate')}</span>
+    <span class="h22">Telefonu yan çevir</span>
+    <span class="body">Tahta yatay ekranda rahat oynanır. Döndürme kilidi açıksa kapat.</span>
+    <button class="btn L pri fs-btn" data-act="fullscreen">${ic('expand')}Tam ekran, yatay</button>
+    <button class="btn S gho" data-act="portraitOk">Dikey devam et</button>
+  </div>
   <div id="results"></div>`;
   const g = (id) => document.getElementById(id);
   els = {
@@ -89,6 +97,8 @@ export function mountGame(root) {
   dice = new Dice(els.dice);
   hand = new Hand(els.handGrid, els.board, els.deck);
   initTips();
+  // Tam ekran ve yatay kilit yalnız destekleyen tarayıcıda (Android Chrome) önerilir; iPhone'da düğme görünmez.
+  document.body.classList.toggle('can-fs', !!(document.documentElement.requestFullscreen && screen.orientation?.lock));
   setMusic('game');
   // Oyuncu satırının üstüne gelince (ya da odaklanınca) o oyuncunun mülkleri tahtada parlar, diğerleri solar.
   const rowOf = (e) => {
@@ -111,14 +121,16 @@ export function mountGame(root) {
     const ok = btn ? !btn.disabled : !!e.target.closest('#dice');
     if (!ok || e.button !== 0 || calm() || !app.view || !canToss(app.view)) return;
     e.preventDefault();
-    dice.hold(e.clientX, e.clientY);
-    const move = (ev) => dice.move(ev.clientX, ev.clientY);
+    // Parmakla tutulan zarlar parmağın biraz üstünde durur; yoksa başparmak onları örter.
+    const lift = e.pointerType === 'mouse' ? 0 : dice.size() * 1.2;
+    dice.hold(e.clientX, e.clientY - lift);
+    const move = (ev) => dice.move(ev.clientX, ev.clientY - lift);
     const end = (ev) => {
       removeEventListener('pointermove', move);
       removeEventListener('pointerup', end);
       removeEventListener('pointercancel', end);
       if (ev.type === 'pointercancel') return dice.drop();
-      dice.release(ev.clientX, ev.clientY);
+      dice.release(ev.clientX, ev.clientY - lift);
       const b = els.prompt.querySelector('[data-act="roll"]');
       if (b) b.disabled = true; // ardından gelen tıklama ikinci kez atmasın
       act({ type: 'roll' });
@@ -126,6 +138,10 @@ export function mountGame(root) {
     addEventListener('pointermove', move);
     addEventListener('pointerup', end);
     addEventListener('pointercancel', end);
+  });
+  // Dokunmatikte uzun basma menü açmasın (menü dokunuşu iptal eder, zarlar elden düşer).
+  root.querySelector('.game').addEventListener('contextmenu', (e) => {
+    if (matchMedia('(hover: none)').matches && !e.target.closest('input, textarea')) e.preventDefault();
   });
 }
 
