@@ -82,14 +82,15 @@ export function updateBoard(cells, v, highlight, pick = null, open = null) {
     el.classList.toggle('fullset', !!owner && inFullSet(v, i));
     el.style.setProperty('--pc', owner ? owner.color : '');
     let badge = el.querySelector('.badge');
-    if (ps.tedbir > 0) {
+    const ortak = owner && Number.isInteger(ps.ortak) && ps.ortak !== ps.owner ? v.players[ps.ortak] : null;
+    if (ps.tedbir > 0 || ortak) {
       if (!badge) {
         badge = document.createElement('div');
         badge.className = 'badge';
         el.appendChild(badge);
       }
-      badge.textContent = '⚖️';
-      badge.dataset.tip = `İhtiyati tedbir: ${ps.tedbir} tur kira yok, kat dikilmez`;
+      badge.textContent = (ps.tedbir > 0 ? '⚖️' : '') + (ortak ? '🏗️' : '');
+      badge.dataset.tip = [ps.tedbir > 0 ? `İhtiyati tedbir: ${ps.tedbir} tur kira yok, kat dikilmez` : '', ortak ? `Kat karşılığı: kiranın yarısı ${ortak.name} oyuncusuna` : ''].filter(Boolean).join(' · ');
     } else if (badge) badge.remove();
     const floors = el.querySelector('.floors');
     if (floors) floors.innerHTML = (ps.kat ? `<b data-tip="${ps.kat} yasal kat">🏠×${ps.kat}</b>` : '') + (ps.kacak ? '<b class="k" data-tip="Kaçak kat: İhbar, Zabıta ya da Belediye operasyonu yıkabilir">🚧</b>' : '');

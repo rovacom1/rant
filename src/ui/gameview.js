@@ -248,6 +248,7 @@ function popHTML(v, sq) {
   if (ps.ipotek) legend.push(`🔒 İpotekli: kira alınmaz. Kaldırmak ${fmt(E.unmortgageCost(v, sq))}.`);
   else if (owner) legend.push(`İpotek değeri ${fmt(E.mortgageValue(v, sq))}.`);
   if (ps.tedbir) legend.push(`⚖️ İhtiyati tedbir: ${ps.tedbir} tur kira yok, kat dikilmez.`);
+  if (owner && Number.isInteger(ps.ortak) && ps.ortak !== ps.owner) legend.push(`🏗️ Kat karşılığı: kiranın yarısı ${P(v, ps.ortak).name} oyuncusuna gider.`);
   const acts = [...propActions(v, sq)];
   if (tapuSquares(v)?.includes(sq)) acts.push(html`<button class="btn tiny turq" data-act="tapuBuy" data-sq="${sq}">📜 Tapudan al</button>`);
   return html`<div class="ph" style="${head}"><b>${s.name}</b><span>${cityOf(sq)}</span>${close}</div>
@@ -564,7 +565,7 @@ function cardDialog(v, uid) {
     case 'self-prop':
       body = html`<p>Hangi mülk?</p><div class="targets">${targets.map((t) => {
         const o = v.props[t.sq].owner;
-        const extra = id === 'kamulastirma' ? `Bedel ${fmt(E.price(v, t.sq))}` : id === 'tedbir' ? `Kira ${fmt(E.rentFor(v, t.sq))}` : `${E.level(v.props[t.sq])} kat`;
+        const extra = id === 'kamulastirma' ? `Bedel ${fmt(E.price(v, t.sq))}` : id === 'tedbir' ? `Kira ${fmt(E.rentFor(v, t.sq))}` : id === 'katKarsiligi' ? `${E.level(v.props[t.sq])} kat · kat ${fmt(E.katCost(v, t.sq))}` : `${E.level(v.props[t.sq])} kat`;
         return play(t, html`${sqChip(t.sq)}<span class="muted">${o !== me ? P(v, o).name : ''} · ${extra}</span>`);
       })}</div>`;
       break;
@@ -961,6 +962,7 @@ function victimsOf(pv, ev) {
   switch (ev.card) {
     case 'kamulastirma':
     case 'tedbir':
+    case 'katKarsiligi':
       return [pv.props[t.sq]?.owner];
     case 'takas':
       return [pv.props[t.theirs]?.owner];
@@ -996,6 +998,8 @@ function cardEffect(v, ev) {
       return 'Tahsil edeceği ilk kira 2 katı.';
     case 'muteahhit':
       return `${sq(t.sq)} üstüne bedava yasal kat.`;
+    case 'katKarsiligi':
+      return `${sq(t.sq)} üstüne kendi parasıyla kat dikip kiranın yarısına ortak olacak.`;
     case 'piyango':
       return `Bankadan ${m('piyango')} aldı.`;
     case 'kredi':

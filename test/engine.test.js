@@ -705,7 +705,7 @@ test('iflas modu: borcunu kapatamayan elenir, mülkü bankaya döner, sırası a
   assert.equal(s.players[0].out, 1);
   assert.equal(s.players[0].cash, 0);
   assert.deepEqual(s.players[0].hand, []);
-  assert.deepEqual(s.props[1], { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 }, 'mülk katsız ve ipoteksiz bankaya döner');
+  assert.deepEqual(s.props[1], { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0, ortak: null }, 'mülk katsız ve ipoteksiz bankaya döner');
   assert.equal(s.turn.p, 1, 'iflas edenin sırası biter');
   assert.ok(!cardTargets(s, 1, 'dava').some((t) => t.player === 0), 'elenen kartlara hedef olamaz');
   s.turn.step = 'free';
@@ -778,4 +778,67 @@ test('Kredi Kartı: hemen 300, 2 tur sonra sırası gelince 360; aynı anda tek 
   assert.equal(s.turn.p, 0);
   assert.equal(s.players[0].kredi, null);
   assert.equal(cardBlock(s, 0, 'kredi'), null);
+});
+
+test('Kat Karşılığı: rakibin arsasına kat parasını öder, kira yarı yarıya bölünür', () => {
+  let s = calm(started());
+  own(s, 1, 5);
+  strip(s, 1, 'itiraz');
+  const k = give(s, 0, 'katKarsiligi');
+  assert.match(cardBlock(s, 0, 'katKarsiligi', { sq: 3 }), /rakibin arsasını/);
+  s = act(s, 0, { type: 'playCard', uid: k, target: { sq: 5 } });
+  const cost = 1500 - s.players[0].cash;
+  assert.ok(cost > 0, 'kat parasını oynayan öder');
+  assert.equal(s.props[5].kat, 1);
+  assert.equal(s.props[5].ortak, 0);
+  assert.equal(s.players[1].cash, 1500, 'sahip para almaz');
+  s.turn.hamle = false;
+  assert.match(cardBlock(s, 0, 'katKarsiligi', { sq: 5 }), /zaten bir ortağı/);
+
+  // Üçüncü oyuncu gelirse kiranın yarısı ortağa.
+  let t = calm(started());
+  own(t, 1, 5);
+  Object.assign(t.props[5], { kat: 1, ortak: 2 });
+  strip(t, 0, 'dayi');
+  const rent = rentFor(t, 5);
+  const share = Math.round(rent / 2 / 5) * 5;
+  t = taksi(t, 0, 5);
+  assert.equal(t.players[0].cash, 1500 - rent);
+  assert.equal(t.players[1].cash, 1500 + rent - share);
+  assert.equal(t.players[2].cash, 1500 + share);
+
+  // Ortağın kendisi gelirse yalnız sahibin yarısını öder.
+  let u = calm(started());
+  own(u, 1, 5);
+  Object.assign(u.props[5], { kat: 1, ortak: 0 });
+  strip(u, 0, 'dayi');
+  u = taksi(u, 0, 5);
+  assert.equal(u.players[0].cash, 1500 - (rent - share));
+  assert.equal(u.players[1].cash, 1500 + rent - share);
+});
+
+test('Kat Karşılığı: bot yüksek kiralı tam sete ortak olur, ortak iflas edince ortaklık biter', () => {
+  const s = calm(started(5));
+  const g = BOARD[5].group;
+  const set = BOARD.map((q, i) => (q.group === g ? i : -1)).filter((i) => i >= 0);
+  own(s, 1, ...set);
+  for (const q of set) s.props[q].kat = 3;
+  for (const pl of s.players) pl.hand = [];
+  s.players[0].cash = 3000;
+  const k = give(s, 0, 'katKarsiligi');
+  s.turn.step = 'free';
+  const a = botAction(s, 0, 'normal');
+  assert.equal(a.type, 'playCard');
+  assert.equal(a.uid, k);
+  assert.ok(set.includes(a.target.sq));
+
+  const t = calm(started(3, 5, { iflas: true }));
+  own(t, 1, 5);
+  t.props[5].ortak = 0;
+  t.players[0].cash = -2000;
+  t.turn.step = 'free';
+  const r = act(t, 0, { type: 'settleDebt' });
+  assert.ok(r.players[0].out, 'ortak iflas etti');
+  assert.equal(r.props[5].ortak, null);
+  assert.equal(r.props[5].owner, 1, 'mülk sahibinde kalır');
 });

@@ -158,6 +158,7 @@ export const CARDS = {
   ihbar: { name: 'İhbar', icon: '📢', count: 4, type: 'hamle', target: 'opp-player', react: true, text: 'Bir rakibin tüm kaçak katları yıkılır, kat başı 25 ceza öder.' },
   kiraZammi: { name: 'Kira Zammı', icon: '📈', count: 3, type: 'hamle', target: 'none', text: 'Bir sonraki sıran gelene kadar tahsil edeceğin ilk kira 2 katı.' },
   muteahhit: { name: 'Müteahhit Dostu', icon: '👷', count: 3, type: 'hamle', target: 'self-prop', text: 'O şehirden en az 2 mülkün varsa birine bedava 1 yasal kat. Tam set şartı yok, ruhsatı dostun halletti.' },
+  katKarsiligi: { name: 'Kat Karşılığı', icon: '🏗️', count: 2, type: 'hamle', target: 'opp-prop', react: true, text: 'Rakibin bir arsasına kat parasını sen öde, 1 yasal kat çıksın. Bundan sonra o mülkün kirası ikinize yarı yarıya.' },
   piyango: { name: 'Piyango', icon: '🎟️', count: 2, type: 'hamle', target: 'none', text: 'Yılbaşı biletin tuttu: bankadan 100 al.' },
   kredi: { name: 'Kredi Kartı', icon: '💳', count: 2, type: 'hamle', target: 'none', text: 'Bankadan hemen 300 çek. 2 tur sonra sıran gelince 360 ödersin; aynı anda tek kredi.' },
   aidat: { name: 'Aidat Günü', icon: '🏢', count: 3, type: 'hamle', target: 'none', react: true, text: 'Diğer her oyuncu sana 30 aidat öder. Her biri ayrı İtiraz edebilir.' },

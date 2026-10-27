@@ -116,7 +116,13 @@ function expectedRollScore(s, p, backward = s.turn.backward) {
   return total / 36;
 }
 
-const CARD_KEEP = { kestirme: 50, itiraz: 90, dayi: 75, torpil: 50, piyango: 150, kredi: 35, aidat: 85, kamulastirma: 70, muteahhit: 80, taksi: 55, kiraZammi: 45, tedbir: 50, ihbar: 45, takas: 40, dava: 30, pazarlik: 45, geriVites: 10 };
+// Mülke bir yasal kat daha çıkınca ödenecek kira.
+function rentWithFloor(s, sq) {
+  const props = s.props.map((ps, q) => (q === sq ? { ...ps, kat: ps.kat + 1 } : ps));
+  return R.rentFor({ ...s, props }, sq);
+}
+
+const CARD_KEEP = { kestirme: 50, itiraz: 90, dayi: 75, torpil: 50, piyango: 150, kredi: 35, aidat: 85, kamulastirma: 70, muteahhit: 80, taksi: 55, kiraZammi: 45, tedbir: 50, katKarsiligi: 50, ihbar: 45, takas: 40, dava: 30, pazarlik: 45, geriVites: 10 };
 
 function cardPlay(s, p) {
   const pl = s.players[p];
@@ -168,6 +174,17 @@ function cardPlay(s, p) {
       case 'tedbir':
         for (const t of targets) consider(uid, t, R.rentFor(s, t.sq) * 1.2 - R.money(s, 45));
         break;
+      case 'katKarsiligi': {
+        // Kalan turlarda sahibi ve ben dışındakilerin bu kareye gelme beklentisi x yeni kiranın yarısı - kat parası.
+        const left = Math.min(12, Math.max(0, s.config.maxRounds - s.round)); // hedef ve iflas modunda üst sınır uzak
+        const visits = ((R.activePlayers(s).length - 2) * left) / 36;
+        for (const t of targets) {
+          const cost = R.katCost(s, t.sq);
+          if (pl.cash - cost < res) continue;
+          consider(uid, t, (visits * rentWithFloor(s, t.sq)) / 2 - cost);
+        }
+        break;
+      }
       case 'ihbar':
         for (const t of targets) consider(uid, t, R.floorsOf(s, t.player).kacak * R.money(s, 60));
         break;
@@ -272,6 +289,10 @@ function reactValue(s, p, pd) {
       break;
     case 'tedbir':
       harm = R.rentFor(s, target.sq) * 1.5;
+      break;
+    case 'katKarsiligi':
+      // Kat bedava gelir ama kiranın yarısı gider; kira yarıdan fazla düşüyorsa itiraz.
+      harm = (R.rentFor(s, target.sq) - rentWithFloor(s, target.sq) / 2) * 1.5;
       break;
     case 'ihbar':
       harm = R.floorsOf(s, pd.victim).kacak * R.money(s, 70);

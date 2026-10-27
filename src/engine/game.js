@@ -103,7 +103,8 @@ function goBroke(s, ctx, p) {
 // İflas: mülkler katsız ve ipoteksiz bankaya döner, kartlar desteye gider, oyuncu oyundan çıkar.
 function iflas(s, ctx, p) {
   const pl = s.players[p];
-  for (const q of R.propsOf(s, p)) Object.assign(s.props[q], { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 });
+  for (const q of R.propsOf(s, p)) Object.assign(s.props[q], { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0, ortak: null });
+  for (const ps of s.props) if (ps && ps.ortak === p) ps.ortak = null;
   s.discard.push(...pl.hand);
   pl.hand = [];
   pl.cash = 0;
@@ -174,7 +175,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
     mods: {},
     gundem: null,
     players: [],
-    props: BOARD.map((q) => (q.kind === 'prop' || q.kind === 'transport' ? { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 } : null)),
+    props: BOARD.map((q) => (q.kind === 'prop' || q.kind === 'transport' ? { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0, ortak: null } : null)),
     deck: [],
     discard: [],
     gundemDeck: [],
@@ -398,13 +399,22 @@ function chargeRent(s, ctx, p, sq) {
   const amount = R.rentFor(s, sq) * (zam ? 2 : 1);
   if (amount <= 0) return;
   const r = { type: 'rent', p, owner, sq, amount, zam };
+  // Kat Karşılığı: kiranın yarısı ortağa; ortak kendisi gelirse yalnız sahibin yarısını öder.
+  if (Number.isInteger(ps.ortak) && ps.ortak !== owner) {
+    r.ortak = ps.ortak;
+    r.share = R.round5(amount / 2);
+    if (p === r.ortak) r.amount = amount - r.share;
+  }
   if (hasCard(s, p, 'dayi')) s.pending = r;
   else payRent(s, ctx, r);
 }
 
 function payRent(s, ctx, r) {
   if (r.zam) s.players[r.owner].kiraZammi = false;
-  transfer(s, ctx, r.p, r.owner, r.amount, `Kira: ${sqName(r.sq)}${r.zam ? ', zamlı' : ''}`);
+  const why = `Kira: ${sqName(r.sq)}${r.zam ? ', zamlı' : ''}`;
+  if (r.ortak === undefined || r.p === r.ortak) return transfer(s, ctx, r.p, r.owner, r.amount, why);
+  transfer(s, ctx, r.p, r.owner, r.amount - r.share, why);
+  transfer(s, ctx, r.p, r.ortak, r.share, `${why}, ortak payı`);
 }
 
 // Açık artırma (Monopoly gibi): reddedenden sonraki oyuncudan başlayıp sırayla herkes ya artırır ya çekilir;
@@ -671,7 +681,7 @@ function applyGundem(s, ctx, id) {
 // ---------- kartlar ----------
 
 const victimOf = (s, id, t) => {
-  if (id === 'kamulastirma' || id === 'tedbir') return s.props[t.sq].owner;
+  if (id === 'kamulastirma' || id === 'tedbir' || id === 'katKarsiligi') return s.props[t.sq].owner;
   if (id === 'takas') return s.props[t.theirs].owner;
   return t.player;
 };
@@ -720,6 +730,13 @@ export function cardBlock(s, p, id, t = {}) {
       if (s.mods.durgunluk) return 'Piyasa durgun: bu dönem kat dikilemez.';
       if (ps.ipotek || ps.tedbir > 0) return 'İpotekli ya da tedbirli mülke kat dikilemez.';
       return R.level(ps) >= 4 ? 'Bu mülk en üst seviyede.' : null;
+    case 'katKarsiligi':
+      if (!ps || !isOpp(s, p, ps.owner) || BOARD[t.sq].kind !== 'prop') return 'Bir rakibin arsasını seç.';
+      if (Number.isInteger(ps.ortak) && ps.ortak !== ps.owner) return 'Bu mülkün zaten bir ortağı var.';
+      if (s.mods.durgunluk) return 'Piyasa durgun: bu dönem kat dikilemez.';
+      if (ps.ipotek || ps.tedbir > 0) return 'İpotekli ya da tedbirli mülke kat dikilemez.';
+      if (R.level(ps) >= 4) return 'Bu mülk en üst seviyede.';
+      return pl.cash < R.katCost(s, t.sq) ? 'Kat parasına paran yetmiyor.' : null;
     case 'kredi':
       return pl.kredi ? 'Önce kredi kartı borcunu ödemelisin.' : null;
     case 'piyango':
@@ -771,6 +788,7 @@ function cardText(s, p, id, t) {
       return `${who} Kestirme kullandı: ${s.turn.dice[t.die]} kare.`;
     case 'kamulastirma':
     case 'tedbir':
+    case 'katKarsiligi':
       return `${who} → ${nm(s, s.props[t.sq].owner)}: ${name} (${sqName(t.sq)})`;
     case 'takas':
       return `${who} → ${nm(s, s.props[t.theirs].owner)}: Zorla Takas (${sqName(t.mine)} ↔ ${sqName(t.theirs)})`;
@@ -868,6 +886,11 @@ function applyCard(s, ctx, card, victim) {
     case 'muteahhit':
       s.props[t.sq].kat++;
       return emit(s, ctx, { type: 'build', p, sq: t.sq, text: `${sqName(t.sq)} üstüne ruhsatlı bedava kat çıktı.` });
+    case 'katKarsiligi':
+      transfer(s, ctx, p, null, R.katCost(s, t.sq), `Kat Karşılığı: ${sqName(t.sq)}`);
+      s.props[t.sq].kat++;
+      s.props[t.sq].ortak = p;
+      return emit(s, ctx, { type: 'build', p, sq: t.sq, text: `${sqName(t.sq)} üstüne kat karşılığı kat çıktı; kira artık ${nm(s, victim)} ile ${nm(s, p)} arasında yarı yarıya.` });
     case 'piyango':
       return transfer(s, ctx, null, p, R.money(s, AMOUNTS.piyango), 'Piyango');
     case 'kredi':
