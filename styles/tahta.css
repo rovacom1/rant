@@ -9,13 +9,13 @@
   /* tahta renkleri */
   --cell-bg: #fffaf0; --cell-line: #e0d2b2;
   --corner-bg: #ecd9ad; --corner-line: #d2b77e; --corner-ink: #5b3d14;
-  --map-land: rgba(120, 90, 40, .13); --map-line: rgba(120, 90, 40, .22);
+  --map-land: rgba(120, 90, 40, .08); --map-line: rgba(120, 90, 40, .16);
 }
 body.dark {
   --sh-1: 0 1px 2px rgba(0, 0, 0, .4); --sh-2: 0 3px 6px rgba(0, 0, 0, .45); --sh-3: 0 8px 14px rgba(0, 0, 0, .5);
   --cell-bg: #1f2944; --cell-line: #33406a;
   --corner-bg: #3d3524; --corner-line: #5c4e31; --corner-ink: #f1dfb4;
-  --map-land: rgba(200, 215, 245, .07); --map-line: rgba(200, 215, 245, .14);
+  --map-land: rgba(200, 215, 245, .045); --map-line: rgba(200, 215, 245, .1);
 }
 
 /* ---------- kareler ---------- */
@@ -180,20 +180,17 @@ body.dark .tokens .dust { border-color: rgba(230, 236, 250, .7); }
 /* il noktaları dolu: sahipsizken set renginde, sahipliyken büyük ve sahibinin renginde */
 .citymap .city {
   position: absolute; width: max(7px, calc(var(--mw) * 0.012)); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; z-index: 500;
-  background: var(--gc); box-shadow: 0 0 0 1.5px var(--cell-bg), 0 0 0 2.5px rgba(27, 34, 51, .2); opacity: .7;
+  background: var(--gc); box-shadow: 0 0 0 1.5px var(--cell-bg), 0 0 0 2.5px rgba(27, 34, 51, .2); opacity: .4;
   transition: background var(--t-ui), box-shadow var(--t-ui), opacity var(--t-ui), scale var(--t-ui) var(--e-out);
 }
-.citymap .city.owned { scale: 1.35; background: var(--pc); box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px #fff, 0 0 0 3px rgba(27, 34, 51, .4); opacity: .9; }
+.citymap .city.owned { scale: 1.35; background: var(--pc); box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px #fff, 0 0 0 3px rgba(27, 34, 51, .4); opacity: .55; }
 body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0 0 0 2.5px rgba(238, 241, 248, .45); }
-/* binalar normalde soluk: ortadaki istem ve zar önde okunur */
+/* harita modu dışında harita, noktalar ve binalar çok soluk, hiçbiri parlamaz: istem ve zar önde okunur */
 .citymap .mb {
   position: absolute; height: calc(var(--mw) * 0.1 * var(--k)); width: auto; max-width: none; transform: translate(-50%, -100%); transform-origin: 50% 100%;
-  opacity: .3; filter: saturate(.5); transition: opacity var(--t-ui), filter var(--t-ui);
+  opacity: .18; filter: saturate(.4); transition: opacity var(--t-ui), filter var(--t-ui);
 }
 .citymap .mb[hidden] { display: none; }
-/* kareye gelince ilinin noktası ve binası parlar */
-.citymap .city.hot { opacity: 1; scale: 1.8; }
-.citymap .mb.hot { opacity: 1; filter: drop-shadow(0 2px 3px rgba(27, 34, 51, .35)); }
 /* harita düğmesi: ortanın sol alt köşesinde, kaldırımdaki ve köşedeki piyonların erişmediği yerde; üstüne gelince (ya da basınca) ortadaki yazılar çekilir, harita öne çıkar */
 .map-btn {
   position: absolute; z-index: 20; left: calc(var(--cw) + var(--d) * 0.72); bottom: calc(var(--ch) + var(--d) * 0.72); width: 36px; height: 36px; border-radius: 50%;
@@ -207,6 +204,15 @@ body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0
 .board.mapfocus > .center { opacity: 0; pointer-events: none; }
 .board.mapfocus .citymap .mb { opacity: 1; filter: drop-shadow(0 1px 1px rgba(27, 34, 51, .3)); }
 .board.mapfocus .citymap .city { opacity: 1; }
+.board.mapfocus .citymap .land { background: color-mix(in srgb, var(--map-land), rgba(120, 90, 40, .1)); }
+/* harita modunda iller tıklanmadan okunur: noktaya ya da binaya gelince tapusu açılır */
+.board.mapfocus .citymap { pointer-events: auto; }
+.board.mapfocus .citymap :is(.city, .mb) { cursor: help; }
+.board.mapfocus .citymap .city::after { content: ''; position: absolute; inset: -9px; border-radius: 50%; }
+.board.mapfocus .citymap .city:hover { scale: 1.6; }
+.board.mapfocus .citymap .city.owned:hover { scale: 1.9; }
+.map-deed { position: absolute; z-index: 21; pointer-events: none; filter: drop-shadow(0 8px 18px rgba(27, 34, 51, .3)); animation: popIn .14s ease-out; }
+.map-deed[hidden] { display: none; }
 /* kaldırımdaki piyonlar ortaya yaklaşık yarım kare taşar: gündem ve son olaylar onların altında kalmasın */
 .center { padding-top: max(16px, calc(var(--ch) * 0.45)); padding-bottom: max(16px, calc(var(--ch) * 0.45)); }
 /* ortadaki yazının arkasında zeminin renginde yumuşak hale: haritadaki bina ve halkalar yazıyı bulandırmasın */

@@ -72,6 +72,9 @@ Kararlar kullanıcınındır; bu belge ajanlar için ortak başvuru. Kurallar `d
     zarlar ele alınır, el hızıyla savrulur (en az SAVRUK.v, en çok TOSS_MAX katı; hızlıysa daha çok döner); eldeki yüzler
     değişmesin diye `simulateTo` istenen sonucu o yüzlerle veren atışı arar. Performans: zar gölgesi her karede bulanıklık
     değiştirmez, piyon yürüyüşü transform ile, piyonlar kendi katmanında, sahne katmanında arka plan bulanıklığı yok.
+19. **Harita, üçüncü tur** (kullanıcı, 27 Ekim): harita modu dışında daha soluk (zemin .08, nokta .4, bina .18) ve
+    hiçbir şey parlamaz (kareye gelince il parlaması ve değişince parlama kaldırıldı). Harita modunda ile (nokta ya da bina)
+    gelince tapusu ilin yanında açılır; düğmeden haritaya geçerken mod kapanmaz.
 
 ## Kaldırılanlar
 

@@ -1,11 +1,12 @@
 // Tahtanın ortasındaki soluk Türkiye haritası (assets/harita/turkiye.svg, viewBox 1040x461). Her mülkün ili dolu yuvarlakla
 // işaretli: sahipsizse set renginde, sahipliyse daha büyük ve sahibinin renginde. Katlı ilin binası (karedekinin aynısı, daha
-// büyük) ilin yerinde durur. Harita normalde soluktur, istem ve zar önde okunur. Değişen il (yeni sahip, yeni kat) bir an
-// parlar; bir kareye gelince o ilin noktası ve binası parlar; köşedeki harita düğmesine gelince (ya da basınca) ortadaki
-// yazılar çekilir, harita bütün canlılığıyla öne çıkar.
+// büyük) ilin yerinde durur. Harita normalde çok soluktur ve arkada durur (hiçbir şey parlamaz); istem ve zar önde okunur.
+// Köşedeki harita düğmesine gelince (ya da basınca) ortadaki yazılar çekilir, harita bütün canlılığıyla öne çıkar; bu
+// harita modunda bir ilin noktasına ya da binasına gelince o ilin tapu kartı açılır.
 // Saf kısımlar (koordinatlar, bina resmi, sığdırma) DOM'suz; testler bunları kullanır.
 import { BOARD } from '../engine/index.js';
 import { ic } from './icons.js';
+import { deed } from './deed.js';
 
 export const VB = { w: 1040, h: 461 };
 
@@ -67,17 +68,8 @@ export class CityMap {
     this.imgs = new Map([...el.querySelectorAll('.mb')].map((n) => [Number(n.dataset.q), n]));
     this.dots = new Map([...el.querySelectorAll('.city')].map((n) => [Number(n.dataset.q), n]));
     this.level = new Map();
-    this.owner = new Map();
     this.ready = false;
     new ResizeObserver(() => this.fit()).observe(el);
-
-    // Kareye gelince ilinin noktası ve binası parlar.
-    this.hotQ = null;
-    boardEl.addEventListener('pointerover', (e) => {
-      const c = e.target.closest('.cell');
-      this.hot(c ? Number(c.dataset.sq) : null);
-    });
-    boardEl.addEventListener('pointerleave', () => this.hot(null));
 
     // Harita düğmesi: üstüne gelince harita öne çıkar, basınca öyle kalır (bir daha basınca ya da Esc ile geri çekilir).
     const btn = document.createElement('button');
@@ -91,24 +83,67 @@ export class CityMap {
     this.board = boardEl;
     this.btn = btn;
     this.pinned = false;
-    const focus = (on) => boardEl.classList.toggle('mapfocus', on);
-    btn.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && focus(true));
-    btn.addEventListener('pointerleave', () => !this.pinned && focus(false));
+    // Düğmeden haritaya geçerken mod kapanmasın: imleç düğmede ya da haritada olduğu sürece açık kalır.
+    let off = 0;
+    const enter = (e) => {
+      if (e.pointerType !== 'mouse' || (e.currentTarget === el && !boardEl.classList.contains('mapfocus'))) return;
+      clearTimeout(off);
+      this.focus(true);
+    };
+    const leave = () => {
+      clearTimeout(off);
+      off = setTimeout(() => !this.pinned && this.focus(false), 150);
+    };
+    for (const n of [btn, el]) {
+      n.addEventListener('pointerenter', enter);
+      n.addEventListener('pointerleave', leave);
+    }
     btn.addEventListener('click', () => this.pin(!this.pinned));
     document.addEventListener('keydown', (e) => e.key === 'Escape' && this.pinned && this.pin(false));
+
+    // Harita modunda ile gelince tapusu açılır.
+    const card = document.createElement('div');
+    card.className = 'map-deed';
+    card.hidden = true;
+    boardEl.appendChild(card);
+    this.card = card;
+    this.cardQ = null;
+    el.addEventListener('pointerover', (e) => {
+      const n = e.target.closest('[data-q]');
+      this.showCard(n ? Number(n.dataset.q) : null);
+    });
+    el.addEventListener('pointerleave', () => this.showCard(null));
+  }
+
+  focus(on) {
+    this.board.classList.toggle('mapfocus', on);
+    if (!on) this.showCard(null);
   }
 
   pin(on) {
     this.pinned = on;
     this.btn.setAttribute('aria-pressed', String(on));
-    this.board.classList.toggle('mapfocus', on);
+    this.focus(on);
   }
 
-  hot(q) {
-    if (q === this.hotQ) return;
-    for (const n of [this.dots.get(this.hotQ), this.imgs.get(this.hotQ)]) n?.classList.remove('hot');
-    this.hotQ = CITY_XY[q] ? q : null;
-    for (const n of [this.dots.get(this.hotQ), this.imgs.get(this.hotQ)]) n?.classList.add('hot');
+  // q ilinin tapusu, noktasının yanında (tahtanın alt yarısındaysa üstünde, üst yarısındaysa altında); null: kapat.
+  showCard(q) {
+    if (!this.v || !this.board.classList.contains('mapfocus') || !CITY_XY[q]) q = null;
+    if (q === this.cardQ) return;
+    this.cardQ = q;
+    this.card.hidden = q === null;
+    if (q === null) return;
+    this.card.innerHTML = deed(this.v, q, { w: 210, ladder: true });
+    const b = this.board.getBoundingClientRect();
+    const d = this.dots.get(q).getBoundingClientRect();
+    const x = d.left + d.width / 2 - b.left;
+    const y = d.top + d.height / 2 - b.top;
+    const w = this.card.offsetWidth;
+    const h = this.card.offsetHeight;
+    const m = this.el.offsetLeft;
+    const left = Math.min(this.board.clientWidth - m - w, Math.max(m, x - w / 2));
+    const top = y > this.board.clientHeight / 2 ? y - h - 18 : y + 18;
+    Object.assign(this.card.style, { left: `${left}px`, top: `${Math.max(this.el.offsetTop, top)}px` });
   }
 
   fit() {
@@ -118,6 +153,7 @@ export class CityMap {
   }
 
   update(v) {
+    this.v = v;
     for (const [q, dot] of this.dots) {
       const ps = v.props[q];
       const owner = ps && ps.owner !== null ? v.players[ps.owner] : null;
@@ -128,17 +164,15 @@ export class CityMap {
       const L = src ? ps.kat + ps.kacak : 0;
       if (src && img.getAttribute('src') !== src) img.setAttribute('src', src);
       img.hidden = !src;
-      const grew = this.ready && L > (this.level.get(q) || 0);
-      const sold = this.ready && (this.owner.get(q) ?? null) !== (ps ? ps.owner : null);
-      if (grew && !calm()) {
+      if (this.ready && L > (this.level.get(q) || 0) && !calm()) {
         img.animate([{ transform: 'translate(-50%, -100%) scaleY(0.2)' }, { transform: 'translate(-50%, -100%)' }], { duration: 600, easing: 'cubic-bezier(.3,1.45,.5,1)' });
       }
-      // Değişen il bir an parlar, sonra soluk haline döner.
-      if (grew) img.animate([{ opacity: 1, filter: 'none' }, { opacity: 1, filter: 'none', offset: 0.7 }, {}], { duration: 2200, easing: 'ease-in' });
-      if (sold || grew) dot.animate([{ opacity: 1, scale: 1.8 }, { opacity: 1, scale: 1.4, offset: 0.7 }, {}], { duration: 2200, easing: 'ease-in' });
       this.level.set(q, L);
-      this.owner.set(q, ps ? ps.owner : null);
     }
+    // Açık tapu yeni durumla yeniden çizilir.
+    const open = this.cardQ;
+    this.cardQ = null;
+    if (open !== null) this.showCard(open);
     this.ready = true;
   }
 }
