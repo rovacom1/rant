@@ -104,6 +104,29 @@ export function mountGame(root) {
   root.querySelector('.game').addEventListener('pointerdown', (e) => {
     if (!e.target.closest('[data-act="endTurn"]')) cancelAutoEnd();
   });
+  // Zarı tutup savurma: Zar At düğmesine ya da tepside bekleyen zarlara basılı tut, sürükle, bırak.
+  // Basıp hemen bırakmak da olur (zarlar ileri savrulur); klavyeyle Zar At her zamanki gibi atar.
+  els.center.addEventListener('pointerdown', (e) => {
+    const btn = e.target.closest('[data-act="roll"]');
+    const ok = btn ? !btn.disabled : !!e.target.closest('#dice');
+    if (!ok || e.button !== 0 || calm() || !app.view || !canToss(app.view)) return;
+    e.preventDefault();
+    dice.hold(e.clientX, e.clientY);
+    const move = (ev) => dice.move(ev.clientX, ev.clientY);
+    const end = (ev) => {
+      removeEventListener('pointermove', move);
+      removeEventListener('pointerup', end);
+      removeEventListener('pointercancel', end);
+      if (ev.type === 'pointercancel') return dice.drop();
+      dice.release(ev.clientX, ev.clientY);
+      const b = els.prompt.querySelector('[data-act="roll"]');
+      if (b) b.disabled = true; // ardından gelen tıklama ikinci kez atmasın
+      act({ type: 'roll' });
+    };
+    addEventListener('pointermove', move);
+    addEventListener('pointerup', end);
+    addEventListener('pointercancel', end);
+  });
 }
 
 function focusPlayer(p) {
@@ -983,7 +1006,7 @@ export function updateGame() {
   setHTML(els.banner, bannerHTML());
   planAutoEnd(v);
   renderKeep(els.prompt, promptHTML(v));
-  if (!animating) dice.show(showDice(v) ? v.turn.dice : null);
+  if (!animating) paintDice(v);
   renderPop(v);
   setHTML(els.players, playersHTML(v));
   renderHand(v);
@@ -996,7 +1019,15 @@ export function updateGame() {
   tickTimers();
 }
 
-// Zarlar atıştan sonra 2,5 saniye görünür; yol seçerken de görünür kalır.
+// Zarlar atıştan sonra 2,5 saniye görünür; yol seçerken de görünür kalır. Sıra sende ve zar atılacaksa tepside bekler.
+function paintDice(v) {
+  if (showDice(v)) dice.show(v.turn.dice);
+  else if (canToss(v)) dice.ready();
+  else dice.show(null);
+}
+
+const canToss = (v) => v.phase === 'play' && v.you >= 0 && v.turn && v.turn.p === v.you && v.turn.step === 'preroll' && !v.pending && !calm();
+
 function showDice(v) {
   if (!v.turn || !v.turn.dice || v.phase !== 'play') return false;
   if (v.turn.step === 'choose') return true;
@@ -1025,7 +1056,7 @@ export function tickTimers() {
   }
   if (els && app.view && !animating && app.ui.diceUntil && Date.now() > app.ui.diceUntil) {
     app.ui.diceUntil = 0;
-    dice.show(showDice(app.view) ? app.view.turn.dice : null);
+    paintDice(app.view);
   }
 }
 

@@ -7,8 +7,8 @@ import { PROTOCOL, SAVE_VERSION } from '../version.js';
 // Normal hızdaki süreler (ms). Ev sahibi beklemeyi, istemci canlandırmayı bunlardan hesaplar; oyun hızı (SPEEDS) çarpar.
 export const PACE = {
   bot: 1600, // botun en kısa düşünme süresi
-  dice: 1600, // zar atışı (dönme + okuma)
-  roll: 1400, // zarın dönme süresi; zar sesi de bu kadar
+  dice: 2300, // zar atışı (dönme + okuma)
+  roll: 2000, // zarın dönme süresi (gerçek hızında en çok ~1,9 sn); zar sesi de bu kadar
   diceShow: 3500, // atıştan sonra zarlar bu kadar görünür kalır
   step: 220, // piyonun kare başı yürüyüşü
   surpriz: 4500,

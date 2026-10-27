@@ -138,7 +138,7 @@ body.dark .dayi-pop .bub { box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), var(--
 .sticker-pick .btn { width: 100%; padding: 0 8px; }
 
 /* ---------- piyonlar: kaldırım düzeni (src/ui/slots.js) ---------- */
-.token { width: var(--s); height: var(--s); transition: left var(--t-ui) var(--e-out), top var(--t-ui) var(--e-out); }
+.token { width: var(--s); height: var(--s); transition: left var(--t-ui) var(--e-out), top var(--t-ui) var(--e-out); will-change: transform; } /* kendi katmanı: konturlu resim her karede yeniden boyanmasın */
 .token.walking { transition: none; }
 .token .fig, .fx-ghost.tk .fig { position: absolute; left: 0; right: 0; bottom: calc(var(--s) * 0.05); display: flex; justify-content: center; transform-origin: 50% 100%; z-index: 2; transition: scale var(--t-ui) var(--e-out); }
 .token .base, .fx-ghost.tk .base {

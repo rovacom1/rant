@@ -297,7 +297,7 @@ body.dark .delta { background: color-mix(in srgb, var(--me) 26%, transparent); c
 .layer > * { pointer-events: auto; }
 .layer.modal-layer { background: color-mix(in srgb, var(--center) 55%, transparent); backdrop-filter: blur(2px); pointer-events: auto; }
 /* sahne (haber, sürpriz, rakip kartı) arkadaki istemi tümüyle örter: yazılar üst üste binmez */
-.layer.stage-layer { z-index: 40; background: color-mix(in srgb, var(--center) 94%, transparent); backdrop-filter: blur(4px); border-radius: 12px; }
+.layer.stage-layer { z-index: 40; background: color-mix(in srgb, var(--center) 96%, transparent); border-radius: 12px; }
 /* itiraz zinciri: kartlar sağa kayarak üst üste biner, yalnız resimleri görünür */
 .chain { position: relative; width: calc(160px + var(--n) * 46px); height: 224px; flex: none; }
 .chain > .kart { position: absolute; left: 0; top: 0; }

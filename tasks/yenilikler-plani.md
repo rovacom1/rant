@@ -67,6 +67,11 @@ Kararlar kullanıcınındır; bu belge ajanlar için ortak başvuru. Kurallar `d
     kare yine büyümez). Köşeler siyaha yakın lacivert değil, kraft kağıdı zeminde renkli simgeyle. "Sıra sende" isteminde piyon resmi
     yok. Harita normalde soluk; değişen il bir an parlar, kareye gelince ili parlar, harita düğmesiyle öne alınır (`.mapfocus`).
     Haritadaki il noktaları içi dolu. Ulaşım karelerinin sahiplik şeridi mülk karelerininkiyle aynı hizada (bandın altı).
+18. **Zar, ikinci tur** (kullanıcı, 27 Ekim): bakış 30 derece, tepsi 2,8 zar boyu yüksekliğinde (basıkken zarlar iç içe
+    geçiyordu); çarpışma küpün dönük boyuyla. Atış gerçek hızında (PACE.roll 2000, dice 2300). Basılı tut, sürükle, bırak:
+    zarlar ele alınır, el hızıyla savrulur (en az SAVRUK.v, en çok TOSS_MAX katı; hızlıysa daha çok döner); eldeki yüzler
+    değişmesin diye `simulateTo` istenen sonucu o yüzlerle veren atışı arar. Performans: zar gölgesi her karede bulanıklık
+    değiştirmez, piyon yürüyüşü transform ile, piyonlar kendi katmanında, sahne katmanında arka plan bulanıklığı yok.
 
 ## Kaldırılanlar
 

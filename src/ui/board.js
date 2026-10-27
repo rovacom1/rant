@@ -218,9 +218,13 @@ export class Tokens {
     try {
       for (let k = 0; k < path.length; k++) {
         const d = Math.round(ds[k]);
-        const from = { left: el.style.left, top: el.style.top };
+        // Yer bir kerede değişir, aradaki yol transform ile çizilir (her karede yerleşim ve boyama olmasın).
+        const x0 = el.offsetLeft;
+        const y0 = el.offsetTop;
         this.place(id, path[k]);
-        el.animate([from, { left: el.style.left, top: el.style.top }], { duration: d, easing: 'cubic-bezier(.45,0,.55,1)' });
+        const dx = x0 - el.offsetLeft;
+        const dy = y0 - el.offsetTop;
+        el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: d, easing: 'cubic-bezier(.45,0,.55,1)' });
         fig?.animate([{ transform: 'none' }, { transform: `translateY(${-arc}px)`, offset: 0.45 }, { transform: 'none' }], { duration: d, easing: 'ease-in-out' });
         play('step', Math.min(d, 280) / 1000, { at: d / 1000, hit: true });
         await sleep(d);

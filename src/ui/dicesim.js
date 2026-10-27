@@ -83,6 +83,11 @@ export function topSlot(q) {
   }
   return best;
 }
+// Dönüşü q olan küpün n doğrultusundaki yarı boyu (R biriminde): eksenlerin n'ye izdüşümlerinin toplamı.
+export function reach(q, n) {
+  const m = qmat(q);
+  return [0, 1, 2].reduce((a, j) => a + Math.abs(n[0] * m[0][j] + n[1] * m[1][j] + n[2] * m[2][j]), 0);
+}
 // Üst yüzün normalinin z bileşeni (1: tam düz yatıyor).
 export const flatness = (q) => mv(qmat(q), NORM[topSlot(q)])[2];
 
@@ -96,7 +101,10 @@ export const FPS = 240 / STRIDE;
 // n zarı W x H tepside atar. Dönen: frames (her biri n zarın {p, q} durumu, 1/FPS sn arayla), events ([t, şiddet, tür]:
 // 'floor' yere vuruş, 'wall' kenar, 'die' zar zara, 'rest' devrilip durma), tops (her zarın üst yuvası), settleAt (son zarın
 // devrilmeye başladığı an), end (simülasyon süresi, sn). rng: [0,1) üreten fonksiyon (testte sabit tohumlu).
-export function simulate({ n = 2, W, H, R = 28, rng = Math.random, style = SAVRUK } = {}) {
+// toss: oyuncunun elinden savurduğu atış { ps: zarların elden çıktığı [x, y]'ler, qs: o anki dönüşleri, v: el hızı [vx, vy]
+// px/sn }. Zarlar o yöne gider; en az bir atış hızıyla savrulur (TOSS_MAX'a kadar), hızlı savrulunca daha çok döner.
+export const TOSS_MAX = 2.2;
+export function simulate({ n = 2, W, H, R = 28, rng = Math.random, style = SAVRUK, toss = null } = {}) {
   const k = R / 22;
   const s = style;
   const g = s.g * k;
@@ -109,7 +117,24 @@ export function simulate({ n = 2, W, H, R = 28, rng = Math.random, style = SAVRU
   const hi = [W - R, H - R];
   const dy = Math.min(R * 1.2, Math.max(0, H / 2 - R));
   const narrow = Math.min(1, Math.max(0.3, (H - 2 * R) / (4 * R))); // alçak tepside daha yatay atılır
+  const tossed = (i) => {
+    const hv = Math.hypot(...toss.v);
+    const base = hv > 1 ? Math.atan2(toss.v[1], toss.v[0]) : -Math.PI / 2 + (rng() - 0.5) * 1.2; // elde bırakıldıysa ileri
+    const ang = base + (i ? 1 : -1) * (0.04 + rng() * 0.1);
+    const min = s.v[0] * k;
+    const sp = Math.min(min * TOSS_MAX, Math.max(min, hv)) * (0.95 + rng() * 0.1);
+    const f = sp / min; // 1 .. TOSS_MAX
+    return {
+      p: [...toss.ps[i], R * 2.4],
+      v: [sp * Math.cos(ang), sp * Math.sin(ang), s.vz * k * Math.sqrt(f) * (0.85 + rng() * 0.3)],
+      q: toss.qs[i],
+      w: [(rng() - 0.5) * s.spin * 2 * f, (rng() - 0.5) * s.spin * 2 * f, (rng() - 0.5) * s.spin * f],
+      settle: null,
+      done: false,
+    };
+  };
   const dice = Array.from({ length: n }, (_, i) => {
+    if (toss) return tossed(i);
     const side = n === 1 ? 0 : i ? 1 : -1;
     const ang = (-side * (0.18 + rng() * 0.25) + (n === 1 ? (rng() - 0.5) * 0.5 : 0)) * narrow;
     const sp = (s.v[0] + rng() * (s.v[1] - s.v[0])) * k;
@@ -200,9 +225,11 @@ export function simulate({ n = 2, W, H, R = 28, rng = Math.random, style = SAVRU
         if (a.done && b.done && a.doneAt < step && b.doneAt < step) continue;
         const dx = [a.p[0] - b.p[0], a.p[1] - b.p[1], a.p[2] - b.p[2]];
         const dist = Math.hypot(...dx);
-        const min = 2 * R * 0.95;
-        if (dist >= min || dist === 0) continue;
+        if (dist === 0) continue;
         const nn = dx.map((x) => x / dist);
+        // Küpler küre değil: aradaki doğrultuda iki küpün gerçek yarı boyu (köşesi dönükse daha uzun), iç içe geçmesinler.
+        const min = (reach(a.q, nn) + reach(b.q, nn)) * R * 1.02;
+        if (dist >= min) continue;
         const free = !a.settle && !b.settle;
         if (free) {
           const vn = (a.v[0] - b.v[0]) * nn[0] + (a.v[1] - b.v[1]) * nn[1] + (a.v[2] - b.v[2]) * nn[2];
@@ -260,12 +287,22 @@ export function simulate({ n = 2, W, H, R = 28, rng = Math.random, style = SAVRU
   return { frames: out, events: ev, tops: dice.map((d) => topSlot(d.q)), settleAt: Math.max(...dice.map((d) => d.settle.t0)), end: t };
 }
 
+// Elden savrulan zarın etiketleri elde zaten görünüyor, değişmemeli: istenen değerleri (labs[i] etiketlemesiyle) üstte
+// bırakan bir atış, rng tohumu değiştirilerek aranır (iki zarda ortalama 36 deneme). Bulunamazsa null.
+export function simulateTo(opts, labs, values, seed = 1, tries = 600) {
+  for (let t = 0; t < tries; t++) {
+    const sim = simulate({ ...opts, rng: seeded(seed + t) });
+    if (sim.tops.every((top, i) => labs[i][top] === values[i])) return sim;
+  }
+  return null;
+}
+
 // Oynatma zaman çizelgesi: simülasyon zamanı ile gerçek zaman (sn). Son an (son zarın devrilmesi, en çok SLOW_LEN
 // simülasyon saniyesi) hafif ağır çekimdir (SLOW hızında);
-// tüm atış `budget` saniyeye sığdırılır, ama hız `minRate`'in altına düşmez (o zaman biraz erken biter).
+// atış gerçek hızında oynar (hızlandırılmaz); ancak `budget` saniyeye sığmıyorsa (hızlı oyun) hızlandırılır.
 export const SLOW = 0.6;
 const SLOW_LEN = 0.3;
-export function timeline(sim, budget, minRate = 0.8) {
+export function timeline(sim, budget, minRate = 1) {
   const slowFrom = Math.max(0, sim.settleAt - 0.1, sim.end - SLOW_LEN);
   const natural = slowFrom + (sim.end - slowFrom) / SLOW;
   const rate = Math.max(minRate, natural / Math.max(0.05, budget));
