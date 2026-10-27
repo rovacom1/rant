@@ -9,7 +9,7 @@ export function nextRandom(seed) {
   return { seed: s, value: ((t ^ (t >>> 14)) >>> 0) / 4294967296 };
 }
 
-export function rand(state) {
+function rand(state) {
   const r = nextRandom(state.rng);
   state.rng = r.seed;
   return r.value;

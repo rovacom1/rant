@@ -298,7 +298,6 @@ input, select { font: inherit; }
 @keyframes hop { 50% { transform: translateY(-30%) scale(1.08); } }
 
 /* yan panel */
-.wait { animation: blink 1s infinite; }
 @keyframes blink { 50% { opacity: 0.3; } }
 
 .chip.ok { background: #cdeed9; }

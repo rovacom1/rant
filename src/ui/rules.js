@@ -1,7 +1,7 @@
 // "Nasıl Oynanır?" penceresi. Ayrıntılı kurallar docs/TASARIM.md'de.
 export const RULES_HTML = `
 <div class="rules">
-<p><b>RANT</b> bir emlak ve kart oyunu. Belirlenen tur sayısı dolunca ya da biri lobide seçilen <b>değer hedefine</b> ulaşıp o tur bitince <b>Seçim Günü</b> gelir; en yüksek puanı (nakit + mülkler + katlar, eksi konkordato cezası) toplayan kazanır. Son kalan modu dışında kimse batıp oyundan çıkmaz.</p>
+<p><b>RANT</b> bir emlak ve kart oyunu. Belirlenen tur sayısı dolunca ya da biri lobide seçilen <b>değer hedefine</b> ulaşıp o tur bitince <b>Seçim Günü</b> gelir; en yüksek puanı (nakit + mülkler + katlar; konkordato cezası ve ödenmemiş kredi düşülür) toplayan kazanır. Son kalan modu dışında kimse batıp oyundan çıkmaz.</p>
 <h3>Sıran geldiğinde</h3>
 <ul>
 <li>Elinde 5'ten az kart varsa 1 <b>Hamle kartı</b> çekersin. Turda en fazla 1 Hamle kartı oynayabilirsin.</li>
@@ -24,7 +24,7 @@ export const RULES_HTML = `
 </ul>
 <h3>Kartlar</h3>
 <ul>
-<li><b>Hamle</b> kartları (Kamulaştırma, İhtiyati Tedbir, Dava Aç, Taksi...) sıran sende iken oynanır.</li>
+<li><b>Hamle</b> kartları (Kamulaştırma, İhtiyati Tedbir, Dava Aç, Taksi, Kredi Kartı...) sıran sende iken oynanır.</li>
 <li><b>Tepki</b> kartları gerektiğinde sana sorulur. <b>İtiraz</b> sana oynanan kartı iptal eder; itiraza karşı da itiraz edilir!</li>
 <li>Elinde en fazla 6 kart tutabilirsin.</li>
 </ul>
