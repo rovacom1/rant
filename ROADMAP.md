@@ -17,6 +17,7 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Tamamlananlar
 
+- [x] Bakım (oturum 40): kullanılmayan .wait kuralı silindi, rng.js rand dışa kapatıldı, Nasıl oynanır puan tanımına ödenmemiş kredi ve Hamle listesine Kredi Kartı eklendi; denge 300x5 sıra %18-21, kira 22,3/oyun; PeerJS 1.5.5 güncel, CDN 200 (v0.20.2)
 - [x] Mobil düzen 2. dilim: 375 px'te Zar At düğmesi görünmüyordu (gündem kartı tahta ortasını kaplıyordu, istem 0 px); dar ekranda gündem tek satır, karar beklerken son olaylar gizli, istem taşınca üstü kesilmiyor, artırmada katılımcı listesi gizli, üst çubuk sayfayı yana kaydırmıyor; kare penceresi ve pazarlık penceresi 375 px'e sığıyor (v0.20.1)
 - [x] Torpil tepki kartı (2 adet, deste 48): açık artırmada sıran gelince oynanır, artırma kapanır, mülk liste fiyatının yarısına (teklif daha yüksekse 10 fazlasına) alınır; bot normal tavanı içindeyse oynar; sim 500x5 sıra %19-22, kira 22,4, torpil 2,0/oyun (v0.20.0)
 - [x] Kredi Kartı hamle kartı (2 adet, deste 46): bankadan hemen 300, 2 tur sonra sıra gelince 360 ödenir; aynı anda tek kredi, ödenmemiş borç net değerden düşer; bot yalnız nakdi yedeğin altındayken oynar; sim 500x5 sıra %15-22, kira 22,1 (v0.19.0)
