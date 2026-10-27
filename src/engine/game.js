@@ -598,6 +598,7 @@ function applyGundem(s, ctx, id) {
         if (ps && ps.kacak) {
           ps.kacak = 0;
           ps.kat++;
+          ps.affed = true; // yalnız görünüş: bina katı kalana dek kaçak resmiyle çizilir (docs/TASARIM.md §3)
           n++;
         }
       }
@@ -1201,6 +1202,8 @@ export function applyAction(state, actor, action) {
   const s = structuredClone(state);
   const ctx = { events: [] };
   handle(s, actor, action, ctx);
+  // Affedilmiş mülkün katları bitince (satış, çökme, iflas) işaret düşer. Eski kayıtlarda alan yoktur: yok = affedilmemiş.
+  for (const ps of s.props) if (ps && ps.affed && R.level(ps) === 0) delete ps.affed;
   s.seq++;
   return { state: s, events: ctx.events };
 }

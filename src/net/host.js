@@ -22,10 +22,15 @@ export const PACE = {
   flight: 900, // jetonların uçuşu
 };
 // Tepki beklemeleri (İtiraz, Dayın Çıktı, Kestirme yolu) kartı olana da olmayana da aynı pencere: kimde kart olduğu sızmaz.
-// Normal hızda 10 sn (yavaşta 15, hızlıda 5). Açık artırma ve tepki süreleri oyun hızıyla ölçeklenir.
-const PASSIVE_TIMEOUT = { auction: 15, react: 10, rent: 10, choose: 10, trade: 45, discard: 45 }; // sn
+// İtiraz ve Dayın Çıktı normal hızda 10 sn (yavaşta 15, hızlıda 5). Kestirme yolu (choose) kısa ve tıklamasızdır:
+// 1,5 sn içinde Kestirme oynanmazsa piyon zar toplamı kadar kendiliğinden yürür. Açık artırma ve tepki süreleri oyun hızıyla ölçeklenir.
+const PASSIVE_TIMEOUT = { auction: 15, react: 10, rent: 10, choose: 1.5, trade: 45, discard: 45 }; // sn
 const SCALED = new Set(['auction', 'react', 'rent', 'choose']);
 const DISCONNECT_GRACE = 20; // sn
+// Hazır tepki çıkartmaları: oyuncu birini seçer, herkesin ekranında o oyuncunun piyonundan yükselir. Serbest yazı yok
+// (sohbet bilerek kaldırıldı). Oyun durumunun parçası değildir; ev sahibi yalnız doğrular, sınırlar ve yayar.
+export const STICKERS = ['Yuh!', 'Helal!', 'Olmaz öyle', 'Hadi ya', 'Dayııı!', 'Kira geldi'];
+export const STICKER_GAP = 2000; // ms, oyuncu başına iki çıkartma arası en az
 const MAX_SEATS = 6;
 // Lobideki oyun hızı: bekleme ve canlandırma süreleri bu çarpanla uzar ya da kısalır (istemci de aynısını kullanır).
 export const SPEEDS = { slow: 1.5, normal: 1, fast: 0.5 };
@@ -97,6 +102,7 @@ export class Host {
     this.clients = new Set();
     this.timer = null;
     this.waitSince = {};
+    this.stickerAt = {};
     // Koltuk kimliği tokenden türetilir; koltuğu yalnız aynı tokeni bilen geri alabilir.
     this.secrets = {};
     if (saved) {
@@ -226,6 +232,8 @@ export class Host {
         return this.onProfile(client, m);
       case 'lobby':
         return this.onLobby(client, m);
+      case 'sticker':
+        return this.onSticker(client, m);
       default:
     }
   }
@@ -262,6 +270,17 @@ export class Host {
     seat.name = cleanName(m.name);
     this.setAvatar(seat, cleanAvatar(m.avatar));
     this.broadcast();
+  }
+
+  // Çıkartma: yalnız masadaki oyuncu, listedeki bir çıkartma, oyuncu başına 2 sn'de bir. Hatalısı sessizce yok sayılır.
+  onSticker(client, m) {
+    const p = this.seatIndex(client.playerId);
+    const id = m.id;
+    if (p < 0 || !Number.isInteger(id) || id < 0 || id >= STICKERS.length) return;
+    const now = Date.now();
+    if (now - (this.stickerAt[client.playerId] || 0) < STICKER_GAP) return;
+    this.stickerAt[client.playerId] = now;
+    for (const c of this.clients) if (c.playerId) this.send(c, { t: 'sticker', p, id });
   }
 
   onLobby(client, m) {
@@ -397,11 +416,11 @@ export class Host {
       const since = (this.waitSince[pl.id] ??= ready);
       const pd = g.pending;
       const kind = pd ? pd.type : g.turn.step === 'choose' ? 'choose' : null;
-      const passive = kind && PASSIVE_TIMEOUT[kind] ? Math.round(PASSIVE_TIMEOUT[kind] * (SCALED.has(kind) ? this.speed() : 1)) : 0;
-      let limit = passive || this.config.turnLimit;
-      if (!seat.connected) limit = Math.min(limit || DISCONNECT_GRACE, DISCONNECT_GRACE);
+      const passive = kind && PASSIVE_TIMEOUT[kind] ? Math.round(PASSIVE_TIMEOUT[kind] * 1000 * (SCALED.has(kind) ? this.speed() : 1)) : 0; // ms
+      let limit = passive || this.config.turnLimit * 1000;
+      if (!seat.connected) limit = Math.min(limit || DISCONNECT_GRACE * 1000, DISCONNECT_GRACE * 1000);
       if (!limit) continue;
-      const d = { at: since + limit * 1000, span: limit * 1000, seat: i, mode: passive ? 'default' : 'bot' };
+      const d = { at: since + limit, span: limit, seat: i, mode: passive ? 'default' : 'bot' };
       this.deadlines[pl.id] = d;
       if (!next || d.at < next.at) next = d;
     }

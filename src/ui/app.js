@@ -197,6 +197,9 @@ function onMsg(m) {
     case 'ping':
       send({ t: 'pong' });
       break;
+    case 'sticker':
+      if (app.screen === 'game') G.showSticker(m.p, m.id);
+      break;
     case 'backup':
       // Ev sahibi düşerse oyunu sürdürecek yedek benim: son kopyayı tut.
       if (m.snap && m.snap.backupId === app.me) app.backup = m.snap;
@@ -532,7 +535,6 @@ const A = {
   },
 
   roll: () => act({ type: 'roll' }),
-  moveSum: () => act({ type: 'move', steps: V().turn.dice[0] + V().turn.dice[1] }),
   kestirme: (el) => act({ type: 'playCard', uid: el.dataset.uid, target: { die: Number(el.dataset.die) } }),
   endTurn: () => act({ type: 'endTurn' }),
   settleDebt: () => act({ type: 'settleDebt' }),
@@ -606,6 +608,17 @@ const A = {
     openDialog({ type: 'player', p });
   },
   history: () => openDialog({ type: 'history' }),
+  stickers() {
+    app.ui.stickerOpen = !app.ui.stickerOpen;
+    G.updateGame();
+  },
+  sticker(el) {
+    send({ t: 'sticker', id: Number(el.dataset.id) });
+    app.ui.stickerAt = Date.now();
+    app.ui.stickerOpen = false;
+    G.updateGame();
+    setTimeout(() => app.screen === 'game' && G.updateGame(), 2100); // seçici yeniden açılırsa düğmeler açık olsun
+  },
   manage: () => openDialog({ type: 'manage' }),
   trade() {
     const v = V();
@@ -690,6 +703,10 @@ document.addEventListener('click', (e) => {
   }
   // Kira penceresi dışına tıklanınca kapanır.
   if (app.ui.popSq !== null && app.ui.popSq !== undefined && !e.target.closest('.pop, .cell, #prompt')) closePop();
+  if (app.ui.stickerOpen && !e.target.closest('.sticker-wrap')) {
+    app.ui.stickerOpen = false;
+    G.updateGame();
+  }
   if (app.ui.gundemOpen && !e.target.closest('#gundem')) {
     app.ui.gundemOpen = false;
     G.updateGame();
@@ -720,6 +737,10 @@ document.addEventListener('input', (e) => {
 
 document.addEventListener('keydown', (e) => {
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+  if (e.key === 'Escape' && app.ui.stickerOpen) {
+    app.ui.stickerOpen = false;
+    return G.updateGame();
+  }
   if (e.key === 'Escape' && (app.ui.dialog || app.ui.menuModal)) return closeDialog();
   if (e.key === 'Escape' && app.ui.resultsOpen) return A.resultsClose();
   if (e.key === 'Escape' && app.ui.pick) return A.pickCancel();

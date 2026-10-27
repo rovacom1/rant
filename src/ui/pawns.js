@@ -1,4 +1,4 @@
-// Oyuncu piyonları: şeffaf zeminli resimler (assets/piyon). Oyuncunun rengi halka değil, figürün kendi kenarına
+// Oyuncu piyonları: şeffaf zeminli resimler (assets/piyon). Panellerde oyuncunun rengi halka değil, figürün kendi kenarına
 // çizilir (CSS drop-shadow). Görünen alan eşit olsun diye ince piyonlar (Galata, leblebi) biraz daha uzun çizilir.
 import { AVATARS, PAWN_NAMES } from '../engine/index.js';
 
@@ -23,3 +23,7 @@ export function pawn(avatar, color, s, cls = '') {
   const o = s <= 28 ? 2.5 : 3;
   return `<span class="pawn ${cls}" style="--s:${s}px;--pc:${color};--o:${o}px" aria-label="${PAWN_NAMES[k]}" role="img"><img src="assets/piyon/${k}.png" alt="" draggable="false" style="width:${w.toFixed(1)}px;height:${h.toFixed(1)}px"></span>`;
 }
+
+// Tahtadaki piyon: figür (ilk çocuk; boardfx onu zıplatır), ayağın altında oyuncu renginde beyaz halkalı oval kaide
+// ve yumuşak gölge. Figürün kenarı tahtada beyazdır (tahta.css); oyuncunun rengi kaidededir.
+export const boardPawn = (avatar, color, s) => `<span class="fig">${pawn(avatar, color, s)}</span><i class="base"></i><i class="sh"></i>`;

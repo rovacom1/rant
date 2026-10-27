@@ -554,7 +554,7 @@ test('SÜRPRİZ: para, kart ve mülk etkileri', () => {
   r = surprizWith('dugun');
   assert.equal(r.after.players[0].cash, 1500 + 25 * 3);
   r = surprizWith('tarla');
-  assert.equal(r.after.props[1].owner, 0, 'en ucuz sahipsiz mülk İskilip');
+  assert.equal(r.after.props[1].owner, 0, 'en ucuz sahipsiz mülk Amasya');
   r = surprizWith('kapkac');
   const hand = (st) => st.players.reduce((n, pl) => n + pl.hand.length, 0);
   assert.equal(r.after.players[0].hand.length, r.before.players[0].hand.length, 'Taksi gitti, kapılan kart geldi');
@@ -669,7 +669,7 @@ test('günlükte kart olayları kartı ve oynayanı taşır', () => {
 test('denge: en az 5 kira, Müteahhit için şehirde 2 mülk, sıra başında kart gelmez', () => {
   const s = calm(started());
   own(s, 1, 1);
-  assert.equal(rentFor(s, 1), 5, 'İskilip arsa kirası 2, en az 5');
+  assert.equal(rentFor(s, 1), 5, 'Amasya arsa kirası 2, en az 5');
   own(s, 0, 5);
   assert.match(cardBlock(s, 0, 'muteahhit', { sq: 5 }), /en az 2/);
   own(s, 0, 6);
@@ -777,7 +777,7 @@ test('iflas modu: tek oyuncu kalınca oyun biter, sıralama elenme sırasına g�
 
 test('iflas modu: kira her tur çarpanla artar, diğer modlarda artmaz', () => {
   const s = calm(started(3, 33, { iflas: true }));
-  own(s, 1, 35); // Bebek: arsa kirası 50
+  own(s, 1, 35); // İstanbul Avrupa: arsa kirası 50
   const base = rentFor(s, 35);
   s.round = 11;
   assert.equal(rentFor(s, 35), base * 5, '10 tur sonra çarpan 1 + 10 x 0,4 = 5');
@@ -794,4 +794,26 @@ test('iflas modu kapalıyken borçlu konkordato ilan eder, oyunda kalır', () =>
   s = act(s, 0, { type: 'endTurn' });
   assert.equal(s.players[0].out, 0);
   assert.equal(s.players[0].konkordato, 1);
+});
+
+test('imar affi: yasallasan mulk katlari bitene dek affed isaretli kalir (yalniz gorunus)', () => {
+  let s = calm(started(2, 21));
+  own(s, 0, 1, 5);
+  s.props[1].kacak = 1; // gecekondu
+  s.props[5].kat = 1;
+  s.props[5].kacak = 1;
+  s.gundem.until = s.round;
+  s.gundemDeck.push('imarAffi:0');
+  s.turn = { ...s.turn, p: 1, step: 'free', again: false };
+  s = act(s, 1, { type: 'endTurn' });
+  assert.equal(s.gundem.id, 'imarAffi');
+  assert.deepEqual([s.props[1].kat, s.props[1].kacak, s.props[1].affed], [1, 0, true]);
+  assert.deepEqual([s.props[5].kat, s.props[5].kacak, s.props[5].affed], [2, 0, true]);
+  assert.equal(s.props[8].affed, undefined, 'kacagi olmayan mulk affedilmez');
+  s = act(s, 0, { type: 'sellFloor', sq: 5 });
+  assert.equal(s.props[5].affed, true, 'kat kaldikca isaret durur');
+  s = act(s, 0, { type: 'sellFloor', sq: 5 });
+  s = act(s, 0, { type: 'sellFloor', sq: 1 });
+  assert.equal(s.props[5].affed, undefined, 'katlar bitince isaret duser');
+  assert.equal(s.props[1].affed, undefined);
 });

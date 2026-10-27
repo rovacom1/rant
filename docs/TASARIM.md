@@ -43,7 +43,7 @@ Ev sahibi lobide üç kuralı açıp kapatabilir; hepsi varsayılan olarak açı
 | SÜRPRİZ kareleri | SÜRPRİZ karesine gelince bir şey olmaz. |
 | Gündem kartları | Tur başında Gündem kartı açılmaz; turlar yalnız sayılır. |
 
-Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi, canlandırmaları ve tepki pencerelerini 1,5 / 1 / 0,5 katına çeker: İtiraz, Dayın Çıktı ve Kestirme penceresi yavaşta 15, normalde 10, hızlıda 5 saniye; rakibin oynadığı kart normalde 5,5 saniye ortada kalır.
+Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi, canlandırmaları ve tepki pencerelerini 1,5 / 1 / 0,5 katına çeker: İtiraz ve Dayın Çıktı penceresi yavaşta 15, normalde 10, hızlıda 5 saniye; Kestirme penceresi (zardan sonra) yavaşta 2,25, normalde 1,5, hızlıda 0,75 saniye; rakibin oynadığı kart normalde 5,5 saniye ortada kalır.
 
 **Bot seviyesi** (Kolay / Normal / Zor) masadaki bütün botlara uygulanır. Kolay bot pazarlık önermez, kaçak kat dikmez, kat dikmeyi ve kart oynamayı yarı yarıya unutur, yedeğini bozacak arsayı almaz, artırmada çabuk çekilir. Zor bot kaçak kat dikmez (zabıta ve ihbar riskine girmez), eksik parçayı karşı tarafın kabul edeceği en düşük parayla ister, para yetmezse kendi işine yaramayan bir mülkü takasa koyar; artırmada tavanını şaşmadan hesaplar ve her seferinde en az artışla teklif verir.
 
@@ -55,48 +55,59 @@ Her kenarda 5 mülk, 1 gar, 1 havalimanı ve 1 FIRSAT ya da SÜRPRİZ karesi var
 | # | Kare | Tür | Fiyat |
 |---|---|---|---|
 | 0 | BAŞLANGIÇ NOKTASI | köşe | geçince ya da gelince maaş ve 1 kart |
-| 1 | İskilip (Çorum) | mülk | 60 |
-| 2 | Osmancık (Çorum) | mülk | 80 |
+| 1 | Amasya (Çorum) | mülk | 60 |
+| 2 | Çorum (Çorum) | mülk | 80 |
 | 3 | SÜRPRİZ | sürpriz | rastgele etki, hemen uygulanır |
 | 4 | DOĞU EKSPRESİ | gar | 150 |
-| 5 | Ortahisar (Trabzon) | mülk | 100 |
-| 6 | Akçaabat (Trabzon) | mülk | 100 |
+| 5 | Giresun (Trabzon) | mülk | 100 |
+| 6 | Rize (Trabzon) | mülk | 100 |
 | 7 | KAPADOKYA | havalimanı | 200 |
-| 8 | Uzungöl (Trabzon) | mülk | 120 |
+| 8 | Trabzon (Trabzon) | mülk | 120 |
 | 9 | TAPU DAİRESİ | köşe | sahipsiz herhangi bir mülkü al |
-| 10 | İnegöl (Bursa) | mülk | 140 |
+| 10 | Balıkesir (Bursa) | mülk | 140 |
 | 11 | FIRSAT | kart | 2 Hamle kartı çek |
-| 12 | Nilüfer (Bursa) | mülk | 160 |
+| 12 | Bursa (Bursa) | mülk | 160 |
 | 13 | KONYA GARI | gar | 150 |
-| 14 | Karatay (Konya) | mülk | 180 |
-| 15 | Meram (Konya) | mülk | 180 |
+| 14 | Aksaray (Konya) | mülk | 180 |
+| 15 | Nevşehir (Konya) | mülk | 180 |
 | 16 | DALAMAN | havalimanı | 200 |
-| 17 | Selçuklu (Konya) | mülk | 200 |
+| 17 | Konya (Konya) | mülk | 200 |
 | 18 | ÇAY OCAĞI | köşe | herkesten çay parası |
-| 19 | Kaleiçi (Antalya) | mülk | 220 |
-| 20 | Konyaaltı (Antalya) | mülk | 220 |
+| 19 | Adana (Antalya) | mülk | 220 |
+| 20 | Mersin (Antalya) | mülk | 220 |
 | 21 | SÜRPRİZ | sürpriz | rastgele etki, hemen uygulanır |
 | 22 | ANKARA GARI | gar | 150 |
-| 23 | Lara (Antalya) | mülk | 240 |
-| 24 | Kızılay (Ankara) | mülk | 260 |
+| 23 | Antalya (Antalya) | mülk | 240 |
+| 24 | Eskişehir (Ankara) | mülk | 260 |
 | 25 | ESENBOĞA | havalimanı | 200 |
-| 26 | Çankaya (Ankara) | mülk | 280 |
+| 26 | Ankara (Ankara) | mülk | 280 |
 | 27 | ZABITA | köşe | bir oyuncuyu ihbar et |
-| 28 | Karşıyaka (İzmir) | mülk | 300 |
+| 28 | Aydın (İzmir) | mülk | 300 |
 | 29 | FIRSAT | kart | 2 Hamle kartı çek |
-| 30 | Bornova (İzmir) | mülk | 300 |
+| 30 | Manisa (İzmir) | mülk | 300 |
 | 31 | HAYDARPAŞA | gar | 150 |
-| 32 | Alsancak (İzmir) | mülk | 320 |
-| 33 | Kadıköy (İstanbul) | mülk | 350 |
+| 32 | İzmir (İzmir) | mülk | 320 |
+| 33 | İstanbul Anadolu (İstanbul) | mülk | 350 |
 | 34 | SABİHA GÖKÇEN | havalimanı | 200 |
-| 35 | Bebek (İstanbul) | mülk | 400 |
+| 35 | İstanbul Avrupa (İstanbul) | mülk | 400 |
 
 Şehir grupları ve kat fiyatları: Çorum 50, Trabzon 50, Bursa 100, Konya 100, Antalya 150, Ankara 150, İzmir 200, İstanbul 200.
 Sahil grupları: Antalya, İzmir.
 
+Kareler il adını taşır; set (şehir grubu) adı ve anahtarı aynı kalır (ör. Trabzon seti: Giresun, Rize, Trabzon).
+
+### Tahtanın görünüşü
+
+- Set renkleri (ucuzdan pahalıya): Çorum `#5e3a1e`, Trabzon `#6cc4ee`, Bursa `#22a35a`, Konya `#f5c518`, Antalya `#f0761a`, Ankara `#c47ad8`, İzmir `#d8283c`, İstanbul `#1b2f7a`. Monopoly gibi kenar derinliği her yanda aynı, köşeler kare; karelerin içeriği dıştan içe bakar (alt sıra dik, sol sütun 90, üst sıra 180, sağ sütun -90 derece döner). Mülk karesinin ortaya bakan kenarında setin tam doygun rengindeki bant ve hemen altında sahiplik şeridi, ortasında bina resmi, dış kenarında il adı (hiçbir şey adı örtmez).
+- Oyuncu renkleri il renklerinden uzak seçildi: turkuaz `#009c9c`, fuşya `#e81c8c`, fıstık `#a6e000`, elektrik `#4a3aff`, kömür `#2b2f38`, beyaz `#ffffff`. Beyaz ve kömür, çizildikleri her yerde (şerit, piyon kaidesi, harita) ince koyu kenarla görünür.
+- Sahiplik: iç kenardaki şerit; sahipsizken ince ve soluk, sahipliyken kalın, beyaz kenarlı ve sahibinin renginde.
+- Bina resmi `assets/bina/<set>/`: seviye L (yasal + kaçak) 0 ise resim yok; kaçak yoksa `L.png`; üst kat kaçaksa `k{L-1}.png`. İmar Affı'yla yasallaşan mülk (motorda `affed`) katı kalana dek kaçak resmiyle görünür. `0.png` yalnız tapu cetvelinde, `yikik.png` yalnız yıkım canlandırmasında. Resim hep oranını korur (`contain`).
+- Köşe kareleri kraft kağıdı zeminde (koyu temada koyu kraft) kendi renkli simgesiyle. Yol yok: piyon durduğu karenin iç kenarında, ortaya hafifçe taşarak durur (köşede iç köşede); aynı karedeki piyonlar iç kenar boyunca dizilir. Piyonun altında oyuncu renginde beyaz halkalı oval kaide ve yumuşak gölge, figürde beyaz kontur; sırası gelen biraz büyük ve hafifçe zıplar, durduğu kare onun renginde çerçevelenir.
+- Ortada soluk Türkiye haritası: 20 ilin yerinde içi dolu yuvarlak (sahipsizken set renginde, sahipliyken büyük ve sahibinin renginde); katlı ilin binası (karedekinin aynısı, daha büyük) ilin yerinde durur, yeni bina yaylı yükselir. Harita normalde soluk, istem ve zar önde okunur; değişen il bir an parlar, kareye gelince ili parlar, ortanın sol altındaki harita düğmesine gelince (ya da basınca) yazılar çekilir, harita öne çıkar.
+
 ### Kira
 
-- Kiralar **Monopoly cetvelinden** alınır: her mülk, Monopoly'de aynı fiyattaki arsanın arsa kirasını ve 1-4 ev kirasını kullanır (ör. İskilip 60: 2/10/30/90/160, Bebek 400: 50/200/600/1400/1700; tablo `src/engine/data.js`). Otel yok, en fazla 4 kat.
+- Kiralar **Monopoly cetvelinden** alınır: her mülk, Monopoly'de aynı fiyattaki arsanın arsa kirasını ve 1-4 ev kirasını kullanır (ör. Amasya 60: 2/10/30/90/160, İstanbul Avrupa 400: 50/200/600/1400/1700; tablo `src/engine/data.js`). Otel yok, en fazla 4 kat.
 - Seviye L = yasal kat + kaçak kat (en fazla 4).
 - L = 0: arsa kirası; şehrin tüm mülkleri aynı kişideyse **2 katı**.
 - L = 1..4: cetveldeki 1-4 ev kirası. Şehir seti tamamlanmamışsa (kaçak kat ya da Müteahhit katı) bu kira **yarıdır**.
@@ -112,10 +123,10 @@ Sahil grupları: Antalya, İzmir.
 1. **Tur başı** (ilk oyuncudan önce): her dönem başında (1., 4., 7. ... tur) yeni Gündem kartı açılır ve uygulanır; önceki gündemin dönem kuralları biter.
 2. **Sıra başı**: Kart çekilmez. Kira Zammı etkin kaldıysa burada biter.
 3. **Zar öncesi**: Hamle kartı oynayabilir (turda en fazla 1), kat dikebilir, ipotek yapabilir, pazarlık teklif edebilirsin.
-4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin. Çift zar kart vermez ama Monopoly'deki gibi **bir daha oynatır**: turunu (kat, kart, pazarlık) bitirince yeniden zar atarsın; üst üste en fazla 2 kez (üçüncü çiftte ek hak yok). Turda tek Hamle kartı kuralı ek atışta da geçerlidir.
+4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin: zarlar durunca kısa bir pencere (normal hızda 1,5 sn) açılır; o sürede Kestirme oynamazsan piyon toplam kadar kendiliğinden yürür. Kartı olmayan hiçbir düğme görmez, yalnız zarı görür; tıklamaya gerek yoktur. Çift zar kart vermez ama Monopoly'deki gibi **bir daha oynatır**: turunu (kat, kart, pazarlık) bitirince yeniden zar atarsın; üst üste en fazla 2 kez (üçüncü çiftte ek hak yok). Turda tek Hamle kartı kuralı ek atışta da geçerlidir.
    (İlk taslakta her turda zar seçimi vardı; simülasyonda oyuncular kirayı neredeyse hiç ödemediği için karta taşındı.)
 5. **Kareye geliş** (aşağıda).
-6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**.
+6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**. Yapabileceğin hiçbir şey yoksa (oynanabilir kart, dikilebilir yasal ya da kaçak kat, kaldırılabilir ipotek yok, nakit eksi değil) tur 3 saniye sonra kendiliğinden biter; düğmede geri sayım görünür. Bu sürede ele gelmek, bir pencere açmak ya da tahtaya tıklamak kendiliğinden bitirmeyi o tur için durdurur. Yalnız arayüzdür: süre dolunca istemci normal Turu Bitir hamlesini gönderir, kural değişmez.
 
 **Açık pazarlık:** Sırası olmayan oyuncular da, sıradaki oyuncu zar öncesi ya da serbest evredeyken (bekleyen karar yokken), herhangi bir oyuncuya turda bir pazarlık teklifi yapabilir. Masada aynı anda tek teklif bulunur.
 7. Turu bitirmek için: bekleyen karar yok, nakit >= 0, elde en fazla 6 kart.
@@ -163,7 +174,7 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 
 Sıra sendeyken turda en fazla 1 Hamle kartı oynanır. Tepki kartları (İtiraz, Dayın Çıktı) bu sınıra girmez.
 
-**Tepki beklemesi ve gizli el:** Oyun yalnız kartı olanı bekletirse kimde kart olduğu herkesin ekranında belli olur. Bu yüzden masada o karttan en az biri varsa ilgili oyuncuya, kartı olsun olmasın, aynı karar penceresi (normal hızda 10 sn) açılır: Hamle kartının hedefine İtiraz (zincirde karşı taraf da), kira ödeyene Dayın Çıktı, zar atana Kestirme ile yol seçimi. Kartı olmayan yalnız Kabul Et / Öde / Toplam'ı görür. Masada o karttan hiç yoksa beklenmez; böylece yalnız "masada biri bu karta sahip" bilgisi çıkar, kimin olduğu çıkmaz.
+**Tepki beklemesi ve gizli el:** Oyun yalnız kartı olanı bekletirse kimde kart olduğu herkesin ekranında belli olur. Bu yüzden masada o karttan en az biri varsa ilgili oyuncuya, kartı olsun olmasın, aynı karar penceresi (normal hızda 10 sn) açılır: Hamle kartının hedefine İtiraz (zincirde karşı taraf da), kira ödeyene Dayın Çıktı. Kartı olmayan yalnız Kabul Et / Öde'yi görür. Zar atana Kestirme ile yol seçimi için pencere kısa ve tıklamasızdır (normal hızda 1,5 sn): kartı olan da olmayan da aynı süre bekler, kimse erken geçemez (kartı olanda Toplam düğmesi de yoktur), süre dolunca piyon toplam kadar yürür. Masada o karttan hiç yoksa beklenmez; böylece yalnız "masada biri bu karta sahip" bilgisi çıkar, kimin olduğu çıkmaz.
 
 **İhtiyati Tedbir süresi:** Kartı oynayanın 2 sırası boyunca sürer: sayaç 2 başlar, oynayanın her sıra başında 1 azalır, 0 olunca kalkar. Oynayan iflas edip elenirse tedbir de kalkar.
 
@@ -279,17 +290,23 @@ Oyun sonu ekranındaki dayı yorumu için her oyuncunun diktiği kaçak kat, kaz
 ## 11. Tahta animasyonları
 
 Her animasyonun sabit bir zaman çizelgesi var (`src/ui/boardfx.js`, `T`). Sesler animasyona denk gelecek biçimde kısa vuruşlara bölünmüştür (`assets/ses/fx`, ElevenLabs): her vuruş görüntüdeki anına çalar, darbe seslerinin en yüksek yeri tam o ana gelir. Oyun bölünmez, tahta kararmaz.
+- **Yürüyüş:** her adımda piyon yay çizerek sıçrar; kalkışta hızlanır, ortada hızlı, varışta yavaşlar (toplam süre adım başı bütçeyle aynı). Son inişte ezilir, altında küçük bir toz halkası açılır, kısa duraklar. Her inişte adım sesi.
 - **Kurallar:** kare büyümez, yerinden oynamaz; vurgu karenin kenarında olur. Etiket ve tutar tahtanın üst yarısında piyonun altında, alt yarısında üstünde çıkar. Efektler piyonların altında kalır; yalnız jetonlar ve ± tutar piyonların üstünden geçer. Hareket azaltma açıksa zıplama, halka, kenar çizgisi ve uçuş olmaz; parlama, etiket ve sesler kalır. Aynı anda birkaç kare canlanırsa ses bir kez çalar.
 - **Tur başı (1 sn):** piyon zıplar (`zipla`), 0,5. sn'de konar (`tak`), küçük bir sekişle 1. sn'de yine konar; oyuncu renginde 3 halka yayılır, karesi iki kez parlar. Kendi sıranda zil de çalar (`zil`). Piyonun yanında piyon resmi + ad ("Sıra sende!") yaklaşık 2,4 sn kalır.
 - **Mülk alındı (1 sn):** alıcının rengi karenin kenarını 0,6 sn'de dolanır (`suzulme`), o anda mühür vurulur (`muhur`) ve şerit soldan o renkle dolar. İhale ve pazarlıkta kendi sesleri çalar.
 - **Tam set (1,2 sn, mülk animasyonundan sonra):** setin kareleri sırayla sahibinin rengine boyanır; her kare tamamlanınca bir nota, giderek tizleşir (`nota`); sonunda şeritlerde yıldızlar parlar (`parilti`).
 - **Kira ve maaş (0,9 sn):** jetonlar kalkarken fırlatma sesi (`firlat`), her jeton piyona konduğunda jeton sesi (`jeton`); tutar iki piyonun yanında belirir. Maaşta Başlangıç köşesi altın renkte parlar, kasa zili ilk parlamada (`kasa`). Diğer para hareketleri (kart, gündem, vergi) eskisi gibi oyuncu panelleri ve banka arasında uçar.
-- **Kat dikildi (0,8 sn):** ev yukarıdan düşer (`dusus`), 0,44. sn'de kat rozetine çarpar (`tok`), rozet kabarır, seker ve yine konar (`tak`).
-- **Kaçak kat yıkıldı (1,3 sn):** zabıta düdüğüyle (`duduk`) kenar kırmızı iki kez yanar, kaçak kat konisi titrer (`tikirti`) ve 0,8. sn'de toza dönüşür (`puf`).
+- **Kat dikildi (0,8 sn):** yeni bina resmi yukarıdan düşer (`dusus`), 0,44. sn'de yere çarpıp ezilir (`tok`), seker ve yine konar (`tak`).
+- **Kaçak kat yıkıldı (1,3 sn):** zabıta düdüğüyle (`duduk`) kenar kırmızı iki kez yanar, binanın tepesi titrer (`tikirti`) ve 0,8. sn'de toza dönüşür (`puf`); kısa bir an yıkıntı görünür, sonra kalan bina.
 - **İflas (1,8 sn):** piyon sallanır (`sallanma`), renksizleşip düşerek kaybolur (`huzun`), mülklerinin şeritleri sırayla griye döner (her birinde `cit`).
+- **His:** kareye gelince kare 2 px kalkar ve gölgelenir (büyümez; kart sürüklerken ve kare seçerken kalkmaz); düğmeler üstüne gelince 1 px kalkar, basınca iner. Oyuncu satırının üstüne gelince o oyuncunun mülkleri kendi renginde parlar, diğer kareler solar.
+- **Bakiye sayacı:** para el değiştirince oyuncu listesindeki bakiye ilk jeton kalkınca saymaya başlar, son jeton konunca biter (jeton uçuşuyla aynı süre).
+- **Dayı balonu (2,4 sn):** büyük anlarda (biri kaçak kat diker, İhbar ya da Zabıta kaçakları yıkar, iflas, konkordato, en az 300'lük kira, İmar Affı) tahtanın ortasının sağ üst köşesinde yuvarlak dayı resmi ve tek satır laf belirir; ortadaki sahne açıksa o kapanınca. Dayı yolsuzluğu över, dürüstle dalga geçer. Aynı anda tek balon; hızlı oyunda çıkmaz.
 
 ## 12. Protokol (v1)
 
-İstemci -> ev sahibi: `hello {v, name, avatar, token}`, `act {action}`, `lobby {cmd}`, `profile {...}`, `pong`.
-Ev sahibi -> istemci: `welcome {seat}`, `reject {reason}`, `lobby {...}`, `state {view, events}`, `error {msg}`, `ping`. (Sohbet 2026-10-25 kullanıcı isteğiyle kaldırıldı.)
+İstemci -> ev sahibi: `hello {v, name, avatar, token}`, `act {action}`, `lobby {cmd}`, `profile {...}`, `sticker {id}`, `pong`.
+Ev sahibi -> istemci: `welcome {seat}`, `reject {reason}`, `lobby {...}`, `state {view, events}`, `sticker {p, id}`, `error {msg}`, `ping`. (Sohbet 2026-10-25 kullanıcı isteğiyle kaldırıldı.)
+
+**Tepki çıkartmaları:** masadaki her oyuncu altı hazır çıkartmadan birini (Yuh!, Helal!, Olmaz öyle, Hadi ya, Dayııı!, Kira geldi) gönderebilir; herkesin ekranında o oyuncunun piyonundan yükselir. Serbest yazı yoktur. Ev sahibi kimliği ve listeyi doğrular, oyuncu başına 2 saniyede birden fazlasını yaymaz; çıkartma oyun durumuna ve kayda girmez, botlar göndermez.
 Sürüm uyuşmazsa istemciye "sayfayı yenile" denir.

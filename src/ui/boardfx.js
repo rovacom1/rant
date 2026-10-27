@@ -3,7 +3,6 @@
 // gelir (sound.js play, hit). Efektler tahtanın içinde, piyonların altında (z 4); kare büyümez, vurgu kenardadır.
 // Hareket azaltma açıksa zıplama, halka, kenar çizgisi ve uçuş yok; parlama, etiket ve sesler kalır.
 import { pawn } from './pawns.js';
-import { ic } from './icons.js';
 import { play } from './sound.js';
 
 export const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -71,8 +70,10 @@ export function turnFx(board, cell, token, pl, me) {
   hit('tap', land2, { vol: 0.6, rate: 1.15 });
   if (me) from('bell', 0);
   if (!calm()) {
+    // Halkalar piyonun ayağından, yere yayılan elips olarak açılır.
+    const foot = { x: tb.x - tb.w * 0.1, y: tb.y + tb.h * 0.75, w: tb.w * 1.2, h: tb.h * 0.5 };
     for (let i = 0; i < 3; i++) {
-      const r = layer(board, 'fx-ring', tb, ms);
+      const r = layer(board, 'fx-ring', foot, ms);
       r.style.setProperty('--c', pl.color);
       r.animate([{ transform: 'scale(0.5)', opacity: 0.95 }, { transform: 'scale(2.6)', opacity: 0 }], { duration: ms * 0.7, delay: i * ms * 0.15, easing: 'ease-out', fill: 'both' });
     }
@@ -82,16 +83,18 @@ export function turnFx(board, cell, token, pl, me) {
       { duration: ms },
     );
   }
-  // Etiket tahtanın üst yarısında karenin altında, alt yarısında üstünde çıkar.
+  // Etiket tahtanın üst yarısında karenin ve piyonun altında, alt yarısında üstünde çıkar (piyon kareden ortaya taşar).
   const cb = boxOf(cell);
   const down = cb.y + cb.h / 2 < board.clientHeight / 2;
+  const low = Math.max(cb.y + cb.h, tb.y + tb.h * 1.15);
+  const high = Math.min(cb.y, tb.y - tb.h * 0.2);
   const tag = layer(board, 'fx-tag', { x: 0, y: 0, w: 0, h: 0 }, LABEL_MS, `${pawn(pl.avatar, pl.color, 26)}<span></span>`);
   tag.lastElementChild.textContent = me ? 'Sıra sende!' : pl.name;
   tag.style.setProperty('--c', pl.color);
   Object.assign(tag.style, { width: '', height: '' });
   const w = tag.offsetWidth;
   tag.style.left = `${Math.max(6, Math.min(board.clientWidth - w - 6, tb.x + tb.w / 2 - w / 2))}px`;
-  tag.style.top = down ? `${cb.y + cb.h + 6}px` : `${cb.y - tag.offsetHeight - 6}px`;
+  tag.style.top = down ? `${low + 6}px` : `${high - tag.offsetHeight - 6}px`;
   const dy = down ? -10 : 10;
   tag.animate([{ opacity: 0, transform: `translateY(${dy}px) scale(0.9)` }, { opacity: 1, transform: 'none', offset: 0.08 }, { opacity: 1, transform: 'none', offset: 0.88 }, { opacity: 0, transform: `translateY(${-dy / 2}px)` }], { duration: LABEL_MS, easing: 'ease-out', fill: 'both' });
 }
@@ -107,9 +110,9 @@ export function ownFx(board, cell, color, sound = true) {
   if (!calm()) trace(board, cell, color, 0, draw);
   const strip = cell.querySelector('.strip');
   if (!strip) return;
-  const v = vertical(cell);
-  strip.style.transformOrigin = v ? '50% 0' : '0 50%';
-  strip.animate([{ transform: v ? 'scaleY(0)' : 'scaleX(0)' }, { transform: 'none' }], { duration: fill, delay: draw, easing: 'ease-out', fill: 'backwards' });
+  // Şerit karenin dönen yüzünde hep yatay (yan sütunlarda yüzle birlikte döner).
+  strip.style.transformOrigin = '0 50%';
+  strip.animate([{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: fill, delay: draw, easing: 'ease-out', fill: 'backwards' });
 }
 
 // Tam set: setin kareleri sırayla sahibinin renginde dolanır; her kare tamamlanınca bir nota (giderek tizleşir),
@@ -131,37 +134,43 @@ export function setFx(board, setCells, color, sound = true) {
   if (sound) hit('sparkle', star + starMs / 2);
 }
 
-// Kat dikildi: ev (ya da kaçak koni) yukarıdan düşer (düşüş sesi), 440. ms'de rozete çarpar (tok ses, rozet kabarır),
-// seker ve 800. ms'de yine konar.
-export function buildFx(board, cell, kacak) {
+// Karedeki bina resmi ve kopyası. Kopya resmin kutusunda (.bld) durur: karenin yüzüyle birlikte döner, piyonların altında kalır.
+const bldImg = (cell) => {
+  const img = cell.querySelector('.bld img');
+  return img && !img.hidden && img.getAttribute('src') ? img : null;
+};
+const hideFor = (el, ms) => el.animate([{ opacity: 0 }, { opacity: 0 }], { duration: ms });
+const copyOf = (img, ms, src = img.getAttribute('src')) => layer(img.parentElement, 'fx-bld', boxOf(img), ms, `<img src="${src}" alt="">`);
+
+// Kat dikildi (kare yeni duruma çizildikten sonra): yeni bina resmi yukarıdan düşer (düşüş sesi), 440. ms'de yere çarpıp
+// ezilir (tok ses), seker ve 800. ms'de yine konar.
+export function buildFx(board, cell) {
   const { ms, impact, bounce } = T.build;
-  const floors = cell.querySelector('.floors');
-  const icons = floors ? floors.querySelectorAll('.ic') : [];
-  const target = kacak ? icons[icons.length - 1] : icons[0];
-  if (!target) return;
+  const img = bldImg(cell);
+  if (!img) return;
   from('slide', 0, { vol: 0.7 });
   hit('thud', impact);
   hit('tap', ms, { vol: 0.5, rate: 1.2 });
+  if (calm()) return;
   const at = (t) => t / ms;
-  if (!calm()) {
-    const el = layer(board, 'fx-drop', inCell(cell, target), ms, ic(kacak ? 'kacak' : 'house'));
-    el.firstElementChild.style.fontSize = `${target.offsetHeight / 1.2}px`;
-    el.animate(
-      [
-        { transform: 'translateY(-110px) scale(1.6)', opacity: 0, easing: 'ease-in' },
-        { opacity: 1, offset: 0.12 },
-        { transform: 'scale(1.15, 0.85)', offset: at(impact), easing: 'ease-out' },
-        { transform: 'translateY(-10px) scale(1)', offset: at(bounce), easing: 'ease-in' },
-        { transform: 'none', opacity: 1 },
-      ],
-      { duration: ms, fill: 'both' },
-    );
-  }
-  floors.animate([{ transform: 'none' }, { transform: 'none', offset: at(impact) }, { transform: 'scale(1.18)', offset: at(impact + 80) }, { transform: 'none' }], { duration: ms, easing: 'ease-out' });
+  hideFor(img, ms);
+  copyOf(img, ms).animate(
+    [
+      { transform: 'translateY(-70%) scale(1.12)', opacity: 0, easing: 'ease-in' },
+      { opacity: 1, offset: 0.12 },
+      { transform: 'scale(1.14, 0.84)', offset: at(impact), easing: 'ease-out' },
+      { transform: 'translateY(-9%) scale(1)', offset: at(bounce), easing: 'ease-in' },
+      { transform: 'none', opacity: 1 },
+    ],
+    { duration: ms, fill: 'both' },
+  );
 }
 
-// Kaçak kat yıkıldı (kare güncellenmeden önce çağrılır): zabıta düdüğüyle kenar kırmızı yanar, koni 450. ms'den
-// titrer (tıkırtı), 800. ms'de patlayıp toza dönüşür (puf).
+// Bina resmi seviyesi L iken binanın tepesi kutunun üstünden yüzde kaç aşağıda (resimler aynı kutuda kırpılı: 1 kat %40, 4 kat %0).
+const roofAt = (L) => (L <= 0 ? 100 : Math.max(0, 40 - (40 / 3) * (L - 1)));
+
+// Kaçak kat yıkıldı (kare güncellenmeden önce çağrılır): zabıta düdüğüyle kenar kırmızı yanar, binanın kaçak tepesi 450. ms'den
+// titrer (tıkırtı), 800. ms'de toza dönüşür (puf); bir an yıkıntı görünür, sonra kalan bina.
 export function demolishFx(board, cell, sound = true) {
   const { ms, shake, shakeMs, burst } = T.demolish;
   blink(board, cell, 'var(--neg)', ms);
@@ -170,21 +179,32 @@ export function demolishFx(board, cell, sound = true) {
     from('rattle', shake);
     hit('poof', burst);
   }
-  const icons = cell.querySelectorAll('.floors .ic');
-  const cone = icons[icons.length - 1];
-  if (!cone || calm()) return;
-  const b = inCell(cell, cone);
-  const el = layer(board, 'fx-drop', b, ms, ic('kacak'));
-  el.firstElementChild.style.fontSize = `${b.h / 1.2}px`;
+  const img = bldImg(cell);
+  if (!img || calm()) return;
+  const src = img.getAttribute('src');
+  const m = /\/k(\d)\.png$/.exec(src);
+  const L = m ? Number(m[1]) + 1 : 1;
+  const cut = roofAt(L - 1); // kalan binanın tepesi; üstü yıkılan kaçak kat
+  const b = boxOf(img);
   const at = (t) => t / ms;
+  hideFor(img, ms);
+  const base = copyOf(img, ms);
+  base.firstElementChild.style.clipPath = `inset(${cut}% 0 0 0)`;
+  base.animate([{ opacity: 1 }, { opacity: 1, offset: at(burst) }, { opacity: 0, offset: at(burst + 60) }, { opacity: 0 }], { duration: ms, fill: 'both' });
+  const top = copyOf(img, ms);
+  top.firstElementChild.style.clipPath = `inset(0 0 ${100 - cut}% 0)`;
+  top.style.transformOrigin = `50% ${cut}%`;
   const wig = (k, deg) => ({ transform: `rotate(${deg}deg)`, offset: at(shake + (k * shakeMs) / 4) });
-  el.animate(
-    [{ transform: 'none' }, { transform: 'none', offset: at(shake) }, wig(0.5, -14), wig(1.5, 12), wig(2.5, -10), wig(3.5, 8), { transform: 'scale(1.15)', offset: at(burst - 30) }, { transform: 'scale(1.5)', opacity: 0, offset: at(burst + 80) }, { transform: 'scale(1.5)', opacity: 0 }],
+  top.animate(
+    [{ transform: 'none' }, { transform: 'none', offset: at(shake) }, wig(0.5, -6), wig(1.5, 5), wig(2.5, -4), wig(3.5, 3), { transform: 'scale(1.06)', offset: at(burst - 30) }, { transform: 'scale(1.3)', opacity: 0, offset: at(burst + 80) }, { transform: 'scale(1.3)', opacity: 0 }],
     { duration: ms, fill: 'both' },
   );
+  const ruin = copyOf(img, ms, src.replace(/[^/]+\.png$/, 'yikik.png'));
+  ruin.animate([{ opacity: 0 }, { opacity: 0, offset: at(burst - 20) }, { opacity: 1, offset: at(burst + 60) }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], { duration: ms, fill: 'both' });
+  const cy = b.y + (b.h * cut) / 100 - b.h * 0.08;
   const dirs = [[-26, -14], [0, -24], [22, -12], [-22, 12], [4, 18], [20, 10]];
   for (const [dx, dy] of dirs) {
-    const p = layer(board, 'fx-dust', { x: b.x + b.w / 2 - 5, y: b.y + b.h / 2 - 5, w: 10, h: 10 }, ms);
+    const p = layer(img.parentElement, 'fx-dust', { x: b.x + b.w / 2 - 5, y: cy - 5, w: 10, h: 10 }, ms);
     p.animate([{ opacity: 0, transform: 'none' }, { opacity: 0.9, transform: `translate(${dx * 0.3}px, ${dy * 0.3}px) scale(0.8)` }, { opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(2)` }], { duration: ms - burst, delay: burst, easing: 'ease-out', fill: 'both' });
   }
 }
@@ -197,7 +217,8 @@ export function iflasFx(board, token, ownedCells) {
   from('sad', fall);
   const at = (t) => t / ms;
   if (token && !calm()) {
-    const g = layer(board, 'fx-ghost', boxOf(token), ms, token.innerHTML);
+    const g = layer(board, 'fx-ghost tk', boxOf(token), ms, token.innerHTML);
+    for (const k of ['--s', '--pc']) g.style.setProperty(k, token.style.getPropertyValue(k));
     g.animate(
       [
         { transform: 'none', filter: 'none', opacity: 1 },

@@ -1,0 +1,119 @@
+/* Kartlar ve tapu. main.css'ten sonra yüklenir; aynı seçicilerle eskisini ezer. */
+
+/* ---------- hamle/tepki kartı ----------
+   Çerçeve kartın türünün renginde (--t, src/ui/hand.js CARD_GROUPS). İçte kare resim ve sabit yükseklikte krem yazı alanı.
+   Bütün yazı boyları kartın genişliğine oranlı (cqw): kart hangi boyda olursa olsun ad tek satıra, kısa kural iki satıra sığar. */
+.kart {
+  --t: #6a3fb0;
+  container-type: inline-size;
+  height: calc(var(--w) * 1.4); padding: calc(var(--w) * 0.055); gap: 0;
+  border: 0; border-radius: calc(var(--w) * 0.1); background: var(--t);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18), 0 2px 0 rgba(0, 0, 0, 0.22), 0 8px 16px rgba(10, 14, 30, 0.3);
+}
+.kart .k-art {
+  position: relative; overflow: hidden; flex: none; width: 100%; aspect-ratio: 1 / 1;
+  border-radius: 7cqw 7cqw 0 0; background: var(--t) center / cover no-repeat;
+  box-shadow: inset 0 0 0 1.6cqw #1b2233;
+}
+.kart .k-txt {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2cqw;
+  padding: 3cqw 4cqw; border-radius: 0 0 7cqw 7cqw; background: #fffaf0; color: #1b2233; text-align: center;
+  box-shadow: inset 1.6cqw 0 0 #1b2233, inset -1.6cqw 0 0 #1b2233, inset 0 -1.6cqw 0 #1b2233; overflow: hidden;
+}
+.kart .k-name {
+  flex: none; display: block; width: 100%; white-space: nowrap; overflow: hidden;
+  font-family: var(--hf); font-weight: 800; font-size: min(12.5cqw, calc(88cqw / var(--ne, 7))); line-height: 1.08; letter-spacing: -0.01em; color: #1b2233;
+}
+.kart .k-rule {
+  display: none; width: 100%;
+  font-family: var(--bf); font-weight: 600; font-size: 8cqw; line-height: 1.2; color: #3a4155; text-wrap: balance;
+}
+.hslot:hover .k-rule, .tip .kart .k-rule, .kart.big .k-rule, .kart-ghost .k-rule { display: block; animation: kRule 0.18s ease-out; }
+@keyframes kRule { from { opacity: 0; transform: translateY(3px); } }
+.kart .k-now { right: -6px; top: -6px; }
+.kart.mini { height: auto; }
+.kart.mini .k-txt { display: none; }
+.kart.mini .k-art { border-radius: 7cqw; }
+.kart.glow { box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.6), 0 0 22px rgba(255, 209, 102, 0.75), 0 10px 18px rgba(0, 0, 0, 0.35); }
+
+/* elde: oynanabilir parlar, seçili turkuaz halka; üstüne gelince imlece doğru 3B eğilme ve yumuşak parıltı */
+.hslot { perspective: 700px; }
+.hslot .kart { transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1), opacity 0.15s, filter 0.15s; }
+.hslot .kart::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1; opacity: 0; transition: opacity 0.2s;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 55%); mix-blend-mode: soft-light;
+}
+.hslot:hover .kart::after { opacity: 1; }
+.hslot.playable .kart { box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.6), 0 0 18px rgba(255, 209, 102, 0.7), 0 8px 16px rgba(10, 14, 30, 0.35); }
+.hslot.selected .kart { box-shadow: 0 0 0 3px #2a9d8f, 0 10px 18px rgba(0, 0, 0, 0.35); }
+.hslot.dragging .kart { transform: none; }
+.hslot.flying { z-index: 60; transform-style: preserve-3d; }
+
+/* dönen kartın arka yüzü (drawFx, playFx): kartla aynı kutuda, ters çevrili */
+.k-back {
+  position: absolute; inset: 0; border-radius: calc(var(--hw, var(--gw, 110px)) * 0.1); background: #273152 center / cover no-repeat;
+  transform: rotateY(180deg) translateZ(1px); backface-visibility: hidden; pointer-events: none;
+}
+.kart-ghost .k-flip { position: absolute; inset: 0; transform-style: preserve-3d; }
+.kart-ghost .kart { --w: var(--gw, 110px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hslot .kart { transform: none; }
+}
+
+/* ---------- tapu ----------
+   Üstte setin renginde bant (mülk adı, setin illeri), fiyat ve sahibi, kira cetvelinde her kattaki bina resmi.
+   Ulaşım tapusu koyu bantlı ve binasız. Ad uzunsa --nl ile küçülür (cqw: tapunun genişliğine oranlı). */
+.deed {
+  --paper: #fbf3df; --dline: #d9c9a0; --dmuted: #596075;
+  container-type: inline-size; background: var(--paper); color: #1b2233; border-radius: 14px;
+  box-shadow: 0 0 0 2px var(--dc), 0 6px 14px rgba(0, 0, 0, 0.14);
+}
+.deed.tr { --dc: #2b3448; --di: #ffffff; }
+body.dark .deed.tr { --dc: #4a5a80; }
+body.dark .deed { --paper: #1f2944; --dline: #33406a; --dmuted: #a9b2c8; background: var(--paper); color: #eef1f8; }
+.deed .d-top { background: var(--dc); color: var(--di); padding: 9px 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+.deed .d-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.deed .d-title .ic { font-size: 18px; flex: none; }
+.deed .d-name {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden;
+  font-family: var(--hf); font-weight: 800; font-size: min(10cqw, calc(86cqw / var(--ne, 6))); line-height: 1.05; letter-spacing: -0.01em;
+}
+.deed.tr .d-name { font-size: min(9cqw, calc(74cqw / var(--ne, 6))); }
+.deed.sel .d-name { font-size: min(9cqw, calc(74cqw / var(--ne, 6))); }
+.deed .d-set { font-size: 12px; line-height: 1.25; opacity: 0.88; text-wrap: balance; }
+.deed .d-bd { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.deed .d-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.deed .d-price { font-family: var(--hf); font-weight: 800; font-size: 26px; line-height: 1; white-space: nowrap; }
+.deed .d-own { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; font-weight: 600; color: var(--dmuted); }
+.deed .d-own span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deed .d-own i { flex: none; width: 20px; height: 8px; border-radius: 9px; background: var(--oc); box-shadow: inset 0 0 0 1px rgba(27, 34, 51, 0.55); }
+body.dark .deed .d-own i { box-shadow: inset 0 0 0 1px rgba(27, 34, 51, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.55); }
+.deed .d-rent { display: flex; gap: 12px; font-size: 13px; color: var(--dmuted); }
+.deed .d-rent b, .deed .d-ft b { color: var(--ink); font-family: var(--hf); font-weight: 700; }
+.deed .d-lad { display: flex; flex-direction: column; gap: 2px; }
+.deed .d-lr { display: grid; grid-template-columns: 30px 1fr auto; gap: 8px; align-items: center; height: 33px; padding: 0 8px 0 4px; border-radius: 8px; font-size: 13.5px; }
+.deed.tr .d-lr { grid-template-columns: 1fr auto; height: 28px; padding: 0 8px; }
+.deed .d-lr img { width: 30px; height: 30px; object-fit: contain; object-position: 50% 100%; }
+.deed .d-lr > span { min-width: 0; display: flex; flex-direction: column; line-height: 1.1; white-space: nowrap; }
+.deed .d-lr small { font-size: 11.5px; }
+.deed .d-lr b { font-family: var(--hf); font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+.deed .d-lr.cur { background: color-mix(in srgb, var(--dc) 30%, var(--paper)); box-shadow: inset 0 0 0 1.5px currentColor; font-weight: 700; }
+.deed .d-lr .k { color: var(--neg); font-weight: 700; }
+.deed .d-lr .a { color: var(--pos); font-weight: 700; }
+.deed .d-ft { display: flex; justify-content: space-between; gap: 6px; padding-top: 7px; border-top: 1px dashed var(--dline); font-size: 12px; color: var(--dmuted); }
+.deed .d-ft span { white-space: nowrap; }
+.deed .dmort { z-index: 2; }
+/* açık artırmada kısa tapunun üstüne açılan cetvel: dar istemde de sığsın diye satırlar biraz basık */
+.deed.hoverladder .d-bd { gap: 6px; }
+.deed.hoverladder .d-lr { height: 28px; }
+.deed.hoverladder .d-lr img { width: 26px; height: 26px; }
+
+.deed.mini { border-radius: 11px; }
+.deed.mini .d-top { padding: 6px 8px 5px; }
+.deed.mini .d-name { font-size: min(14cqw, calc(80cqw / var(--ne, 6))); }
+.deed.mini.sel .d-name { font-size: min(13cqw, calc(62cqw / var(--ne, 6))); }
+.deed.mini.tr .d-name { font-size: min(11.5cqw, 12px); white-space: normal; line-height: 1.05; overflow-wrap: anywhere; }
+.deed.mini .d-title .ic { font-size: 14px; }
+.deed.mini .d-bd { padding: 5px 8px 7px; gap: 0; }
+.deed.mini .d-price { font-size: 15px; }

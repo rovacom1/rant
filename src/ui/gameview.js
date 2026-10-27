@@ -4,13 +4,16 @@ import * as E from '../engine/index.js';
 import { html, raw, setHTML, sleep } from './dom.js';
 import { play, isMuted, getAudio, setMusic } from './sound.js';
 import { T, calm, turnFx, ownFx, setFx, buildFx, demolishFx, iflasFx, coinSounds } from './boardfx.js';
-import { Hand, cardFace, flyToCenter, WHEN } from './hand.js';
+import { Hand, cardFace, playFx, WHEN } from './hand.js';
+import { deed } from './deed.js';
+import { Dice } from './dice.js';
 import { isNotifyOn, notifySupported } from './notify.js';
-import { buildBoard, updateBoard, Tokens, Dice, cellPos, isLight } from './board.js';
-import { app, isHost } from './state.js';
+import { buildBoard, updateBoard, Tokens, cellPos } from './board.js';
+import { CityMap } from './map.js';
+import { app, isHost, act } from './state.js';
 import { RULES_HTML } from './rules.js';
 import { initTips } from './tip.js';
-import { SPEEDS, PACE } from '../net/host.js';
+import { SPEEDS, PACE, STICKERS, STICKER_GAP } from '../net/host.js';
 import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
 import { coinFlights, coinCount, arcPeak, COIN_GAP, FLIGHT_GAP } from './coins.js';
 import { worthLines } from './chart.js';
@@ -18,6 +21,8 @@ import { ic, money, CARD_IC, GUNDEM_IC, SURPRIZ_IC } from './icons.js';
 import { pawn } from './pawns.js';
 import { verdict } from './verdict.js';
 import { mountDayi } from './dayi.js';
+import { dayiMoment, dayiSay } from './dayisay.js';
+import { canPlay, idleTurn, AUTO_END_MS } from './idle.js';
 
 const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, GUNDEM_PERIOD, fmt, cardId } = E;
 const N = BOARD.length;
@@ -28,6 +33,7 @@ const PW = (pl, s) => raw(pawn(pl.avatar, pl.color, s));
 let els = null;
 let cells = null;
 let tokens = null;
+let cityMap = null;
 let dice = null;
 let hand = null;
 let animating = false;
@@ -62,7 +68,7 @@ export function mountGame(root) {
       <div class="panel players" id="players"></div>
       <div id="audioPop"></div>
       <section class="hand-panel" id="handPanel">
-        <div class="hand-head"><span class="kicker">Elin</span><span class="muted small" id="handN"></span><span class="grow"></span><span class="deck" id="deck" data-tip="Destede kalan kart"></span></div>
+        <div class="hand-head"><span class="kicker">Elin</span><span class="muted small" id="handN"></span><span class="grow"></span><span class="deck" id="deck" data-tip="Destede kalan kart"></span><span id="stick"></span></div>
         <div class="hand-grid" id="handGrid"></div>
       </section>
       <div class="player-panel hidden" id="playerPanel"></div>
@@ -75,14 +81,43 @@ export function mountGame(root) {
     round: g('round'), audio: g('tAudio'), theme: g('tTheme'), board: g('board'), center: g('center'), gundem: g('gundem'), banner: g('banner'),
     prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'), players: g('players'), feed: g('feed'), handPanel: g('handPanel'),
     handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), audioPop: g('audioPop'), playerPanel: g('playerPanel'), tools: g('tools'),
-    modal: g('modal'), stage: g('stage'), results: g('results'),
+    modal: g('modal'), stage: g('stage'), results: g('results'), stick: g('stick'),
   };
   cells = buildBoard(els.board);
+  cityMap = new CityMap(els.board);
   tokens = new Tokens(els.tokens, cells);
   dice = new Dice(els.dice);
-  hand = new Hand(els.handGrid, els.board);
+  hand = new Hand(els.handGrid, els.board, els.deck);
   initTips();
   setMusic('game');
+  // Oyuncu satırının üstüne gelince (ya da odaklanınca) o oyuncunun mülkleri tahtada parlar, diğerleri solar.
+  const rowOf = (e) => {
+    const r = e.target.closest && e.target.closest('.prow');
+    return r ? Number(r.dataset.p) : null;
+  };
+  els.players.addEventListener('mouseover', (e) => focusPlayer(rowOf(e)));
+  els.players.addEventListener('mouseleave', () => focusPlayer(null));
+  els.players.addEventListener('focusin', (e) => focusPlayer(rowOf(e)));
+  els.players.addEventListener('focusout', () => focusPlayer(null));
+  // Kendiliğinden tur bitirmeyi durduran her etkileşim: ele gelmek, Turu bitir dışında bir yere basmak.
+  els.handPanel.addEventListener('mouseenter', cancelAutoEnd);
+  root.querySelector('.game').addEventListener('pointerdown', (e) => {
+    if (!e.target.closest('[data-act="endTurn"]')) cancelAutoEnd();
+  });
+}
+
+function focusPlayer(p) {
+  if (app.ui.focusP === p) return;
+  app.ui.focusP = p;
+  paintFocus();
+}
+
+function paintFocus() {
+  const v = app.view;
+  const p = v && !app.ui.pick ? app.ui.focusP : null;
+  const on = p !== null && p !== undefined && !!v.players[p];
+  els.board.classList.toggle('pfocus', on);
+  cells.forEach((el, q) => el.classList.toggle('phit', on && v.props[q]?.owner === p));
 }
 
 export const gameMounted = () => !!els && document.body.contains(els.board);
@@ -100,28 +135,12 @@ export const unmountGame = () => {
 
 const P = (v, i) => v.players[i];
 const meName = (v, i) => (i === v.you ? 'Sen' : P(v, i).name);
-const cityOf = (sq) => (BOARD[sq].group ? GROUPS[BOARD[sq].group].name : E.TRANSPORT_LABEL[BOARD[sq].mode]);
 // Endeks ve şehir çarpanıyla ölçeklenmiş tutar (kira tablosu için).
 const scaled = (v, sq, x) => Math.max(5, Math.round((x * (v.index / 100) * (BOARD[sq].group ? v.groupMult[BOARD[sq].group] || 1 : 1)) / 5) * 5);
 const destOf = (v, steps, backward) => (v.players[v.you].pos + (backward ? -steps : steps) + N * 2) % N;
 const myTurnFree = (v) => v.phase === 'play' && !v.pending && v.turn && v.turn.p === v.you;
 export const canManage = (v) => myTurnFree(v) && ['preroll', 'free'].includes(v.turn.step);
 
-function canPlay(v, uid) {
-  const id = cardId(uid);
-  const c = CARDS[id];
-  if (!c || c.type !== 'hamle' || v.phase !== 'play' || !v.turn || v.turn.p !== v.you || v.turn.hamle) return false;
-  const pd = v.pending;
-  if (c.when === 'buy') {
-    if (!(pd && pd.type === 'buy' && pd.p === v.you)) return false;
-  } else {
-    if (pd) return false;
-    if (c.when === 'preroll' && v.turn.step !== 'preroll') return false;
-    if (c.when === 'choose' && v.turn.step !== 'choose') return false;
-    if (!c.when && !['preroll', 'free'].includes(v.turn.step)) return false;
-  }
-  return E.cardTargets(v, v.you, id).length > 0;
-}
 export { canPlay };
 
 // Oyun hızı çarpanı (lobi ayarı); animasyon süreleri ev sahibinin beklemesiyle aynı oranda uzar.
@@ -136,40 +155,10 @@ function timerHTML(v, ids) {
   if (!ds.length) return '';
   const d = ds.reduce((a, b) => (b.at < a.at ? b : a));
   const mine = ids.includes(v.you) ? 'data-mine' : '';
-  return html`<div class="timer" data-deadline="${d.at}" data-span="${d.span}" ${raw(mine)} aria-label="Kalan süre"><i></i></div><div class="countdown" data-countdown="${d.at}"></div>`;
-}
-
-// Tapu kartı: şehrin renginde şerit, ad, fiyat; ladder ile kira cetveli (seviye vurgulu).
-function deed(v, sq, o = {}) {
-  const s = BOARD[sq];
-  const tr = s.kind === 'transport';
-  const color = tr ? (document.body.classList.contains('dark') ? '#5b6b8c' : '#3b465c') : GROUPS[s.group].color;
-  const ps = v.props[sq];
-  const cls = ['deed', tr ? 'tr' : '', !tr && isLight(color) ? 'lt' : '', o.mini ? 'mini' : '', o.sel ? 'sel' : '', o.off ? 'off' : '', o.cls || ''].join(' ');
-  const style = `--dc:${color}${o.w ? `;--dw:${o.w}px` : ''}`;
-  let body;
-  if (o.mini) body = html`<span class="dname">${s.name}</span><span class="dprice">${M(E.price(v, sq))}</span>`;
-  else {
-    let rows;
-    if (tr) {
-      const n = ps.owner !== null ? E.transportCount(v, ps.owner, s.mode) : 0;
-      rows = E.TRANSPORT_RENT[s.mode].slice(1).map((x, l) => html`<div class="lrow ${n === l + 1 && o.level !== undefined ? 'cur' : ''}"><span>${l + 1} ${E.TRANSPORT_LABEL[s.mode].toLowerCase()}</span><b>${M(E.money(v, x))}</b></div>`);
-    } else {
-      const lv = o.level;
-      rows = [
-        html`<div class="lrow ${lv === 0 ? 'cur' : ''}"><span>Arsa</span><b>${M(scaled(v, sq, s.rents[0]))}</b></div>`,
-        html`<div class="lrow ${lv === 0.5 ? 'cur' : ''}"><span>${I('star')} Set</span><b>${M(scaled(v, sq, s.rents[0] * 2))}</b></div>`,
-        ...[1, 2, 3, 4].map((n) => html`<div class="lrow ${lv === n ? 'cur' : ''}"><span>${I('house')} ${n} kat</span><b>${M(scaled(v, sq, s.rents[n]))}</b></div>`),
-      ];
-    }
-    const compact = tr
-      ? html`<span class="dcompact"><span>Kira <b>${M(E.money(v, E.TRANSPORT_RENT[s.mode][1]))}</b></span><span>${s.mode === 'air' ? 'her biri 2 katı' : 'gar başına artar'}</span></span>`
-      : html`<span class="dcompact"><span>Kira <b>${M(scaled(v, sq, s.rents[0]))}</b></span><span>${I('star')} <b>${M(scaled(v, sq, s.rents[0] * 2))}</b></span></span>`;
-    const foot = tr ? '' : html`<div class="dfoot">${I('house')} Kat <b>${M(E.katCost(v, sq))}</b><span class="grow"></span>${I('kacak')} Kaçak <b>${M(E.kacakCost(v, sq))}</b></div>`;
-    body = html`<span class="dname">${s.name}</span><span class="dprice">${M(E.price(v, sq))}</span>${o.ladder ? html`<div class="ladder">${rows}${foot}</div>` : compact}`;
-  }
-  const attrs = o.attrs ? raw(o.attrs) : '';
-  return html`<div class="${cls}" style="${style}" ${attrs}><div class="band">${tr ? I(s.mode) : ''}<span>${cityOf(sq)}</span>${o.sel ? html`<span class="grow"></span>${I('check')}` : ''}</div><div class="dbody">${body}</div>${ps && ps.ipotek && !o.mini ? html`<div class="dmort">${I('ipotek')}<span>İpotekli</span></div>` : ''}</div>`;
+  // Kısa pencerede (Kestirme) çubuk saniyelik adımlarla değil, akarak boşalır.
+  const left = Math.max(0, d.at - hostNow());
+  const run = d.span <= 5000 ? raw(`style="width:${Math.min(100, (left / d.span) * 100)}%;animation:timerRun ${left}ms linear forwards"`) : '';
+  return html`<div class="timer" data-deadline="${d.at}" data-span="${d.span}" ${raw(mine)} aria-label="Kalan süre"><i ${run}></i></div><div class="countdown" data-countdown="${d.at}"></div>`;
 }
 
 // Mülkün şu anki seviyesi tapu cetvelinde hangi satır: arsa 0, tam set 0.5, katlar 1-4.
@@ -350,16 +339,16 @@ function promptHTML(v) {
   }
   const pl = P(v, me);
   if (t.step === 'preroll') {
-    return html`<div class="stagebox"><div class="who">${PW(pl, 30)}${t.doubles ? 'Çift attın, bir daha!' : 'Sıra sende'}</div>${t.backward ? html`<span class="hint">${I('arrowL')}Geri vitestesin: bu tur geri gideceksin</span>` : ''}
+    return html`<div class="stagebox"><div class="who">${t.doubles ? 'Çift attın, bir daha!' : 'Sıra sende'}</div>${t.backward ? html`<span class="hint">${I('arrowL')}Geri vitestesin: bu tur geri gideceksin</span>` : ''}
       <button class="btn L pri" style="min-width:240px" data-act="roll" data-primary>${I('dice')}Zar At</button><div style="width:260px">${timerHTML(v, [me])}</div></div>`;
   }
   if (t.step === 'choose') {
-    const [a, b] = t.dice;
+    // Kısa, tıklamasız pencere (ev sahibi bekler, sonra toplam kadar yürütür). Kartı olmayan yalnız zarı görür;
+    // kartı olanın Toplam düğmesi de yok: kimse erken geçemez, kimde Kestirme olduğu sızmaz.
     const kes = !t.hamle && pl.hand.find((u) => cardId(u) === 'kestirme');
+    if (!kes) return '';
     const go = (n) => BOARD[destOf(v, n, t.backward)].name;
-    const sum = html`<button class="btn L pri full" data-act="moveSum" data-primary>Toplam ${a + b} kare ${I('arrow')}${go(a + b)}</button>`;
-    if (!kes) return html`<div class="stagebox"><span class="h22">Nereye gidiyorsun?</span>${sum}<div style="width:300px">${timerHTML(v, [me])}</div></div>`;
-    return html`<div class="card-prompt">${cardFace('kestirme', 'big glow')}<div class="opt-col"><span class="h22">Nereye gidiyorsun?</span>${sum}<span class="kicker">Kestirme ile</span>
+    return html`<div class="card-prompt">${cardFace('kestirme', 'big glow')}<div class="opt-col"><span class="h22">Kestirme</span><span class="muted">Oynamazsan toplam ${t.dice[0] + t.dice[1]} kare gidersin</span>
       <div class="row">${[0, 1].map((d) => html`<button class="btn L sec flex" data-act="kestirme" data-die="${d}" data-uid="${kes}">${t.dice[d]}${I('arrow')}${go(t.dice[d])}</button>`)}</div>${timerHTML(v, [me])}</div></div>`;
   }
   // serbest evre
@@ -367,8 +356,60 @@ function promptHTML(v) {
   const hints = [];
   if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push(html`<span class="hint">${I('bolt')}Kart oynayabilirsin</span>`);
   if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false))) hints.push(html`<span class="hint">${I('home')}Kat dikebilirsin</span>`);
-  return html`<div class="stagebox"><div class="who">${PW(pl, 30)}${BOARD[pl.pos].name}</div>${hints.length ? html`<div class="row">${hints}</div>` : ''}
-    ${t.again ? html`<button class="btn L pri" style="min-width:240px" data-act="endTurn" data-primary>${I('dice')}Çift attın: bir daha at</button>` : html`<button class="btn L pri" style="min-width:240px" data-act="endTurn" data-primary>Turu bitir ${I('arrow')}</button>`}<div style="width:260px">${timerHTML(v, [me])}</div></div>`;
+  return html`<div class="stagebox"><div class="who">${BOARD[pl.pos].name}</div>${hints.length ? html`<div class="row">${hints}</div>` : ''}
+    ${endButton(v)}<div style="width:260px">${timerHTML(v, [me])}</div></div>`;
+}
+
+// Turu bitir düğmesi. Yapacak bir şey kalmadıysa 3 sn geri sayar (düğmenin altında boşalan çubuk ve saniye),
+// süre dolunca tur kendiliğinden biter; ele gelmek, pencere açmak ya da tahtaya tıklamak bu tur için durdurur.
+function endButton(v) {
+  const t = v.turn;
+  const label = t.again ? html`${I('dice')}Çift attın: bir daha at` : html`Turu bitir ${I('arrow')}`;
+  const a = autoEnd.at && autoEnd.key === turnKey(v) ? autoEnd.at : 0;
+  const left = a ? Math.max(0, a - Date.now()) : 0;
+  const run = a ? html` <span class="autoend" data-autoend="${a}">${Math.ceil(left / 1000)}</span>` : '';
+  const bar = a ? raw(`style="min-width:240px;--auto:${AUTO_END_MS}ms;--auto-at:-${AUTO_END_MS - left}ms"`) : raw('style="min-width:240px"');
+  return html`<button class="btn L pri ${a ? 'autorun' : ''}" ${bar} data-act="endTurn" data-primary>${label}${run}</button>`;
+}
+
+// Kendiliğinden tur bitirme (yalnız istemci; ev sahibine normal endTurn gider).
+const autoEnd = { key: '', at: 0, off: false, timer: 0, tick: 0 };
+const turnKey = (v) => (v.turn ? `${v.round}:${v.turn.p}:${v.turn.doubles || 0}` : '');
+
+function stopAutoEnd(off) {
+  clearTimeout(autoEnd.timer);
+  clearInterval(autoEnd.tick);
+  autoEnd.at = 0;
+  if (off) autoEnd.off = true;
+}
+
+function planAutoEnd(v) {
+  const key = turnKey(v);
+  if (autoEnd.key !== key) {
+    stopAutoEnd(false);
+    Object.assign(autoEnd, { key, off: false });
+  }
+  const busy = !!app.ui.dialog || !!app.ui.pick || (app.ui.popSq !== null && app.ui.popSq !== undefined) || !!app.ui.resultsOpen;
+  if (busy && autoEnd.at) return stopAutoEnd(true); // pencere açıldı: bu tur kendiliğinden bitmez
+  if (autoEnd.off || busy || animating || !idleTurn(v)) return stopAutoEnd(false);
+  if (autoEnd.at) return;
+  autoEnd.at = Date.now() + AUTO_END_MS;
+  autoEnd.tick = setInterval(paintAutoEnd, 200);
+  autoEnd.timer = setTimeout(() => {
+    const cur = app.view;
+    stopAutoEnd(true); // bir turda bir kez
+    if (els && cur && turnKey(cur) === key && idleTurn(cur)) act({ type: 'endTurn' });
+  }, AUTO_END_MS);
+}
+
+function paintAutoEnd() {
+  for (const el of document.querySelectorAll('[data-autoend]')) el.textContent = Math.max(1, Math.ceil((Number(el.dataset.autoend) - Date.now()) / 1000));
+}
+
+export function cancelAutoEnd() {
+  if (!autoEnd.at) return;
+  stopAutoEnd(true);
+  if (els && app.view) updateGame();
 }
 
 // Borç: satılabilecekler sırasıyla, otomatik kapat ya da kendin seç (İnşaat/İpotek).
@@ -529,7 +570,7 @@ function playersHTML(v) {
       const label = `${pl.name}${i === v.you ? ' (sen)' : ''}, ${pl.out ? 'iflas etti' : `${fmt(pl.cash)}`}`;
       return html`<button class="prow ${turn ? 'turn' : ''} ${pl.out ? 'out' : ''}" style="--pc:${pl.color}" data-act="player" data-p="${i}" aria-label="${label}">
         <span class="disc">${PW(pl, 30)}</span><span class="pname">${pl.name}</span><span class="ptag">${tags}</span>${wait}<span class="grow"></span>
-        <span class="pcash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${pl.out ? 'elendi' : fmt(pl.cash).replace(' ₺', '')}</span></button>`;
+        <span class="pcash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${pl.out ? 'elendi' : cashText(shownCash(i, pl.cash))}</span></button>`;
     })
     .join('');
 }
@@ -559,6 +600,37 @@ function toolsHTML(v) {
   const d = app.ui.dialog?.type;
   const t = (k, icon, label, tip) => html`<button class="btn ${d === k ? 'on' : ''}" data-act="tool" data-k="${k}" data-tip="${tip}">${I(icon)}${label}</button>`;
   return html`${t('trade', 'deal', 'Pazarlık', 'Bir rakibe mülk ve para teklif et (sıran değilken turda bir kez)')}${t('mortgage', 'ipotek', 'İpotek', 'Mülklerini ipotek et ya da ipoteği kaldır')}${t('build', 'build', 'İnşaat', 'Bütün setlerinde kat dik ya da sat')}`;
+}
+
+// Tepki çıkartması: elin başlığında küçük düğme, açılınca 6 hazır çıkartma (serbest yazı yok).
+function stickerHTML(v) {
+  if (v.you < 0) return '';
+  const open = app.ui.stickerOpen;
+  const wait = Date.now() < (app.ui.stickerAt || 0) + STICKER_GAP;
+  const menu = open ? html`<div class="sticker-pick" role="menu" aria-label="Tepki">${STICKERS.map((s, i) => html`<button class="btn S sec" role="menuitem" data-act="sticker" data-id="${i}" ${wait ? 'disabled' : ''}>${s}</button>`)}</div>` : '';
+  return html`<span class="sticker-wrap"><button class="btn S sq ton ${open ? 'on' : ''}" data-act="stickers" aria-expanded="${open ? 'true' : 'false'}" aria-label="Tepki gönder" data-tip="Tepki gönder">${I('smile')}</button>${menu}</span>`;
+}
+
+// Çıkartma o oyuncunun piyonundan yükselir: tahtanın üst yarısında aşağı, alt yarısında yukarı.
+export function showSticker(p, id) {
+  const v = app.view;
+  const pl = v && v.players[p];
+  const tok = pl && tokens && tokens.els.get(pl.id);
+  if (!els || !tok || !STICKERS[id]) return;
+  const b = els.board.getBoundingClientRect();
+  const r = tok.getBoundingClientRect();
+  const x = r.left + r.width / 2 - b.left;
+  const y = r.top + r.height / 2 - b.top;
+  const down = y < b.height / 2;
+  const el = document.createElement('span');
+  el.className = `sticker ${down ? 'down' : ''}`;
+  el.style.setProperty('--pc', pl.color);
+  el.style.left = `${Math.max(60, Math.min(b.width - 60, x))}px`;
+  el.style.top = `${down ? y + r.height * 0.4 : y - r.height * 0.6}px`;
+  el.textContent = STICKERS[id];
+  els.board.appendChild(el);
+  play('tap');
+  setTimeout(() => el.remove(), 2000);
 }
 
 function renderAudioPop() {
@@ -902,16 +974,21 @@ export function updateGame() {
     turn: turnPl && !turnPl.out ? { sq: turnPl.pos, color: turnPl.color } : null,
     steps: stepBadges(v),
   });
+  paintFocus();
+  cityMap.update(v);
   tokens.sync(v.players);
+  tokens.setActive(turnPl && !turnPl.out ? turnPl.id : null);
   if (!animating) tokens.settle(v.players);
   setHTML(els.gundem, gundemHTML(v));
   setHTML(els.banner, bannerHTML());
+  planAutoEnd(v);
   renderKeep(els.prompt, promptHTML(v));
   if (!animating) dice.show(showDice(v) ? v.turn.dice : null);
   renderPop(v);
   setHTML(els.players, playersHTML(v));
   renderHand(v);
   setHTML(els.tools, toolsHTML(v));
+  setHTML(els.stick, stickerHTML(v));
   renderAudioPop();
   renderFeed();
   renderModal();
@@ -937,7 +1014,7 @@ export function tickTimers() {
     el.classList.toggle('late', left <= 10000);
     // Kendi süremin son 5 saniyesinde saat tıklar.
     const sec = Math.ceil(left / 1000);
-    if (el.hasAttribute('data-mine') && sec > 0 && sec <= 5 && tickTimers.last !== `${at}:${sec}`) {
+    if (el.hasAttribute('data-mine') && span > 5000 && sec > 0 && sec <= 5 && tickTimers.last !== `${at}:${sec}`) {
       tickTimers.last = `${at}:${sec}`;
       play('tick');
     }
@@ -1042,6 +1119,40 @@ function floatMoney(p, delta) {
 
 const FLIGHT_MS = PACE.flight;
 
+// Bakiye sayacı: para el değiştirince oyuncu listesindeki bakiye jetonlar uçarken sayarak değişir, birden atlamaz.
+const counts = new Map(); // oyuncu -> { from, to, t0, ms }
+const cashText = (n) => fmt(n).replace(' ₺', '');
+const easeIO = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+
+function shownCash(p, cash) {
+  const c = counts.get(p);
+  if (!c || c.to !== cash) return cash;
+  const t = Math.min(1, (performance.now() - c.t0) / c.ms);
+  return Math.round(c.from + (c.to - c.from) * easeIO(t));
+}
+
+export function countCash(prev, v, ms) {
+  if (calm() || !prev) return;
+  v.players.forEach((pl, i) => {
+    const before = prev.players[i]?.cash;
+    if (before === undefined || before === pl.cash || pl.out) return;
+    counts.set(i, { from: shownCash(i, before), to: pl.cash, t0: performance.now(), ms: Math.max(1, ms) });
+  });
+  if (counts.size && !countCash.raf) countCash.raf = requestAnimationFrame(countTick);
+}
+
+function countTick() {
+  countCash.raf = 0;
+  const now = performance.now();
+  for (const [p, c] of counts) {
+    const el = els && document.querySelector(`[data-cash="${p}"]`);
+    const done = now - c.t0 >= c.ms;
+    if (el && !app.view?.players[p]?.out) el.textContent = cashText(done ? c.to : shownCash(p, c.to));
+    if (done) counts.delete(p);
+  }
+  if (counts.size) countCash.raf = requestAnimationFrame(countTick);
+}
+
 // Tutar, tahtadaki bir noktanın yanında: üst yarıda aşağı, alt yarıda yukarı kayıp söner.
 function floatAt(pt, delta) {
   const down = pt.y < els.board.getBoundingClientRect().top + els.board.clientHeight / 2;
@@ -1125,6 +1236,11 @@ function stageShow(content, ms, click = true) {
     stageShow.t = setTimeout(stageClose, ms);
   });
 }
+// Ortadaki sahne (haber, kart) kapanınca çözülür; en fazla 9 sn bekler.
+async function afterStage() {
+  for (let i = 0; i < 45 && els && els.stage.firstChild; i++) await sleep(200);
+}
+
 export function stageClose() {
   if (!els) return;
   clearTimeout(stageShow.t);
@@ -1153,18 +1269,13 @@ function summaryHTML(v, sm) {
   return rows.length ? html`<div class="recap"><span class="kicker">${sm.round}. turun özeti</span>${rows}</div>` : '';
 }
 
-function boardCenter() {
-  const r = els.center.getBoundingClientRect();
-  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-}
-
-// Oynadığım kart elden tahtanın ortasına uçar.
+// Oynadığım kart elden tahtanın ortasına uçar, döner ve masaya iner (playFx).
 function flyMine(prev, v, id) {
   const me = v.you;
   const before = prev && prev.players[me] ? prev.players[me].hand : [];
   const uid = before.find((u) => cardId(u) === id && !v.players[me].hand.includes(u));
-  const from = uid && hand.rectOf(uid);
-  if (from) flyToCenter(cardFace(id), from, boardCenter());
+  const el = uid && hand.cardEl(uid);
+  if (el) playFx(el, els.center.getBoundingClientRect());
 }
 
 // SÜRPRİZ: kartın arka yüzü ve etkisi tahtanın ortasında.
@@ -1275,7 +1386,7 @@ async function revealCard(pv, v, ev) {
 }
 
 export function confetti() {
-  const colors = ['#d1342f', '#c8912f', '#0e9f80', '#2475e8', '#5a2d9c', '#f4b400', '#fff'];
+  const colors = [...E.PLAYER_COLORS, '#c8912f', '#f5c542'];
   for (let i = 0; i < 90; i++) {
     const el = document.createElement('div');
     el.className = 'confetti';
@@ -1317,7 +1428,7 @@ export async function present(prev, v, events, fast) {
         else if (ev.from === me) sfx('pay', flight);
         break;
       case 'build':
-        if (live) post.push(() => buildFx(els.board, cells[ev.sq], !!ev.kacak));
+        if (live) post.push(() => buildFx(els.board, cells[ev.sq]));
         else sfx('build');
         break;
       case 'demolish': {
@@ -1418,9 +1529,17 @@ export async function present(prev, v, events, fast) {
     }
   }
   for (const f of later) f();
+  // Büyük anda dayı köşeden bir laf eder (hızlı oyunda ve yetişmeye çalışırken susar); ortadaki sahne kapanınca.
+  const moment = live && spd() >= 1 ? dayiMoment(events) : null;
+  if (moment) afterStage().then(() => els && dayiSay(els.board, moment));
   pawnFlights.forEach((e, i) => pawnFlight(v, e, i * FLIGHT_GAP));
   if (flights.length && els) {
     for (const f of flights) flyCoins(f);
+  }
+  if ((flights.length || pawnFlights.length) && els) {
+    // Bakiyeler ilk jeton kalkınca saymaya başlar, son jeton konunca biter.
+    const lastDelay = Math.max(0, ...flights.map((f) => f.delay + (f.n - 1) * COIN_GAP), (pawnFlights.length - 1) * FLIGHT_GAP);
+    countCash(prev, v, FLIGHT_MS * spd() + lastDelay);
   }
   if ((flights.length || pawnFlights.length) && els) await sleep(FLIGHT_MS * spd() * 0.6); // jetonlar yola çıksın, sayılar sonra değişsin
   if (v.phase === 'over' && !app.ui.seenOver) {

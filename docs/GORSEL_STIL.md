@@ -4,16 +4,29 @@ Yeni bir kart eklenirse görseli aynı tarzda üretilir; tutarlılık oyunun kal
 
 ## Kart görseli
 
-- Stil (v0.16.1, kullanıcı seçti): kalın lacivert dış çizgili düz çizgi film; yalnız domates kırmızısı, turkuaz, hardal ve krem zemin; gradyan ve doku yok. Eski Hearthstone tarzı boyalı görseller "kalabalık, yapay zeka işi" bulundu.
-- Araç: Higgsfield, `gpt_image_2_5`, `quality: medium`, 1:1 (görsel başına 0,5 kredi). Stil referansı olarak `assets/kart/itiraz.jpg` yüklenir (`image_references`); tutarlılığı bu sağlar.
-- Ham dosyalar `tasks/gorsel-ham/<kartId>.jpg` olarak kaydedilir (repoya girmez), sonra `python tools/kart_gorsel_hazirla.py` ile `assets/kart/<kartId>.jpg` (360x360, yaklaşık 27 KB) üretilir. Kart arkası `arka.jpg` 3:4 üretilir, araç onu 5:7 kırpar.
-- Komut kalıbı (değiştirmeden kullan, yalnız "Subject" kısmını yaz):
+- Stil (v0.30, kullanıcı seçti, `tasks/yenilikler-plani.md` madde 11): tek büyük, simge gibi okunan nesne; zemin kartın türünün
+  renginde düz tek renk; insan, yüz, sahne yok. Kalın lacivert dış çizgili düz çizgi film; gradyan ve doku yok.
+  Eski sahneli resimler (insanlı, krem zeminli) küçük boyda okunmuyordu.
+- Tür renkleri (kartın çerçevesi de bu renk, `src/ui/hand.js` `CARD_GROUPS`): Saldırı kırmızı `#d8283c` (Kamulaştırma, Zorla
+  Takas, İhtiyati Tedbir, İhbar, Dava Aç) · Kazanç hardal `#e9b10c` (Kira Zammı, Müteahhit Dostu, Piyango, Aidat Günü, Pazarlık
+  Ustası) · Savunma turkuaz `#14918a` (İtiraz, Dayın Çıktı) · Hareket mor `#6a3fb0` (Taksi, Kestirme, Geri Vites). Yeni kart
+  önce bu dört türden birine yazılır (`CARD_GROUP`).
+- Nesneler: İtiraz kalkmış el, Dayın Çıktı güneş gözlüğü + bıyık + altın zincir, Taksi taksi, Kestirme motosiklet, Geri Vites
+  geri ok ve araba, Kamulaştırma tokmak ve ev, Zorla Takas iki anahtar, İhtiyati Tedbir zincirli kilitli ev, İhbar düdük,
+  Kira Zammı para destesi ve yukarı ok, Müteahhit Dostu baret ve tuğla, Piyango yıldızlı bilet ve konfeti, Aidat Günü
+  bozuk para dolu üç posta kutusu, Pazarlık Ustası etiket ve makas,
+  Dava Aç tokmak.
+- Araç: Higgsfield, `gpt_image_2_5`, `quality: medium`, 1:1. Stil referansı (`image_references`) olarak daha önce aynı
+  tarzda üretilmiş 2x2 dört kartlık bir deneme sayfası yüklenir.
+- Ham dosyalar `tasks/gorsel-ham/kart2/<kartId>.png` (repoya girmez), sonra `python tools/kart_gorsel_hazirla.py` ile
+  `assets/kart/<kartId>.jpg` (360x360). Kart arkası `arka.jpg` değişmedi (çekilen ve oynanan kart dönerken görünür).
+- Komut kalıbı (yalnız "Background" ve "Subject" değişir):
 
 ```
-Square 1:1 card illustration, artwork only: no frame, no border, no text, no letters, no numbers. Match the art style of the reference image exactly (style only, not its characters or scene): bold flat vector cartoon, thick dark navy outlines, flat fills only in tomato red, teal and mustard plus a plain cream background, no gradients, no texture, big expressive caricature faces, modern indie board game look, lots of empty cream space, readable at small size. Setting: present-day Turkey, all clothing contemporary 2020s, no fez, no traditional costume. Subject: <sahne>
+Square board game card illustration, artwork only: no frame, no border, no text, no letters, no numbers. Match the style of the reference image exactly: bold flat vector cartoon, thick dark navy outlines, flat fills, no gradients, no texture, one solid saturated background color filling the whole square, ONE single big iconic object centered filling about 70% of the square, readable at 60 px, no people, no scenery. Background: <tür rengi adı ve kodu, ör. red #d8283c>. Subject: <nesne>.
 ```
 
-- Sahne, kartın esprisini tek bakışta anlatmalı (ör. Dayın Çıktı: deri ceketli, desenli gömlekli, altın zincirli, tespihli kıro bir dayının ev sahibini elini kaldırıp durdurması). Kıyafetler bugünün Türkiye'si: fes, şalvar, kuşak yok. Elde tutulan nesneler tek ve doğal olsun (tek sayfa fatura, bir anahtar); anlamı belli olmayan nesne (yerde zar gibi) çizilmez.
+- Kartta resmin altında krem yazı alanı var (ad ve kısa kural); resim yazı taşımaz.
 
 ## Gündem kartları
 
@@ -50,7 +63,18 @@ Flat 2D cartoon animation in the exact same style, static camera. He keeps holdi
 
 - Özel kareler (Başlangıç Noktası, Fırsat, SÜRPRİZ, Tapu, Çay Ocağı, Zabıta) ve ulaşım (gar, havalimanı) resim değil, `src/ui/icons.js` içindeki elle çizilmiş SVG ikonlardır (64x64). Kullanıcı yapay zeka resimlerini kalabalık buldu (v0.6); istenen, orijinal Monopoly gibi tek bakışta okunan, kalın hatlı sade ikon.
 - Yeni ikon: tek nesne, 2-3 ana renk, koyu dış çizgi (1.6-2.4), hafif gradyan; açık ve koyu zeminde okunmalı.
-- Mülk kareleri: şehrin `color` ve `tint` renkleri buzlu camın arkasında bulanık görünür ve karenin çerçevesi bu iki renkten oluşur; sahiplik yalnız iç kenardaki şeritte. Kare zemini sahibin rengine boyanmaz.
+- Mülk kareleri simgesiz: üstte setin tam doygun renginde bant, altta il adı, arada bina resmi (aşağıda); sahiplik yalnız iç kenardaki şeritte. Kare zemini sahibin rengine boyanmaz.
+
+## Bina görselleri
+
+- `assets/bina/<grup>/{0..4,k0..k3,yikik}.png`: `0` boş arsa (yalnız tapu cetvelinde), `1`-`4` kat sayısı, `k0`-`k3` üst katı kaçak (ya da affedilmiş) bina, `yikik` yıkıntı (yıkım canlandırmasında).
+- Her set için tek bir 2x5 sprite sayfası: aynı model (`gpt_image_2_5`), stil referansı `assets/kart/itiraz.jpg`. Üst sıra boş arsa ve 1-4 katlı bina; alt sıra aynı binanın üstüne eklenmiş çirkin kaçak kat, en sonda yıkıntı. Setin mimarisi şehre göre seçilir.
+- Bir setin bütün kareleri aynı ortak kutuyla kırpılır: kat çıktıkça bina resimde de gerçekten yükselir. Tek katlı gecekondu `k0` ayrı bir 4x2 sayfadan alınır ve 1 katlı binanın yüksekliğine ölçeklenir.
+- 96 renge indirilir (her biri yaklaşık 12 KB). Ham sayfalar `tasks/gorsel-ham/bina/` (repoya girmez).
+
+## Harita
+
+- `assets/harita/turkiye.svg` üretilmedi: Natural Earth 1:50m ülke sınırından (kamu malı) çizildi. İllerin yerleri `tasks/yenilikler-plani.md` madde 8.
 
 ## Ses
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Host, idFromToken, paceOf, PACE } from '../src/net/host.js';
+import { Host, idFromToken, paceOf, PACE, STICKERS, STICKER_GAP } from '../src/net/host.js';
 import { PROTOCOL } from '../src/version.js';
 
 // Ağsız sahte bağlantı: gönderilen mesajları biriktirir.
@@ -220,4 +220,82 @@ test('aynı piyon iki koltukta olmaz', () => {
   host.addBot();
   host.addBot();
   assert.equal(new Set(host.seats.map((s) => s.avatar)).size, host.seats.length);
+});
+
+// İki insanlı (ev sahibi + Ali) başlamış masa.
+function twoHumans() {
+  const { host, me } = room();
+  const ali = fakeConn();
+  host.attach(ali);
+  ali.say(hello('a'.repeat(32), 'Ali'));
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  const conn = (id) => (id === host.hostId ? me : ali);
+  return { host, me, ali, conn };
+}
+
+test('çıkartma: herkese yayılır, 2 sn sınırı var, listede olmayan reddedilir', () => {
+  const { host, me, ali } = twoHumans();
+  const got = (c) => c.out.filter((m) => m.t === 'sticker');
+  ali.say({ t: 'sticker', id: 1 });
+  const aliSeat = host.seatIndex(idFromToken('a'.repeat(32)));
+  assert.deepEqual(got(me).at(-1), { t: 'sticker', p: aliSeat, id: 1 }, 'ev sahibine gider');
+  assert.equal(got(ali).length, 1, 'gönderen de görür');
+  ali.say({ t: 'sticker', id: 2 });
+  assert.equal(got(me).length, 1, '2 saniye dolmadan ikincisi gitmez');
+  me.say({ t: 'sticker', id: 0 });
+  assert.equal(got(ali).length, 2, 'sınır oyuncu başına');
+  host.stickerAt[idFromToken('a'.repeat(32))] -= STICKER_GAP;
+  for (const bad of [-1, STICKERS.length, 1.5, '1', null, 'Selam millet']) ali.say({ t: 'sticker', id: bad });
+  assert.equal(got(me).length, 2, 'geçersiz çıkartma ve serbest yazı yayılmaz');
+  ali.say({ t: 'sticker', id: 5 });
+  assert.equal(got(me).at(-1).id, 5, 'süre dolunca yeniden gönderilir');
+  const spy = fakeConn();
+  host.attach(spy);
+  spy.say(hello('z'.repeat(32), 'İzleyici'));
+  spy.say({ t: 'sticker', id: 0 });
+  assert.equal(got(me).length, 3, 'izleyici çıkartma gönderemez');
+  assert.ok(!JSON.stringify(host.game).includes('sticker'), 'oyun durumuna girmez');
+  clearTimeout(host.timer);
+});
+
+test('Nereye gidiyorsun: Kestirme penceresi kartı olana da olmayana da aynı kısa süre, sonra piyon kendiliğinden yürür', () => {
+  for (const holder of [true, false]) {
+    const { host, conn } = twoHumans();
+    const g = host.game;
+    const p = g.turn.p;
+    const other = 1 - p;
+    for (const pl of g.players) for (let i = pl.hand.length - 1; i >= 0; i--) if (pl.hand[i].startsWith('kestirme:')) g.deck.push(...pl.hand.splice(i, 1));
+    const k = g.deck.findIndex((u) => u.startsWith('kestirme:'));
+    g.players[holder ? p : other].hand.push(...g.deck.splice(k, 1));
+    g.turn.step = 'preroll';
+    g.pending = null;
+    conn(g.players[p].id).say({ t: 'act', action: { type: 'roll' } });
+    clearTimeout(host.timer);
+    assert.equal(host.game.turn.step, 'choose');
+    const d = host.deadlines[g.players[p].id];
+    assert.equal(d.span, 1500, `normal hızda 1,5 sn (kart ${holder ? 'zar atanda' : 'başkasında'})`);
+    assert.equal(d.mode, 'default');
+    const pos = host.game.players[p].pos;
+    host.runDeadline(d);
+    clearTimeout(host.timer);
+    assert.notEqual(host.game.turn.step, 'choose', 'süre dolunca toplam kadar yürür');
+    assert.ok(host.game.players[p].pos !== pos || host.game.players[p].jail, 'piyon yürüdü');
+  }
+});
+
+test('Kestirme penceresi oyun hızıyla ölçeklenir', () => {
+  const { host, me } = room();
+  me.say({ t: 'lobby', cmd: 'config', speed: 'fast' });
+  const ali = fakeConn();
+  host.attach(ali);
+  ali.say(hello('a'.repeat(32), 'Ali'));
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  host.game.turn.step = 'choose';
+  host.game.turn.dice = [1, 2];
+  host.game.pending = null;
+  host.schedule();
+  clearTimeout(host.timer);
+  assert.equal(host.deadlines[host.game.players[host.game.turn.p].id].span, 750);
 });

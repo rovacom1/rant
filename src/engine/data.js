@@ -34,21 +34,18 @@ export const TARGET_ROUND_CAP = 30;
 // İflas modunda tek oyuncu kalmazsa oyun en geç bu turda biter.
 export const IFLAS_ROUND_CAP = 40;
 
-// gen: şehrin ilgi hali ("Konya'nın"), metinlerde kullanılır. color: şehrin tek rengi (buzlu cam ve set çerçevesi).
-// Renkler renk körlüğüne göre seçildi: tahtada komşu şehirler koyu/açık sırayla, hiçbiri oyuncu rengine benzemez.
+// Set (şehir grubu); kareler il adını taşır. gen: setin ilgi hali ("Konya'nın"), metinlerde kullanılır.
+// color: setin tam doygun rengi (karenin bandı, haritadaki halka). Oyuncu renklerinden uzak (docs/TASARIM.md §3).
 export const GROUPS = {
-  corum: { name: 'Çorum', gen: "Çorum'un", color: '#552b47', kat: 50 },
-  trabzon: { name: 'Trabzon', gen: "Trabzon'un", color: '#89bea4', kat: 50 },
-  bursa: { name: 'Bursa', gen: "Bursa'nın", color: '#364c33', kat: 100 },
-  konya: { name: 'Konya', gen: "Konya'nın", color: '#ab8f5f', kat: 100 },
-  antalya: { name: 'Antalya', gen: "Antalya'nın", color: '#a1354d', kat: 150, sahil: true },
-  ankara: { name: 'Ankara', gen: "Ankara'nın", color: '#a0a8df', kat: 150 },
-  izmir: { name: 'İzmir', gen: "İzmir'in", color: '#467062', kat: 200, sahil: true },
-  istanbul: { name: 'İstanbul', gen: "İstanbul'un", color: '#b6b681', kat: 200 },
+  corum: { name: 'Çorum', gen: "Çorum'un", color: '#5e3a1e', kat: 50 },
+  trabzon: { name: 'Trabzon', gen: "Trabzon'un", color: '#6cc4ee', kat: 50 },
+  bursa: { name: 'Bursa', gen: "Bursa'nın", color: '#22a35a', kat: 100 },
+  konya: { name: 'Konya', gen: "Konya'nın", color: '#f5c518', kat: 100 },
+  antalya: { name: 'Antalya', gen: "Antalya'nın", color: '#f0761a', kat: 150, sahil: true },
+  ankara: { name: 'Ankara', gen: "Ankara'nın", color: '#c47ad8', kat: 150 },
+  izmir: { name: 'İzmir', gen: "İzmir'in", color: '#d8283c', kat: 200, sahil: true },
+  istanbul: { name: 'İstanbul', gen: "İstanbul'un", color: '#1b2f7a', kat: 200 },
 };
-
-
-
 
 // Kiralar Monopoly cetvelinden: aynı fiyattaki arsanın arsa kirası ve 1-4 ev kirası (otel yok, en fazla 4 kat).
 const prop = (name, group, price, rents) => ({ kind: 'prop', name, group, price, rents });
@@ -61,41 +58,41 @@ const FIRSAT_SQ = { kind: 'chance', name: 'FIRSAT' };
 // 10x10 tahta: köşeler 0, 9, 18, 27; her kenarda 5 mülk, 1 gar, 1 havalimanı, 1 FIRSAT/SÜRPRİZ.
 export const BOARD = [
   { kind: 'start', name: 'BAŞLANGIÇ NOKTASI' },
-  prop('İskilip', 'corum', 60, [2, 10, 30, 90, 160]),
-  prop('Osmancık', 'corum', 80, [4, 20, 60, 180, 320]),
+  prop('Amasya', 'corum', 60, [2, 10, 30, 90, 160]),
+  prop('Çorum', 'corum', 80, [4, 20, 60, 180, 320]),
   SURPRIZ_SQ,
   rail('DOĞU EKSPRESİ'),
-  prop('Ortahisar', 'trabzon', 100, [6, 30, 90, 270, 400]),
-  prop('Akçaabat', 'trabzon', 100, [6, 30, 90, 270, 400]),
+  prop('Giresun', 'trabzon', 100, [6, 30, 90, 270, 400]),
+  prop('Rize', 'trabzon', 100, [6, 30, 90, 270, 400]),
   air('KAPADOKYA'),
-  prop('Uzungöl', 'trabzon', 120, [8, 40, 100, 300, 450]),
+  prop('Trabzon', 'trabzon', 120, [8, 40, 100, 300, 450]),
   { kind: 'tapu', name: 'TAPU DAİRESİ' },
-  prop('İnegöl', 'bursa', 140, [10, 50, 150, 450, 625]),
+  prop('Balıkesir', 'bursa', 140, [10, 50, 150, 450, 625]),
   FIRSAT_SQ,
-  prop('Nilüfer', 'bursa', 160, [12, 60, 180, 500, 700]),
+  prop('Bursa', 'bursa', 160, [12, 60, 180, 500, 700]),
   rail('KONYA GARI'),
-  prop('Karatay', 'konya', 180, [14, 70, 200, 550, 750]),
-  prop('Meram', 'konya', 180, [14, 70, 200, 550, 750]),
+  prop('Aksaray', 'konya', 180, [14, 70, 200, 550, 750]),
+  prop('Nevşehir', 'konya', 180, [14, 70, 200, 550, 750]),
   air('DALAMAN'),
-  prop('Selçuklu', 'konya', 200, [16, 80, 220, 600, 800]),
+  prop('Konya', 'konya', 200, [16, 80, 220, 600, 800]),
   { kind: 'cay', name: 'ÇAY OCAĞI' },
-  prop('Kaleiçi', 'antalya', 220, [18, 90, 250, 700, 875]),
-  prop('Konyaaltı', 'antalya', 220, [18, 90, 250, 700, 875]),
+  prop('Adana', 'antalya', 220, [18, 90, 250, 700, 875]),
+  prop('Mersin', 'antalya', 220, [18, 90, 250, 700, 875]),
   SURPRIZ_SQ,
   rail('ANKARA GARI'),
-  prop('Lara', 'antalya', 240, [20, 100, 300, 750, 925]),
-  prop('Kızılay', 'ankara', 260, [22, 110, 330, 800, 975]),
+  prop('Antalya', 'antalya', 240, [20, 100, 300, 750, 925]),
+  prop('Eskişehir', 'ankara', 260, [22, 110, 330, 800, 975]),
   air('ESENBOĞA'),
-  prop('Çankaya', 'ankara', 280, [24, 120, 360, 850, 1025]),
+  prop('Ankara', 'ankara', 280, [24, 120, 360, 850, 1025]),
   { kind: 'zabita', name: 'ZABITA' },
-  prop('Karşıyaka', 'izmir', 300, [26, 130, 390, 900, 1100]),
+  prop('Aydın', 'izmir', 300, [26, 130, 390, 900, 1100]),
   FIRSAT_SQ,
-  prop('Bornova', 'izmir', 300, [26, 130, 390, 900, 1100]),
+  prop('Manisa', 'izmir', 300, [26, 130, 390, 900, 1100]),
   rail('HAYDARPAŞA'),
-  prop('Alsancak', 'izmir', 320, [28, 150, 450, 1000, 1200]),
-  prop('Kadıköy', 'istanbul', 350, [35, 175, 500, 1100, 1300]),
+  prop('İzmir', 'izmir', 320, [28, 150, 450, 1000, 1200]),
+  prop('İstanbul Anadolu', 'istanbul', 350, [35, 175, 500, 1100, 1300]),
   air('SABİHA GÖKÇEN'),
-  prop('Bebek', 'istanbul', 400, [50, 200, 600, 1400, 1700]),
+  prop('İstanbul Avrupa', 'istanbul', 400, [50, 200, 600, 1400, 1700]),
 ];
 
 // Kira, sahibinin aynı türden (ipoteksiz) kaç ulaşımı olduğuna göre: havalimanı her biri için ikiye katlanır, gar orantılı artar.
@@ -218,8 +215,8 @@ export const PAWN_NAMES = {
   leblebi: 'Çorum Leblebisi', hamsi: 'Hamsi', ekmek: 'Trabzon Ekmeği', kofte: 'İnegöl Köftesi', kestane: 'Kestane Şekeri', semazen: 'Semazen', nasreddin: 'Nasreddin Hoca',
   caretta: 'Caretta Caretta', ankaray: 'Ankaray', hitit: 'Hitit Güneşi', atakule: 'Atakule', saatkulesi: 'İzmir Saat Kulesi', boyoz: 'Boyoz', galata: 'Galata Kulesi', kizkulesi: 'Kız Kulesi',
 };
-// Renk körlüğüne dayanıklı palet (kırmızı, mavi, zümrüt, koyu mor, sarı, pembe).
-export const PLAYER_COLORS = ['#d1342f', '#2475e8', '#0e9f80', '#5a2d9c', '#f4b400', '#f472b6'];
+// İl renklerinden uzak palet (turkuaz, fuşya, fıstık, elektrik, kömür, beyaz); beyaz ve kömür ince koyu kenarla çizilir.
+export const PLAYER_COLORS = ['#009c9c', '#e81c8c', '#a6e000', '#4a3aff', '#2b2f38', '#ffffff'];
 // Oyuncu adı en fazla bu kadar karakter; arayüz (podyum, oyuncu listesi, sonuç balonu) bu uzunluğa göre denendi.
 export const NAME_MAX = 16;
 export const BOT_NAMES = ['Hacı Müteahhit', 'Emlakçı Nuri', 'Kooperatif Sevim', 'Tapucu Rıza', 'Arsa Kemal', 'Rezidans Bülent'];

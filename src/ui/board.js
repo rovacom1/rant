@@ -1,13 +1,16 @@
-// Tahta: 10x10 ızgaranın kenarındaki 36 kare (genişliği yüksekliğinden fazla), piyonlar ve 3 boyutlu zarlar.
-// Mülk: şehrin tek rengindeki buzlu cam ve aynı renkte set çerçevesi; sahibi yalnız iç kenardaki şerit gösterir
-// (sahipsizken ince ve soluk, sahipliyken kalın ve sahibinin renginde). Karede fiyat/kira yazmaz; tıklayınca açılır.
+// Tahta: 10x10 ızgaranın kenarındaki 36 kare (kenar derinliği her yanda aynı, köşeler kare; tahta.css) ve piyonlar. Zarlar dice.js.
+// Mülk karesi: üstte setin tam doygun renginde bant, altta il adı (hiçbir şey örtmez), aradaki alanda kat kat bina resmi;
+// sahibi yalnız iç kenardaki şerit gösterir (sahipsizken ince ve soluk, sahipliyken kalın ve sahibinin renginde).
+// Karede fiyat/kira yazmaz; tıklayınca açılır. Piyonlar "kaldırım" düzeninde karenin iç kenarında durur (slots.js).
+// Monopoly gibi her kenarın kareleri dıştan içe bakar: içerik (.face) alt sırada dik, sol sütunda 90, üst sırada 180,
+// sağ sütunda -90 derece döner; bant hep ortaya bakan kenarda, ad dış kenarda.
 import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
 import { html, raw, sleep } from './dom.js';
 import { play } from './sound.js';
 import { icon, ic } from './icons.js';
-import { pawn } from './pawns.js';
-import { PAWN, laneTop, pawnXs } from './slots.js';
-import { PACE } from '../net/host.js';
+import { boardPawn } from './pawns.js';
+import { PAWN, feet, stepDurations } from './slots.js';
+import { bldSrc } from './map.js';
 
 // Izgara kenarı G kare; köşeler 0, K, 2K, 3K. Kare 0 sağ altta, sıra saat yönünde.
 export const G = BOARD.length / 4 + 1;
@@ -22,31 +25,32 @@ export function cellPos(i) {
   return { row: 1 + i - 3 * K, col: G, side: 'r' };
 }
 
-const lum = (hex) => {
-  const n = parseInt(hex.slice(1), 16);
-  return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-};
-// Açık renk zeminde koyu yazı, koyu renk zeminde beyaz yazı.
-export const inkFor = (hex) => (lum(hex) > 0.62 ? '#1b2233' : '#ffffff');
-export const isLight = (hex) => lum(hex) > 0.55;
+const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const artOf = (sq) => (sq.kind === 'transport' ? sq.mode : sq.kind);
 
-function cellStatic(sq) {
-  const name = html`<span class="nm">${sq.name}</span>`;
-  if (sq.kind === 'prop') return html`<span class="strip"></span>${name}<span class="floors"></span>`;
-  const art = html`<span class="art">${raw(icon(artOf(sq)))}</span>`;
-  return sq.kind === 'transport' ? html`<span class="strip"></span>${art}${name}` : html`${art}${name}`;
+// İki kelimelik ad (İstanbul Anadolu) iki satıra yazılır; ad hiç kesilmez, sığmazsa yazısı küçülür (fitNames).
+const nameHTML = (name) => {
+  const w = name.split(' ');
+  return w.length === 2 ? html`<span class="nm two"><span>${w[0]}</span> <span>${w[1]}</span></span>` : html`<span class="nm">${name}</span>`;
+};
+
+function cellInner(sq) {
+  if (sq.kind === 'prop') return html`<span class="band"></span><span class="strip"></span><span class="bld"><img alt="" draggable="false" hidden></span>${nameHTML(sq.name)}`;
+  const art = html`<span class="art">${raw(icon(artOf(sq)))}</span><span class="nm">${sq.name}</span>`;
+  return sq.kind === 'transport' ? html`<span class="strip"></span>${art}` : art;
 }
+const cellStatic = (sq) => `<div class="face">${cellInner(sq)}</div>`;
 
 export function buildBoard(boardEl) {
+  // Set renkleri tahtada değişken olarak da durur (haritadaki halkalar için).
+  for (const [g, x] of Object.entries(GROUPS)) boardEl.style.setProperty(`--g-${g}`, x.color);
   const cells = BOARD.map((sq, i) => {
     const pos = cellPos(i);
     const kind = sq.kind === 'prop' || sq.kind === 'transport' ? `buyable k-${sq.kind}${sq.mode ? ` k-${sq.mode}` : ''}` : `special k-${sq.kind}`;
     const g = sq.kind === 'prop' ? GROUPS[sq.group] : null;
     const vars = g ? `;--gc:${g.color}` : '';
-    const dk = g && !isLight(g.color) ? ' dk' : '';
-    return `<div class="cell ${pos.side === 'c' ? 'corner side-c' : `side-${pos.side}`} ${kind}${dk}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}${vars}">${cellStatic(sq)}</div>`;
+    return `<div class="cell ${pos.side === 'c' ? 'corner side-c' : `side-${pos.side}`} ${kind}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}${vars}">${cellStatic(sq)}</div>`;
   }).join('');
   boardEl.insertAdjacentHTML('afterbegin', cells);
   const fit = () => fitNames(boardEl);
@@ -55,14 +59,14 @@ export function buildBoard(boardEl) {
   return [...boardEl.querySelectorAll('.cell')];
 }
 
-// Uzun semt adı kareye sığmazsa kelime ortasından bölünmez, yazısı küçülür.
+// Ad kareye sığmazsa kelime ortasından bölünmez, kesilmez; yazısı küçülür.
 function fitNames(boardEl) {
-  for (const n of boardEl.querySelectorAll('.cell.k-prop .nm')) {
+  for (const n of boardEl.querySelectorAll('.cell .nm')) {
     n.style.fontSize = '';
-    const c = n.parentElement;
-    const cs = getComputedStyle(c);
-    const room = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 6;
-    if (n.offsetWidth > room) n.style.fontSize = `${((parseFloat(getComputedStyle(n).fontSize) * room) / n.offsetWidth).toFixed(2)}px`;
+    for (let k = 0; k < 4 && n.scrollWidth > n.clientWidth + 0.5; k++) {
+      const f = parseFloat(getComputedStyle(n).fontSize);
+      n.style.fontSize = `${((f * n.clientWidth * 0.97) / n.scrollWidth).toFixed(2)}px`;
+    }
   }
 }
 
@@ -93,13 +97,16 @@ export function updateBoard(cells, v, o = {}) {
     const full = !!owner && inFullSet(v, i);
     el.classList.toggle('owned', !!owner);
     el.style.setProperty('--pc', owner ? owner.color : '');
-    setPart(el, 'fullstar', full && sq.kind === 'prop', () => ic('star'));
-    setPart(el, 'mort', ps.ipotek, () => ic('ipotek'));
-    setPart(el, 'ted', ps.tedbir > 0, () => ic('tedbir'));
-    const floors = el.querySelector('.floors');
-    if (floors) {
-      const f = (ps.kat ? `${ic('house')}×${ps.kat}` : '') + (ps.kacak ? ic('kacak') : '');
-      if (floors.innerHTML !== f) floors.innerHTML = f;
+    const face = el.firstElementChild;
+    setPart(face, 'fullstar', full && sq.kind === 'prop', () => ic('star'));
+    setPart(face, 'mort', ps.ipotek, () => ic('ipotek'));
+    setPart(face, 'ted', ps.tedbir > 0, () => ic('tedbir'));
+    // Bina resmi: aynı img öğesi kalır (yıkım canlandırması onu gizlerken resmi değişebilir).
+    const img = el.querySelector('.bld img');
+    if (img) {
+      const src = bldSrc(sq.group, ps);
+      if (src && img.getAttribute('src') !== src) img.setAttribute('src', src);
+      img.hidden = !src;
     }
     const tip = [sq.name, owner ? `sahibi ${owner.name}` : 'sahipsiz', full ? 'tam set' : '', ps.kat ? `${ps.kat} kat` : '', ps.kacak ? 'kaçak kat' : '', ps.ipotek ? 'ipotekli' : '', ps.tedbir > 0 ? 'ihtiyati tedbir' : ''];
     el.setAttribute('aria-label', tip.filter(Boolean).join(', '));
@@ -130,19 +137,27 @@ export class Tokens {
       let el = this.els.get(pl.id);
       if (!el) {
         el = document.createElement('div');
-        el.className = 'token';
+        el.className = 'token idle';
         this.layer.appendChild(el);
         this.els.set(pl.id, el);
       }
-      const key = `${pl.avatar}|${pl.color}|${this.size}`;
+      const size = this.size || 36;
+      const key = `${pl.avatar}|${pl.color}|${size}`;
       if (el.dataset.key !== key) {
         el.dataset.key = key;
-        el.innerHTML = pawn(pl.avatar, pl.color, this.size || 36);
+        el.innerHTML = boardPawn(pl.avatar, pl.color, size);
+        el.style.setProperty('--s', `${size}px`);
+        el.style.setProperty('--pc', pl.color);
       }
       el.classList.toggle('out', !!pl.out); // iflas eden oyuncunun piyonu tahtadan kalkar
       this.pos.set(pl.id, this.pos.get(pl.id) ?? pl.pos);
     });
     this.players = players;
+  }
+
+  // Sırası gelen oyuncunun piyonu biraz büyük durur ve hafifçe zıplar (hareket azaltmada durur).
+  setActive(id) {
+    for (const [pid, el] of this.els) el.classList.toggle('act', pid === id);
   }
 
   place(id, sq) {
@@ -152,12 +167,13 @@ export class Tokens {
 
   layoutAll() {
     if (!this.players) return;
-    const ch = this.cells[1].offsetHeight;
-    const size = Math.round(ch * PAWN);
+    const size = Math.round(this.cells[1].offsetHeight * PAWN);
     if (size !== this.size) {
       this.size = size;
       this.sync(this.players);
     }
+    const W = this.layer.clientWidth;
+    const H = this.layer.clientHeight;
     const groups = new Map();
     for (const pl of this.players) {
       if (pl.out) continue;
@@ -167,96 +183,64 @@ export class Tokens {
     }
     for (const [sq, ids] of groups) {
       const c = this.cells[sq];
-      const xs = pawnXs(ids.length, c.offsetWidth, size);
-      const top = c.offsetTop + laneTop(cellPos(sq).side, c.offsetHeight);
+      const box = { x: c.offsetLeft, y: c.offsetTop, w: c.offsetWidth, h: c.offsetHeight };
+      const fs = feet(cellPos(sq).side, box, size, ids.length, W, H);
       ids.forEach((id, k) => {
         const el = this.els.get(id);
-        el.style.left = `${c.offsetLeft + xs[k]}px`;
-        el.style.top = `${top}px`;
-        el.style.zIndex = 5 + k;
+        el.style.left = `${Math.round(fs[k].x - size / 2)}px`;
+        el.style.top = `${Math.round(fs[k].y - size)}px`;
+        el.style.zIndex = 10 + Math.round(fs[k].y);
       });
     }
   }
 
+  // Yürüyüş: kalkışta hızlanır, ortada hızlı, varışta yavaşlar (toplam stepMs x adım); her adımda yay çizer, inişte adım
+  // sesi çalar. Son inişte ezilir, altında toz halkası açılır ve kısa durur (host PACE.step bütçesinin içinde).
   async walk(id, path, fast, stepMs = 150) {
     const el = this.els.get(id);
     if (!el || fast) {
       this.place(id, path[path.length - 1]);
       return;
     }
-    for (const sq of path) {
-      this.place(id, sq);
-      el.classList.remove('hop');
-      void el.offsetWidth;
-      el.classList.add('hop');
-      play('step', stepMs / 1000);
-      await sleep(stepMs);
+    if (calm()) {
+      for (const sq of path) {
+        this.place(id, sq);
+        play('step', stepMs / 1000);
+        await sleep(stepMs);
+      }
+      return;
+    }
+    const fig = el.querySelector('.fig');
+    const ds = stepDurations(path.length, stepMs * path.length);
+    const arc = Math.round(this.size * 0.42);
+    el.classList.add('walking');
+    el.classList.remove('idle');
+    try {
+      for (let k = 0; k < path.length; k++) {
+        const d = Math.round(ds[k]);
+        const from = { left: el.style.left, top: el.style.top };
+        this.place(id, path[k]);
+        el.animate([from, { left: el.style.left, top: el.style.top }], { duration: d, easing: 'cubic-bezier(.45,0,.55,1)' });
+        fig?.animate([{ transform: 'none' }, { transform: `translateY(${-arc}px)`, offset: 0.45 }, { transform: 'none' }], { duration: d, easing: 'ease-in-out' });
+        play('step', Math.min(d, 280) / 1000, { at: d / 1000, hit: true });
+        await sleep(d);
+      }
+      fig?.animate([{ transform: 'scale(1.14, 0.82)' }, { transform: 'scale(0.96, 1.05)', offset: 0.5 }, { transform: 'none' }], { duration: 260, easing: 'ease-out' });
+      const dust = document.createElement('i');
+      dust.className = 'dust';
+      Object.assign(dust.style, { left: `${el.offsetLeft + this.size / 2}px`, top: `${el.offsetTop + this.size}px` });
+      dust.style.setProperty('--s', `${this.size}px`);
+      this.layer.appendChild(dust);
+      setTimeout(() => dust.remove(), 560);
+      await sleep(Math.round(stepMs * 0.8));
+    } finally {
+      el.classList.remove('walking');
+      el.classList.add('idle');
     }
   }
 
   settle(players) {
     for (const pl of players) this.pos.set(pl.id, pl.pos);
     this.layoutAll();
-  }
-}
-
-// ---- 3 boyutlu zar ----
-
-const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-// Küpün o yüzü öne bakması için gereken dönüş (derece): [x, y]. Sonra küp öne doğru 90 derece yatırılır: değer üst yüze gelir.
-const FACE_ROT = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
-const ROLL_MS = PACE.roll; // zarın dönme süresi (normal hızda); ses de bu kadar sürer
-const face = (n) => `<div class="face f${n}">${Array.from({ length: 9 }, (_, i) => `<i class="${PIPS[n].includes(i) ? 'on' : ''}"></i>`).join('')}</div>`;
-// Zarlara yukarıdan bakılır: geçerli yüz üstteki yüzdür, ön ve yan yüzler biraz görünür (3 boyutlu durduğu belli olsun).
-const TILT = 'rotateX(-52deg) rotateY(-28deg) rotateX(90deg)';
-
-export class Dice {
-  // n: zar sayısı (oyun zarı 2, dava düellosunda her oyuncunun kendi tek zarı).
-  constructor(el, n = 2) {
-    this.el = el;
-    this.turns = Array.from({ length: n }, () => [0, 0]);
-    el.innerHTML = Array.from({ length: n }, () => `<div class="die3d"><div class="cube">${[1, 2, 3, 4, 5, 6].map(face).join('')}</div><div class="dshadow"></div></div>`).join('');
-    this.cubes = [...el.querySelectorAll('.cube')];
-    this.wraps = [...el.querySelectorAll('.die3d')];
-    this.values = null;
-  }
-
-  orient(i, value, animate) {
-    const [x, y] = FACE_ROT[value];
-    const c = this.cubes[i];
-    c.style.transition = animate ? '' : 'none';
-    c.style.transform = `${TILT} rotateX(${x + this.turns[i][0] * 360}deg) rotateY(${y + this.turns[i][1] * 360}deg)`;
-  }
-
-  // Anlık gösterim (null: gizle).
-  show(values) {
-    this.el.classList.toggle('off', !values);
-    const key = values ? values.join() : '';
-    if (!values || key === this.values) return;
-    this.values = key;
-    values.forEach((v, i) => this.orient(i, v, false));
-  }
-
-  // cap: zarın üstünde kısa açıklama (ör. dava zarları); boşsa yok. k: oyun hızı çarpanı.
-  async roll(values, fast, waitMs = 1250, cap = '', k = 1) {
-    if (cap) this.el.dataset.cap = cap;
-    else delete this.el.dataset.cap;
-    if (fast) return this.show(values);
-    this.el.classList.remove('off');
-    this.values = values.join();
-    const ms = Math.round(ROLL_MS * k);
-    this.el.style.setProperty('--roll', `${ms}ms`);
-    play('dice', ms / 1000);
-    values.forEach((v, i) => {
-      this.turns[i][0] += 2 + Math.floor(Math.random() * 2);
-      this.turns[i][1] += 1 + Math.floor(Math.random() * 2);
-      const w = this.wraps[i];
-      w.classList.remove('throw');
-      this.cubes[i].style.transition = 'none';
-      void w.offsetWidth;
-      w.classList.add('throw');
-      this.orient(i, v, true);
-    });
-    await sleep(waitMs);
   }
 }

@@ -1,0 +1,235 @@
+/* Tahta: kareler, binalar, köşeler, piyonlar, ortadaki harita. main.css'ten sonra yüklenir, aynı seçicileri ezer.
+   Kurallar docs/TASARIM.md §3 "Tahtanın görünüşü" ve §11. */
+
+/* ---------- ortak hareket ölçüleri (tasks/yenilikler-plani.md madde 14) ---------- */
+:root {
+  --t-tap: 120ms; --t-ui: 240ms; --t-land: 420ms;
+  --e-out: cubic-bezier(.2, .8, .3, 1); --e-io: cubic-bezier(.65, 0, .35, 1); --e-spring: cubic-bezier(.3, 1.45, .5, 1);
+  --sh-1: 0 1px 2px rgba(27, 34, 51, .18); --sh-2: 0 3px 6px rgba(27, 34, 51, .2); --sh-3: 0 8px 14px rgba(27, 34, 51, .24);
+  /* tahta renkleri */
+  --cell-bg: #fffaf0; --cell-line: #e0d2b2;
+  --corner-bg: #ecd9ad; --corner-line: #d2b77e; --corner-ink: #5b3d14;
+  --map-land: rgba(120, 90, 40, .13); --map-line: rgba(120, 90, 40, .22);
+}
+body.dark {
+  --sh-1: 0 1px 2px rgba(0, 0, 0, .4); --sh-2: 0 3px 6px rgba(0, 0, 0, .45); --sh-3: 0 8px 14px rgba(0, 0, 0, .5);
+  --cell-bg: #1f2944; --cell-line: #33406a;
+  --corner-bg: #3d3524; --corner-line: #5c4e31; --corner-ink: #f1dfb4;
+  --map-land: rgba(200, 215, 245, .07); --map-line: rgba(200, 215, 245, .14);
+}
+
+/* ---------- kareler ---------- */
+/* Monopoly gibi dıştan içe: karenin içeriği (.face) alt sırada dik, sol sütunda 90, üst sırada 180, sağ sütunda -90 derece
+   döner. Yüzün içinde bant hep üstte (ortaya bakan kenar), şerit bandın altında, ad altta (dış kenar). */
+.board {
+  /* Monopoly gibi her kenarın derinliği aynı (--d), köşeler kare; ara kareler kalan yeri paylaşır. --cw ve --ch tahtanın
+     içinde kenar derinliğidir (ortadaki katmanların kenardan uzaklığı ve yazı ölçüsü). */
+  --d: calc(min(var(--bw), var(--bh)) * 0.118); --cw: var(--d); --ch: var(--d);
+  grid-template-columns: var(--d) repeat(8, minmax(0, 1fr)) var(--d); grid-template-rows: var(--d) repeat(8, minmax(0, 1fr)) var(--d);
+  --band: max(5px, calc(var(--ch) * 0.13)); --nmf: max(9px, calc(var(--ch) * 0.165));
+}
+.cell {
+  display: block; padding: 0; container-type: size;
+  background: var(--cell-bg); border: 1px solid var(--cell-line);
+  transition: box-shadow var(--t-tap), opacity var(--t-ui), filter var(--t-ui), scale var(--t-tap) var(--e-out);
+}
+.cell .face {
+  position: absolute; left: 50%; top: 50%; width: 100cqw; height: 100cqh; translate: -50% -50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 3px calc(var(--ch) * 0.05);
+}
+.cell.side-l .face, .cell.side-r .face { width: 100cqh; height: 100cqw; }
+.cell.side-l .face { rotate: 90deg; }
+.cell.side-t .face { rotate: 180deg; }
+.cell.side-r .face { rotate: -90deg; }
+/* üstüne gelince kare dış kenarına yaslı hafifçe büyüyüp ortaya doğru çıkıntı yapar, gölgelenir ve altın kenar alır
+   (kullanıcı kararı; canlandırmalarda kare yine büyümez). Kart sürüklerken ve kare seçerken olmaz. */
+.cell.side-b { transform-origin: 50% 100%; }
+.cell.side-t { transform-origin: 50% 0; }
+.cell.side-l { transform-origin: 0 50%; }
+.cell.side-r { transform-origin: 100% 50%; }
+.cell[data-sq="0"] { transform-origin: 100% 100%; }
+.cell[data-sq="9"] { transform-origin: 0 100%; }
+.cell[data-sq="18"] { transform-origin: 0 0; }
+.cell[data-sq="27"] { transform-origin: 100% 0; }
+@media (hover: hover) {
+  body:not(.carddrag) .board:not(.picking) .cell:hover { scale: 1.08; z-index: 4; }
+  body:not(.carddrag) .board:not(.picking) .cell:hover:not(.turnsq, .hl, .open, .phit) { box-shadow: 0 0 0 2px rgba(237, 174, 73, .95), var(--sh-3); }
+}
+/* setin rengi: yüzün üstünde (ortaya bakan kenarda) tam doygun bant */
+.cell .band { position: absolute; left: 0; right: 0; top: 0; height: var(--band); background: var(--gc); border-radius: 2px 2px 0 0; pointer-events: none; }
+/* bina: şerit ile ad arasındaki alan; resim hep oranını korur, tabanı ada oturur */
+.cell .bld { position: relative; flex: 1 1 0; min-height: 0; width: 100%; margin-top: calc(var(--band) + 12px); display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
+.cell .bld img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 1px 1px rgba(27, 34, 51, .25)); }
+.cell .bld img[hidden] { display: none; }
+/* ad: hiçbir şey örtmez, kesilmez (board.js fitNames sığmazsa küçültür) */
+.cell .nm {
+  position: relative; z-index: 3; flex: none; width: 100%; overflow: visible; white-space: nowrap; text-align: center;
+  font-family: var(--hf); font-weight: 700; font-size: max(11px, calc(var(--ch) * 0.2)); line-height: 1.05; letter-spacing: -0.01em;
+}
+.cell.k-prop .nm { font-size: var(--nmf); line-height: 1.08; padding-top: 1px; }
+.cell.k-prop .nm.two { line-height: 1; }
+.cell.k-prop .nm.two > span { display: block; }
+.cell.k-prop .nm.two > span + span { font-size: 0.8em; font-weight: 600; }
+.cell.special .nm, .cell.k-transport .nm { font-weight: 600; font-size: max(10px, calc(var(--ch) * 0.158)); letter-spacing: 0.03em; white-space: normal; overflow-wrap: normal; }
+.cell.special:not(.corner) .face, .cell.k-transport .face { justify-content: center; gap: 2px; }
+.cell .art { flex: none; }
+
+/* sahiplik şeridi: bandın hemen altında (ortaya bakan kenar); sahipliyken kalın, sahibinin renginde, beyaz kenarlı
+   (beyaz/kömür oyuncu ince koyu kenarla) */
+.strip { position: absolute; z-index: 2; top: calc(var(--band) + 3px); left: 9px; right: 9px; height: 3px; border-radius: 99px; background: var(--strip-off); pointer-events: none; transition: background 0.3s; }
+.cell.owned .strip { height: 7px; background: var(--pc); box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px #fff, 0 0 8px color-mix(in srgb, var(--pc) 70%, transparent); }
+body.dark .cell.owned .strip { box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px #0c1220, 0 0 8px color-mix(in srgb, var(--pc) 70%, transparent); }
+
+/* tam set yıldızı bandın ortasında; ipotek ve tedbir binanın üst köşelerinde (adı örtmez) */
+.cell .fullstar { position: absolute; left: 50%; top: calc(var(--band) / 2); transform: translate(-50%, -50%); z-index: 4; font-size: max(10px, calc(var(--band) * 1.2)); line-height: 0; }
+.cell .mort {
+  position: absolute; inset: var(--band) 0 0 0; z-index: 2; display: flex; align-items: flex-start; justify-content: flex-start; padding: 3px; pointer-events: none;
+  background: repeating-linear-gradient(135deg, var(--hatch) 0 6px, transparent 6px 12px); font-size: max(11px, calc(var(--ch) * 0.18));
+}
+.cell .ted { position: absolute; right: 3px; top: calc(var(--band) + 12px); z-index: 2; line-height: 0; font-size: max(11px, calc(var(--ch) * 0.18)); }
+
+/* köşeler: kraft kağıdı zemin (koyu temada koyu kraft), kendi renkli simgesi; dönmez */
+.cell.corner { background: var(--corner-bg); border-color: var(--corner-line); }
+.cell.corner .face { justify-content: center; gap: 3px; padding: 4px; }
+.cell.corner .nm { color: var(--corner-ink); font-weight: 800; letter-spacing: 0.05em; text-align: center; }
+
+/* sırası gelen oyuncunun durduğu kare onun renginde çerçevelenir (beyaz/kömür oyuncu ince kenarla) */
+.cell.turnsq { z-index: 2; box-shadow: inset 0 0 0 3px var(--tc), 0 0 0 3px var(--tc), 0 0 0 4px var(--pedge), 0 0 18px color-mix(in srgb, var(--tc) 70%, transparent); }
+
+/* oyuncu satırına gelince: o oyuncunun mülkleri kendi renginde parlar, diğer kareler solar */
+.board.pfocus .cell:not(.phit) { opacity: .35; filter: saturate(.3); }
+.cell.phit { z-index: 3; box-shadow: 0 0 0 3px var(--pc), 0 0 0 4px var(--pedge), 0 0 16px color-mix(in srgb, var(--pc) 60%, transparent); }
+
+/* ---------- dayı balonu (src/ui/dayisay.js): ortanın sağ üst köşesinde, istemin düğmelerine uzak, tıklamayı engellemez ---------- */
+.dayi-pop {
+  position: absolute; z-index: 25; top: calc(var(--ch) * 1.9); right: calc(var(--cw) * 1.4); display: flex; align-items: flex-start; gap: 8px; pointer-events: none;
+  animation: dayiPop 2.4s linear forwards;
+}
+@keyframes dayiPop {
+  0% { opacity: 0; translate: 0 -30%; animation-timing-function: var(--e-spring); }
+  15% { opacity: 1; translate: 0 0; }
+  88% { opacity: 1; translate: 0 0; animation-timing-function: var(--e-io); }
+  100% { opacity: 0; translate: 0 -12%; }
+}
+.dayi-pop .face {
+  flex: none; width: max(48px, calc(var(--ch) * 0.9)); aspect-ratio: 1; border-radius: 50%; order: 2;
+  background: #f3ecd2 url(../assets/giris/dayi.jpg) 52% 16% / 230% no-repeat; box-shadow: 0 0 0 3px #c8912f, var(--sh-2);
+}
+.dayi-pop .bub {
+  margin-top: 10px; max-width: clamp(150px, calc(var(--bw) * 0.24), 260px); padding: 8px 12px; border-radius: 14px 4px 14px 14px; background: #fffaf0; color: #1b2233;
+  font-family: var(--hf); font-weight: 700; font-size: clamp(12px, calc(var(--ch) * 0.17), 16px); line-height: 1.2; box-shadow: 0 0 0 1px rgba(27, 34, 51, .12), var(--sh-2);
+}
+body.dark .dayi-pop .bub { box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), var(--sh-3); }
+
+/* ---------- tepki çıkartması: piyondan yükselir (üst yarıda aşağı iner) ---------- */
+.sticker {
+  position: absolute; z-index: 42; pointer-events: none; translate: -50% -100%; white-space: nowrap;
+  padding: 5px 11px; border-radius: 12px; background: #fffaf0; color: #1b2233; font-family: var(--hf); font-weight: 800; font-size: clamp(13px, calc(var(--ch) * 0.2), 18px);
+  box-shadow: 0 0 0 2px var(--pc), 0 0 0 3px var(--pedge), var(--sh-2); animation: stickerUp 1.9s var(--e-out) forwards;
+}
+.sticker.down { translate: -50% 0; animation-name: stickerDown; }
+@keyframes stickerUp { 0% { opacity: 0; transform: translateY(10px) scale(.6); } 15% { opacity: 1; transform: translateY(0) scale(1.08); } 25% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px); } }
+@keyframes stickerDown { 0% { opacity: 0; transform: translateY(-10px) scale(.6); } 15% { opacity: 1; transform: translateY(0) scale(1.08); } 25% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(40px); } }
+.sticker-wrap { position: relative; display: flex; flex: none; }
+.sticker-pick {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 250px; padding: 10px;
+  border-radius: 16px; background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--sh-3);
+}
+.sticker-pick .btn { width: 100%; padding: 0 8px; }
+
+/* ---------- piyonlar: kaldırım düzeni (src/ui/slots.js) ---------- */
+.token { width: var(--s); height: var(--s); transition: left var(--t-ui) var(--e-out), top var(--t-ui) var(--e-out); }
+.token.walking { transition: none; }
+.token .fig, .fx-ghost.tk .fig { position: absolute; left: 0; right: 0; bottom: calc(var(--s) * 0.05); display: flex; justify-content: center; transform-origin: 50% 100%; z-index: 2; transition: scale var(--t-ui) var(--e-out); }
+.token .base, .fx-ghost.tk .base {
+  position: absolute; left: 50%; bottom: 0; width: calc(var(--s) * 0.84); height: calc(var(--s) * 0.3); translate: -50% 50%; border-radius: 50%; z-index: 1;
+  background: var(--pc); box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px #fff, 0 0 0 3px rgba(27, 34, 51, .45);
+  transition: width var(--t-ui) var(--e-out);
+}
+.token .sh, .fx-ghost.tk .sh { position: absolute; left: 50%; bottom: 0; width: calc(var(--s) * 1.02); height: calc(var(--s) * 0.38); translate: -50% 40%; border-radius: 50%; background: rgba(0, 0, 0, .3); filter: blur(2px); z-index: 0; }
+/* figürde oyuncu rengi değil beyaz kontur ve yumuşak gölge */
+.token .pawn img, .fx-ghost.tk .pawn img {
+  filter: drop-shadow(1.6px 0 0 #fff) drop-shadow(-1.6px 0 0 #fff) drop-shadow(0 1.6px 0 #fff) drop-shadow(0 -1.6px 0 #fff) drop-shadow(0 0 1px rgba(27, 34, 51, .55)) drop-shadow(0 3px 3px rgba(0, 0, 0, .3));
+}
+.token.act .fig { scale: 1.16; }
+.token.act .base { width: calc(var(--s) * 0.98); }
+.token.act.idle .fig { animation: pawnBob 1.1s var(--e-io) infinite; }
+@keyframes pawnBob { 50% { translate: 0 calc(var(--s) * -0.1); } }
+.fx-ghost.tk { display: block; }
+/* piyon kaldırımdan ortaya taşar: ortadaki sahne (haber, rakip kartı, sürpriz) açıkken piyonlar yarım kesilmesin, önünde dursun */
+.board:has(.stage-layer) .tokens { z-index: 41; }
+/* son inişte ayağın altında açılan toz halkası */
+.tokens .dust { position: absolute; z-index: 1; width: calc(var(--s) * 1.3); height: calc(var(--s) * 0.45); translate: -50% -50%; border-radius: 50%; border: 2px solid rgba(255, 250, 240, .9); box-shadow: 0 0 0 1px rgba(27, 34, 51, .15); pointer-events: none; animation: pawnDust 520ms var(--e-out) forwards; }
+body.dark .tokens .dust { border-color: rgba(230, 236, 250, .7); }
+@keyframes pawnDust { from { opacity: .9; transform: scale(.5); } to { opacity: 0; transform: scale(1.8); } }
+
+/* bina efektleri (boardfx.js): karedeki resmin kopyası, resmin kutusunda (yüzle birlikte döner) */
+.fx-bld { transform-origin: 50% 100%; z-index: 1; }
+.fx-bld img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; }
+.fx-ring { border-width: 2px; }
+
+/* ---------- ortadaki harita (src/ui/map.js) ---------- */
+/* .center'dan önce gelir: istem, zar ve olaylar haritanın önünde çizilir */
+.citymap { position: absolute; z-index: 0; inset: calc(var(--ch) + 6px) calc(var(--cw) + 6px); pointer-events: none; }
+.citymap .mapbox { position: absolute; }
+.citymap .land {
+  position: absolute; inset: 0; background: var(--map-land);
+  -webkit-mask: url(../assets/harita/turkiye.svg) center / 100% 100% no-repeat; mask: url(../assets/harita/turkiye.svg) center / 100% 100% no-repeat;
+}
+.citymap .land { transition: background var(--t-ui); }
+/* il noktaları dolu: sahipsizken set renginde, sahipliyken büyük ve sahibinin renginde */
+.citymap .city {
+  position: absolute; width: max(7px, calc(var(--mw) * 0.012)); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; z-index: 500;
+  background: var(--gc); box-shadow: 0 0 0 1.5px var(--cell-bg), 0 0 0 2.5px rgba(27, 34, 51, .2); opacity: .7;
+  transition: background var(--t-ui), box-shadow var(--t-ui), opacity var(--t-ui), scale var(--t-ui) var(--e-out);
+}
+.citymap .city.owned { scale: 1.35; background: var(--pc); box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px #fff, 0 0 0 3px rgba(27, 34, 51, .4); opacity: .9; }
+body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0 0 0 2.5px rgba(238, 241, 248, .45); }
+/* binalar normalde soluk: ortadaki istem ve zar önde okunur */
+.citymap .mb {
+  position: absolute; height: calc(var(--mw) * 0.1 * var(--k)); width: auto; max-width: none; transform: translate(-50%, -100%); transform-origin: 50% 100%;
+  opacity: .3; filter: saturate(.5); transition: opacity var(--t-ui), filter var(--t-ui);
+}
+.citymap .mb[hidden] { display: none; }
+/* kareye gelince ilinin noktası ve binası parlar */
+.citymap .city.hot { opacity: 1; scale: 1.8; }
+.citymap .mb.hot { opacity: 1; filter: drop-shadow(0 2px 3px rgba(27, 34, 51, .35)); }
+/* harita düğmesi: ortanın sol alt köşesinde, kaldırımdaki ve köşedeki piyonların erişmediği yerde; üstüne gelince (ya da basınca) ortadaki yazılar çekilir, harita öne çıkar */
+.map-btn {
+  position: absolute; z-index: 20; left: calc(var(--cw) + var(--d) * 0.72); bottom: calc(var(--ch) + var(--d) * 0.72); width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center; border: 0; padding: 0; cursor: pointer; font-size: 17px; color: var(--ink);
+  background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--sh-1); transition: box-shadow var(--t-tap), scale var(--t-tap) var(--e-out);
+}
+.map-btn:hover { box-shadow: 0 0 0 2px #c8912f, var(--sh-2); }
+.map-btn:active { scale: .94; }
+.map-btn[aria-pressed="true"] { background: #c8912f; color: #fff; }
+.board > .center { transition: opacity var(--t-ui); }
+.board.mapfocus > .center { opacity: 0; pointer-events: none; }
+.board.mapfocus .citymap .mb { opacity: 1; filter: drop-shadow(0 1px 1px rgba(27, 34, 51, .3)); }
+.board.mapfocus .citymap .city { opacity: 1; }
+/* kaldırımdaki piyonlar ortaya yaklaşık yarım kare taşar: gündem ve son olaylar onların altında kalmasın */
+.center { padding-top: max(16px, calc(var(--ch) * 0.45)); padding-bottom: max(16px, calc(var(--ch) * 0.45)); }
+/* ortadaki yazının arkasında zeminin renginde yumuşak hale: haritadaki bina ve halkalar yazıyı bulandırmasın */
+.center .prompt, .center .events { text-shadow: 0 0 3px var(--center), 0 0 8px var(--center), 0 0 14px var(--center); }
+.center :is(.btn, .kart, .deed, .hint, .chip, .timer) { text-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .token.act.idle .fig { animation: none !important; }
+  body .board .cell:hover { scale: none; }
+  .dayi-pop, .sticker { animation: none !important; } /* hareketsiz görünür, süresi dolunca kalkar */
+}
+
+/* ---------- telefon ---------- */
+@media (max-width: 760px) {
+  .cell .face { padding: 0 1px 2px; }
+  .cell .bld { margin-top: calc(var(--band) + 8px); }
+  .board { --nmf: max(7px, calc(var(--ch) * 0.16)); }
+  .cell.special .nm, .cell.k-transport .nm { font-size: 7px; letter-spacing: 0; }
+  .strip { left: 4px; right: 4px; }
+  .cell.owned .strip { height: 4px; }
+  .cell.corner .nm { font-size: 6.5px; letter-spacing: 0; }
+  /* ortası alttan açılan sayfa olunca harita tahtada kalır */
+  .citymap { inset: calc(var(--ch) + 2px) calc(var(--cw) + 2px); }
+  .map-btn { display: none; }
+  .center { padding-top: 12px; padding-bottom: 16px; }
+}
