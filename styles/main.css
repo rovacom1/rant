@@ -250,7 +250,10 @@ input, select { font: inherit; }
   box-shadow: inset 0 0 0 2px #eadcb9;
   overflow: hidden;
 }
-.prompt { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; min-height: 0; overflow: auto; }
+.prompt { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; min-height: 0; overflow: auto; }
+/* justify-content: center taşınca üstü keser; otomatik kenar boşluğu sığarken ortalar, taşınca baştan kaydırır */
+.prompt > :first-child { margin-top: auto; }
+.prompt > :last-child { margin-bottom: auto; }
 .prompt h3 { margin: 0; font-size: 20px; }
 .prompt p { margin: 0; color: var(--muted); max-width: 46ch; }
 .prompt .who { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; }
@@ -807,7 +810,9 @@ body.dark .card-panel { --line: #d8c9a8; --muted: #6b6f7d; --btn-base: #1b2233; 
   .topbar .tb-lbl { display: none; }
   .topbar .conn:not(.bad) { display: none; }
   .topbar .conn.bad { max-width: 34vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .iconbtn { padding: 6px 7px; }
+  .iconbtn { padding: 6px 7px; flex-shrink: 0; }
+  /* dar telefonda çubuk sayfayı yana kaydırmasın; sığmazsa kendi içinde kayar */
+  .topbar { overflow-x: auto; scrollbar-width: none; }
   .table { padding: 6px 4px 0; gap: 8px; }
   .board { --size: min(calc(100vw - 8px), 800px); }
   .side { gap: 8px; }
@@ -822,4 +827,28 @@ body.dark .card-panel { --line: #d8c9a8; --muted: #6b6f7d; --btn-base: #1b2233; 
 }
 @media (max-width: 640px) {
   .board { --size: calc(100vw - 8px); padding: 4px; gap: 2px; }
+  .topbar { gap: 5px; }
+  .iconbtn { padding: 6px 5px; }
+  /* tahta ortası küçük: gündem tek satıra iner, karar beklerken son olaylar istemin yerini almaz */
+  .board-center { padding: 8px 8px 10px; gap: 6px; }
+  .news-bar { gap: 8px; padding: 6px 8px 6px 12px; border-radius: 12px; }
+  .news-bar .nb-ic { width: 34px; height: 34px; border-radius: 10px; font-size: 19px; }
+  .news-bar .nb-k { font-size: 9px; letter-spacing: 0.1em; }
+  .news-bar .nb-t { font-size: 15px; }
+  .news-bar .nb-x, .news-bar .nb-mods { display: none; }
+  .news-bar .ring { width: 40px; height: 40px; }
+  .news-bar .ring::before { inset: 4px; }
+  .news-bar .ring b { font-size: 13px; }
+  .news-bar .ring span { display: none; }
+  .board-feed { height: 4.4em; font-size: 12px; }
+  .board-center:has(.prompt button) .board-feed { display: none; }
+  .prompt { gap: 8px; }
+  .prompt h3 { font-size: 17px; }
+  .prompt h3 small { display: block; }
+  .prompt .btn.big { padding: 10px 18px; font-size: 17px; }
+  .prompt .row .btn:not(.big) { padding: 7px 11px; font-size: 14px; }
+  /* artırmada kimin önde olduğu "En yüksek teklif" satırında; katılımcı listesi düğmelere yer bıraksın */
+  .abids { display: none; }
+  .ahigh { font-size: 13px; }
+  .ahigh b { font-size: 15px; }
 }
