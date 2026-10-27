@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, applyAction, defaultAction, botAction, cardBlock, cardTargets, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
-import { makePlayers } from '../tools/simlib.js';
+import { makePlayers, playBotGame } from '../tools/simlib.js';
 import { started, act, actEv, give, strip, own } from './helpers.js';
 
 // Gündem kartının etkisini sıfırlayıp ekonomiyi öngörülebilir yapar.
@@ -841,4 +841,34 @@ test('Kat Karşılığı: bot yüksek kiralı tam sete ortak olur, ortak iflas e
   assert.ok(r.players[0].out, 'ortak iflas etti');
   assert.equal(r.props[5].ortak, null);
   assert.equal(r.props[5].owner, 1, 'mülk sahibinde kalır');
+});
+
+test('oyun sonu unvanları: kira, kaçak kat ve itiraz sayılır; en yüksek alır, eşitlikte hepsi', () => {
+  let s = calm(started());
+  own(s, 1, 5);
+  Object.assign(s.props[5], { kat: 1, ortak: 2 });
+  strip(s, 0, 'dayi');
+  const rent = rentFor(s, 5);
+  const share = Math.round(rent / 2 / 5) * 5;
+  s = taksi(s, 0, 5);
+  assert.deepEqual(s.players.map((pl) => [pl.st.kira, pl.st.odenen]), [[0, rent], [rent - share, 0], [share, 0], [0, 0]]);
+
+  own(s, 0, 24);
+  s = act(s, 0, { type: 'buildKacak', sq: 24 });
+  assert.equal(s.players[0].st.kacak, 1);
+  s.turn = { ...s.turn, p: 1, hamle: false };
+  for (const p of [0, 1]) strip(s, p, 'itiraz');
+  const it = give(s, 0, 'itiraz');
+  s = act(s, 1, { type: 'playCard', uid: give(s, 1, 'ihbar'), target: { player: 0 } });
+  s = act(s, 0, { type: 'react', uid: it });
+  assert.equal(s.players[0].st.itiraz, 1);
+
+  const { state } = playBotGame(7, 4);
+  const u = Object.fromEntries(state.results.unvanlar.map((x) => [x.id, x]));
+  const kira = state.players.map((pl) => pl.st.kira);
+  assert.ok(u.kira && u.magdur, 'botlu oyunda kira toplanır ve ödenir');
+  assert.equal(u.kira.value, Math.max(...kira));
+  assert.deepEqual(u.kira.players, kira.flatMap((k, p) => (k === u.kira.value ? [p] : [])));
+  assert.equal(kira.reduce((a, b) => a + b), state.players.reduce((a, pl) => a + pl.st.odenen, 0), 'toplanan kira = ödenen kira');
+  for (const x of state.results.unvanlar) assert.ok(x.value > 0 && x.players.length > 0);
 });

@@ -1,7 +1,7 @@
 // Oyun durum makinesi. applyAction(state, oyuncu, hamle) yeni state ve olay listesi döndürür.
 // Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste) içermez.
 
-import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP, IFLAS_ROUND_CAP } from './data.js';
+import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP, IFLAS_ROUND_CAP, UNVANLAR } from './data.js';
 import { randInt, rollDie, shuffle } from './rng.js';
 import * as R from './rules.js';
 
@@ -206,6 +206,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
       out: 0, // iflas modunda kaçıncı elendiği; 0: oyunda
       kiraZammi: false,
       kredi: null, // { amount, due }: due turunda sırası gelince bankaya ödenir
+      st: { kira: 0, odenen: 0, kacak: 0, itiraz: 0 }, // oyun sonu unvanları için açık istatistik
     };
   });
   const copies = (defs) => Object.entries(defs).flatMap(([id, c]) => Array.from({ length: c.count }, (_, n) => `${id}:${n}`));
@@ -315,10 +316,17 @@ function endGame(s, ctx) {
   // Ayakta kalanlar puana göre; elenenler son elenenden ilk elenene.
   const out = (x) => s.players[x.p].out || Infinity;
   const ranking = [...scores].sort((a, b) => out(b) - out(a) || b.total - a.total || b.nakit - a.nakit).map((x) => x.p);
-  s.results = { scores, ranking };
+  s.results = { scores, ranking, unvanlar: unvanlar(s) };
   const w = ranking[0];
   const text = R.activePlayers(s).length === 1 ? `Herkes iflas etti, ayakta kalan ${nm(s, w)} kazandı!` : `SEÇİM GÜNÜ! Kazanan: ${nm(s, w)} (${fmt(scores[w].total)}).`;
   emit(s, ctx, { type: 'over', text });
+}
+
+function unvanlar(s) {
+  return UNVANLAR.flatMap(({ id, stat }) => {
+    const best = Math.max(...s.players.map((pl) => pl.st[stat]));
+    return best > 0 ? [{ id, value: best, players: s.players.flatMap((pl, p) => (pl.st[stat] === best ? [p] : [])) }] : [];
+  });
 }
 
 export function moveOptions(s) {
@@ -412,9 +420,13 @@ function chargeRent(s, ctx, p, sq) {
 function payRent(s, ctx, r) {
   if (r.zam) s.players[r.owner].kiraZammi = false;
   const why = `Kira: ${sqName(r.sq)}${r.zam ? ', zamlı' : ''}`;
-  if (r.ortak === undefined || r.p === r.ortak) return transfer(s, ctx, r.p, r.owner, r.amount, why);
-  transfer(s, ctx, r.p, r.owner, r.amount - r.share, why);
-  transfer(s, ctx, r.p, r.ortak, r.share, `${why}, ortak payı`);
+  const share = r.ortak === undefined || r.p === r.ortak ? 0 : r.share;
+  s.players[r.p].st.odenen += r.amount;
+  s.players[r.owner].st.kira += r.amount - share;
+  if (share) s.players[r.ortak].st.kira += share;
+  if (!share) return transfer(s, ctx, r.p, r.owner, r.amount, why);
+  transfer(s, ctx, r.p, r.owner, r.amount - share, why);
+  transfer(s, ctx, r.p, r.ortak, share, `${why}, ortak payı`);
 }
 
 // Açık artırma (Monopoly gibi): reddedenden sonraki oyuncudan başlayıp sırayla herkes ya artırır ya çekilir;
@@ -1006,6 +1018,7 @@ const TURN = {
     need(!b, b);
     const cost = R.kacakCost(s, a.sq);
     s.props[a.sq].kacak = 1;
+    s.players[p].st.kacak++;
     transfer(s, ctx, p, null, cost, 'Kaçak kat', true);
     emit(s, ctx, { type: 'build', p, sq: a.sq, kacak: true, text: `${nm(s, p)} ${sqName(a.sq)} üstüne gece yarısı kaçak kat çıktı (${fmt(cost)}).` });
   },
@@ -1109,6 +1122,7 @@ const PENDING = {
       if (a.uid) {
         need(cardId(a.uid) === 'itiraz' && hasUid(s, p, a.uid), 'İtiraz kartın yok.');
         discardCard(s, p, a.uid);
+        s.players[p].st.itiraz++;
         pd.chain++;
         emit(s, ctx, { type: 'card', p, card: 'itiraz', text: `${nm(s, p)}: İTİRAZ EDİYORUM!` });
         const other = p === pd.victim ? pd.card.by : pd.victim;

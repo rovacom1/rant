@@ -217,6 +217,14 @@ export const SURPRIZ = {
   vergiIade: { name: 'Vergi İadesi', icon: '🧾', text: 'Mülk başı 15 iade aldın.' },
 };
 
+// Oyun sonu unvanları: istatistiğin en yükseği (sıfırdan büyükse) alır; eşitlikte hepsi alır.
+export const UNVANLAR = [
+  { id: 'kira', stat: 'kira', icon: '👑', name: 'Kira Kralı', desc: 'en çok kira toplayan' },
+  { id: 'kacak', stat: 'kacak', icon: '🚧', name: 'Kaçak Ustası', desc: 'en çok kaçak kat diken' },
+  { id: 'itiraz', stat: 'itiraz', icon: '✋', name: 'İtirazcı', desc: 'en çok itiraz eden' },
+  { id: 'magdur', stat: 'odenen', icon: '😩', name: 'Ev Sahibi Mağduru', desc: 'en çok kira ödeyen' },
+];
+
 export const AVATARS = ['🦊', '🐻', '🐼', '🐸', '🐯', '🦁', '🐙', '🦉', '🐺', '🐮', '🐵', '🦄'];
 export const PLAYER_COLORS = ['#e63946', '#1e6fd9', '#2b9348', '#8e44ad', '#f39c12', '#e84393'];
 export const BOT_NAMES = ['Hacı Müteahhit', 'Emlakçı Nuri', 'Kooperatif Sevim', 'Tapucu Rıza', 'Arsa Kemal', 'Rezidans Bülent'];

@@ -687,11 +687,22 @@ function resultsDialog(v) {
     const pl = P(v, p);
     const detail = pl.out ? `İflas etti (${pl.out}. elenen)` : `Nakit ${fmt(sc.nakit)} · Mülk ${fmt(sc.mulk)} · Kat ${fmt(sc.katlar)}${sc.borc ? ` · Kredi -${fmt(sc.borc)}` : ''}${sc.ceza ? ` · Ceza -${fmt(sc.ceza)}` : ''}`;
     return html`<div class="res ${k === 0 ? 'win' : ''} ${pl.out ? 'out' : ''}"><div class="rank">${['🥇', '🥈', '🥉'][k] || k + 1}</div>${av(pl)}
-      <div><b>${pl.name}</b><div class="rb">${detail}</div></div>
+      <div><b>${pl.name}</b><div class="rb">${detail}</div>${unvanChips(r, p)}</div>
       <div class="rt money">${pl.out ? '💥' : fmt(sc.total)}</div></div>`;
   });
   return html`<h2>${v.config.iflas ? '🏁 Oyun sonu' : '🗳️ Seçim Günü sonuçları'}</h2><div class="results">${rows}</div>${worthChart(v)}
     ${isHost() ? html`<div class="row"><div class="grow"></div><button class="btn turq" data-act="newGame">Aynı masayla yeni oyun</button></div>` : ''}`;
+}
+
+// Oyun sonu unvanları (Kira Kralı gibi); ayrıntı üzerine gelince.
+function unvanChips(r, p) {
+  const mine = (r.unvanlar || []).filter((x) => x.players.includes(p));
+  if (!mine.length) return '';
+  return html`<div class="unvanlar">${mine.map((x) => {
+    const u = E.UNVANLAR.find((d) => d.id === x.id);
+    const value = u.stat === 'kira' || u.stat === 'odenen' ? fmt(x.value) : `${x.value} kez`;
+    return html`<span class="unvan" data-tip="${u.desc}: ${value}">${u.icon} ${u.name}</span>`;
+  })}</div>`;
 }
 
 // Tur tur net değer çizgisi (konkordato cezası yok; kazananın çizgisi kalın).

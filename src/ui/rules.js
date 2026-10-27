@@ -2,6 +2,7 @@
 export const RULES_HTML = `
 <div class="rules">
 <p><b>RANT</b> bir emlak ve kart oyunu. Belirlenen tur sayısı dolunca ya da biri lobide seçilen <b>değer hedefine</b> ulaşıp o tur bitince <b>Seçim Günü</b> gelir; en yüksek puanı (nakit + mülkler + katlar; konkordato cezası ve ödenmemiş kredi düşülür) toplayan kazanır. Son kalan modu dışında kimse batıp oyundan çıkmaz.</p>
+<p>Sonuç ekranında eğlencelik unvanlar dağıtılır (puana etkisi yok): 👑 Kira Kralı en çok kira toplayan, 🚧 Kaçak Ustası en çok kaçak kat diken, ✋ İtirazcı en çok itiraz eden, 😩 Ev Sahibi Mağduru en çok kira ödeyen.</p>
 <h3>Sıran geldiğinde</h3>
 <ul>
 <li>Elinde 5'ten az kart varsa 1 <b>Hamle kartı</b> çekersin. Turda en fazla 1 Hamle kartı oynayabilirsin.</li>

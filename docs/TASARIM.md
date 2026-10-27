@@ -264,6 +264,8 @@ Net Değer = nakit - ödenmemiş kredi borcu + mülklerin güncel fiyatı (ipote
 Puan = Net Değer - 300 x konkordato. Eşitlikte nakdi fazla olan kazanır.
 Her tur sonunda herkesin net değeri kaydedilir; Seçim Günü sonuçlarında tur tur net değer çizgisi gösterilir (konkordato cezası çizgide yoktur, yalnız puanda).
 
+**Oyun sonu unvanları** (puana etkisi yok): sonuç ekranında 👑 Kira Kralı (en çok kira toplayan; Kat Karşılığı ortak payı dahil), 🚧 Kaçak Ustası (en çok kaçak kat diken), ✋ İtirazcı (en çok İtiraz kartı oynayan) ve 😩 Ev Sahibi Mağduru (en çok kira ödeyen). İstatistik sıfırsa unvan verilmez, eşitlikte eşit olanların hepsi alır. Sayılan her şey herkesin gördüğü hamlelerdir.
+
 ## 10. Çevrimiçi mimari
 
 - Oyun statik bir sitedir (GitHub Pages). Oyun sunucusu yoktur.
