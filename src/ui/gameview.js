@@ -43,6 +43,7 @@ let animating = false;
 export function mountGame(root) {
   root.innerHTML = `
   <div class="game">
+    <div class="feedcol" id="feedcol"></div>
     <div class="board" id="board">
       <div class="center" id="center">
         <div id="gundem"></div>
@@ -89,12 +90,22 @@ export function mountGame(root) {
     round: g('round'), audio: g('tAudio'), theme: g('tTheme'), board: g('board'), center: g('center'), gundem: g('gundem'), banner: g('banner'),
     prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'), players: g('players'), feed: g('feed'), handPanel: g('handPanel'),
     handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), audioPop: g('audioPop'), playerPanel: g('playerPanel'), tools: g('tools'),
-    modal: g('modal'), stage: g('stage'), results: g('results'), stick: g('stick'),
+    modal: g('modal'), stage: g('stage'), results: g('results'), stick: g('stick'), feedcol: g('feedcol'),
   };
   cells = buildBoard(els.board);
+  // Masaüstünde yer varsa son olaylar tahtanın solunda, altta durur (oyunlardaki sohbetin yeri); tahta en az 1,2 oranında
+  // kalır. Yer yoksa ortanın altında kalır.
+  const game = root.querySelector('.game');
+  new ResizeObserver(() => {
+    const side = innerHeight > 520 && innerWidth - 588 >= 1.2 * (innerHeight - 28);
+    game.classList.toggle('feedside', side);
+    if (els.feed.parentElement !== (side ? els.feedcol : els.center)) (side ? els.feedcol : els.center).appendChild(els.feed);
+  }).observe(game);
   cityMap = new CityMap(els.board);
   tokens = new Tokens(els.tokens, cells);
-  dice = new Dice(els.dice);
+  // Zarlar tahtanın neredeyse tamamına savrulur; dikey telefonda ortası alttan açılan sayfa olunca kendi kutusunda kalır.
+  const sheet = matchMedia('(max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px)');
+  dice = new Dice(els.dice, 2, () => (sheet.matches ? null : els.board));
   hand = new Hand(els.handGrid, els.board, els.deck);
   initTips();
   // Tam ekran ve yatay kilit yalnız destekleyen tarayıcıda (Android Chrome) önerilir; iPhone'da düğme görünmez.
@@ -378,7 +389,7 @@ function promptHTML(v) {
   }
   const pl = P(v, me);
   if (t.step === 'preroll') {
-    return html`<div class="stagebox"><div class="who">${t.doubles ? 'Çift attın, bir daha!' : 'Sıra sende'}</div>${t.backward ? html`<span class="hint">${I('arrowL')}Geri vitestesin: bu tur geri gideceksin</span>` : ''}
+    return html`<div class="stagebox"><div class="who">${t.doubles ? html`${I('dice')}Çift attın, bir daha at` : 'Sıra sende'}</div>${t.backward ? html`<span class="hint">${I('arrowL')}Geri vitestesin: bu tur geri gideceksin</span>` : ''}
       <button class="btn L pri" style="min-width:240px" data-act="roll" data-primary>${I('dice')}Zar At</button><div style="width:260px">${timerHTML(v, [me])}</div></div>`;
   }
   if (t.step === 'choose') {

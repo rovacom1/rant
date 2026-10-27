@@ -1202,6 +1202,13 @@ export function applyAction(state, actor, action) {
   const s = structuredClone(state);
   const ctx = { events: [] };
   handle(s, actor, action, ctx);
+  // Çift atan, ödeyecek borcu ya da atacak fazla kartı yoksa "turu bitir"e basmadan bir daha zar atar (kat dikmek,
+  // kart oynamak zar öncesinde de olur, bir şey kaybetmez).
+  const t = s.turn;
+  if (s.phase === 'play' && t && t.again && t.step === 'free' && !s.pending) {
+    const pl = s.players[t.p];
+    if (!pl.out && pl.cash >= 0 && pl.hand.length <= s.config.handLimit) finishTurn(s, ctx);
+  }
   // Affedilmiş mülkün katları bitince (satış, çökme, iflas) işaret düşer. Eski kayıtlarda alan yoktur: yok = affedilmemiş.
   for (const ps of s.props) if (ps && ps.affed && R.level(ps) === 0) delete ps.affed;
   s.seq++;

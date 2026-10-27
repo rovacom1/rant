@@ -40,7 +40,7 @@ Ev sahibi lobide üç kuralı açıp kapatabilir; hepsi varsayılan olarak açı
 | Ayar | Kapalıyken |
 |---|---|
 | Açık artırma | Alınmayan arsa artırmaya çıkmaz, sahipsiz kalır. |
-| SÜRPRİZ kareleri | SÜRPRİZ karesine gelince bir şey olmaz. |
+| Sürpriz kareleri | Sürpriz karesine gelince bir şey olmaz. |
 | Gündem kartları | Tur başında Gündem kartı açılmaz; turlar yalnız sayılır. |
 
 Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi, canlandırmaları ve tepki pencerelerini 1,5 / 1 / 0,5 katına çeker: İtiraz ve Dayın Çıktı penceresi yavaşta 15, normalde 10, hızlıda 5 saniye; Kestirme penceresi (zardan sonra) yavaşta 2,25, normalde 1,5, hızlıda 0,75 saniye; rakibin oynadığı kart normalde 5,5 saniye ortada kalır.
@@ -50,45 +50,45 @@ Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonr
 ## 3. Tahta (36 kare)
 
 Kareler 0'dan 35'e dizilir, tahta 10x10 ızgaradır. Köşeler: 0, 9, 18, 27.
-Her kenarda 5 mülk, 1 gar, 1 havalimanı ve 1 FIRSAT ya da SÜRPRİZ karesi var.
+Her kenarda 5 mülk, 1 gar, 1 havalimanı ve 1 Fırsat ya da Sürpriz karesi var.
 
 | # | Kare | Tür | Fiyat |
 |---|---|---|---|
 | 0 | BAŞLANGIÇ NOKTASI | köşe | geçince ya da gelince maaş ve 1 kart |
 | 1 | Amasya (Çorum) | mülk | 60 |
 | 2 | Çorum (Çorum) | mülk | 80 |
-| 3 | SÜRPRİZ | sürpriz | rastgele etki, hemen uygulanır |
-| 4 | DOĞU EKSPRESİ | gar | 150 |
+| 3 | Sürpriz | sürpriz | rastgele etki, hemen uygulanır |
+| 4 | Doğu Ekspresi | gar | 150 |
 | 5 | Giresun (Trabzon) | mülk | 100 |
 | 6 | Rize (Trabzon) | mülk | 100 |
-| 7 | KAPADOKYA | havalimanı | 200 |
+| 7 | Kapadokya | havalimanı | 200 |
 | 8 | Trabzon (Trabzon) | mülk | 120 |
 | 9 | TAPU DAİRESİ | köşe | sahipsiz herhangi bir mülkü al |
 | 10 | Balıkesir (Bursa) | mülk | 140 |
-| 11 | FIRSAT | kart | 2 Hamle kartı çek |
+| 11 | Fırsat | kart | 2 Hamle kartı çek |
 | 12 | Bursa (Bursa) | mülk | 160 |
-| 13 | KONYA GARI | gar | 150 |
+| 13 | Konya Garı | gar | 150 |
 | 14 | Aksaray (Konya) | mülk | 180 |
 | 15 | Nevşehir (Konya) | mülk | 180 |
-| 16 | DALAMAN | havalimanı | 200 |
+| 16 | Dalaman | havalimanı | 200 |
 | 17 | Konya (Konya) | mülk | 200 |
 | 18 | ÇAY OCAĞI | köşe | herkesten çay parası |
 | 19 | Adana (Antalya) | mülk | 220 |
 | 20 | Mersin (Antalya) | mülk | 220 |
-| 21 | SÜRPRİZ | sürpriz | rastgele etki, hemen uygulanır |
-| 22 | ANKARA GARI | gar | 150 |
+| 21 | Sürpriz | sürpriz | rastgele etki, hemen uygulanır |
+| 22 | Ankara Garı | gar | 150 |
 | 23 | Antalya (Antalya) | mülk | 240 |
 | 24 | Eskişehir (Ankara) | mülk | 260 |
-| 25 | ESENBOĞA | havalimanı | 200 |
+| 25 | Esenboğa | havalimanı | 200 |
 | 26 | Ankara (Ankara) | mülk | 280 |
 | 27 | ZABITA | köşe | bir oyuncuyu ihbar et |
 | 28 | Aydın (İzmir) | mülk | 300 |
-| 29 | FIRSAT | kart | 2 Hamle kartı çek |
+| 29 | Fırsat | kart | 2 Hamle kartı çek |
 | 30 | Manisa (İzmir) | mülk | 300 |
-| 31 | HAYDARPAŞA | gar | 150 |
+| 31 | Haydarpaşa | gar | 150 |
 | 32 | İzmir (İzmir) | mülk | 320 |
 | 33 | İstanbul Anadolu (İstanbul) | mülk | 350 |
-| 34 | SABİHA GÖKÇEN | havalimanı | 200 |
+| 34 | Sabiha Gökçen | havalimanı | 200 |
 | 35 | İstanbul Avrupa (İstanbul) | mülk | 400 |
 
 Şehir grupları ve kat fiyatları: Çorum 50, Trabzon 50, Bursa 100, Konya 100, Antalya 150, Ankara 150, İzmir 200, İstanbul 200.
@@ -103,7 +103,7 @@ Kareler il adını taşır; set (şehir grubu) adı ve anahtarı aynı kalır (�
 - Sahiplik: iç kenardaki şerit; sahipsizken ince ve soluk, sahipliyken kalın, beyaz kenarlı ve sahibinin renginde.
 - Bina resmi `assets/bina/<set>/`: seviye L (yasal + kaçak) 0 ise resim yok; kaçak yoksa `L.png`; üst kat kaçaksa `k{L-1}.png`. İmar Affı'yla yasallaşan mülk (motorda `affed`) katı kalana dek kaçak resmiyle görünür. `0.png` yalnız tapu cetvelinde, `yikik.png` yalnız yıkım canlandırmasında. Resim hep oranını korur (`contain`).
 - Köşe kareleri kraft kağıdı zeminde (koyu temada koyu kraft) kendi renkli simgesiyle. Yol yok: piyon durduğu karenin iç kenarında, ortaya hafifçe taşarak durur (köşede iç köşede); aynı karedeki piyonlar iç kenar boyunca dizilir. Piyonun altında oyuncu renginde beyaz halkalı oval kaide ve yumuşak gölge, figürde beyaz kontur; sırası gelen biraz büyük ve hafifçe zıplar, durduğu kare onun renginde çerçevelenir.
-- Ortada soluk Türkiye haritası: 20 ilin yerinde içi dolu yuvarlak (sahipsizken set renginde, sahipliyken büyük ve sahibinin renginde); katlı ilin binası (karedekinin aynısı, daha büyük) ilin yerinde durur, yeni bina yaylı yükselir. Harita modu dışında harita çok soluk ve arkadadır, hiçbir şey parlamaz; istem ve zar önde okunur. Ortanın sol altındaki harita düğmesine gelince (ya da basınca) yazılar çekilir, harita öne çıkar; bu modda bir ile gelince tapusu açılır.
+- Ortada soluk Türkiye haritası: 20 ilin yerinde içi dolu yuvarlak (sahipsizken set renginde, sahipliyken büyük ve sahibinin renginde); katlı ilin binası (karedekinin aynısı, daha büyük) ilin yerinde durur, yeni bina yaylı yükselir. Harita modu dışında harita yalnız orada bir şey olduğu belli olacak kadar soluktur, hiçbir şey parlamaz; istem ve zar önde okunur. Ortanın sol altındaki harita düğmesine basınca (üstüne gelmek yetmez) yazılar çekilir, harita öne çıkar; bu modda bir ile gelince tapusu açılır.
 
 ### Kira
 
@@ -123,7 +123,7 @@ Kareler il adını taşır; set (şehir grubu) adı ve anahtarı aynı kalır (�
 1. **Tur başı** (ilk oyuncudan önce): her dönem başında (1., 4., 7. ... tur) yeni Gündem kartı açılır ve uygulanır; önceki gündemin dönem kuralları biter.
 2. **Sıra başı**: Kart çekilmez. Kira Zammı etkin kaldıysa burada biter.
 3. **Zar öncesi**: Hamle kartı oynayabilir (turda en fazla 1), kat dikebilir, ipotek yapabilir, pazarlık teklif edebilirsin.
-4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin: zarlar durunca kısa bir pencere (normal hızda 1,5 sn) açılır; o sürede Kestirme oynamazsan piyon toplam kadar kendiliğinden yürür. Kartı olmayan hiçbir düğme görmez, yalnız zarı görür; tıklamaya gerek yoktur. Çift zar kart vermez ama Monopoly'deki gibi **bir daha oynatır**: turunu (kat, kart, pazarlık) bitirince yeniden zar atarsın; üst üste en fazla 2 kez (üçüncü çiftte ek hak yok). Turda tek Hamle kartı kuralı ek atışta da geçerlidir.
+4. **Zar**: İki zar atılır, toplamı kadar ilerlersin. Elinde *Kestirme* varsa zarı gördükten sonra zarlardan birini seçebilirsin: zarlar durunca kısa bir pencere (normal hızda 1,5 sn) açılır; o sürede Kestirme oynamazsan piyon toplam kadar kendiliğinden yürür. Kartı olmayan hiçbir düğme görmez, yalnız zarı görür; tıklamaya gerek yoktur. Çift zar kart vermez ama Monopoly'deki gibi **bir daha oynatır**: "Turu bitir"e basmadan doğrudan yeniden zar atarsın (kat, kart, pazarlık zar öncesinde de yapılır; borcun ya da elinde fazla kartın varsa önce onları halledersin); üst üste en fazla 2 kez (üçüncü çiftte ek hak yok). Turda tek Hamle kartı kuralı ek atışta da geçerlidir.
    (İlk taslakta her turda zar seçimi vardı; simülasyonda oyuncular kirayı neredeyse hiç ödemediği için karta taşındı.)
 5. **Kareye geliş** (aşağıda).
 6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**. Yapabileceğin hiçbir şey yoksa (oynanabilir kart, dikilebilir yasal ya da kaçak kat, kaldırılabilir ipotek yok, nakit eksi değil) tur 3 saniye sonra kendiliğinden biter; düğmede geri sayım görünür. Bu sürede ele gelmek, bir pencere açmak ya da tahtaya tıklamak kendiliğinden bitirmeyi o tur için durdurur. Yalnız arayüzdür: süre dolunca istemci normal Turu Bitir hamlesini gönderir, kural değişmez.
@@ -137,8 +137,8 @@ Kareler il adını taşır; set (şehir grubu) adı ve anahtarı aynı kalır (�
 - **Sahipsiz mülk**: Liste fiyatına **Satın Al** ya da **İhaleye Çıkar**. Parası yetmeyen ihaleye çıkarır.
 - **Başkasının mülkü**: Kira ödenir. Elinde *Dayın Çıktı* varsa kullanıp ödemeyebilirsin.
 - **Kendi mülkün**: bir şey olmaz.
-- **FIRSAT**: 2 Hamle kartı çek.
-- **SÜRPRİZ**: Rastgele bir Sürpriz etkisi açılır ve **hemen** uygulanır, seçim yapılmaz (bkz. bölüm 8b).
+- **Fırsat**: 2 Hamle kartı çek.
+- **Sürpriz**: Rastgele bir Sürpriz etkisi açılır ve **hemen** uygulanır, seçim yapılmaz (bkz. bölüm 8b).
 - **BAŞLANGIÇ NOKTASI**: İleri yönde geçince ya da gelince maaş (200; Asgari Ücret zammıyla artar) ve elinde 5'ten az kart varsa 1 Hamle kartı. Kart, maaş ödenmeyen dönemde de (Bankacılar Grevde) verilir.
 - **TAPU DAİRESİ**: Tahtadaki sahipsiz herhangi bir mülkü fiyatına alabilirsin. Alacak yoksa 1 kart.
 - **ÇAY OCAĞI**: Diğer her oyuncu sana 25 çay parası öder (nakdi yettiği kadar).
@@ -248,7 +248,7 @@ Gündem bir **dönem** boyunca geçerlidir: dönem 3 tur sürer (tüm oyuncular�
 
 ## 8b. Sürpriz etkileri (15)
 
-SÜRPRİZ karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçilir ve hemen uygulanır. Para değerleri Endeks ile ölçeklenir.
+Sürpriz karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçilir ve hemen uygulanır. Para değerleri Endeks ile ölçeklenir.
 
 | Etki | Ne olur |
 |---|---|
@@ -261,7 +261,7 @@ SÜRPRİZ karesine gelen oyuncu için 15 etkiden biri eşit olasılıkla seçili
 | Belediyeden Jest | Rastgele bir mülküne bedava 1 yasal kat dikilir. Uygun mülk yoksa 50 teselli. |
 | Dededen Kalma Tarla | Sahipsiz en ucuz mülk bedavaya senin olur. Sahipsiz mülk yoksa 100 al. |
 | Bedava Uçak Bileti | İleri yöndeki ilk havalimanına uçarsın (Başlangıç Noktası'ndan geçersen maaş), o kareye gelmiş sayılırsın. |
-| Işınlanma | Rastgele bir kareye ışınlanırsın (maaş yok), o kareye gelmiş sayılırsın. SÜRPRİZ karelerine ışınlanılmaz. |
+| Işınlanma | Rastgele bir kareye ışınlanırsın (maaş yok), o kareye gelmiş sayılırsın. Sürpriz karelerine ışınlanılmaz. |
 | Ters Köşe | Rastgele bir rakiple yerini değiştirirsin; ikiniz için de kare etkisi işlemez. |
 | Kapkaç | Rastgele bir rakibin elinden rastgele bir kart kaparsın. Kimsenin kartı yoksa 1 kart çek. |
 | Kayıp Bavul | Elindeki rastgele 1 kart gider. |

@@ -35,10 +35,14 @@ const nameHTML = (name) => {
   return w.length === 2 ? html`<span class="nm two"><span>${w[0]}</span> <span>${w[1]}</span></span>` : html`<span class="nm">${name}</span>`;
 };
 
+const CORNERS = new Set(['start', 'tapu', 'cay', 'zabita']);
+
+// Ulaşım ve Fırsat/Sürpriz kareleri mülk karesinin düzenini izler: simge binanın yerinde, ad aynı yerde ve aynı yazıyla.
 function cellInner(sq) {
   if (sq.kind === 'prop') return html`<span class="band"></span><span class="strip"></span><span class="bld"><img alt="" draggable="false" hidden></span>${nameHTML(sq.name)}`;
-  const art = html`<span class="art">${raw(icon(artOf(sq)))}</span><span class="nm">${sq.name}</span>`;
-  return sq.kind === 'transport' ? html`<span class="strip"></span>${art}` : art;
+  const art = html`<span class="art">${raw(icon(artOf(sq)))}</span>`;
+  if (sq.kind === 'transport') return html`<span class="strip"></span>${art}${nameHTML(sq.name)}`;
+  return CORNERS.has(sq.kind) ? html`${art}<span class="nm">${sq.name}</span>` : html`${art}${nameHTML(sq.name)}`;
 }
 const cellStatic = (sq) => `<div class="face">${cellInner(sq)}</div>`;
 

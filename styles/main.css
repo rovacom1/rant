@@ -224,6 +224,14 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
   --cw: calc(var(--bw) / 10); --ch: calc(var(--bh) / 10);
   position: fixed; inset: 0; display: flex; gap: 8px; padding: 14px 6px; justify-content: center; background: var(--page);
 }
+/* masaüstünde yer varsa son olaylar tahtanın solunda, altta (gameview.js feedside); tahta gerekirse biraz daralır */
+.feedcol { display: none; }
+.game.feedside { --fc: clamp(220px, calc(100vw - 380px - var(--bh) * 1.45), 280px); --bw: min(calc(var(--bh) * 1.45), calc(100vw - 368px - var(--fc))); }
+.game.feedside .feedcol { display: flex; flex-direction: column; justify-content: flex-end; flex: none; width: var(--fc); height: calc(100dvh - 28px); }
+.feedcol .events { width: 100%; padding: 12px 14px; border-top: 0; border-radius: 14px; background: color-mix(in srgb, var(--panel) 70%, transparent); box-shadow: 0 0 0 1px var(--line); }
+.feedcol .ev { font-size: 14px; align-items: flex-start; }
+.feedcol .ev .ic { margin-top: 2px; flex: none; }
+.feedcol .ev span { white-space: normal; }
 .board {
   position: relative; flex: none; width: var(--bw); height: var(--bh); border-radius: 16px; overflow: hidden; background: var(--center); box-shadow: 0 0 0 1px var(--line);
   display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr);

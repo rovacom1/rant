@@ -3,6 +3,8 @@
 // Zarlara yukarıdan, hafif önden bakılır (geçerli değer üst yüz). Ses oynatmayla aynı anda başlar ve biter.
 // Sıra sendeyken zarlar tepside bekler (ready); basılı tutunca ele alınır, imleci izler, bırakınca o yöne ve o hızla
 // savrulur (en az bir atış hızıyla). Eldeki zarın yüzleri değişmesin diye sonucu o yüzlerle veren atış aranır (simulateTo).
+// Oyun zarlarının tepsisi (arena verilince) tahtanın neredeyse tamamıdır ve her şeyin üstünde çizilir; zarlar beklerken
+// ve atıştan önce yerlerindeki kutunun (el) ortasında durur, atılınca bütün tahtaya savrulur.
 import { simulate, simulateTo, labelingFor, timeline, frameAt, qmat, qaxis, qmul, qn, NORM } from './dicesim.js';
 import { play } from './sound.js';
 import { PACE } from '../net/host.js';
@@ -17,23 +19,37 @@ const dieHTML = () =>
   `<div class="zar-golge"></div><div class="zar">${SLOTS.map((s) => `<div class="zf zf-${s}"></div>`).join('')}<b class="zc zc-x"></b><b class="zc zc-y"></b><b class="zc zc-z"></b></div>`;
 
 export class Dice {
-  // n: zar sayısı (oyun zarı 2, dava düellosunda her oyuncunun kendi tek zarı).
-  constructor(el, n = 2) {
+  // n: zar sayısı (oyun zarı 2, dava düellosunda her oyuncunun kendi tek zarı). arena: tepsi olacak öğeyi veren işlev
+  // (null dönerse tepsi el'in kendisidir).
+  constructor(el, n = 2, arena = null) {
     this.el = el;
     this.n = n;
+    this.arena = arena;
     el.innerHTML = `<div class="zar-tepsi"><div class="zar-zemin">${Array.from({ length: n }, dieHTML).join('')}</div>${n > 1 ? '<span class="zar-toplam"></span>' : ''}</div>`;
     this.dice = [...el.querySelectorAll('.zar')].map((w) => ({ w, sh: w.previousElementSibling, faces: SLOTS.map((s) => w.querySelector(`.zf-${s}`)) }));
     this.sum = el.querySelector('.zar-toplam');
+    this.tray = el.firstElementChild;
     this.values = null;
     this.run = 0; // her atış/gösterim yeni bir sayı alır; eski oynatma kendini durdurur
     this.held = null; // elde tutulan zarlar: { labs, qs, ps, target, samples, released }
   }
 
+  // Tepsiyi arenaya (yoksa el'e) oturtur; el görünür olmalı.
+  fit() {
+    const a = this.arena && this.arena();
+    const st = this.tray.style;
+    if (!a) return Object.assign(st, { left: '', top: '', width: '', height: '' });
+    const r = this.el.getBoundingClientRect();
+    const b = a.getBoundingClientRect();
+    const m = this.size() * 0.3;
+    Object.assign(st, { left: `${b.left - r.left + m}px`, top: `${b.top - r.top + m}px`, width: `${b.width - 2 * m}px`, height: `${b.height - 2 * m}px` });
+  }
+
   // Ekrandaki nokta (clientX/Y) -> tepsi düzlemindeki nokta (px). Düzlem rotateX(TILT) ile yatık, perspektifli bakılır.
   planeXY(cx, cy) {
-    const r = this.el.getBoundingClientRect();
-    const W = this.el.clientWidth;
-    const H = this.el.clientHeight;
+    const r = this.tray.getBoundingClientRect();
+    const W = this.tray.clientWidth;
+    const H = this.tray.clientHeight;
     const P = this.size() * PERSP;
     const A = cy - r.top - H / 2;
     const B = H * 0.6 - H / 2;
@@ -56,6 +72,7 @@ export class Dice {
   hold(cx, cy) {
     const run = ++this.run;
     this.el.classList.remove('off');
+    this.fit();
     this.sum?.classList.remove('on', 'glow');
     const R = this.size() / 2;
     const labs = this.dice.map((_, i) => {
@@ -85,8 +102,8 @@ export class Dice {
   }
 
   clampHold([x, y], R) {
-    const W = this.el.clientWidth;
-    const H = this.el.clientHeight;
+    const W = this.tray.clientWidth;
+    const H = this.tray.clientHeight;
     return [Math.min(W - R * 2.9, Math.max(R * 2.9, x)), Math.min(H - R * 1.3, Math.max(R * 1.3, y))];
   }
 
@@ -149,7 +166,7 @@ export class Dice {
   // Toplam rozeti en sağdaki zarın yanında (yer yoksa solundakinin).
   total(values, states, R, glow) {
     if (!this.sum) return;
-    const W = this.el.clientWidth;
+    const W = this.tray.clientWidth;
     const xs = states.map((s) => s.p[0]);
     const right = Math.max(...xs) + R * 1.5;
     const x = right + 28 < W ? right : Math.min(...xs) - R * 1.5 - 28;
@@ -171,15 +188,17 @@ export class Dice {
     this.run++;
     this.values = key;
     this.el.classList.remove('rolling');
+    this.fit();
     const R = this.size() / 2;
-    const W = this.el.clientWidth || R * 8;
-    const H = this.el.clientHeight || R * 3;
+    // Yerindeki kutunun ortası, tepsi düzleminde.
+    const r = this.el.getBoundingClientRect();
+    const [hx, hy] = r.width ? this.planeXY(r.left + r.width / 2, r.top + r.height / 2) : [R * 4, R * 1.5];
     const gap = R * 1.6;
     const states = values.map((v, i) => {
-      const x = W / 2 + (i - (values.length - 1) / 2) * 2 * gap;
+      const x = hx + (i - (values.length - 1) / 2) * 2 * gap;
       const yaw = (Math.random() - 0.5) * 0.6;
       this.label(i, labelingFor('a', v));
-      return { p: [x, H / 2 + (i ? 4 : -4) * (values.length > 1 ? 1 : 0), R], q: qaxis([0, 0, 1], yaw) };
+      return { p: [x, hy + (i ? 4 : -4) * (values.length > 1 ? 1 : 0), R], q: qaxis([0, 0, 1], yaw) };
     });
     states.forEach((s, i) => this.draw(i, s, R));
     this.total(values, states, R, false);
@@ -197,10 +216,11 @@ export class Dice {
     const run = ++this.run;
     const t0 = performance.now();
     this.el.classList.remove('off');
+    if (!h) this.fit(); // elden savrulan zarlar tuttuğu andaki tepside kalır
     this.values = values.join();
     const R = this.size() / 2;
-    const W = Math.max(this.el.clientWidth, R * 4);
-    const H = Math.max(this.el.clientHeight, R * 2);
+    const W = Math.max(this.tray.clientWidth, R * 4);
+    const H = Math.max(this.tray.clientHeight, R * 2);
     const opts = { n: this.n, W, H, R };
     // Elden savrulduysa eldeki yüzler kalır, sonucu onlarla veren atış aranır; yoksa atış serbest, üstte kalacak yüze
     // istenen sayı yazılır. İkisinde de oynatılırken hiçbir şey düzeltilmez.

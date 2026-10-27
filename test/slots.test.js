@@ -37,15 +37,31 @@ test('yan sutunlar: piyon ic kenara bitisik, ortaya dogru', () => {
   assert.ok(fl.y - s >= l.y - s * 0.2 && fl.y <= l.y + l.h + s * 0.5, 'karenin hizasinda');
 });
 
-test('koseler: ic koseden ortaya, karenin disina tasmadan', () => {
+test('koseler: tek piyon ic kosede, kalabalikta karenin oteki koselerinde, tahtadan tasmadan', () => {
   const c0 = { x: 900, y: 630, w: 100, h: 70 }; // sag alt (BASLANGIC)
   const c18 = { x: 0, y: 0, w: 100, h: 70 }; // sol ust
   const [a] = feet('c', c0, s, 1, W, H);
   const [b] = feet('c', c18, s, 1, W, H);
-  assert.ok(a.x < c0.x && a.y >= c0.y && a.y < c0.y + s * 0.2, 'sag alt kose: sol ust ic kosede');
-  assert.ok(b.x > c18.x + c18.w && b.y > c18.y + c18.h, 'sol ust kose: sag alt ic kosede');
-  const many = feet('c', c0, s, 4, W, H);
-  for (let k = 1; k < 4; k++) assert.ok(many[k].x < many[k - 1].x, 'ortaya dogru dizilir');
+  assert.ok(a.x < c0.x + c0.w * 0.2 && a.y - s / 2 < c0.y + c0.h * 0.2, 'sag alt kose: sol ust ic kosede');
+  assert.ok(b.x > c18.x + c18.w * 0.8 && b.y - s / 2 > c18.y + c18.h * 0.8, 'sol ust kose: sag alt ic kosede');
+  for (const c of [c0, c18]) {
+    const six = feet('c', c, s, 6, W, H);
+    assert.equal(new Set(six.map((f) => `${f.x},${f.y}`)).size, 6, 'herkesin ayri yeri var');
+    for (const f of six) {
+      assert.ok(f.x - s * 0.28 >= 0 && f.x + s * 0.28 <= W && f.y - s >= 0 && f.y <= H, 'tahtanin icinde');
+      assert.ok(f.x > c.x - s * 0.5 && f.x < c.x + c.w + s * 0.5, 'koseden uzaklasmaz');
+    }
+  }
+});
+
+test('bir karede yan yana en cok 3 piyon, fazlasi ortaya dogru ikinci sirada', () => {
+  const b = { x: 300, y: 630, w: 100, h: 70 };
+  const five = feet('b', b, s, 5, W, H);
+  assert.equal(new Set(five.slice(0, 3).map((f) => f.y)).size, 1);
+  assert.ok(five[3].y < five[0].y && five[3].y === five[4].y, 'ikinci sira ortaya dogru');
+  const l = { x: 0, y: 280, w: 100, h: 70 };
+  const four = feet('l', l, s, 4, W, H);
+  assert.ok(four[3].x > Math.max(...four.slice(0, 3).map((f) => f.x)) - s * 0.31, 'sol sutunda ikinci sira saga');
 });
 
 test('ayni karedeki piyonlar ic kenar boyunca dizilir, kenari asmaz, ortalidir', () => {

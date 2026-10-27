@@ -9,13 +9,13 @@
   /* tahta renkleri */
   --cell-bg: #fffaf0; --cell-line: #e0d2b2;
   --corner-bg: #ecd9ad; --corner-line: #d2b77e; --corner-ink: #5b3d14;
-  --map-land: rgba(120, 90, 40, .08); --map-line: rgba(120, 90, 40, .16);
+  --map-land: rgba(120, 90, 40, .045);
 }
 body.dark {
   --sh-1: 0 1px 2px rgba(0, 0, 0, .4); --sh-2: 0 3px 6px rgba(0, 0, 0, .45); --sh-3: 0 8px 14px rgba(0, 0, 0, .5);
   --cell-bg: #1f2944; --cell-line: #33406a;
   --corner-bg: #3d3524; --corner-line: #5c4e31; --corner-ink: #f1dfb4;
-  --map-land: rgba(200, 215, 245, .045); --map-line: rgba(200, 215, 245, .1);
+  --map-land: rgba(200, 215, 245, .028);
 }
 
 /* ---------- kareler ---------- */
@@ -70,9 +70,13 @@ body.dark {
 .cell.k-prop .nm.two { line-height: 1; }
 .cell.k-prop .nm.two > span { display: block; }
 .cell.k-prop .nm.two > span + span { font-size: 0.8em; font-weight: 600; }
-.cell.special .nm, .cell.k-transport .nm { font-weight: 600; font-size: max(10px, calc(var(--ch) * 0.158)); letter-spacing: 0.03em; white-space: normal; overflow-wrap: normal; }
-.cell.special:not(.corner) .face, .cell.k-transport .face { justify-content: center; gap: 2px; }
+/* ulaşım ve Fırsat/Sürpriz: mülk karesinin düzeni; simge binanın yerinde, ad mülkünkiyle aynı yerde ve aynı yazıyla.
+   Ad hep iki satırlık yer ayırır (tek satırlık ad alta oturur): simge her karede aynı boyda ve aynı yükseklikte durur. */
 .cell .art { flex: none; }
+.cell:not(.k-prop, .corner) .art { position: relative; flex: 1 1 0; width: 100%; height: auto; min-height: 0; margin-top: calc(var(--band) + 6px); margin-bottom: 2px; pointer-events: none; }
+.cell:not(.k-prop, .corner) .art .ico { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: auto; height: min(100%, calc(var(--ch) * 0.42)); aspect-ratio: 1; }
+.cell:not(.k-prop, .corner) .nm { font-size: var(--nmf); line-height: 1.08; min-height: 2.06em; display: flex; flex-direction: column; justify-content: flex-end; }
+.cell:not(.k-prop, .corner) .nm.two { line-height: 1; }
 
 /* sahiplik şeridi: bandın hemen altında (ortaya bakan kenar); sahipliyken kalın, sahibinin renginde, beyaz kenarlı
    (beyaz/kömür oyuncu ince koyu kenarla) */
@@ -180,18 +184,18 @@ body.dark .tokens .dust { border-color: rgba(230, 236, 250, .7); }
 /* il noktaları dolu: sahipsizken set renginde, sahipliyken büyük ve sahibinin renginde */
 .citymap .city {
   position: absolute; width: max(7px, calc(var(--mw) * 0.012)); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; z-index: 500;
-  background: var(--gc); box-shadow: 0 0 0 1.5px var(--cell-bg), 0 0 0 2.5px rgba(27, 34, 51, .2); opacity: .4;
+  background: var(--gc); box-shadow: 0 0 0 1.5px var(--cell-bg), 0 0 0 2.5px rgba(27, 34, 51, .2); opacity: .2;
   transition: background var(--t-ui), box-shadow var(--t-ui), opacity var(--t-ui), scale var(--t-ui) var(--e-out);
 }
-.citymap .city.owned { scale: 1.35; background: var(--pc); box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px #fff, 0 0 0 3px rgba(27, 34, 51, .4); opacity: .55; }
+.citymap .city.owned { scale: 1.35; background: var(--pc); box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px #fff, 0 0 0 3px rgba(27, 34, 51, .4); opacity: .3; }
 body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0 0 0 2.5px rgba(238, 241, 248, .45); }
-/* harita modu dışında harita, noktalar ve binalar çok soluk, hiçbiri parlamaz: istem ve zar önde okunur */
+/* harita modu dışında harita, noktalar ve binalar yalnız orada bir şey olduğu belli olacak kadar görünür, hiçbiri parlamaz */
 .citymap .mb {
   position: absolute; height: calc(var(--mw) * 0.1 * var(--k)); width: auto; max-width: none; transform: translate(-50%, -100%); transform-origin: 50% 100%;
-  opacity: .18; filter: saturate(.4); transition: opacity var(--t-ui), filter var(--t-ui);
+  opacity: .08; filter: saturate(.4); transition: opacity var(--t-ui), filter var(--t-ui);
 }
 .citymap .mb[hidden] { display: none; }
-/* harita düğmesi: ortanın sol alt köşesinde, kaldırımdaki ve köşedeki piyonların erişmediği yerde; üstüne gelince (ya da basınca) ortadaki yazılar çekilir, harita öne çıkar */
+/* harita düğmesi: ortanın sol alt köşesinde, kaldırımdaki ve köşedeki piyonların erişmediği yerde; yalnız basınca ortadaki yazılar çekilir, harita öne çıkar */
 .map-btn {
   position: absolute; z-index: 20; left: calc(var(--cw) + var(--d) * 0.72); bottom: calc(var(--ch) + var(--d) * 0.72); width: 36px; height: 36px; border-radius: 50%;
   display: grid; place-items: center; border: 0; padding: 0; cursor: pointer; font-size: 17px; color: var(--ink);
@@ -204,7 +208,7 @@ body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0
 .board.mapfocus > .center { opacity: 0; pointer-events: none; }
 .board.mapfocus .citymap .mb { opacity: 1; filter: drop-shadow(0 1px 1px rgba(27, 34, 51, .3)); }
 .board.mapfocus .citymap .city { opacity: 1; }
-.board.mapfocus .citymap .land { background: color-mix(in srgb, var(--map-land), rgba(120, 90, 40, .1)); }
+.board.mapfocus .citymap .land { background: color-mix(in srgb, var(--map-land), rgba(120, 90, 40, .16)); }
 /* harita modunda iller tıklanmadan okunur: noktaya ya da binaya gelince tapusu açılır */
 .board.mapfocus .citymap { pointer-events: auto; }
 .board.mapfocus .citymap :is(.city, .mb) { cursor: help; }
@@ -230,8 +234,9 @@ body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0
 @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px) {
   .cell .face { padding: 0 1px 2px; }
   .cell .bld { margin-top: calc(var(--band) + 8px); }
+  .cell:not(.k-prop, .corner) .art { margin: calc(var(--band) + 1px) 0 0; }
+  .cell:not(.k-prop, .corner) .nm { min-height: 2em; }
   .board { --nmf: max(7px, calc(var(--ch) * 0.16)); }
-  .cell.special .nm, .cell.k-transport .nm { font-size: 7px; letter-spacing: 0; }
   .strip { left: 4px; right: 4px; }
   .cell.owned .strip { height: 4px; }
   .cell.corner .nm { font-size: 6.5px; letter-spacing: 0; }
@@ -244,8 +249,9 @@ body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0
 @media (orientation: landscape) and (max-height: 520px) {
   .cell .face { padding: 0 1px 2px; }
   .cell .bld { margin-top: calc(var(--band) + 6px); }
+  .cell:not(.k-prop, .corner) .art { margin: calc(var(--band) + 1px) 0 0; }
+  .cell:not(.k-prop, .corner) .nm { min-height: 2em; }
   .board { --nmf: max(8px, calc(var(--ch) * 0.22)); }
-  .cell.special .nm, .cell.k-transport .nm { font-size: 7.5px; letter-spacing: 0; }
   .cell.corner .nm { font-size: 7px; letter-spacing: 0; }
   .strip { left: 4px; right: 4px; }
   .cell.owned .strip { height: 4px; }

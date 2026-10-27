@@ -7,7 +7,7 @@
 .dice.holding { cursor: grabbing; }
 .prompt [data-act="roll"] { touch-action: none; }
 
-.zar-tepsi { position: absolute; inset: 0; perspective: calc(var(--d) * 16); pointer-events: none; }
+.zar-tepsi { position: absolute; inset: 0; z-index: 60; perspective: calc(var(--d) * 16); pointer-events: none; } /* oyun zarlarında tahtanın neredeyse tamamı (dice.js fit) */
 .zar-zemin { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(30deg); transform-origin: 50% 60%; }
 
 .zar { position: absolute; left: 0; top: 0; width: var(--d); height: var(--d); transform-style: preserve-3d; }

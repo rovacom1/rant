@@ -71,7 +71,7 @@ export class CityMap {
     this.ready = false;
     new ResizeObserver(() => this.fit()).observe(el);
 
-    // Harita düğmesi: üstüne gelince harita öne çıkar, basınca öyle kalır (bir daha basınca ya da Esc ile geri çekilir).
+    // Harita düğmesi: yalnız basınca harita öne çıkar ve öyle kalır (bir daha basınca ya da Esc ile geri çekilir).
     const btn = document.createElement('button');
     btn.className = 'map-btn';
     btn.type = 'button';
@@ -83,21 +83,6 @@ export class CityMap {
     this.board = boardEl;
     this.btn = btn;
     this.pinned = false;
-    // Düğmeden haritaya geçerken mod kapanmasın: imleç düğmede ya da haritada olduğu sürece açık kalır.
-    let off = 0;
-    const enter = (e) => {
-      if (e.pointerType !== 'mouse' || (e.currentTarget === el && !boardEl.classList.contains('mapfocus'))) return;
-      clearTimeout(off);
-      this.focus(true);
-    };
-    const leave = () => {
-      clearTimeout(off);
-      off = setTimeout(() => !this.pinned && this.focus(false), 150);
-    };
-    for (const n of [btn, el]) {
-      n.addEventListener('pointerenter', enter);
-      n.addEventListener('pointerleave', leave);
-    }
     btn.addEventListener('click', () => this.pin(!this.pinned));
     document.addEventListener('keydown', (e) => e.key === 'Escape' && this.pinned && this.pin(false));
 
@@ -115,15 +100,11 @@ export class CityMap {
     el.addEventListener('pointerleave', () => this.showCard(null));
   }
 
-  focus(on) {
-    this.board.classList.toggle('mapfocus', on);
-    if (!on) this.showCard(null);
-  }
-
   pin(on) {
     this.pinned = on;
     this.btn.setAttribute('aria-pressed', String(on));
-    this.focus(on);
+    this.board.classList.toggle('mapfocus', on);
+    if (!on) this.showCard(null);
   }
 
   // q ilinin tapusu, noktasının yanında (tahtanın alt yarısındaysa üstünde, üst yarısındaysa altında); null: kapat.

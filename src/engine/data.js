@@ -23,7 +23,7 @@ export const BOT_LEVELS = ['kolay', 'normal', 'zor'];
 
 export const RULE_LABELS = {
   ihale: { name: 'Açık artırma', off: 'Alınmayan arsa sahipsiz kalır.' },
-  surpriz: { name: 'SÜRPRİZ kareleri', off: 'SÜRPRİZ karesinde bir şey olmaz.' },
+  surpriz: { name: 'Sürpriz kareleri', off: 'Sürpriz karesinde bir şey olmaz.' },
   gundem: { name: 'Gündem kartları', off: 'Tur başında haber kartı açılmaz.' },
 };
 
@@ -52,46 +52,46 @@ const prop = (name, group, price, rents) => ({ kind: 'prop', name, group, price,
 
 const air = (name) => ({ kind: 'transport', mode: 'air', name, price: 200 });
 const rail = (name) => ({ kind: 'transport', mode: 'rail', name, price: 150 });
-const SURPRIZ_SQ = { kind: 'surpriz', name: 'SÜRPRİZ' };
-const FIRSAT_SQ = { kind: 'chance', name: 'FIRSAT' };
+const SURPRIZ_SQ = { kind: 'surpriz', name: 'Sürpriz' };
+const FIRSAT_SQ = { kind: 'chance', name: 'Fırsat' };
 
-// 10x10 tahta: köşeler 0, 9, 18, 27; her kenarda 5 mülk, 1 gar, 1 havalimanı, 1 FIRSAT/SÜRPRİZ.
+// 10x10 tahta: köşeler 0, 9, 18, 27; her kenarda 5 mülk, 1 gar, 1 havalimanı, 1 Fırsat/Sürpriz.
 export const BOARD = [
   { kind: 'start', name: 'BAŞLANGIÇ NOKTASI' },
   prop('Amasya', 'corum', 60, [2, 10, 30, 90, 160]),
   prop('Çorum', 'corum', 80, [4, 20, 60, 180, 320]),
   SURPRIZ_SQ,
-  rail('DOĞU EKSPRESİ'),
+  rail('Doğu Ekspresi'),
   prop('Giresun', 'trabzon', 100, [6, 30, 90, 270, 400]),
   prop('Rize', 'trabzon', 100, [6, 30, 90, 270, 400]),
-  air('KAPADOKYA'),
+  air('Kapadokya'),
   prop('Trabzon', 'trabzon', 120, [8, 40, 100, 300, 450]),
   { kind: 'tapu', name: 'TAPU DAİRESİ' },
   prop('Balıkesir', 'bursa', 140, [10, 50, 150, 450, 625]),
   FIRSAT_SQ,
   prop('Bursa', 'bursa', 160, [12, 60, 180, 500, 700]),
-  rail('KONYA GARI'),
+  rail('Konya Garı'),
   prop('Aksaray', 'konya', 180, [14, 70, 200, 550, 750]),
   prop('Nevşehir', 'konya', 180, [14, 70, 200, 550, 750]),
-  air('DALAMAN'),
+  air('Dalaman'),
   prop('Konya', 'konya', 200, [16, 80, 220, 600, 800]),
   { kind: 'cay', name: 'ÇAY OCAĞI' },
   prop('Adana', 'antalya', 220, [18, 90, 250, 700, 875]),
   prop('Mersin', 'antalya', 220, [18, 90, 250, 700, 875]),
   SURPRIZ_SQ,
-  rail('ANKARA GARI'),
+  rail('Ankara Garı'),
   prop('Antalya', 'antalya', 240, [20, 100, 300, 750, 925]),
   prop('Eskişehir', 'ankara', 260, [22, 110, 330, 800, 975]),
-  air('ESENBOĞA'),
+  air('Esenboğa'),
   prop('Ankara', 'ankara', 280, [24, 120, 360, 850, 1025]),
   { kind: 'zabita', name: 'ZABITA' },
   prop('Aydın', 'izmir', 300, [26, 130, 390, 900, 1100]),
   FIRSAT_SQ,
   prop('Manisa', 'izmir', 300, [26, 130, 390, 900, 1100]),
-  rail('HAYDARPAŞA'),
+  rail('Haydarpaşa'),
   prop('İzmir', 'izmir', 320, [28, 150, 450, 1000, 1200]),
   prop('İstanbul Anadolu', 'istanbul', 350, [35, 175, 500, 1100, 1300]),
-  air('SABİHA GÖKÇEN'),
+  air('Sabiha Gökçen'),
   prop('İstanbul Avrupa', 'istanbul', 400, [50, 200, 600, 1400, 1700]),
 ];
 

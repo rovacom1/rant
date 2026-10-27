@@ -65,7 +65,7 @@ test('başkasının hamlesi ve sıra dışı hamle reddedilir', () => {
   assert.throws(() => applyAction(s, 0, { type: 'hackle' }), GameError);
 });
 
-test('çift zar: turu bitirince bir daha zar atar, üçüncü çiftte ek hak yok', () => {
+test('çift zar: işi kalmayan beklemeden bir daha zar atar, üçüncü çiftte ek hak yok', () => {
   let s = calm(started(4, 42, { rules: { surpriz: false, ihale: false } }));
   stripAll(s, 'kestirme');
   stripAll(s, 'dayi');
@@ -77,20 +77,33 @@ test('çift zar: turu bitirince bir daha zar atar, üçüncü çiftte ek hak yok
       let r = applyAction(t, 0, { type: 'roll' }).state;
       if (r.turn.dice[0] !== r.turn.dice[1]) continue;
       while (r.pending) r = act(r, waitingFor(r)[0], defaultFor(r));
-      if (r.turn.p === 0 && r.turn.step === 'free' && r.players[0].cash >= 0) return r;
+      if (r.turn.p === 0 && r.players[0].cash >= 0) return r;
     }
     throw new Error('çift bulunamadı');
   };
   s = rollDouble(s);
-  s = act(s, 0, { type: 'endTurn' });
   assert.equal(s.turn.p, 0, 'aynı oyuncu bir daha oynar');
-  assert.equal(s.turn.step, 'preroll');
+  assert.equal(s.turn.step, 'preroll', 'turu bitir beklenmez');
+  assert.ok(s.log.some((l) => l.type === 'again'), 'neden yeniden attığı yazar');
   s = rollDouble(s);
-  s = act(s, 0, { type: 'endTurn' });
-  assert.equal(s.turn.p, 0, 'ikinci çiftte de bir daha');
+  assert.equal(s.turn.step, 'preroll', 'ikinci çiftte de bir daha');
   s = rollDouble(s);
+  assert.equal(s.turn.step, 'free', 'üçüncü çiftte serbest evrede kalır');
   s = act(s, 0, { type: 'endTurn' });
   assert.notEqual(s.turn.p, 0, 'üçüncü çiftten sonra sıra geçer');
+});
+
+test('çift zar: borcu varken turu kendiliğinden bitmez', () => {
+  let s = calm(started(4, 42, { rules: { surpriz: false, ihale: false } }));
+  s.turn = { ...s.turn, step: 'free', again: true, doubles: 1, dice: [2, 2] };
+  s.props[1].owner = 0;
+  s.players[0].cash = -1000;
+  s = act(s, 0, { type: 'mortgage', sq: 1 });
+  assert.equal(s.turn.step, 'free', 'borç kapanmadan bir daha atılmaz');
+  s.players[0].cash = 50;
+  s.props[2].owner = 0;
+  s = act(s, 0, { type: 'mortgage', sq: 2 });
+  assert.equal(s.turn.step, 'preroll', 'borç kapanınca bir daha atar');
 });
 
 test('zar: toplam kadar ilerler ve sıra serbest evreye geçer', () => {
