@@ -6,17 +6,20 @@ Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
 
 ## Sıradaki
 
+- [ ] **Kat Karşılığı arayüz denemesi:** v0.21.0 kare rozeti (🏗️), kare penceresindeki ortak satırı, hedef seçimi ve rakip kart açıklaması tarayıcıda denenmedi (League açıktı); iki temada ve 375 px'te bak.
 - [ ] **Mobil düzen (kalan):** Kart sürükleme dokunmatikte denenmeli; 375 px'te kare adları ~5 px (okunmuyor; dokununca açılan pencere adı gösteriyor, gerekirse kısaltılmış ad ya da dokununca büyüyen kare); dar ekranda gündem açıklaması gizli (gündem çubuğuna dokununca açıklama penceresi düşünülebilir).
 - [ ] **İlk oyun rehberi:** İlk oyunda adım adım ipuçları (zar, satın alma, kart oynama, kat dikme); "bir daha gösterme".
 - [ ] **Yeni harita: İstanbul:** İlçelerden oluşan ikinci tahta; lobide harita seçimi (tahta verisi data.js'te haritaya göre).
-- [ ] **Yeni kartlar (kalan, denge simülasyonuyla):** "Kat Karşılığı" (rakibin arsasına onunla ortak kat).
 - [ ] **Ev sahibi devri:** Ev sahibi düşerse en eski oyuncu kayıttan oyunu devralsın (her oyuncuda son durum kopyası).
 - [ ] **PWA:** Masaüstüne kurulabilir uygulama (manifest + service worker); botlarla çevrimdışı oynama.
 - [ ] **Erişilebilirlik:** Klavyeyle tam oynanış, renk körleri için şehir desenleri, ekran okuyucu etiketleri.
+- [ ] **Oyun sonu unvanları:** Sonuç ekranında eğlenceli rozetler (Kira Kralı: en çok kira toplayan, Kaçak Ustası, İtirazcı, Ev Sahibi Mağduru); motor istatistiği sayar, olaylar gizli bilgi taşımaz.
+- [ ] **Hızlı oyun:** Lobide 'Hızlı' seçeneği: 8 tur, herkes 2 rastgele sahipsiz mülkle başlar; 20-25 dakikalık oyun.
 - [ ] **İsteğe bağlı sunucu:** P2P'nin çalışmadığı ağlar için aynı protokolle küçük bir WebSocket aktarıcısı (Cloudflare Workers + Durable Objects), varsayılan kapalı.
 
 ## Tamamlananlar
 
+- [x] Kat Karşılığı hamle kartı (2 adet, deste 50): rakibin arsasına kat parasını sen ödersin, sahibine bedava yasal kat çıkar, o mülkün kirası bundan sonra ikinize yarı yarıya; mülk başına tek ortak, İtiraz edilebilir, ortak iflas edince biter; sim 300x5 sıra %17-22, kira 22,6, kart 0,9/oyun (v0.21.0)
 - [x] Bakım (oturum 40): kullanılmayan .wait kuralı silindi, rng.js rand dışa kapatıldı, Nasıl oynanır puan tanımına ödenmemiş kredi ve Hamle listesine Kredi Kartı eklendi; denge 300x5 sıra %18-21, kira 22,3/oyun; PeerJS 1.5.5 güncel, CDN 200 (v0.20.2)
 - [x] Mobil düzen 2. dilim: 375 px'te Zar At düğmesi görünmüyordu (gündem kartı tahta ortasını kaplıyordu, istem 0 px); dar ekranda gündem tek satır, karar beklerken son olaylar gizli, istem taşınca üstü kesilmiyor, artırmada katılımcı listesi gizli, üst çubuk sayfayı yana kaydırmıyor; kare penceresi ve pazarlık penceresi 375 px'e sığıyor (v0.20.1)
 - [x] Torpil tepki kartı (2 adet, deste 48): açık artırmada sıran gelince oynanır, artırma kapanır, mülk liste fiyatının yarısına (teklif daha yüksekse 10 fazlasına) alınır; bot normal tavanı içindeyse oynar; sim 500x5 sıra %19-22, kira 22,4, torpil 2,0/oyun (v0.20.0)
