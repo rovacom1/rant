@@ -605,25 +605,38 @@ function tradePendingHTML(v, pd) {
 
 // ---------- sağ sütun ----------
 
-function playersHTML(v) {
+// Oyuncu satırları yerinde güncellenir: konturlu piyon resmi (9 katlı gölge filtresi) yalnız avatar ya da renk değişince
+// yeniden kurulur. Her para değişiminde bütün satırları baştan yazmak piyonları yeniden boyatıyor, jetonlar uçarken
+// kareler 100 ms'ye çıkıyordu.
+function renderPlayers(v) {
+  const box = els.players;
   const waiting = new Set(E.waitingFor(v));
   const conn = (app.meta && app.meta.connected) || {};
-  return v.players
-    .map((pl, i) => {
-      const turn = v.phase === 'play' && v.turn && v.turn.p === i;
-      const tags = [];
-      if (pl.out) tags.push(html`<span data-tip="İflas etti, ${pl.out}. elenen">${I('iflas')}</span>`);
-      else if (pl.bot) tags.push(html`<span data-tip="Bot oynuyor">${I('bot')}</span>`);
-      else if (conn[pl.id] === false) tags.push(html`<span data-tip="Bağlantısı koptu, süre dolunca bot oynar">${I('plug')}</span>`);
-      if (pl.konkordato) tags.push(html`<span data-tip="Konkordato: oyun sonunda ${pl.konkordato * v.config.konkordatoPenalty} puan ceza">${I('warning')}</span>`);
-      if (pl.kiraZammi) tags.push(html`<span data-tip="Kira Zammı: tahsil edeceği ilk kira 2 katı">${I('up')}</span>`);
-      const wait = waiting.has(i) && !turn && v.phase !== 'over' ? html`<span class="pwait" data-tip="Karar vermesi bekleniyor"></span>` : '';
-      const label = `${pl.name}${i === v.you ? ' (sen)' : ''}, ${pl.out ? 'iflas etti' : `${fmt(pl.cash)}`}`;
-      return html`<button class="prow ${turn ? 'turn' : ''} ${pl.out ? 'out' : ''}" style="--pc:${pl.color}" data-act="player" data-p="${i}" aria-label="${label}">
-        <span class="disc">${PW(pl, 30)}</span><span class="pname">${pl.name}</span><span class="ptag">${tags}</span>${wait}<span class="grow"></span>
-        <span class="pcash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${pl.out ? 'elendi' : cashText(pl.cash)}</span></button>`;
-    })
-    .join('');
+  while (box.children.length > v.players.length) box.lastChild.remove();
+  v.players.forEach((pl, i) => {
+    let row = box.children[i];
+    if (!row) {
+      row = document.createElement('button');
+      row.dataset.act = 'player';
+      row.dataset.p = i;
+      row.innerHTML = '<span class="disc"></span><span class="prest"></span>';
+      box.appendChild(row);
+    }
+    const turn = v.phase === 'play' && v.turn && v.turn.p === i;
+    row.className = `prow ${turn ? 'turn' : ''} ${pl.out ? 'out' : ''}`;
+    row.style.setProperty('--pc', pl.color);
+    row.setAttribute('aria-label', `${pl.name}${i === v.you ? ' (sen)' : ''}, ${pl.out ? 'iflas etti' : `${fmt(pl.cash)}`}`);
+    setHTML(row.firstElementChild, PW(pl, 30));
+    const tags = [];
+    if (pl.out) tags.push(html`<span data-tip="İflas etti, ${pl.out}. elenen">${I('iflas')}</span>`);
+    else if (pl.bot) tags.push(html`<span data-tip="Bot oynuyor">${I('bot')}</span>`);
+    else if (conn[pl.id] === false) tags.push(html`<span data-tip="Bağlantısı koptu, süre dolunca bot oynar">${I('plug')}</span>`);
+    if (pl.konkordato) tags.push(html`<span data-tip="Konkordato: oyun sonunda ${pl.konkordato * v.config.konkordatoPenalty} puan ceza">${I('warning')}</span>`);
+    if (pl.kiraZammi) tags.push(html`<span data-tip="Kira Zammı: tahsil edeceği ilk kira 2 katı">${I('up')}</span>`);
+    const wait = waiting.has(i) && !turn && v.phase !== 'over' ? html`<span class="pwait" data-tip="Karar vermesi bekleniyor"></span>` : '';
+    setHTML(row.lastElementChild, html`<span class="pname">${pl.name}</span><span class="ptag">${tags}</span>${wait}<span class="grow"></span>
+      <span class="pcash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${pl.out ? 'elendi' : cashText(pl.cash)}</span>`);
+  });
 }
 
 // Sağ sütundaki el ve deste. İzleyicinin eli yoktur. Oyuncu ayrıntısı açıksa elin yerinde durur.
@@ -1063,7 +1076,7 @@ export function updateGame() {
   renderKeep(els.prompt, promptHTML(v));
   if (!animating) paintDice(v);
   renderPop(v);
-  setHTML(els.players, playersHTML(v));
+  renderPlayers(v);
   renderHand(v);
   setHTML(els.tools, toolsHTML(v));
   setHTML(els.stick, stickerHTML(v));

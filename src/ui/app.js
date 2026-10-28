@@ -10,7 +10,7 @@ import { app, profile, send, act, isHost } from './state.js';
 import * as G from './gameview.js';
 import { pickClick, isBoardPickable } from './pick.js';
 import { ic } from './icons.js';
-import { pawn } from './pawns.js';
+import { pawn, onPawnsReady } from './pawns.js';
 import { mountIntro } from './intro.js';
 
 const root = document.getElementById('app');
@@ -796,6 +796,8 @@ app.ui = freshUI();
 app.joinCode = normalizeCode(location.hash.slice(1));
 // Tahta teması: kayıtlı seçim, yoksa sistemin karanlık mod tercihi.
 document.body.classList.toggle('dark', (store.get('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark');
+// Kenarlı piyon resimleri hazır olunca (pawns.js) ekran onlarla yeniden çizilir.
+onPawnsReady(() => (app.screen === 'game' ? G.gameMounted() && G.updateGame() : render()));
 render();
 // Davet linkiyle girmiş oyuncu sayfayı yenilerse aynı odaya kendiliğinden döner.
 if (app.joinCode && app.joinCode === store.get('lastJoin') && profile.name) startJoin(app.joinCode);

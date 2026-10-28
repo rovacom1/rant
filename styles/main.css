@@ -62,6 +62,7 @@ body.dark .ic.c { filter: drop-shadow(0 0 0.7px rgba(255, 255, 255, 0.9)) drop-s
   display: block; pointer-events: none; user-select: none;
   filter: drop-shadow(var(--o) 0 0 var(--pc)) drop-shadow(calc(var(--o) * -1) 0 0 var(--pc)) drop-shadow(0 var(--o) 0 var(--pc)) drop-shadow(0 calc(var(--o) * -1) 0 var(--pc)) drop-shadow(1px 0 0 var(--pedge)) drop-shadow(-1px 0 0 var(--pedge)) drop-shadow(0 1px 0 var(--pedge)) drop-shadow(0 -1px 0 var(--pedge)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
 }
+.pawn img.ol { filter: none; } /* kenarı resmin içinde hazır (pawns.js) */
 .disc { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; background: color-mix(in srgb, var(--pc) 12%, transparent); }
 body.dark .disc { background: color-mix(in srgb, var(--pc) 22%, transparent); }
 
@@ -378,6 +379,8 @@ body.dark .deed .dmort { background: repeating-linear-gradient(135deg, rgba(10, 
 .prow.turn { background: color-mix(in srgb, var(--pc) 12%, transparent); box-shadow: inset 0 0 0 2px var(--pc), inset 0 0 0 3px var(--pedge); }
 body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent); }
 .prow.out { opacity: 0.4; }
+.prow .prest { display: contents; } /* gameview.js renderPlayers: piyondan sonraki her şey (yeniden yazılan kısım) */
+.prow .disc { will-change: transform; } /* kendi katmanı: satırın zemini değişince (sıra, üstüne gelme) konturlu piyon yeniden boyanmasın */
 .prow .pname { font-family: var(--hf); font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
 .prow .ptag { color: var(--muted); font-size: 17px; line-height: 0; display: inline-flex; gap: 2px; }
 .prow .pcash { font-family: var(--hf); font-weight: 700; font-size: 19px; font-variant-numeric: tabular-nums; display: inline-block; contain: layout paint; will-change: transform; } /* kendi katmanı: bakiye sayarken konturlu piyon resimleri yeniden boyanmasın */

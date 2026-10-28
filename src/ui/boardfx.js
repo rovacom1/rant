@@ -88,7 +88,7 @@ export function turnFx(board, cell, token, pl, me) {
   const down = cb.y + cb.h / 2 < board.clientHeight / 2;
   const low = Math.max(cb.y + cb.h, tb.y + tb.h * 1.15);
   const high = Math.min(cb.y, tb.y - tb.h * 0.2);
-  const tag = layer(board, 'fx-tag', { x: 0, y: 0, w: 0, h: 0 }, LABEL_MS, `${pawn(pl.avatar, pl.color, 26)}<span></span>`);
+  const tag = layer(board, 'fx-tag', { x: 0, y: 0, w: 0, h: 0 }, LABEL_MS, `${pawn(pl.avatar, pl.color, 26, '', true)}<span></span>`);
   tag.lastElementChild.textContent = me ? 'Sıra sende!' : pl.name;
   tag.style.setProperty('--c', pl.color);
   Object.assign(tag.style, { width: '', height: '' });
