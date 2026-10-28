@@ -128,7 +128,7 @@ Kareler il adını taşır; set (şehir grubu) adı ve anahtarı aynı kalır (�
 5. **Kareye geliş** (aşağıda).
 6. **Serbest evre**: Hamle (bu tur oynamadıysan), kat, ipotek, pazarlık; sonra **Turu Bitir**. Yapabileceğin hiçbir şey yoksa (oynanabilir kart, dikilebilir yasal ya da kaçak kat, kaldırılabilir ipotek yok, nakit eksi değil) tur 3 saniye sonra kendiliğinden biter; düğmede geri sayım görünür. Bu sürede ele gelmek, bir pencere açmak ya da tahtaya tıklamak kendiliğinden bitirmeyi o tur için durdurur. Yalnız arayüzdür: süre dolunca istemci normal Turu Bitir hamlesini gönderir, kural değişmez.
 
-**Açık pazarlık:** Sırası olmayan oyuncular da, sıradaki oyuncu zar öncesi ya da serbest evredeyken (bekleyen karar yokken), herhangi bir oyuncuya turda bir pazarlık teklifi yapabilir. Masada aynı anda tek teklif bulunur.
+**Açık pazarlık:** Herkes, sırası olsun olmasın, her an herhangi bir oyuncuya pazarlık teklif edebilir; teklif sayısı sınırsızdır. Masada aynı anda tek teklif karar bekler: o sırada başka bir karar (satın alma, artırma, kira, Kestirme, başka bir teklif) bekleniyorsa ya da piyon yürüyorsa teklif sıraya girer ve o karar bitince, sıradaki oyuncu zar öncesi ya da serbest evredeyken karşı tarafa düşer. Her oyuncunun sırada tek teklifi olur (yenisi eskisinin yerini alır); sıradaki teklif geri çekilebilir. Teklif açıldığı anda yeniden denetlenir, artık geçerli değilse düşer.
 7. Turu bitirmek için: bekleyen karar yok, nakit >= 0, elde en fazla 6 kart.
 8. **Tur sonu** (son oyuncudan sonra): Tur özeti açıklanır: net değeri en çok artan ve en çok düşen oyuncu, el değiştiren mülkler. Yalnız bilgi verir, kurala etkisi yoktur.
 
@@ -156,9 +156,9 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 
 ## 5. İnşaat
 
-- **Yasal kat**: Şehrin tüm mülkleri sende ve hiçbiri ipotekli değilse. Fiyat: şehrin kat fiyatı.
+- **Yasal kat**: Şehrin tüm mülkleri sende ve hiçbiri ipotekli değilse. Fiyat: şehrin kat fiyatı. Monopoly'deki gibi eşit çıkar: önce setteki her mülke 1'er kat, sonra 2'şer, sonra 3'er; bir mülkün yasal katı setteki en az katlı mülkten fazla olamaz (seviyesi 4'e dolmuş mülk beklenmez). Bir mülke bir anda 4 kat dikilemez.
 - **Kaçak kat**: Herhangi bir mülküne (set şart değil) kat fiyatının yarısına. Mülk başına en fazla 1. İhbar, Zabıta ve Belediye Operasyonu ile yıkılır; İmar Affı ile yasallaşır.
-- Seviye en fazla 4. Eşit dağıtım kuralı yok.
+- Seviye en fazla 4. Kaçak kat eşitlik kuralına bağlı değildir. Kat satarken eşitlik aranmaz; Müteahhit Dostu ve Belediyeden Jest gibi bedava katlar da kurala bağlı değildir.
 - **Kat satma**: Yasal kat için kat fiyatının yarısı, kaçak kat için kaçak maliyetinin yarısı geri gelir.
 - **İpotek**: Katsız mülk için fiyatın %50'si alınır; kaldırmak fiyatın %55'i. İpotekli mülk kira almaz; o şehirde yasal kat dikilemez.
 
@@ -166,7 +166,7 @@ Monopoly'deki gibi: satın almayı reddedenden sonraki oyuncudan başlayarak sı
 
 - Ödemeler her zaman tam yapılır; nakit eksiye düşebilir.
 - Eksi nakitle teklif veremez, kat dikemez, para isteyen kart oynayamazsın.
-- Sıranı bitirmeden nakdini 0'ın üstüne çıkarmalısın (kat sat, ipotek et, pazarlık yap). "Borcu Kapat" düğmesi bunu otomatik yapar: önce kaçak katlar, sonra ucuz katlar, sonra ucuz mülkler ipotek.
+- Sıranı bitirmeden nakdini 0'ın üstüne çıkarmalısın (kat sat, ipotek et, pazarlık yap). Borç penceresinde satışın yanında Pazarlık düğmesi de vardır: mülkünü (ipotekli olanı da) rakibe para karşılığı önerebilirsin; teklif cevaplanana kadar turun bitmez. "Borcu Kapat" düğmesi bunu otomatik yapar: önce kaçak katlar, sonra ucuz katlar, sonra ucuz mülkler ipotek.
 - Satacak bir şey kalmadıysa **Konkordato**: nakit 0 olur, oyundan çıkmazsın, sonda konkordato başına 300 puan cezası.
 - **İflas modunda** konkordato yoktur; satacak bir şey kalmayan oyuncu **iflas eder**: mülkleri katsız ve ipoteksiz olarak bankaya döner (sahipsiz, yeniden satın alınabilir), elindeki kartlar desteye gider, oyundan çıkar. Elenen oyuncunun sırası atlanır; aidat, çay parası, gündem ve sürpriz ödemelerine katılmaz; kartlara, pazarlığa ve artırmaya hedef olamaz. Sıralama: ayakta kalanlar puana göre, sonra elenenler son elenenden ilk elenene.
 
@@ -283,7 +283,7 @@ Oyun sonu ekranındaki dayı yorumu için her oyuncunun diktiği kaçak kat, kaz
 - Her oyuncu yalnız kendi görünümünü alır (başkalarının eli gizli). Zar ve desteler ev sahibindedir.
 - Ev sahibi sayfayı yenilerse oyun tarayıcı hafızasından geri yüklenir; oyuncular otomatik yeniden bağlanır.
 - **Ev sahibi devri:** ev sahibi her hamleden sonra oyunun tam halini sıradaki bağlı insan oyuncuya (yedek) da gönderir; koltuk anahtarları gönderilmez. Ev sahibi 15 saniye dönmezse yedek aynı oda koduyla ev sahibi olur, diğerleri kendiliğinden ona bağlanır; koltuklar, kimliği o koltuğa denk gelen tokenle dönene verilir. Eski ev sahibi "Devam et" derse oda başkasında açık olduğu için oyuncu olarak katılır. Bedeli: yedek oyuncunun tarayıcısı da herkesin elini tutar (ev sahibininki gibi); arkadaş masası için kabul edildi.
-- Sırası gelen oyuncu turda en fazla 3, diğerleri (sıradaki oyuncu zar atmadan önce ya da turunu bitirmeden) turda 1 pazarlık teklifi yapar; masada aynı anda tek teklif bekler. Teklifi alan kabul eder, reddeder ya da karşı teklif yapar: aynı pazarlık ters yönde sürer, bir pazarlıkta en fazla 2 karşı teklif olur.
+- Pazarlık teklifi her an yapılır, sınır yoktur; masada aynı anda tek teklif bekler, ötekiler sıraya girer (bkz. Açık pazarlık). Teklifi alan kabul eder, reddeder ya da karşı teklif yapar: aynı pazarlık ters yönde sürer, bir pazarlıkta en fazla 2 karşı teklif olur.
 - Bağlantısı kopan oyuncunun yerine bir süre sonra bot oynar; dönünce koltuk geri verilir.
 - Motor taşıma katmanından bağımsızdır; ileride bir WebSocket sunucusu aynı protokolle eklenebilir.
 

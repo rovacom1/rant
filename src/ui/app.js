@@ -525,11 +525,9 @@ const A = {
     b[sq] = (b[sq] || 0) + Number(el.dataset.d);
     G.renderModal();
   },
-  // Seçilen katları sırayla diker ya da satar.
+  // Seçilen katları satar, sonra eşit çıkma sırasıyla diker.
   buildGo() {
-    for (const [sq, d] of Object.entries(app.ui.build || {})) {
-      for (let i = 0; i < Math.abs(d); i++) act({ type: d > 0 ? 'build' : 'sellFloor', sq: Number(sq) });
-    }
+    for (const a of G.buildOrder(app.view, app.ui.build || {}) || []) act(a);
     app.ui.build = {};
     closeDialog();
   },
@@ -644,8 +642,12 @@ const A = {
   },
   sendTrade() {
     const o = G.tradeOffer();
+    const v = V();
     if (app.ui.trade.counter) act({ type: 'tradeCounter', give: o.give, take: o.take });
-    else act({ type: 'proposeTrade', ...o });
+    else {
+      act({ type: 'proposeTrade', ...o });
+      if (v.pending || !['preroll', 'free'].includes(v.turn.step)) G.toast('Teklifin sırada; masadaki karar bitince iletilecek.', '', 'deal');
+    }
     closeDialog();
   },
   // Gelen teklifi tersine çevirip pazarlık penceresinde açar; oyuncu değiştirip geri gönderir.

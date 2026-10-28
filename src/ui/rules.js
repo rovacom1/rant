@@ -11,11 +11,11 @@ export const RULES_HTML = `
 <li>Sahipsiz arsaya gelince <b>satın al</b> ya da <b>açık artırmaya</b> çıkar: sırayla herkes ya teklifi artırır ya çekilir, son kalan kazanır.</li>
 <li>Başkasının mülküne gelince kira ödersin. <b>Dayın Çıktı</b> kartın varsa ödemezsin.</li>
 <li>Kat dik, ipotek et, pazarlık teklif et, sonra <b>Turu Bitir</b>.</li>
-<li>Sıran değilken de turda bir kez pazarlık teklif edebilirsin (sıradaki oyuncu zar atmadan önce ya da turunu bitirmeden).</li>
+<li>Pazarlık teklifini her an, sıran değilken de yapabilirsin. Masada başka bir karar bekleniyorsa teklifin sıraya girer, o karar bitince iletilir.</li>
 </ul>
 <h3>Kat ve kaçak kat</h3>
 <ul>
-<li><b>Yasal kat</b> için şehrin tüm mülkleri sende olmalı. Kat kirayı katlar (en fazla 4 seviye).</li>
+<li><b>Yasal kat</b> için şehrin tüm mülkleri sende olmalı. Kat kirayı katlar (en fazla 4 seviye). Katlar eşit çıkar: önce her mülke 1'er, sonra 2'şer kat; bir mülke bir anda 4 kat dikilmez.</li>
 <li><b>Kaçak kat</b> set istemez, yarı fiyatına; ama set tamamlanmadan katların kirası yarıdır. <b>İhbar</b> kartı, <b>Zabıta</b> karesi ya da <b>Belediye Operasyonu</b> yıkar. <b>İmar Affı</b> gelirse yasallaşır.</li>
 </ul>
 <h3>Gar, havalimanı ve Sürpriz</h3>
@@ -33,7 +33,7 @@ export const RULES_HTML = `
 <h3>3 turda bir Gündem</h3>
 <p>Her 3 turda bir (1., 4., 7. ... tur) bir haber kartı açılır: enflasyon, imar affı, turizm sezonu, deprem yönetmeliği... Para ve kat etkileri hemen bir kez uygulanır; "Bu dönem" diye başlayan kurallar gündem değişene kadar, 3 tur boyunca geçerlidir. Tahtanın ortasındaki gündem şeridi kaç tur kaldığını gösterir. <b>Endeks</b> yükseldikçe fiyat ve kiralar artar, nakit erir.</p>
 <h3>Borç ve Konkordato</h3>
-<p>Para eksiye düşebilir; sıranı bitirmeden kat satıp ipotek ederek borcunu kapatmalısın ("Borcu Kapat" bunu otomatik yapar). Satacak bir şeyin kalmazsa konkordato ilan edersin: borcun silinir, oyunda kalırsın, sonda 300 puan ceza.</p>
+<p>Para eksiye düşebilir; sıranı bitirmeden kat satıp ipotek ederek ya da pazarlıkla mülk satarak borcunu kapatmalısın ("Borcu Kapat" bunu otomatik yapar). Satacak bir şeyin kalmazsa konkordato ilan edersin: borcun silinir, oyunda kalırsın, sonda 300 puan ceza.</p>
 <p><b>Son kalan (iflas) modu:</b> konkordato yoktur; borcunu kapatamayan iflas eder, mülkleri bankaya döner ve oyundan çıkar. Tek oyuncu kalınca o kazanır. Oyun uzamasın diye kiralar her tur artar (10. turda 4,6 kat); en geç 40. turda ayakta kalanlardan puanı en yüksek olan kazanır.</p>
 <h3>Masa ayarları</h3>
 <p>Ev sahibi lobide açık artırmayı, Sürpriz karelerini ve gündem kartlarını açıp kapatabilir; oyunun hızını da seçer. Açık artırma kapalıysa alınmayan arsa sahipsiz kalır.</p>

@@ -92,8 +92,21 @@ export function buildBlock(s, p, sq, kacak) {
   }
   if (!ownsGroup(s, p, sqd.group)) return `Yasal kat için ${GROUPS[sqd.group].gen} tüm mülkleri gerekir.`;
   if (GROUP_SQUARES[sqd.group].some((q) => s.props[q].ipotek)) return 'Şehirde ipotekli mülk var.';
+  const uneven = unevenBlock(s, sq);
+  if (uneven) return uneven;
   if (s.players[p].cash < katCost(s, sq)) return 'Paran yetmiyor.';
   return null;
+}
+
+// Yasal katlar Monopoly'deki gibi eşit çıkar: setteki her mülke önce 1'er, sonra 2'şer... Bir mülkün yasal katı setteki
+// en az katlı mülkünkini geçemez; seviyesi 4'e dolmuş (kaçak katla) mülk beklenmez. Kaçak kat bu kurala bağlı değildir.
+// plan: { kare: yasal kat farkı } henüz dikilmemiş planı da sayar (İnşaat paneli).
+export function unevenBlock(s, sq, plan = {}) {
+  const g = BOARD[sq].group;
+  const kat = (q) => s.props[q].kat + (plan[q] || 0);
+  const room = (q) => q === sq || level(s.props[q]) + (plan[q] || 0) < 4;
+  const low = Math.min(...GROUP_SQUARES[g].filter(room).map(kat));
+  return kat(sq) > low ? `Katlar eşit çıkar: önce ${GROUPS[g].gen} öteki mülklerine kat dik.` : null;
 }
 
 export function floorsOf(s, p) {

@@ -4,7 +4,8 @@
 // Sıra sendeyken zarlar tepside bekler (ready); basılı tutunca ele alınır, imleci izler, bırakınca o yöne ve o hızla
 // savrulur (en az bir atış hızıyla). Eldeki zarın yüzleri değişmesin diye sonucu o yüzlerle veren atış aranır (simulateTo).
 // Oyun zarlarının tepsisi (arena verilince) tahtanın neredeyse tamamıdır ve her şeyin üstünde çizilir; zarlar beklerken
-// ve atıştan önce yerlerindeki kutunun (el) ortasında durur, atılınca bütün tahtaya savrulur.
+// ve atıştan önce yerlerindeki kutunun (el) ortasında durur, atılınca bütün tahtaya savrulur; oyuncu yürüdükten sonra
+// üst yüzleri değişmeden o kutuya döner (home) ve orada pencerelerin altında kalır.
 import { simulate, simulateTo, labelingFor, timeline, frameAt, qmat, qaxis, qmul, qn, NORM } from './dicesim.js';
 import { play } from './sound.js';
 import { PACE } from '../net/host.js';
@@ -32,6 +33,7 @@ export class Dice {
     this.values = null;
     this.run = 0; // her atış/gösterim yeni bir sayı alır; eski oynatma kendini durdurur
     this.held = null; // elde tutulan zarlar: { labs, qs, ps, target, samples, released }
+    this.at = null; // zarların son durduğu yer ve duruş: [{ p, q }]
   }
 
   // Tepsiyi arenaya (yoksa el'e) oturtur; el görünür olmalı.
@@ -58,12 +60,21 @@ export class Dice {
     return [x, H * 0.6 + u];
   }
 
+  // planeXY'nin tersi: tepsi düzlemindeki nokta -> tepsinin içinde ekrandaki yeri (px).
+  screenXY(x, y) {
+    const W = this.tray.clientWidth;
+    const H = this.tray.clientHeight;
+    const P = this.size() * PERSP;
+    const u = y - H * 0.6;
+    const k = P / (P - u * Math.sin(TILT));
+    return [W / 2 + (x - W / 2) * k, H / 2 + (H * 0.6 - H / 2 + u * Math.cos(TILT)) * k];
+  }
+
   // Sıra sendeyken zarlar tepsinin ortasında bekler; tutulmaya hazır.
   ready() {
     if (this.held) return;
-    this.el.classList.add('ready');
     if (this.values === 'ready') return this.el.classList.remove('off');
-    this.show([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]);
+    this.show([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)], true);
     this.values = 'ready';
     this.sum?.classList.remove('on');
   }
@@ -71,7 +82,8 @@ export class Dice {
   // Basılı tutunca zarlar ele alınır ve imleci izler (tepsinin içinde kalır), elde hafifçe sallanır.
   hold(cx, cy) {
     const run = ++this.run;
-    this.el.classList.remove('off');
+    this.el.classList.remove('off', 'home');
+    this.at = null;
     this.fit();
     this.sum?.classList.remove('on', 'glow');
     const R = this.size() / 2;
@@ -167,10 +179,11 @@ export class Dice {
   total(values, states, R, glow) {
     if (!this.sum) return;
     const W = this.tray.clientWidth;
-    const xs = states.map((s) => s.p[0]);
+    const pts = states.map((s) => this.screenXY(s.p[0], s.p[1]));
+    const xs = pts.map((q) => q[0]);
     const right = Math.max(...xs) + R * 1.5;
     const x = right + 28 < W ? right : Math.min(...xs) - R * 1.5 - 28;
-    const y = states.reduce((a, s) => a + s.p[1], 0) / states.length;
+    const y = pts.reduce((a, q) => a + q[1], 0) / pts.length - R * 0.5; // zar yerden R kadar yüksek
     this.sum.textContent = String(values.reduce((a, b) => a + b, 0));
     this.sum.style.left = `${Math.max(0, x)}px`;
     this.sum.style.top = `${y}px`;
@@ -178,10 +191,10 @@ export class Dice {
     this.sum.classList.add('on');
   }
 
-  // Anlık gösterim (null: gizle). Aynı değerler zaten duruyorsa (atıştan kalan) yerinde bırakır.
-  show(values) {
+  // Anlık gösterim (null: gizle). Aynı değerler zaten duruyorsa (atıştan kalan) yerinde bırakır. ready: tutulmaya hazır.
+  show(values, ready = false) {
     if (this.held) return;
-    this.el.classList.remove('ready');
+    this.el.classList.toggle('ready', ready);
     this.el.classList.toggle('off', !values);
     const key = values ? values.join() : '';
     if (!values || key === this.values) return;
@@ -190,18 +203,56 @@ export class Dice {
     this.el.classList.remove('rolling');
     this.fit();
     const R = this.size() / 2;
-    // Yerindeki kutunun ortası, tepsi düzleminde.
-    const r = this.el.getBoundingClientRect();
-    const [hx, hy] = r.width ? this.planeXY(r.left + r.width / 2, r.top + r.height / 2) : [R * 4, R * 1.5];
-    const gap = R * 1.6;
+    const home = this.homeAt(values.length, R);
     const states = values.map((v, i) => {
-      const x = hx + (i - (values.length - 1) / 2) * 2 * gap;
-      const yaw = (Math.random() - 0.5) * 0.6;
       this.label(i, labelingFor('a', v));
-      return { p: [x, hy + (i ? 4 : -4) * (values.length > 1 ? 1 : 0), R], q: qaxis([0, 0, 1], yaw) };
+      return { p: home[i], q: qaxis([0, 0, 1], (Math.random() - 0.5) * 0.6) };
     });
     states.forEach((s, i) => this.draw(i, s, R));
+    this.at = states;
+    this.el.classList.add('home');
     this.total(values, states, R, false);
+  }
+
+  // Zarların yerindeki kutunun ortası, tepsi düzleminde: zarların yan yana duracağı noktalar.
+  homeAt(n, R) {
+    const r = this.el.getBoundingClientRect();
+    const [hx, hy] = r.width ? this.planeXY(r.left + r.width / 2, r.top + r.height / 2) : [R * 4, R * 1.5];
+    return Array.from({ length: n }, (_, i) => [hx + (i - (n - 1) / 2) * 3.2 * R, hy + (i ? 4 : -4) * (n > 1 ? 1 : 0), R]);
+  }
+
+  // Atılan zarlar tahtadan yerlerindeki kutuya hafif bir kavisle döner; üst yüzleri (çıkan sayı) değişmez.
+  // Sonra pencerelerin altında kalır (home), sıradaki ekranı kapatmaz.
+  home(ms = 450) {
+    const from = this.at;
+    if (this.held || !from || !this.values || this.el.classList.contains('home') || this.el.classList.contains('off')) return;
+    const run = ++this.run;
+    const R = this.size() / 2;
+    const to = this.homeAt(from.length, R);
+    const values = this.values.split(',').map(Number);
+    const states = from.map((s, i) => ({ p: to[i], q: s.q }));
+    const settle = () => {
+      states.forEach((s, i) => this.draw(i, s, R));
+      this.at = states;
+      this.el.classList.add('home');
+      this.total(values, states, R, false);
+    };
+    if (calm()) return settle();
+    this.sum?.classList.remove('on', 'glow');
+    const t0 = performance.now();
+    const ease = (t) => 1 - (1 - t) ** 3;
+    const frame = () => {
+      if (run !== this.run) return;
+      const t = Math.min(1, (performance.now() - t0) / ms);
+      const k = ease(t);
+      from.forEach((s, i) => {
+        const p = [0, 1].map((m) => s.p[m] + (to[i][m] - s.p[m]) * k);
+        this.draw(i, { p: [...p, R + Math.sin(Math.PI * t) * R * 1.2], q: s.q }, R);
+      });
+      if (t < 1) requestAnimationFrame(frame);
+      else settle();
+    };
+    frame();
   }
 
   // cap: zarın üstünde kısa açıklama (ör. dava zarları); boşsa yok. k: oyun hızı çarpanı.
@@ -211,7 +262,7 @@ export class Dice {
     else delete this.el.dataset.cap;
     const h = this.held && this.held.released && values.length === this.n ? this.held : null;
     this.held = null;
-    this.el.classList.remove('holding', 'ready');
+    this.el.classList.remove('holding', 'ready', 'home');
     if (fast) return this.show(values);
     const run = ++this.run;
     const t0 = performance.now();
@@ -228,6 +279,7 @@ export class Dice {
     const sim = tossed || simulate(opts);
     if (!tossed) values.forEach((v, i) => this.label(i, labelingFor(sim.tops[i], v)));
     const last = sim.frames[sim.frames.length - 1];
+    this.at = last;
     this.sum?.classList.remove('on', 'glow');
     if (calm()) {
       // Hareket azaltma: sonuç hemen; kısa zar sesi yine duyulur.

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, applyAction, defaultAction, botAction, cardBlock, cardTargets, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
+import { createGame, applyAction, defaultAction, botAction, cardBlock, cardTargets, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, level, unevenBlock, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
 import { makePlayers } from '../tools/simlib.js';
 import { started, act, actEv, give, strip, stripAll, own } from './helpers.js';
 
@@ -349,11 +349,11 @@ test('yasal kat set ister; kat satışı yarı fiyat; ipotek', () => {
   let s = calm(started());
   own(s, 0, 1, 2);
   s = act(s, 0, { type: 'build', sq: 1 });
-  s = act(s, 0, { type: 'build', sq: 1 });
-  assert.equal(s.props[1].kat, 2);
+  s = act(s, 0, { type: 'build', sq: 2 });
+  assert.equal(s.props[1].kat, 1);
   assert.equal(s.players[0].cash, 1400);
-  assert.throws(() => applyAction(s, 0, { type: 'mortgage', sq: 1 }), /katları/);
-  s = act(s, 0, { type: 'sellFloor', sq: 1 });
+  assert.throws(() => applyAction(s, 0, { type: 'mortgage', sq: 2 }), /katları/);
+  s = act(s, 0, { type: 'sellFloor', sq: 2 });
   assert.equal(s.players[0].cash, 1425);
   s = act(s, 0, { type: 'mortgage', sq: 2 });
   assert.equal(s.players[0].cash, 1465);
@@ -426,31 +426,92 @@ test('pazarlık: karşı teklif ters yönde sürer, en fazla 2 kez', () => {
   assert.equal(s.turn.p, 0, 'sıra teklifi başlatan oyuncuda kalır');
 });
 
-test('açık pazarlık: sırası olmayan da turda bir teklif yapar', () => {
+test('açık pazarlık: herkes her an teklif yapar; masa doluyken teklif sıraya girer', () => {
   let s = calm(started());
   own(s, 1, 10);
   own(s, 2, 12);
   s = act(s, 2, { type: 'proposeTrade', to: 1, give: { props: [12] }, take: { props: [10] } });
   assert.deepEqual(waitingFor(s), [1]);
   assert.throws(() => applyAction(s, 0, { type: 'roll' }), /hamle sırası/, 'teklif beklerken sıradaki oyuncu bekler');
+  // Masa doluyken gelen teklifler sıraya girer; oyuncu başına bir tane, yenisi eskisinin yerini alır.
+  s = act(s, 3, { type: 'proposeTrade', to: 0, give: { cash: 10 }, take: {} });
+  s = act(s, 3, { type: 'proposeTrade', to: 0, give: { cash: 20 }, take: {} });
+  s = act(s, 0, { type: 'proposeTrade', to: 3, give: { cash: 5 }, take: {} });
+  assert.equal(s.offers.length, 2);
+  assert.equal(s.pending.from, 2, 'açık teklif yerinde');
   s = act(s, 1, { type: 'tradeRespond', accept: true });
   assert.equal(s.props[10].owner, 2);
   assert.equal(s.props[12].owner, 1);
-  assert.throws(() => applyAction(s, 2, { type: 'proposeTrade', to: 1, give: { cash: 10 }, take: {} }), /turda bir/);
-  s = act(s, 3, { type: 'proposeTrade', to: 0, give: { cash: 10 }, take: {} });
-  assert.throws(() => applyAction(s, 1, { type: 'proposeTrade', to: 0, give: { cash: 10 }, take: {} }), /hamle sırası/, 'aynı anda tek teklif');
-  s = act(s, 3, { type: 'tradeCancel' });
+  assert.equal(s.pending.from, 3, 'sıradaki teklif kendiliğinden açılır');
+  assert.equal(s.pending.give.cash, 20);
+  s = act(s, 0, { type: 'tradeRespond', accept: false });
+  assert.equal(s.pending.from, 0);
+  s = act(s, 0, { type: 'tradeCancel' });
   assert.equal(s.pending, null);
-  s = act(s, 0, { type: 'proposeTrade', to: 3, give: { cash: 10 }, take: {} });
-  s = act(s, 3, { type: 'tradeRespond', accept: false });
-  assert.equal(s.turn.trades, 1, 'sıradakinin hakkı ayrı sayılır');
+  assert.equal(s.offers.length, 0);
+  // Teklif sınırı yok.
+  for (let i = 0; i < 5; i++) {
+    s = act(s, 2, { type: 'proposeTrade', to: 1, give: { cash: 10 }, take: {} });
+    s = act(s, 1, { type: 'tradeRespond', accept: false });
+  }
+  // Zar sonrası (Kestirme penceresi) gelen teklif sırada bekler, geri çekilebilir.
   const busy = structuredClone(s);
   busy.turn.step = 'choose';
-  assert.throws(() => applyAction(busy, 1, { type: 'proposeTrade', to: 2, give: { cash: 10 }, take: {} }), /zar atmadan/);
+  const q = act(busy, 1, { type: 'proposeTrade', to: 2, give: { cash: 10 }, take: {} });
+  assert.equal(q.pending, null);
+  assert.equal(q.offers.length, 1);
+  assert.equal(act(q, 1, { type: 'tradeCancel' }).offers.length, 0);
+  // Açılırken geçersiz olan teklif düşer.
+  const stale = structuredClone(q);
+  stale.players[1].cash = 0;
+  stale.turn.step = 'free';
+  own(stale, 0, 5);
+  const r = act(stale, 0, { type: 'mortgage', sq: 5 });
+  assert.equal(r.pending, null);
+  assert.equal(r.offers.length, 0);
   s.players[1].out = 1;
   assert.throws(() => applyAction(s, 1, { type: 'proposeTrade', to: 2, give: { cash: 10 }, take: {} }), /yapamazsın/);
   s = act(s, 0, { type: 'roll' });
   assert.notEqual(s.turn.step, 'preroll');
+});
+
+test('borçlu pazarlıkla mülk satar; teklif cevaplanmadan turu bitmez', () => {
+  let s = calm(started());
+  stripAll(s, 'kestirme');
+  own(s, 0, 5);
+  s.props[5].ipotek = true;
+  s = act(s, 0, { type: 'roll' });
+  while (s.pending) s = act(s, waitingFor(s)[0], defaultFor(s));
+  s.players[0].cash = -50;
+  s.players[1].cash = 500;
+  assert.throws(() => applyAction(s, 0, { type: 'proposeTrade', to: 1, give: { cash: 10 }, take: {} }), /nakdinden/);
+  s = act(s, 0, { type: 'proposeTrade', to: 1, give: { props: [5] }, take: { cash: 120 } });
+  assert.throws(() => applyAction(s, 0, { type: 'endTurn' }), /hamle sırası/);
+  s = act(s, 1, { type: 'tradeRespond', accept: true });
+  assert.equal(s.players[0].cash, 70);
+  assert.equal(s.props[5].owner, 1);
+  s = act(s, 0, { type: 'endTurn' });
+  assert.equal(s.players[0].konkordato, 0);
+});
+
+test('yasal katlar eşit çıkar: önce setteki her mülke 1er; kaçak kat serbest', () => {
+  let s = calm(started());
+  s.players[0].cash = 5000;
+  own(s, 0, 1, 2);
+  s = act(s, 0, { type: 'build', sq: 1 });
+  assert.throws(() => applyAction(s, 0, { type: 'build', sq: 1 }), /eşit/);
+  s = act(s, 0, { type: 'build', sq: 2 });
+  s = act(s, 0, { type: 'build', sq: 1 });
+  assert.throws(() => applyAction(s, 0, { type: 'build', sq: 1 }), /eşit/);
+  // Kaçak kat eşitliğe bakmaz; seviyesi dolan mülk ötekileri bekletmez.
+  s = act(s, 0, { type: 'buildKacak', sq: 2 });
+  s = act(s, 0, { type: 'build', sq: 2 });
+  s = act(s, 0, { type: 'build', sq: 2 });
+  assert.equal(level(s.props[2]), 4);
+  s = act(s, 0, { type: 'build', sq: 1 });
+  s = act(s, 0, { type: 'build', sq: 1 });
+  assert.equal(s.props[1].kat, 4);
+  assert.equal(unevenBlock(s, 1, { 1: -1 }), null);
 });
 
 test('görünüm: başkasının eli gizli', () => {

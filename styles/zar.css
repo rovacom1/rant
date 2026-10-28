@@ -4,10 +4,13 @@
 .duel-die { --d: 64px; position: relative; width: 100%; }
 /* sıra sendeyken zarlar tepside bekler: tutulup savrulur */
 .dice.ready { cursor: grab; touch-action: none; }
+/* atılan zarlar kutusunda yalnız yan yana durur; kutu alçak kalır, ortadaki istem sığsın */
+.dice:not(.ready) { height: calc(var(--d) * 1.5); }
 .dice.holding { cursor: grabbing; }
 .prompt [data-act="roll"] { touch-action: none; }
 
 .zar-tepsi { position: absolute; inset: 0; z-index: 60; perspective: calc(var(--d) * 16); pointer-events: none; } /* oyun zarlarında tahtanın neredeyse tamamı (dice.js fit) */
+.dice.home:not(.ready) .zar-tepsi { z-index: 1; } /* yürüyüşten sonra kutusunda: pencereler ve kartlar üstüne açılır */
 .zar-zemin { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(30deg); transform-origin: 50% 60%; }
 
 .zar { position: absolute; left: 0; top: 0; width: var(--d); height: var(--d); transform-style: preserve-3d; }
@@ -49,11 +52,14 @@ body.dark .zf { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2), inset -3px -4px 
 }
 
 @media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px) {
-  .dice { height: calc(var(--d) * 2.4); }
+  .dice, .dice:not(.ready) { height: calc(var(--d) * 2.4); } /* alt sayfada tepsi kutunun kendisi */
 }
 /* yatay telefon: tahtanın ortası alçak, zarlar küçük */
 @media (orientation: landscape) and (max-height: 520px) {
   .dice { --d: 34px; height: calc(var(--d) * 2.5); }
+  /* atılan zarlar istemden yer almaz: gündem satırının sağında durur, gündem sola yaslanır */
+  .dice:not(.ready) { position: absolute; top: 22px; right: 40px; width: calc(var(--d) * 3.8); height: var(--d); }
+  .center:has(> .dice:not(.ready, .off)) > #gundem { align-self: flex-start; }
 }
 /* uzun basma yazı seçmez ve menü açmaz: dokunuş iptal olup zarlar elden düşmesin */
 .dice, .prompt [data-act="roll"] { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

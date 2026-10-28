@@ -9,7 +9,6 @@ export const PACE = {
   bot: 1600, // botun en kısa düşünme süresi
   dice: 2300, // zar atışı (dönme + okuma)
   roll: 2000, // zarın dönme süresi (gerçek hızında en çok ~1,9 sn); zar sesi de bu kadar
-  diceShow: 3500, // atıştan sonra zarlar bu kadar görünür kalır
   step: 220, // piyonun kare başı yürüyüşü
   surpriz: 4500,
   card: 5500, // rakibin oynadığı kart ortada
