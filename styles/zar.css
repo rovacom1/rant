@@ -14,7 +14,7 @@
 .zar-zemin { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(30deg); transform-origin: 50% 60%; }
 
 .zar { position: absolute; left: 0; top: 0; width: var(--d); height: var(--d); transform-style: preserve-3d; }
-.rolling .zar, .rolling .zar-golge { will-change: transform; }
+.rolling .zar, .rolling .zar-golge, .holding .zar { will-change: transform; } /* elde tutulurken de her karede döner */
 
 /* Yüzler: köşeleri yuvarlak; köşe boşluklarını içteki üç düzlem (zc) kapatır, zar dolu görünür. */
 .zf { position: absolute; inset: 0; border-radius: 22%; background: #fbf7ee; display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 16%; backface-visibility: hidden;

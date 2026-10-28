@@ -1,16 +1,12 @@
-// Oyun sonu ekranındaki dayı: tek bir senaryo videosu döngüde oynar, krem zemini tuvalde silinir (giriş ekranındaki gibi).
+// Oyun sonu ekranındaki dayı: tek bir senaryo videosu döngüde oynar; saydamlığı videonun içinde hazırdır (alphavideo.js).
 // Sonuç ekranı yeniden çizilse de video baştan başlamasın diye tuval kalıcı bir düğümdür ve yer tutucuya taşınır.
-import { keyCream } from './intro.js';
+import { alphaCanvas } from './alphavideo.js';
+import { APP_VERSION } from '../version.js';
 
-const N = 400;
-let box, cx, vid, clip = '', last = -1, ticking = false;
+let box, art, vid, clip = '', last = -1, ticking = false;
 
 function draw() {
-  cx.clearRect(0, 0, N, N);
-  cx.drawImage(vid, 0, 0, N, N);
-  const img = cx.getImageData(0, 0, N, N);
-  keyCream(img.data, N);
-  cx.putImageData(img, 0, 0);
+  art.draw(vid);
   last = vid.currentTime;
 }
 
@@ -30,22 +26,20 @@ export function mountDayi(slot, name) {
     box = document.createElement('div');
     box.className = 'dayi';
     box.setAttribute('aria-hidden', 'true');
-    const cv = document.createElement('canvas');
-    cv.width = cv.height = N;
-    cx = cv.getContext('2d', { willReadFrequently: true });
+    art = alphaCanvas();
     vid = document.createElement('video');
     vid.muted = true;
     vid.playsInline = true;
     vid.loop = true;
     vid.preload = 'auto';
     vid.addEventListener('loadeddata', draw);
-    box.append(cv, vid);
+    box.append(art.canvas, vid);
   }
   if (box.parentNode !== slot) slot.append(box);
   if (clip !== name) {
     clip = name;
     last = -1;
-    vid.src = `assets/sonu/${name}.mp4`;
+    vid.src = `assets/sonu/${name}.mp4?v=${APP_VERSION}`; // sürüm: önbellekteki eski (maskesiz) video gelmesin
   }
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   vid.play().catch(() => {});

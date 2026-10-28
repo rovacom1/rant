@@ -621,7 +621,7 @@ function playersHTML(v) {
       const label = `${pl.name}${i === v.you ? ' (sen)' : ''}, ${pl.out ? 'iflas etti' : `${fmt(pl.cash)}`}`;
       return html`<button class="prow ${turn ? 'turn' : ''} ${pl.out ? 'out' : ''}" style="--pc:${pl.color}" data-act="player" data-p="${i}" aria-label="${label}">
         <span class="disc">${PW(pl, 30)}</span><span class="pname">${pl.name}</span><span class="ptag">${tags}</span>${wait}<span class="grow"></span>
-        <span class="pcash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${pl.out ? 'elendi' : cashText(shownCash(i, pl.cash))}</span></button>`;
+        <span class="pcash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${pl.out ? 'elendi' : cashText(pl.cash)}</span></button>`;
     })
     .join('');
 }

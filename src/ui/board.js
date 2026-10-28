@@ -185,17 +185,20 @@ export class Tokens {
       if (!groups.has(sq)) groups.set(sq, []);
       groups.get(sq).push(pl.id);
     }
-    for (const [sq, ids] of groups) {
+    // Önce bütün kutular okunur, sonra yazılır: okuma ile yazma iç içe olursa her grupta yerleşim yeniden hesaplanır.
+    const boxes = [...groups.keys()].map((sq) => {
       const c = this.cells[sq];
-      const box = { x: c.offsetLeft, y: c.offsetTop, w: c.offsetWidth, h: c.offsetHeight };
-      const fs = feet(cellPos(sq).side, box, size, ids.length, W, H);
+      return { x: c.offsetLeft, y: c.offsetTop, w: c.offsetWidth, h: c.offsetHeight };
+    });
+    [...groups].forEach(([sq, ids], g) => {
+      const fs = feet(cellPos(sq).side, boxes[g], size, ids.length, W, H);
       ids.forEach((id, k) => {
         const el = this.els.get(id);
         el.style.left = `${Math.round(fs[k].x - size / 2)}px`;
         el.style.top = `${Math.round(fs[k].y - size)}px`;
         el.style.zIndex = 10 + Math.round(fs[k].y);
       });
-    }
+    });
   }
 
   // Yürüyüş: kalkışta hızlanır, ortada hızlı, varışta yavaşlar (toplam stepMs x adım); her adımda yay çizer, inişte adım

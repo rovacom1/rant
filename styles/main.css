@@ -248,8 +248,10 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 body.dark .cell.k-rail .art { filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.4)); }
 .cell .stepn { position: absolute; right: 6px; top: 6px; min-width: 26px; height: 26px; padding: 0 5px; border-radius: 13px; background: var(--me); color: #fff; display: grid; place-items: center; font-family: var(--hf); font-weight: 800; font-size: 14px; box-shadow: 0 0 0 2px #fff, 0 4px 10px rgba(0, 0, 0, 0.3); z-index: 4; }
 .cell.hl { box-shadow: 0 0 0 3px var(--gold), 0 0 22px rgba(245, 197, 66, 0.9); z-index: 3; }
-.cell.pick { box-shadow: 0 0 0 3px var(--gold), 0 0 18px rgba(245, 197, 66, 0.85); z-index: 3; animation: pickPulse 1.2s ease-in-out infinite; }
-@keyframes pickPulse { 50% { box-shadow: 0 0 0 3px var(--gold), 0 0 6px rgba(245, 197, 66, 0.4); } }
+.cell.pick { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }
+/* nabız yalnız opaklıkla (gölgeyi her karede değiştirmek parlayan bütün kareleri yeniden boyatır) */
+.cell.pick::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: 0 0 18px rgba(245, 197, 66, 0.85); animation: pickPulse 1.2s ease-in-out infinite; }
+@keyframes pickPulse { 50% { opacity: 0.3; } }
 .board.picking .cell:not(.pick):not(.hl) { opacity: 0.35; filter: saturate(0.4); }
 .cell.open { box-shadow: 0 0 0 3px var(--accent); z-index: 3; }
 

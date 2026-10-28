@@ -55,7 +55,7 @@ Flat 2D cartoon animation in the exact same style, static camera. He keeps holdi
 
 - Her varyant kare kare denetlenir: tek tespih ve tek püskül (iki tespih, yukarı fırlayan uç, kopan boncuk olmaz), tespih durmaz, ağız konuşmaz, gözlük başta kalır, el ağza ya da yüze kapanmaz. Tespihi "parmağın etrafında çevirme" istenmez; model boncukları çoğaltıyor.
 - Şehir arka planı `assets/giris/sehir.mp4` (8 sn döngü) ve afişi `sehir.jpg`: gökyüzü dayı videosunun zemini ile aynı krem olmalı.
-- Ham video `tasks/gorsel-ham/giris/senaryo-N.mp4` olarak kaydedilir ve `sh tools/giris_video.sh` ile küçültülür (oyun sonu videoları da; ffmpeg gerekir; sessiz, dayı 480 px CRF 20, şehir CRF 22). Çıkan `assets/giris/dayi-N.mp4`, `src/ui/intro.js` içindeki `CLIPS` listesine yazılır.
+- Ham video `tasks/gorsel-ham/giris/senaryo-N.mp4` olarak kaydedilir ve `sh tools/giris_video.sh` ile hazırlanır (oyun sonu videoları da; ffmpeg gerekir; sessiz, şehir CRF 22). Dayı videoları `tools/dayi_video.js` ile 640 px, CRF 18 olur; krem zemin her karede bir kez silinir ve saydamlık videonun alt yarısına gri olarak yazılır (üst yarı renk). Oyun iki yarıyı WebGL ile birleştirir (`src/ui/alphavideo.js`), tarayıcı piksel işlemez. Krem renk dayının üstünde de olduğu için (göz akı, diş) yalnız renge göre silinmez; bkz. `tools/keycream.js`. Çıkan `assets/giris/dayi-N.mp4`, `src/ui/intro.js` içindeki `CLIPS` listesine yazılır.
 
 - Oyun sonu videoları `assets/sonu`: `gurur` (mendille gözyaşı siler), `alkis` (tespihi bırakıp alkışlar), `para` (masanın altından zarf uzatır), `kayip` (acıyarak bozukluk uzatır). Aynı ana görselden, aynı kısa komutla; ham dosya `tasks/gorsel-ham/sonu/<ad>.mp4`.
 

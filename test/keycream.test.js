@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { keyCream } from '../src/ui/intro.js';
+import { keyCream } from '../tools/keycream.js';
 
 // Krem zemin üstünde lacivert çizgili küçük bir sahne: küçük kapalı krem (göz akı) ve büyük kapalı krem (tespih halkası içi).
 const N = 60;
