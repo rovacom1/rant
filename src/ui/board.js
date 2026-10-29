@@ -5,7 +5,7 @@
 // Monopoly gibi her kenarın kareleri dıştan içe bakar: içerik (.face) alt sırada dik, sol sütunda 90, üst sırada 180,
 // sağ sütunda -90 derece döner; bant hep ortaya bakan kenarda, ad dış kenarda.
 import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
-import { html, raw, sleep } from './dom.js';
+import { html, raw, sleep, esc } from './dom.js';
 import { play } from './sound.js';
 import { icon, ic } from './icons.js';
 import { boardPawn } from './pawns.js';
@@ -54,7 +54,7 @@ export function buildBoard(boardEl) {
     const kind = sq.kind === 'prop' || sq.kind === 'transport' ? `buyable k-${sq.kind}${sq.mode ? ` k-${sq.mode}` : ''}` : `special k-${sq.kind}`;
     const g = sq.kind === 'prop' ? GROUPS[sq.group] : null;
     const vars = g ? `;--gc:${g.color}` : '';
-    return `<div class="cell ${pos.side === 'c' ? 'corner side-c' : `side-${pos.side}`} ${kind}" data-act="square" data-sq="${i}" style="grid-row:${pos.row};grid-column:${pos.col}${vars}">${cellStatic(sq)}</div>`;
+    return `<div class="cell ${pos.side === 'c' ? 'corner side-c' : `side-${pos.side}`} ${kind}" data-act="square" data-sq="${i}" tabindex="0" role="button" aria-label="${esc(sq.name)}" style="grid-row:${pos.row};grid-column:${pos.col}${vars}">${cellStatic(sq)}</div>`;
   }).join('');
   boardEl.insertAdjacentHTML('afterbegin', cells);
   const fit = () => fitNames(boardEl);

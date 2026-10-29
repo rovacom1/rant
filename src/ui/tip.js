@@ -20,6 +20,12 @@ export function initTips() {
     if (!n) return hide();
     timer = setTimeout(() => show(n), 90);
   });
+  // klavyeyle odaklanınca da açılır
+  document.addEventListener('focusin', (e) => {
+    const n = e.target.closest?.('[data-tip]');
+    if (n && e.target.matches(':focus-visible')) show((cur = n));
+  });
+  document.addEventListener('focusout', hide);
   document.addEventListener('pointerdown', hide, true);
   window.addEventListener('scroll', hide, true);
 }

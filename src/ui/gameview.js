@@ -13,6 +13,7 @@ import { CityMap } from './map.js';
 import { app, isHost, act } from './state.js';
 import { RULES_HTML } from './rules.js';
 import { initTips } from './tip.js';
+import { withDialog } from './focus.js';
 import { SPEEDS, PACE, STICKERS, STICKER_GAP } from '../net/host.js';
 import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
 import { coinFlights, coinCount, arcPeak, COIN_GAP, FLIGHT_GAP } from './coins.js';
@@ -71,7 +72,7 @@ export function mountGame(root) {
       <div class="panel players" id="players"></div>
       <div id="audioPop"></div>
       <section class="hand-panel" id="handPanel">
-        <div class="hand-head"><span class="kicker">Elin</span><span class="muted small" id="handN"></span><span class="grow"></span><span class="deck" id="deck" data-tip="Destede kalan kart"></span><span id="stick"></span></div>
+        <div class="hand-head"><span class="row muted" style="gap:4px" data-tip="Elindeki kart / en fazla">${ic('cards')}<span class="small num" id="handN"></span></span><span class="grow"></span><span class="deck" id="deck" data-tip="Destede kalan kart"></span><span id="stick"></span></div>
         <div class="hand-grid" id="handGrid"></div>
       </section>
       <div class="player-panel hidden" id="playerPanel"></div>
@@ -415,7 +416,7 @@ function promptHTML(v) {
 // süre dolunca tur kendiliğinden biter; ele gelmek, pencere açmak ya da tahtaya tıklamak bu tur için durdurur.
 function endButton(v) {
   const t = v.turn;
-  const label = t.again ? html`${I('dice')}Çift attın: bir daha at` : html`Turu bitir ${I('arrow')}`;
+  const label = t.again ? html`${I('dice')}Çift attın: bir daha at` : 'Turu bitir';
   const a = autoEnd.at && autoEnd.key === turnKey(v) ? autoEnd.at : 0;
   const left = a ? Math.max(0, a - Date.now()) : 0;
   const run = a ? html` <span class="autoend" data-autoend="${a}">${Math.ceil(left / 1000)}</span>` : '';
@@ -699,6 +700,10 @@ export function showSticker(p, id) {
 }
 
 function renderAudioPop() {
+  withDialog(els.audioPop, drawAudioPop, '.sound-pop');
+}
+
+function drawAudioPop() {
   if (!app.ui.audioOpen) return setHTML(els.audioPop, '');
   const a = getAudio();
   const row = (k, icon, label, color) =>
@@ -830,7 +835,7 @@ function buildDialog(v) {
   const changed = Object.values(st).some((d) => d);
   const order = buildOrder(v, st);
   const why = changed && !order ? html`<span class="reason">Katlar eşit çıkar: setteki her mülke sırayla kat dik.</span>` : '';
-  return html`<div class="sheet L">${sheetHead('build', 'İnşaat', html`<span class="muted small">bütün setlerin tek yerde · katlar eşit çıkar</span>`)}<div class="sheet-body">${sets}${empty}</div>${lock}
+  return html`<div class="sheet L">${sheetHead('build', 'İnşaat', html`<span class="muted" data-tip="Bir setteki katlar eşit çıkar: bir ile ikinci kat dikilmeden öbürüne üçüncü kat çıkılmaz." tabindex="0" aria-label="İnşaat kuralı">${I('info')}</span>`)}<div class="sheet-body">${sets}${empty}</div>${lock}
     <div class="sheet-foot">${why}<span class="muted small">Toplam</span><span class="h28">${M(-total)}</span><span class="grow"></span><button class="btn gho" data-act="close">Vazgeç</button><button class="btn pri" data-act="buildGo" ${manage && changed && order && total <= P(v, me).cash ? '' : 'disabled'}>${I('build')}İnşa et</button></div></div>`;
 }
 
@@ -866,7 +871,7 @@ function mortgageDialog(v) {
     return html`<div class="build-row" style="height:auto;padding:8px 10px">${deed(v, q, { mini: true, w: 110 })}<span class="col" style="gap:2px;flex:1"><span class="muted small">${status}</span></span>${mortBtn(v, q, manage)}</div>`;
   });
   const lock = manage ? '' : html`<span class="note">${I('timer')}İpotek işlemleri yalnız sıra sendeyken.</span>`;
-  return html`<div class="sheet L">${sheetHead('ipotek', 'İpotek', html`<span class="muted small">koyunca fiyatın yarısı, kaldırınca %55</span>`)}<div class="sheet-body">${rows.length ? rows : html`<span class="body">Henüz mülkün yok.</span>`}</div>${lock}</div>`;
+  return html`<div class="sheet L">${sheetHead('ipotek', 'İpotek', html`<span class="muted" data-tip="İpotek koyunca fiyatın yarısı gelir, kaldırırken %55'i ödenir." tabindex="0" aria-label="İpotek kuralı">${I('info')}</span>`)}<div class="sheet-body">${rows.length ? rows : html`<span class="body">Henüz mülkün yok.</span>`}</div>${lock}</div>`;
 }
 
 // Bana gelmiş, karşı teklif hakkı olan bir pazarlık var mı?
@@ -962,7 +967,10 @@ export const rulesSheet = () =>
     <details class="rules-more"><summary>Bütün kurallar</summary>${raw(RULES_HTML)}</details></div></div>`;
 
 export function renderModal() {
-  if (!els) return;
+  if (els) withDialog(els.modal, drawModal);
+}
+
+function drawModal() {
   const v = app.view;
   const d = app.ui.dialog;
   if (!d || !v || d.type === 'player') {
@@ -974,7 +982,7 @@ export function renderModal() {
     case 'card':
       if (!v.players[v.you]?.hand.includes(d.uid)) {
         app.ui.dialog = null;
-        return renderModal();
+        return drawModal();
       }
       body = cardDialog(v, d.uid);
       break;
@@ -987,7 +995,7 @@ export function renderModal() {
     case 'trade':
       if (!(app.ui.trade && app.ui.trade.counter ? counterable(v) : v.phase === 'play' && !P(v, v.you).out)) {
         app.ui.dialog = null;
-        return renderModal();
+        return drawModal();
       }
       body = tradeDialog(v);
       break;
@@ -1125,6 +1133,10 @@ export function tickTimers() {
 // ---------- sonuç ekranı ----------
 
 function renderResults(v) {
+  withDialog(els.results, () => drawResults(v), '.results');
+}
+
+function drawResults(v) {
   if (!app.ui.resultsOpen || v.phase !== 'over') {
     mountDayi(null);
     return setHTML(els.results, '');
@@ -1348,7 +1360,7 @@ function showNews(v, ev) {
   const detail = v.gundem && v.gundem.id === ev.id ? v.gundem.detail : '';
   const sum = v.summary && v.summary.round === ev.round - 1 ? summaryHTML(v, v.summary) : '';
   const img = html`<div class="nimg" style="background-image:url(assets/gundem/${ev.id}.jpg)"></div>`;
-  stageShow(html`<div class="news-card">${img}<div class="nbody"><span class="kicker">${ev.round}. tur · son dakika</span><span class="h28">${g.name}</span><span class="body">${g.text}</span>${detail ? html`<span class="hint" style="height:auto;padding:8px 12px;white-space:normal">${detail}</span>` : ''}${sum}</div></div>`, (sum ? PACE.newsSum : PACE.news) * spd());
+  stageShow(html`<div class="news-card">${img}<div class="nbody"><span class="kicker">Son dakika</span><span class="h28">${g.name}</span><span class="body">${g.text}</span>${detail ? html`<span class="hint" style="height:auto;padding:8px 12px;white-space:normal">${detail}</span>` : ''}${sum}</div></div>`, (sum ? PACE.newsSum : PACE.news) * spd());
 }
 
 // Geçen turun özeti: en çok kazanan/kaybeden ve el değiştiren mülkler (en fazla 3).

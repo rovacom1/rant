@@ -196,6 +196,13 @@ export class Hand {
     el.addEventListener('pointerdown', (e) => this.down(e));
     el.addEventListener('pointermove', (e) => this.tilt(e));
     el.addEventListener('pointerleave', () => this.untilt());
+    // klavye: Enter ya da boşluk kartı açar (tıklama gibi)
+    el.addEventListener('keydown', (e) => {
+      const slot = (e.key === 'Enter' || e.key === ' ') && e.target.closest('.hslot');
+      if (!slot) return;
+      e.preventDefault();
+      document.dispatchEvent(new CustomEvent('rant:card', { detail: { uid: slot.dataset.uid, how: 'click' } }));
+    });
     window.addEventListener('pointermove', (e) => this.move(e));
     window.addEventListener('pointerup', (e) => this.up(e));
     // Tarayıcı dokunuşu kaydırmaya çevirince: ne sürükleme ne tıklama.
@@ -218,6 +225,8 @@ export class Hand {
         el = document.createElement('div');
         el.className = 'hslot';
         el.dataset.uid = uid;
+        el.tabIndex = 0;
+        el.setAttribute('role', 'button');
         el.innerHTML = String(cardFace(cardId(uid)));
         this.items.set(uid, el);
         this.el.appendChild(el);

@@ -33,10 +33,14 @@ body { -webkit-user-select: none; user-select: none; }
 input, textarea, .room-code { -webkit-user-select: text; user-select: text; }
 img { -webkit-user-drag: none; }
 .hidden { display: none !important; }
+/* klavye odağı: pirinç halka, yalnız klavyeyle gelince; kare ve kart halkası içeride (komşusu örtmesin) */
+:focus-visible { outline: 3px solid var(--pr); outline-offset: 2px; }
+[tabindex="-1"]:focus { outline: none; }
+.cell:focus-visible, .hslot:focus-visible { outline-offset: -3px; }
 h1, h2, h3, h4 { font-family: var(--hf); margin: 0; letter-spacing: -0.015em; }
 
 /* ---------- yazı ---------- */
-.kicker { font-family: var(--hf); font-weight: 700; font-size: 12px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
+.kicker { font-family: var(--hf); font-weight: 700; font-size: 13px; color: var(--muted); }
 .h16 { font-family: var(--hf); font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
 .h18 { font-family: var(--hf); font-weight: 700; font-size: 19px; letter-spacing: -0.01em; }
 .h22 { font-family: var(--hf); font-weight: 700; font-size: 23px; letter-spacing: -0.015em; }
@@ -145,8 +149,9 @@ body.dark .disc { background: color-mix(in srgb, var(--pc) 22%, transparent); }
 .seg .btn { flex: 1; background: transparent; color: var(--muted); }
 .seg .btn.on { background: var(--panel); color: var(--ink); font-weight: 700; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15), inset 0 -2px 0 var(--pr); }
 .seg .btn:disabled { opacity: 1; cursor: default; }
-.input { height: 50px; border-radius: 14px; border: 2px solid var(--line); background: var(--center); color: var(--ink); padding: 0 16px; font-family: var(--hf); font-weight: 700; font-size: 20px; width: 100%; outline: none; }
+.input { height: 50px; border-radius: 14px; border: 2px solid var(--line); background: var(--center); color: var(--ink); padding: 0 16px; font-family: var(--hf); font-weight: 700; font-size: 20px; width: 100%; }
 .input:focus { border-color: var(--pr); }
+.input:focus-visible { outline-color: color-mix(in srgb, var(--pr) 40%, transparent); outline-offset: 0; }
 .input.code { height: 46px; font-size: 18px; letter-spacing: 0.14em; text-transform: uppercase; flex: 1; min-width: 0; }
 .label { display: flex; flex-direction: column; gap: 6px; font-family: var(--hf); font-weight: 600; font-size: 14px; color: var(--muted); }
 .box-note { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--pr) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pr) 45%, transparent); font-size: 14px; }
@@ -252,7 +257,7 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 .cell.corner .art { width: calc(var(--ch) * 0.45); height: calc(var(--ch) * 0.45); }
 body.dark .cell.k-rail .art { filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.4)); }
 .cell .stepn { position: absolute; right: 6px; top: 6px; min-width: 26px; height: 26px; padding: 0 5px; border-radius: 13px; background: var(--me); color: #fff; display: grid; place-items: center; font-family: var(--hf); font-weight: 800; font-size: 14px; box-shadow: 0 0 0 2px #fff, 0 4px 10px rgba(0, 0, 0, 0.3); z-index: 4; }
-.cell.hl { box-shadow: 0 0 0 3px var(--gold), 0 0 22px rgba(245, 197, 66, 0.9); z-index: 3; }
+.cell.hl { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }
 .cell.pick { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }
 /* nabız yalnız opaklıkla (gölgeyi her karede değiştirmek parlayan bütün kareleri yeniden boyatır) */
 .cell.pick::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: 0 0 18px rgba(245, 197, 66, 0.85); animation: pickPulse 1.2s ease-in-out infinite; }

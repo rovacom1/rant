@@ -12,6 +12,7 @@ import { pickClick, isBoardPickable } from './pick.js';
 import { ic } from './icons.js';
 import { pawn, onPawnsReady } from './pawns.js';
 import { mountIntro } from './intro.js';
+import { withDialog, trapTab } from './focus.js';
 import { phoneGame, canShare } from './phone.js';
 
 const root = document.getElementById('app');
@@ -57,7 +58,7 @@ function menuHTML() {
       <label class="label">Adın<input class="input" id="nameInput" maxlength="${E.NAME_MAX}" placeholder="ör. Deniz" value="${profile.name}"></label>
       ${host ? resume('host', host, 'Kurduğun oda') : ''}${local ? resume('local', local, 'Bot oyunun') : ''}
       <button class="btn L pri full" data-act="host" ${busy ? 'disabled' : ''}>Oda kur</button>
-      <div class="row" style="gap:8px"><input class="input code" id="codeInput" maxlength="8" placeholder="ODA KODU" aria-label="Oda kodu" value="${app.joinCode || ''}"><button class="btn sec" data-act="join" ${busy ? 'disabled' : ''}>Katıl${I('arrow')}</button></div>
+      <div class="row" style="gap:8px"><input class="input code" id="codeInput" maxlength="8" placeholder="ODA KODU" aria-label="Oda kodu" value="${app.joinCode || ''}"><button class="btn sec" data-act="join" ${busy ? 'disabled' : ''}>Katıl</button></div>
       <div class="row" style="gap:8px"><button class="btn ton flex" data-act="local" ${busy ? 'disabled' : ''}>${I('bot')}Botlarla dene</button><button class="btn ton flex" data-act="rules">${I('book')}Nasıl oynanır?</button></div>
     </div></div></div>${modalShell()}<div class="version">Rantçı Dayı ${APP_VERSION}</div>`;
 }
@@ -126,7 +127,7 @@ function render() {
   G.unmountGame();
   setMusic('lobby');
   const focus = document.activeElement && document.activeElement.id;
-  root.innerHTML = String(app.screen === 'lobby' && app.lobby ? lobbyHTML() : menuHTML());
+  withDialog(root, () => (root.innerHTML = String(app.screen === 'lobby' && app.lobby ? lobbyHTML() : menuHTML())));
   mountIntro(root);
   if (focus && document.getElementById(focus)) document.getElementById(focus).focus();
 }
@@ -780,6 +781,16 @@ document.addEventListener('input', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if (trapTab(e)) return;
+  if (e.key === 'Escape' && app.ui.audioOpen) {
+    app.ui.audioOpen = false;
+    return G.updateGame();
+  }
+  // kare gibi düğme olmayan tıklanır öğeler Enter ve boşlukla da açılır (el kartları hand.js'te)
+  if ((e.key === 'Enter' || e.key === ' ') && !e.defaultPrevented && e.target.matches?.('[role="button"]:not(button)')) {
+    e.preventDefault();
+    return e.target.click();
+  }
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
   if (e.key === 'Escape' && app.ui.stickerOpen) {
     app.ui.stickerOpen = false;
@@ -794,7 +805,7 @@ document.addEventListener('keydown', (e) => {
     if (document.activeElement.id === 'codeInput') return A.join();
     if (document.activeElement.id === 'nameInput' && app.joinCode) return A.join();
   }
-  if (e.key === ' ' && !typing && !app.ui.dialog && app.screen === 'game') {
+  if (e.key === ' ' && !typing && !app.ui.dialog && app.screen === 'game' && !e.target.closest?.('button, [role="button"]')) {
     const b = document.querySelector('#prompt [data-primary]:not(:disabled)');
     if (b) {
       e.preventDefault();
