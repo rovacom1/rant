@@ -11,6 +11,7 @@
 
 .zar-tepsi { position: absolute; inset: 0; z-index: 60; perspective: calc(var(--d) * 16); pointer-events: none; } /* oyun zarlarında tahtanın neredeyse tamamı (dice.js fit) */
 .dice.home:not(.ready) .zar-tepsi { z-index: 1; } /* yürüyüşten sonra kutusunda: pencereler ve kartlar üstüne açılır */
+.board:has(.modal-layer, .stage-layer) .dice:not(.holding, .rolling) .zar-tepsi { z-index: 1; } /* tepside bekleyen zar açık pencerenin altında kalır */
 .zar-zemin { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(30deg); transform-origin: 50% 60%; }
 
 .zar { position: absolute; left: 0; top: 0; width: var(--d); height: var(--d); transform-style: preserve-3d; }

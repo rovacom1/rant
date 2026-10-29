@@ -128,7 +128,7 @@ body.dark .dayi-pop .bub { box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), var(--
 /* ---------- tepki çıkartması: piyondan yükselir (üst yarıda aşağı iner) ---------- */
 .sticker {
   position: absolute; z-index: 42; pointer-events: none; translate: -50% -100%; white-space: nowrap;
-  padding: 5px 11px; border-radius: 12px; background: #fffaf0; color: #1b2233; font-family: var(--hf); font-weight: 800; font-size: clamp(13px, calc(var(--ch) * 0.2), 18px);
+  padding: 5px 11px; border-radius: var(--r-m); background: #fffaf0; color: #1b2233; font-family: var(--hf); font-weight: 800; font-size: clamp(13px, calc(var(--ch) * 0.2), 18px);
   box-shadow: 0 0 0 2px var(--pc), 0 0 0 3px var(--pedge), var(--sh-2); animation: stickerUp 1.9s var(--e-out) forwards;
 }
 .sticker.down { translate: -50% 0; animation-name: stickerDown; }
@@ -137,7 +137,7 @@ body.dark .dayi-pop .bub { box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), var(--
 .sticker-wrap { position: relative; display: flex; flex: none; }
 .sticker-pick {
   position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 250px; padding: 10px;
-  border-radius: 16px; background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--sh-3);
+  border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--sh-3);
 }
 .sticker-pick .btn { width: 100%; padding: 0 8px; }
 
