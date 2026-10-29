@@ -13,6 +13,7 @@ import { ic } from './icons.js';
 import { pawn, onPawnsReady } from './pawns.js';
 import { mountIntro } from './intro.js';
 import { withDialog, trapTab } from './focus.js';
+import { setShake } from './boardfx.js';
 import { phoneGame, canShare } from './phone.js';
 
 const root = document.getElementById('app');
@@ -525,6 +526,9 @@ const A = {
   audio() {
     app.ui.audioOpen = !app.ui.audioOpen;
     G.updateGame();
+  },
+  shakeToggle(el) {
+    setShake(el.checked);
   },
   audioToggle(el) {
     setAudio({ [`${el.dataset.k}On`]: el.checked });

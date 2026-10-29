@@ -4,6 +4,7 @@
 // Hareket azaltma açıksa zıplama, halka, kenar çizgisi ve uçuş yok; parlama, etiket ve sesler kalır.
 import { pawn } from './pawns.js';
 import { play } from './sound.js';
+import { store } from './dom.js';
 
 export const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const LABEL_MS = 2400;
@@ -99,14 +100,79 @@ export function turnFx(board, cell, token, pl, me) {
   tag.animate([{ opacity: 0, transform: `translateY(${dy}px) scale(0.9)` }, { opacity: 1, transform: 'none', offset: 0.08 }, { opacity: 1, transform: 'none', offset: 0.88 }, { opacity: 0, transform: `translateY(${-dy / 2}px)` }], { duration: LABEL_MS, easing: 'ease-out', fill: 'both' });
 }
 
+// Geri bildirim kademeleri: küçük olay (maaş, küçük kira, kart çekme) yalnız ses ve sayı; orta olay (satın alma, kat,
+// ihale, kart) ayrıca mühür ya da kare çerçevesi; büyük olay (el koyma, yıkım, iflas, konkordato, büyük kira, imar affı)
+// ayrıca tahtanın kısa sarsıntısı ve dayı balonu. Sarsıntının şiddeti buradan, açıp kapaması ses penceresinden.
+export const SHAKE = { ms: 420, px: 7, deg: 0.6 };
+let shakeOn = store.get('shake', true);
+export const shakeEnabled = () => shakeOn;
+export function setShake(on) {
+  shakeOn = !!on;
+  store.set('shake', shakeOn);
+}
+
+// Tahtanın görsel kabı sönerek sarsılır (yalnız transform; oyunun durumu ve piyonların yeri değişmez).
+export function shakeFx(board, k = 1) {
+  if (calm() || !shakeOn) return;
+  const n = 8;
+  const frames = [];
+  for (let i = 0; i <= n; i++) {
+    const a = (1 - i / n) ** 2 * k; // sert başlar, yumuşak biter
+    const x = SHAKE.px * a * Math.sin(i * 2.1);
+    const y = SHAKE.px * 0.6 * a * Math.sin(i * 2.9 + 1);
+    frames.push({ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${(SHAKE.deg * a * Math.sin(i * 1.7)).toFixed(3)}deg)` });
+  }
+  board.animate(frames, { duration: SHAKE.ms, easing: 'linear' });
+}
+
+// Tapu dairesinin ıslak mührü: oyuncu renginde, yazısız yuvarlak iz (iki halka, ortada ev). at: kağıda değdiği an (ms).
+const SEAL = '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" fill="none" stroke-width="7"/><circle cx="50" cy="50" r="33" fill="none" stroke-width="2.5" stroke-dasharray="5 4"/><path d="M50 28 L71 47 H64 V68 H36 V47 H29 Z" stroke="none"/></svg>';
+const SEAL_MS = 1100;
+const SEAL_HIT = 0.24; // mührün kağıda değdiği an, sürenin oranı
+function seal(board, cell, color, at, old = false) {
+  const b = boxOf(cell);
+  // mühür karenin ortadan ortaya bakan kenara doğru kayık durur: adın üstüne binmez
+  const s = Math.min(b.w, b.h) * 0.58;
+  const k = Math.min(b.w, b.h) * 0.14;
+  const side = ['b', 't', 'l', 'r'].find((x) => cell.classList.contains(`side-${x}`));
+  const [dx, dy] = { b: [0, -k], t: [0, k], l: [k, 0], r: [-k, 0] }[side] || [0, 0];
+  const box = { x: b.x + b.w / 2 - s / 2 + dx, y: b.y + b.h / 2 - s / 2 + dy, w: s, h: s };
+  const tilt = old ? 'rotate(10deg)' : 'rotate(-12deg)';
+  if (old) {
+    // eski sahibin mührü baştan görünür, yenisi üstüne vurulunca söner
+    const ms = at + 400;
+    const el = layer(board, 'fx-seal', box, ms, SEAL);
+    el.style.setProperty('--c', color);
+    el.animate([{ opacity: 0, transform: tilt }, { opacity: 0.8, transform: tilt, offset: 0.1 }, { opacity: 0.8, transform: tilt, offset: at / ms }, { opacity: 0, transform: `${tilt} scale(0.92)` }], { duration: ms, fill: 'both' });
+    return;
+  }
+  const delay = Math.max(0, at - SEAL_MS * SEAL_HIT);
+  const el = layer(board, 'fx-seal', box, delay + SEAL_MS, SEAL);
+  el.style.setProperty('--c', color);
+  const drop = calm() ? tilt : 'scale(1.9) rotate(-30deg)';
+  el.animate(
+    [
+      { opacity: 0, transform: drop, easing: 'cubic-bezier(.5, 0, .9, .5)' },
+      { opacity: 1, transform: calm() ? tilt : `scale(0.9) ${tilt}`, offset: SEAL_HIT, easing: 'ease-out' },
+      { opacity: 1, transform: tilt, offset: SEAL_HIT + 0.1 },
+      { opacity: 0.9, transform: tilt, offset: 0.72 },
+      { opacity: 0, transform: tilt },
+    ],
+    { duration: SEAL_MS, delay, fill: 'both' },
+  );
+}
+
 // Mülk alındı: kenar alıcının renginde dolanır (süzülme sesi), 600. ms'de mühür vurulur ve şerit o renkle dolar.
-// sound: false ise (ihale, pazarlık) kendi sesleri zaten çalıyor.
-export function ownFx(board, cell, color, sound = true) {
+// sound: false ise (ihale, pazarlık) kendi sesleri zaten çalıyor. prevColor: el konan mülkte eski sahibin rengi; onun
+// mührünün üstüne yenisi çapraz vurulur.
+export function ownFx(board, cell, color, sound = true, prevColor = null) {
   const { draw, fill } = T.own;
   if (sound) {
     from('sweep', 0);
     hit('stamp', draw);
   }
+  if (prevColor) seal(board, cell, prevColor, draw, true);
+  seal(board, cell, color, draw);
   if (!calm()) trace(board, cell, color, 0, draw);
   const strip = cell.querySelector('.strip');
   if (!strip) return;
@@ -255,4 +321,24 @@ export function coinSounds(n, landAt, salary, board, startCell) {
   from('toss', 0);
   const rates = [1, 1.06, 0.95, 1.1, 0.92, 1.03];
   for (let i = 0; i < n; i++) hit('clink', landAt(i), { rate: rates[i % rates.length], vol: i ? 0.75 : 1 });
+}
+
+// Açık artırma bitti: tahtanın ortasında "Gidiyor... gidiyor... Satıldı!"; iki tok vuruş, üçüncüsünde mühür ve satış sesi.
+export const CALL = { ms: 1700, beat: 450 };
+export function auctionFx(board) {
+  const { ms, beat } = CALL;
+  const el = layer(board, 'fx-call', { x: 0, y: 0, w: 0, h: 0 }, ms, '<span></span>');
+  Object.assign(el.style, { left: '', top: '', width: '', height: '' });
+  const span = el.firstElementChild;
+  ['Gidiyor...', 'gidiyor...', 'Satıldı!'].forEach((w, i) => {
+    setTimeout(() => {
+      span.textContent = w;
+      el.classList.toggle('sold', i === 2);
+      if (!calm()) span.animate([{ transform: 'scale(1.35)' }, { transform: 'none' }], { duration: 180, easing: 'ease-out' });
+    }, i * beat);
+    if (i < 2) hit('thud', i * beat, { vol: 0.8 });
+  });
+  hit('stamp', 2 * beat);
+  from('sold', 2 * beat);
+  el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.05 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], { duration: ms, fill: 'both' });
 }

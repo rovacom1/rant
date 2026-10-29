@@ -3,7 +3,7 @@
 import * as E from '../engine/index.js';
 import { html, raw, setHTML, sleep } from './dom.js';
 import { play, isMuted, getAudio, setMusic } from './sound.js';
-import { T, calm, turnFx, ownFx, setFx, buildFx, demolishFx, iflasFx, coinSounds } from './boardfx.js';
+import { T, CALL, calm, turnFx, ownFx, setFx, buildFx, demolishFx, iflasFx, coinSounds, shakeFx, auctionFx, shakeEnabled } from './boardfx.js';
 import { Hand, cardFace, playFx, WHEN } from './hand.js';
 import { deed } from './deed.js';
 import { Dice } from './dice.js';
@@ -23,7 +23,7 @@ import { pawn, warmPawns } from './pawns.js';
 import { verdict } from './verdict.js';
 import { canShare } from './phone.js';
 import { mountDayi } from './dayi.js';
-import { dayiMoment, dayiSay } from './dayisay.js';
+import { dayiMoment, dayiSay, BIG_RENT } from './dayisay.js';
 import { canPlay, idleTurn, AUTO_END_MS } from './idle.js';
 
 const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, GUNDEM_PERIOD, fmt, cardId } = E;
@@ -711,6 +711,7 @@ function drawAudioPop() {
       <input type="range" class="rng" min="0" max="100" step="5" value="${Math.round(a[k] * 100)}" data-audio="${k}" style="--c:${color};--p:${Math.round(a[k] * 100)}%" aria-label="${label} sesi"></div>`;
   const online = app.mode !== 'local';
   setHTML(els.audioPop, html`<div class="sound-pop" role="dialog" aria-label="Ses ayarları"><span class="h16">Ses</span>${row('music', 'music', 'Müzik', '#c8912f')}${row('sfx', 'sound', 'Efektler', '#2475e8')}
+    <div class="row" style="gap:8px">${I('shake')}<span style="font-weight:600">Sarsıntı</span><span class="grow"></span><input type="checkbox" class="sw" data-act="shakeToggle" ${shakeEnabled() ? 'checked' : ''} aria-label="Büyük anlarda tahta sarsılsın"></div>
     ${notifySupported() ? html`<div class="row" style="gap:8px;padding-top:8px;border-top:1px solid var(--line)">${I(isNotifyOn() ? 'bell' : 'bellOff')}<span class="small">Sıra bana gelince bildir</span><span class="grow"></span><input type="checkbox" class="sw" data-act="notify" ${isNotifyOn() ? 'checked' : ''} aria-label="Bildirim"></div>` : ''}
     ${online ? html`<button class="btn S ton" data-act="copyLink">${I('link')}Davet linkini ${canShare() ? 'gönder' : 'kopyala'} · ${app.code}</button>` : ''}</div>`);
 }
@@ -1564,7 +1565,8 @@ export async function present(prev, v, events, fast) {
         break;
       case 'auction':
         if (ev.winner !== null) {
-          sfx('sold');
+          if (live) later.push(() => auctionFx(els.board));
+          else sfx('sold');
           toast(`${BOARD[ev.sq].name}: ${P(v, ev.winner).name} aldı`, '', 'gavel');
         }
         break;
@@ -1600,7 +1602,10 @@ export async function present(prev, v, events, fast) {
     const buy = has('own'); // ihale ve pazarlık kendi sesini zaten çalıyor
     const sets = new Map();
     for (const q of gained) if (BOARD[q].group && E.inFullSet(v, q) && !E.inFullSet(prev, q)) sets.set(BOARD[q].group, v.props[q].owner);
-    post.push(() => gained.forEach((q, k) => ownFx(els.board, cells[q], P(v, v.props[q].owner).color, buy && k === 0)));
+    // El değiştirende eski sahibin mührü üstüne yenisi vurulur; ihalede mühür "Satıldı!" ile aynı anda iner.
+    const oldColor = (q) => (prev.props[q]?.owner === null || prev.props[q]?.owner === undefined ? null : P(v, prev.props[q].owner).color);
+    const wait = has('auction') ? Math.max(0, 2 * CALL.beat - T.own.draw) : 0;
+    post.push(() => setTimeout(() => els && gained.forEach((q, k) => ownFx(els.board, cells[q], P(v, v.props[q].owner).color, buy && k === 0, oldColor(q))), wait));
     if (sets.size) {
       post.push(() => setTimeout(() => {
         if (!els) return;
@@ -1636,6 +1641,9 @@ export async function present(prev, v, events, fast) {
     if (seq.some((e) => e.type === 'dice')) dice.home();
   }
   for (const f of later) f();
+  // Büyük anda tahta, darbenin geldiği an kısa sarsılır (boardfx.js kademeler).
+  const jolt = live ? bigJolt(prev, v, events) : null;
+  if (jolt !== null) setTimeout(() => els && shakeFx(els.board), jolt);
   // Büyük anda dayı köşeden bir laf eder (hızlı oyunda ve yetişmeye çalışırken susar); ortadaki sahne kapanınca.
   const moment = live && spd() >= 1 ? dayiMoment(events) : null;
   if (moment) afterStage().then(() => els && dayiSay(els.board, moment));
@@ -1655,6 +1663,19 @@ export async function present(prev, v, events, fast) {
   }
   updateGame();
   if (els) for (const f of post) f();
+}
+
+// Büyük an varsa sarsıntının gecikmesi (ms, darbeyle aynı ana), yoksa null. Sıra: iflas, yıkım, el koyma, büyük kira,
+// konkordato ve imar affı.
+function bigJolt(prev, v, events) {
+  const has = (f) => events.some(f);
+  if (has((e) => e.type === 'iflas')) return T.iflas.fall;
+  if (has((e) => e.type === 'demolish')) return T.demolish.burst;
+  const traded = has((e) => e.type === 'tradeDone' || e.type === 'auction');
+  if (!traded && BOARD.some((_, q) => prev.props[q]?.owner !== null && prev.props[q]?.owner !== undefined && v.props[q] && v.props[q].owner !== prev.props[q].owner)) return T.own.draw;
+  if (has((e) => e.type === 'money' && /^Kira/.test(e.why || '') && e.amount >= BIG_RENT)) return FLIGHT_MS * spd();
+  if (has((e) => e.type === 'konkordato' || (e.type === 'gundem' && e.id === 'imarAffi'))) return 0;
+  return null;
 }
 
 export function bindsInput(e) {

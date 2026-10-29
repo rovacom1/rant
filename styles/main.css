@@ -346,6 +346,7 @@ body.dark .pop .preview { background: color-mix(in srgb, var(--me) 20%, transpar
 .deed .dmort { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: repeating-linear-gradient(135deg, rgba(255, 250, 240, 0.78) 0 8px, rgba(255, 250, 240, 0.6) 8px 16px); font-family: var(--hf); font-weight: 700; font-size: 14px; }
 body.dark .deed .dmort { background: repeating-linear-gradient(135deg, rgba(30, 22, 16, 0.72) 0 8px, rgba(30, 22, 16, 0.55) 8px 16px); }
 .deed .dmort .ic { font-size: 24px; }
+.deed .dmort span { font-family: var(--df); font-weight: 400; font-size: 16px; letter-spacing: 0.06em; color: var(--neg); padding: 2px 10px; border: 3px double currentColor; border-radius: var(--r-s); rotate: -8deg; }
 /* küçük tapu (pazarlık): yalnız şehir şeridi, ad ve fiyat */
 .deed.mini { --dw: 106px; cursor: pointer; }
 .deed.mini.sel { box-shadow: 0 0 0 3px var(--gold), var(--sh-3); transform: translateY(-4px); }
@@ -507,6 +508,15 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .fx-drop { display: grid; place-items: center; transform-origin: 50% 100%; }
 .fx-drop .ic { width: 1.2em; height: 1.2em; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.3)); }
 .fx-dust { border-radius: 50%; background: var(--muted); opacity: 0; }
+/* tapu dairesinin mührü: oyuncu renginde ıslak mürekkep izi (boardfx.js seal) */
+.fx-seal { color: var(--c); opacity: 0; filter: drop-shadow(0 0 1px var(--pedge)); }
+.fx-seal svg { display: block; width: 100%; height: 100%; }
+.fx-seal circle { stroke: currentColor; }
+.fx-seal path { fill: currentColor; }
+/* açık artırma sonu: "Gidiyor... gidiyor... Satıldı!" tahtanın ortasında, manşet yazısıyla */
+.fx-call { left: 50%; top: 40%; z-index: 41; translate: -50% -50%; padding: 10px 26px; border-radius: var(--r-s); background: var(--panel); color: var(--ink); font-family: var(--df); font-size: clamp(22px, calc(var(--ch) * 0.42), 40px); white-space: nowrap; box-shadow: 0 0 0 2px var(--pr), var(--sh-3); opacity: 0; }
+.fx-call span { display: inline-block; }
+.fx-call.sold { background: var(--pr); color: var(--pr-ink); }
 .fx-ghost { display: flex; align-items: flex-end; transform-origin: 50% 100%; }
 .float.down { animation-name: floatDown; }
 @keyframes floatDown { to { transform: translateY(40px); opacity: 0; } }
