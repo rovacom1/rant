@@ -95,7 +95,7 @@ body.dark .cell.owned .strip { box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2
 /* köşeler: kraft kağıdı zemin (koyu temada koyu kraft), kendi renkli simgesi; dönmez */
 .cell.corner { background: var(--corner-bg); border-color: var(--corner-line); }
 .cell.corner .face { justify-content: center; gap: 3px; padding: 4px; }
-.cell.corner .nm { color: var(--corner-ink); font-family: var(--df); font-weight: 400; letter-spacing: 0.04em; text-align: center; }
+.cell.corner .nm { white-space: normal; line-height: 1.05; color: var(--corner-ink); font-family: var(--df); font-weight: 400; letter-spacing: 0.04em; text-align: center; }
 
 /* sırası gelen oyuncunun durduğu kare onun renginde çerçevelenir (beyaz/kömür oyuncu ince kenarla) */
 .cell.turnsq { z-index: 2; box-shadow: inset 0 0 0 3px var(--tc), 0 0 0 3px var(--tc), 0 0 0 4px var(--pedge), 0 0 18px color-mix(in srgb, var(--tc) 70%, transparent); }

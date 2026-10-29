@@ -234,6 +234,7 @@ export class Hand {
       const st = state(uid);
       el.classList.toggle('playable', !!st.playable);
       el.classList.toggle('idle', !!st.idle);
+      el.classList.toggle('lift', !!st.lift);
       el.classList.toggle('selected', !!st.selected);
     });
     // Sıra yalnız değiştiyse yeniden dizilir; yerinden oynayan kartın parıltısı baştan başlar.

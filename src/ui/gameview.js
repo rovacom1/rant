@@ -74,6 +74,7 @@ export function mountGame(root) {
       <section class="hand-panel" id="handPanel">
         <div class="hand-head"><span class="row muted" style="gap:4px" data-tip="Elindeki kart / en fazla">${ic('cards')}<span class="small num" id="handN"></span></span><span class="grow"></span><span class="deck" id="deck" data-tip="Destede kalan kart"></span><span id="stick"></span></div>
         <div class="hand-grid" id="handGrid"></div>
+        <div class="piles"><div class="pile deckpile" id="deckPile" data-tip="Destede kalan kart"></div><div class="pile discpile" id="discPile" data-tip="Son oynanan kart"></div></div>
       </section>
       <div class="player-panel hidden" id="playerPanel"></div>
       <div class="tools" id="tools"></div>
@@ -91,7 +92,7 @@ export function mountGame(root) {
   els = {
     round: g('round'), audio: g('tAudio'), theme: g('tTheme'), board: g('board'), center: g('center'), gundem: g('gundem'), banner: g('banner'),
     prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'), players: g('players'), feed: g('feed'), handPanel: g('handPanel'),
-    handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), audioPop: g('audioPop'), playerPanel: g('playerPanel'), tools: g('tools'),
+    handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), deckPile: g('deckPile'), discPile: g('discPile'), audioPop: g('audioPop'), playerPanel: g('playerPanel'), tools: g('tools'),
     modal: g('modal'), stage: g('stage'), results: g('results'), stick: g('stick'), feedcol: g('feedcol'),
   };
   cells = buildBoard(els.board);
@@ -108,7 +109,8 @@ export function mountGame(root) {
   // Zarlar tahtanın neredeyse tamamına savrulur; dikey telefonda ortası alttan açılan sayfa olunca kendi kutusunda kalır.
   const sheet = matchMedia('(max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px)');
   dice = new Dice(els.dice, 2, () => (sheet.matches ? null : els.board));
-  hand = new Hand(els.handGrid, els.board, els.deck);
+  const deckBox = { getBoundingClientRect: () => (els.deckPile.offsetParent ? els.deckPile : els.deck).getBoundingClientRect() };
+  hand = new Hand(els.handGrid, els.board, deckBox);
   initTips();
   // Tam ekran ve yatay kilit yalnız destekleyen tarayıcıda (Android Chrome) önerilir; iPhone'da düğme görünmez.
   document.body.classList.toggle('can-fs', !!(document.documentElement.requestFullscreen && screen.orientation?.lock));
@@ -655,11 +657,24 @@ function renderHand(v) {
   const myTurn = v.phase === 'play' && v.turn && v.turn.p === me && !discard;
   hand.render(pl.hand, (u) => {
     const playable = !discard && canPlay(v, u);
-    return { playable, idle: myTurn && !playable, selected: app.ui.selected.includes(u) };
+    // sıra başkasındayken oynanabilen kart (İtiraz, Dayın Çıktı) elde hafifçe kalkar: tepki zamanı
+    return { playable, idle: myTurn && !playable, lift: playable && !myTurn && v.turn?.p !== me, selected: app.ui.selected.includes(u) };
   }, app.ui.newCards || []);
   app.ui.newCards = [];
   setHTML(els.handN, `${pl.hand.length}/${v.config.handLimit}`);
   setHTML(els.deck, html`${I('cards')}${v.deck}`);
+  renderPiles(v);
+}
+
+// Deste ve atılan kartlar (elin altında): deste kalan kart kadar kalın kart arkası yığını, atılanlar son oynanan kartın
+// yüzüyle (oyuncunun gördüğü son kart olayı; sayfa yenilenince kart arkası).
+function renderPiles(v) {
+  const layers = Math.min(4, Math.ceil(v.deck / 8));
+  const backs = Array.from({ length: layers }, (_, i) => html`<i style="--k:${layers - 1 - i}"></i>`);
+  setHTML(els.deckPile, html`${backs}<b class="pile-n">${v.deck}</b>`);
+  const top = app.ui.lastCard;
+  setHTML(els.discPile, top ? cardFace(top, 'mini') : v.discard ? html`<i style="--k:0"></i>` : '');
+  els.discPile.classList.toggle('empty', !top && !v.discard);
 }
 
 function toolsHTML(v) {
@@ -1523,6 +1538,7 @@ export async function present(prev, v, events, fast) {
   for (const ev of events) {
     switch (ev.type) {
       case 'card':
+        app.ui.lastCard = ev.card;
         // Benim kartım elden uçarken; rakibinki ortada gösterilirken (revealCard) çalar.
         if (ev.p === me) {
           play(ev.card === 'itiraz' ? 'itiraz' : 'card', 1.1);

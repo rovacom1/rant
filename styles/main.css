@@ -407,8 +407,19 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .hand-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--cols, 3), var(--hw, 110px)); gap: 8px; align-content: center; justify-content: center; }
 .hand-grid:empty::after { content: 'Elinde kart yok. Başlangıç Noktası\'ndan geçince ve FIRSAT karesinde kart gelir.'; grid-column: 1 / -1; color: var(--muted); font-size: 14px; text-align: center; padding: 10px; }
 .hand-grid .kart { --w: var(--hw, 110px); }
-.hslot { position: relative; z-index: 1; transition: transform 0.22s cubic-bezier(0.22, 0.8, 0.32, 1); cursor: pointer; touch-action: none; }
+.hslot { position: relative; z-index: 1; transition: transform 0.22s cubic-bezier(0.22, 0.8, 0.32, 1), translate var(--t-ui) var(--e-out); cursor: pointer; touch-action: none; }
 @media (hover: hover) { .hslot:hover { z-index: 50; transform: scale(var(--zoom, 1.6)); } }
+/* tepki zamanı: sıra başkasındayken oynanabilen kart elde hafifçe kalkar */
+.hslot.lift { translate: 0 -8px; }
+/* deste ve atılan kartlar: elin altında, masadaki gibi iki yığın (telefonda yer yok, deste sayısı başlıkta) */
+.hand-head .deck { display: none; }
+.piles { flex: none; display: flex; justify-content: center; gap: 18px; padding-top: 4px; --pw: 56px; }
+.pile { position: relative; width: var(--pw); height: calc(var(--pw) * 1.4); border-radius: calc(var(--pw) * 0.1); }
+.pile > i { position: absolute; inset: 0; border-radius: inherit; background: #273152 url(../assets/kart/arka.jpg) center / cover no-repeat; transform: translate(calc(var(--k) * -2px), calc(var(--k) * -2px)); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), var(--sh-1); }
+.pile-n { position: absolute; right: -8px; bottom: -6px; z-index: 2; min-width: 26px; height: 22px; padding: 0 6px; border-radius: 999px; display: grid; place-items: center; background: var(--panel); color: var(--ink); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; box-shadow: 0 0 0 1px var(--line), var(--sh-1); }
+.discpile .kart { --w: var(--pw); rotate: 6deg; box-shadow: var(--sh-2); }
+.discpile > i { rotate: 6deg; opacity: 0.85; }
+.pile.empty { box-shadow: inset 0 0 0 2px var(--line); border: 0; opacity: 0.6; }
 .hslot.dragging { transform: translate(var(--dx), var(--dy)) scale(1.1); transition: none; z-index: 200; cursor: grabbing; }
 .hslot.dragging.armed .kart { box-shadow: 0 0 0 3px #fff3c4, 0 0 34px #ffd166; }
 .hslot.selected { transform: translateY(-8px); }
@@ -632,6 +643,8 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .prow { width: auto; flex: none; height: 48px; padding: 0 10px 0 4px; }
   .prow .pname { max-width: 90px; }
   .hand-panel { flex: none; }
+  .piles { display: none; }
+  .hand-head .deck { display: inline-flex; }
   /* el yatay kayar; kart yukarı, tahtaya doğru sürüklenince oynanır */
   .hand-grid { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: var(--hw, 100px); overflow-x: auto; justify-content: start; padding: 4px 2px; }
   .hslot { touch-action: pan-x; }
@@ -659,7 +672,8 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .gpill { height: 34px; gap: 6px; padding: 0 6px 0 10px; }
   .gpill .ring { width: 24px; height: 24px; font-size: 12px; }
   .center .btn.L { height: 46px; padding: 0 18px; font-size: 17px; }
-  .center .stagebox { gap: 6px; }
+  .center .stagebox { gap: 4px; }
+  .center .countdown:empty { display: none; }
   /* istemler dar ortaya sığsın: tapu küçük, seçenekler kalan genişlikte */
   .center .card-prompt { gap: 10px !important; }
   .center .card-prompt > :is(.deed, .deed-wrap) { zoom: 0.6; }
@@ -683,6 +697,8 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .prow .pcash { font-size: 13px; }
   .prow .pwait { position: absolute; top: 4px; right: 4px; }
   .hand-panel { padding: 6px 8px 8px; gap: 4px; border-radius: var(--r-l); }
+  .piles { display: none; }
+  .hand-head .deck { display: inline-flex; }
   /* el dikey kayar; kart sola, tahtaya doğru sürüklenince oynanır */
   .hand-grid { overflow-y: auto; align-content: start; padding: 2px; scrollbar-width: none; }
   .hslot { touch-action: pan-y; }
@@ -706,3 +722,5 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
 }
 /* çok dar sütunda araç düğmeleri yalnız yazı */
 @container (max-width: 250px) { .tools .btn .ic { display: none; } }
+/* en alçak yatay telefonda (320 px) ortadaki istem kaydırma çubuğu çıkarmasın */
+@media (orientation: landscape) and (max-height: 330px) { .center .btn.L { height: 42px; } }
