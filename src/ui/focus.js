@@ -16,6 +16,11 @@ function mark(dlg) {
   dlg.setAttribute('aria-labelledby', t.id);
 }
 
+// Oyun ekranı kapanınca açık kalan pencerenin kaydı silinir; yoksa eski oyunun bütün sayfası bellekte kalır.
+function prune() {
+  for (let i = open.length - 1; i >= 0; i--) if (!open[i].box.isConnected) open.splice(i, 1);
+}
+
 // Açan öğe yeniden çizildiyse yerine gelen eşi: aynı kimlik ya da aynı data-* öznitelikleri.
 function twin(n) {
   if (!n) return null;
@@ -29,6 +34,7 @@ function twin(n) {
 // box: pencerenin konduğu kap; draw(): kabı yeniden çizer. Çizimden önce ve sonra bakarak açılma, kapanma ve yeniden
 // çizim ayrılır. sel: kabın içinde pencerenin kendisi.
 export function withDialog(box, draw, sel = '.sheet') {
+  prune();
   const was = box.querySelector(sel);
   const a = document.activeElement;
   const inside = !!(was && a && was.contains(a));
@@ -54,6 +60,7 @@ export function withDialog(box, draw, sel = '.sheet') {
 // Tab ve Shift+Tab en üstteki açık pencerenin içinde döner. Belgenin keydown dinleyicisinden çağrılır; işlediyse true.
 export function trapTab(e) {
   if (e.key !== 'Tab') return false;
+  prune();
   for (let i = open.length - 1; i >= 0; i--) {
     const dlg = open[i].box.querySelector('[aria-modal="true"]');
     if (!dlg) continue;
