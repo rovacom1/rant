@@ -18,7 +18,7 @@ import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
 import { coinFlights, coinCount, arcPeak, COIN_GAP, FLIGHT_GAP } from './coins.js';
 import { worthLines } from './chart.js';
 import { ic, money, CARD_IC, GUNDEM_IC, SURPRIZ_IC } from './icons.js';
-import { pawn } from './pawns.js';
+import { pawn, warmPawns } from './pawns.js';
 import { verdict } from './verdict.js';
 import { mountDayi } from './dayi.js';
 import { dayiMoment, dayiSay } from './dayisay.js';
@@ -1077,6 +1077,7 @@ export function updateGame() {
   if (!animating) paintDice(v);
   renderPop(v);
   renderPlayers(v);
+  warmPawns(v.players);
   renderHand(v);
   setHTML(els.tools, toolsHTML(v));
   setHTML(els.stick, stickerHTML(v));

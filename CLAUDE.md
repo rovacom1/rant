@@ -34,7 +34,7 @@
 
 ## Kalite
 - Her değişiklikten sonra `npm test` (birim + 125 bot oyunu) yeşil olmalı. Kural/denge değişikliğinde `node tools/sim.js 200 5` raporunu karşılaştır.
-- Akıcılık: sürekli ya da her karede değişen şey yalnız `transform`/`opacity` ile canlandırılır (genişlik, gölge, filtre değil); konturlu piyon resimleri gibi pahalı filtreler sık değişen yazıyla aynı boyama katmanında kalmaz ve sık yeniden çizilen HTML'e konmaz (piyon kenarı `pawns.js`te bir kez tuvalde çizilir).
+- Akıcılık: sürekli ya da her karede değişen şey yalnız `transform`/`opacity` ile canlandırılır (genişlik, gölge, filtre değil); konturlu piyon resimleri gibi pahalı filtreler sık değişen yazıyla aynı boyama katmanında kalmaz ve sık yeniden çizilen HTML'e konmaz (piyon kenarı her boyda bir kez, ayrı iş parçacığında ve işlemcide çizilir: `pawns.js`, `pawnworker.js`). Ana iş parçacığında tuvalden resim üretme (toBlob, getImageData): ekran kartından okumayı bekler.
 - Arayüz değişikliğinde yerel sunucuda (`node tools/serve.js 4188`) tarayıcıyla dene; konsol hatası kalmasın.
 - Türkçe metinlerde şapkalı harf yok (a, i, u kullan). Teslimden önce `npm run check` temiz geçmeli.
 - Basit tut: küçük, bitmiş, test edilmiş adımlar. Kod tabanını şişirme; ölü kodu sil.
