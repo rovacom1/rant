@@ -49,6 +49,7 @@ function menuHTML() {
   const resume = (kind, s, label) =>
     html`<div class="box-note">${I('refresh')}<span class="grow"><b>${label}</b> · ${s.game ? (s.game.phase === 'over' ? 'bitmiş oyun' : `${s.game.round}. tur`) : 'lobide'}${kind === 'host' ? ` · ${s.code}` : ''}</span>
       <button class="btn S pri" data-act="${kind === 'host' ? 'resumeHost' : 'resumeLocal'}" ${busy ? 'disabled' : ''}>Devam et</button><button class="btn S sq ton" data-act="dropSave" data-k="${kind}" aria-label="Kaydı sil">${I('close')}</button></div>`;
+  // avoid-ai-design-ignore: SD5 (iki renkli logo: RANTÇI altın, DAYI kırmızı mühür; bilinçli seçim)
   return html`<div class="screen home">
     <div class="hero"><h1 class="title" aria-label="Rantçı Dayı"><span class="w1">${[...'RANTÇI'].map((c, i) => html`<span style="--i:${i}">${c}</span>`)}</span><span class="w2">DAYI</span></h1>
       <span class="tagline">Arsa kap, kaçak kat çık, dayını ara.</span></div>

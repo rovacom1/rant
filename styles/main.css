@@ -193,6 +193,7 @@ body.dark.intro-on .intro-shade { display: block; }
 .dayi canvas { width: 100%; height: 100%; display: block; }
 .dayi video { display: none; }
 .desk .start-card { position: relative; z-index: 1; }
+/* avoid-ai-design-ignore: M4 (oyun: giriş başlığının ve dayının yaylanması bilinçli seçim) */
 /* giriş: kart gelir, dayı masanın arkasından yükselir, başlık harf harf düşer (yalnız ilk açılışta) */
 .intro-play .dayi { animation: introRise 0.8s cubic-bezier(0.3, 1.4, 0.5, 1) 0.55s backwards; }
 .intro-play .home .start-card { animation: introFade 0.45s ease-out backwards; }
@@ -266,6 +267,7 @@ body.dark .cell.k-rail .art { filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 
 .cell.hl { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }
 .cell.pick { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }
 /* nabız yalnız opaklıkla (gölgeyi her karede değiştirmek parlayan bütün kareleri yeniden boyatır) */
+/* avoid-ai-design-ignore: C5 (seçilecek karenin nabzı işlevsel bir işaret) */
 .cell.pick::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: 0 0 18px rgba(245, 197, 66, 0.85); animation: pickPulse 1.2s ease-in-out infinite; }
 @keyframes pickPulse { 50% { opacity: 0.3; } }
 .board.picking .cell:not(.pick):not(.hl) { opacity: 0.35; filter: saturate(0.4); }
