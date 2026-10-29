@@ -1,5 +1,6 @@
 /* Rantçı Dayı — Geniş Tahta tasarımı. Renkler ve ölçüler: tasarım A (pirinç ana renk, şehir başına tek renk, iki tema).
-   Başlık, düğme ve sayılar Bricolage Grotesque; metin Geist. Emoji yok: simgeler src/ui/icons.js. */
+   Yazı: her şey Rubik (rakamlar eşit genişlikte); manşet yazısı Alfa Slab One (--df) yalnız logo, haber başlığı, köşe adları
+   ve dayı balonunda. Emoji yok: simgeler src/ui/icons.js. */
 :root {
   --page: #ece3cf; --center: #f7f0e1; --panel: #fffaf0; --panel2: #f1e7d2; --line: #dccdab;
   --ink: #1b2233; --muted: #596075; --chip: #efe4cc; --accent: #8a5a14; --track: #e2d6bb;
@@ -9,8 +10,9 @@
   --pr: #c8912f; --pr-d: #8a6220; --pr-ink: #1b2233; --sec-line: #b07f22; --ghost: #74500f;
   --gold: #f5c542;
   --speck: rgba(120, 85, 30, 0.11); --vig: rgba(90, 60, 15, 0.12);
-  --hf: 'Bricolage Grotesque', system-ui, sans-serif;
-  --bf: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --hf: 'Rubik', system-ui, sans-serif;
+  --bf: 'Rubik', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --df: 'Alfa Slab One', Rockwell, Georgia, serif;
   color-scheme: light;
 }
 body.dark {
@@ -160,8 +162,8 @@ body.dark .box-err { background: #3a2430; color: #ffd6d0; }
 
 /* ---------- giriş ve lobi ---------- */
 .screen { min-height: 100dvh; display: flex; align-items: center; justify-content: center; gap: 60px; padding: 30px 70px; }
-.logo { font-family: var(--hf); font-weight: 800; letter-spacing: -0.04em; color: var(--accent); line-height: 0.9; }
-.logo.sm { font-size: 25px; letter-spacing: -0.02em; white-space: nowrap; }
+.logo { font-family: var(--df); font-weight: 400; letter-spacing: 0; color: var(--accent); line-height: 0.9; }
+.logo.sm { font-size: 22px; white-space: nowrap; }
 .tagline { font-family: var(--hf); font-weight: 600; font-size: 24px; }
 .hero { position: relative; flex: 1; max-width: 560px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 18px; }
 
@@ -176,7 +178,7 @@ body.dark.intro-on .intro-shade { display: block; }
 /* başlığın arkasında gök renginde hale: binalar yazıyı bozmasın */
 .home .hero::before { content: ''; position: absolute; left: 50%; top: 50%; width: 760px; height: 520px; transform: translate(-50%, -50%); z-index: -1; pointer-events: none; background: radial-gradient(closest-side, rgba(242, 235, 198, 0.94) 60%, transparent); }
 body.dark .home .hero::before { background: radial-gradient(closest-side, rgba(10, 15, 30, 0.88) 60%, transparent); }
-.title { display: flex; flex-direction: column; align-items: center; font-weight: 800; line-height: 0.9; letter-spacing: -0.03em; }
+.title { display: flex; flex-direction: column; align-items: center; font-family: var(--df); font-weight: 400; line-height: 0.95; letter-spacing: 0.01em; }
 .title .w1 { display: flex; font-size: 92px; color: var(--accent); }
 .title .w1 span { display: inline-block; }
 .title .w2 { display: inline-block; font-size: 110px; color: #e4572e; transform: rotate(-4deg); -webkit-text-stroke: 3px #1b2233; paint-order: stroke fill; text-shadow: 5px 6px 0 #1b2233; }
@@ -445,6 +447,7 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .rules-more summary { cursor: pointer; font-family: var(--hf); font-weight: 700; color: var(--ink); }
 .news-card { width: 640px; max-width: 100%; display: flex; border-radius: 22px; overflow: hidden; background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); cursor: pointer; animation: newsIn 0.4s cubic-bezier(0.2, 0.8, 0.3, 1); }
 .news-card .nimg { width: 230px; flex: none; background: var(--chip) center / cover no-repeat; display: grid; place-items: center; font-size: 80px; }
+.news-card .h28 { font-family: var(--df); font-weight: 400; letter-spacing: 0; line-height: 1.05; }
 .news-card .nbody { padding: 20px 22px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; text-align: left; }
 .news-card .recap { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; border-top: 1px solid var(--line); }
 .recap-row { display: flex; align-items: center; gap: 6px; font-size: 14px; }

@@ -44,7 +44,7 @@ export const CARD_GROUP = {
   taksi: 'hareket', kestirme: 'hareket', geriVites: 'hareket',
 };
 
-// Başlık yazı tipinde (Bricolage Grotesque, kalın) bir yazının em cinsinden yaklaşık genişliği; ölçülen değerden biraz fazladır.
+// Başlık yazı tipinde (Rubik, kalın) bir yazının em cinsinden yaklaşık genişliği; ölçülen değerden biraz fazladır.
 // CSS bunu --ne ile alır ve adı kutuya sığacak boyda yazar (bkz. styles/kart.css .k-name, .d-name).
 const NARROW = /[iıIİjlJ ,.·']/;
 const MID = /[frt\-]/;
