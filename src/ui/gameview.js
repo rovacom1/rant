@@ -20,6 +20,7 @@ import { worthLines } from './chart.js';
 import { ic, money, CARD_IC, GUNDEM_IC, SURPRIZ_IC } from './icons.js';
 import { pawn, warmPawns } from './pawns.js';
 import { verdict } from './verdict.js';
+import { canShare } from './phone.js';
 import { mountDayi } from './dayi.js';
 import { dayiMoment, dayiSay } from './dayisay.js';
 import { canPlay, idleTurn, AUTO_END_MS } from './idle.js';
@@ -706,7 +707,7 @@ function renderAudioPop() {
   const online = app.mode !== 'local';
   setHTML(els.audioPop, html`<div class="sound-pop" role="dialog" aria-label="Ses ayarları"><span class="h16">Ses</span>${row('music', 'music', 'Müzik', '#c8912f')}${row('sfx', 'sound', 'Efektler', '#2475e8')}
     ${notifySupported() ? html`<div class="row" style="gap:8px;padding-top:8px;border-top:1px solid var(--line)">${I(isNotifyOn() ? 'bell' : 'bellOff')}<span class="small">Sıra bana gelince bildir</span><span class="grow"></span><input type="checkbox" class="sw" data-act="notify" ${isNotifyOn() ? 'checked' : ''} aria-label="Bildirim"></div>` : ''}
-    ${online ? html`<button class="btn S ton" data-act="copyLink">${I('link')}Davet linkini kopyala · ${app.code}</button>` : ''}</div>`);
+    ${online ? html`<button class="btn S ton" data-act="copyLink">${I('link')}Davet linkini ${canShare() ? 'gönder' : 'kopyala'} · ${app.code}</button>` : ''}</div>`);
 }
 
 // Olaylar: sade, büyük yazı; zar, yürüme, maaş gibi gürültü gizlenir. Ortada son 3 olay, geçmişte turlara ayrılmış hepsi.

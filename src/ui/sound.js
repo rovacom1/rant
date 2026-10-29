@@ -38,7 +38,8 @@ function ac() {
     applyVolumes();
     load();
   }
-  if (ctx.state === 'suspended') ctx.resume();
+  // iPhone arkadan dönünce bağlamı 'interrupted' bırakır; sayfa arkadayken kasten susturulmuşsa açılmaz.
+  if (ctx.state !== 'running' && !document.hidden) ctx.resume();
   return ctx;
 }
 
@@ -214,5 +215,17 @@ export function setAudio(patch) {
   if (!cfg.musicOn && wasMusic) stopLoop();
 }
 
-// İlk tıklamada ses bağlamını aç (tarayıcı kuralı); bekleyen müzik o zaman başlar.
-window.addEventListener('pointerdown', () => ac() && mode && !current && cfg.musicOn && startLoop(true), { once: true });
+// Tıklamada ses bağlamını aç (tarayıcı kuralı; iPhone telefon görüşmesinden sonra da ister); bekleyen müzik o zaman başlar.
+window.addEventListener('pointerdown', () => ac() && mode && !current && cfg.musicOn && startLoop(true));
+
+// Telefonda sayfa arkaya geçince (ekran kilidi, başka uygulama) ses susar, cepte müzik çalmaz; dönünce müzik yumuşakça girer.
+document.addEventListener('visibilitychange', () => {
+  if (!ctx || !matchMedia('(hover: none)').matches) return;
+  if (document.hidden) {
+    stopLoop();
+    ctx.suspend();
+  } else {
+    ctx.resume();
+    if (mode && cfg.musicOn) startLoop(true);
+  }
+});

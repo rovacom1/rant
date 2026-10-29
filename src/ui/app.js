@@ -12,11 +12,21 @@ import { pickClick, isBoardPickable } from './pick.js';
 import { ic } from './icons.js';
 import { pawn, onPawnsReady } from './pawns.js';
 import { mountIntro } from './intro.js';
+import { phoneGame, canShare } from './phone.js';
 
 const root = document.getElementById('app');
 const SAVE = { host: 'save.host', local: 'save.local' };
 const SAVE_MAX_AGE = 3 * 24 * 3600 * 1000;
 const freshUI = () => ({ dialog: null, selected: [], binds: {}, trade: null, swapMine: null, pick: null, popSq: null, seenOver: false });
+
+// Bu sekme oda kurduysa ya da bot oyunu açtıysa sayfa yenilenince (telefonda kaydırma, tarayıcının sekmeyi boşaltması)
+// oyun kendiliğinden kayıttan sürer. Yalnız bu sekmede tutulur; sekme kapanınca menüde "Devam et" kalır.
+function resumeMark(kind) {
+  try {
+    if (kind) sessionStorage.setItem('rant.resume', kind);
+    else sessionStorage.removeItem('rant.resume');
+  } catch {}
+}
 
 function savedGame(kind) {
   const s = store.get(SAVE[kind]);
@@ -79,7 +89,7 @@ function lobbyHTML() {
     <div class="lobby-head"><span class="logo sm">Rantçı Dayı</span><span class="grow"></span><button class="btn sq" data-act="rules" aria-label="Kurallar">${I('book')}</button><button class="btn sq" data-act="theme" aria-label="Tema">${I(document.body.classList.contains('dark') ? 'sun' : 'moon')}</button><button class="btn sq" data-act="leave" aria-label="Çık">${I('door')}</button></div>
     <div class="lobby-main">
       <section class="panel lobby-seats">
-        ${online ? html`<div class="row" style="gap:14px"><span class="label">Oda</span><span class="room-code">${L.code}</span><span class="grow"></span><button class="btn sec" data-act="copyLink">${I('link')}Davet linkini kopyala</button></div>
+        ${online ? html`<div class="row" style="gap:14px"><span class="label">Oda</span><span class="room-code">${L.code}</span><span class="grow"></span><button class="btn sec" data-act="copyLink">${I('link')}Davet linkini ${canShare() ? 'gönder' : 'kopyala'}</button></div>
           <span class="muted small">Linki arkadaşlarına gönder; açıp adını yazınca masaya otururlar.</span>` : html`<span class="h18">Bot masası</span><span class="muted small">Tek bilgisayarda botlara karşı. Arkadaşlarla oynamak için menüden "Oda kur".</span>`}
         <div class="seat-grid">${seats}</div>
         ${mine ? html`<div class="label">Piyonun<div class="pawn-pick">${E.AVATARS.map(pick)}</div></div>` : ''}
@@ -109,8 +119,10 @@ function render() {
     if (!G.gameMounted()) G.mountGame(root);
     G.updateGame();
     mountIntro(null);
+    phoneGame(true, () => G.toast('Oyundan çıkmak için kapı düğmesine bas.', '', 'door'));
     return;
   }
+  phoneGame(false);
   G.unmountGame();
   setMusic('lobby');
   const focus = document.activeElement && document.activeElement.id;
@@ -240,9 +252,10 @@ async function reconnect() {
   }
 }
 
-// Ev sahibinden uzun süre ses çıkmazsa bağlantı ölmüştür.
-setInterval(() => {
-  if (app.mode === 'join' && app.conn && app.status === 'online' && Date.now() - app.lastMsg > 20000) {
+// Ev sahibinden uzun süre ses çıkmazsa bağlantı ölmüştür. Telefon arkadan dönünce (ekran kilidi, başka uygulama)
+// beklemeden bakılır: ev sahibi 5 saniyede bir yoklar, 12 saniye sessizlik kopmuş bağlantıdır.
+function checkAlive(limit) {
+  if (app.mode === 'join' && app.conn && app.status === 'online' && Date.now() - app.lastMsg > limit) {
     const c = app.conn;
     app.conn = null;
     try {
@@ -250,7 +263,9 @@ setInterval(() => {
     } catch {}
     reconnect();
   }
-}, 4000);
+}
+setInterval(() => checkAlive(20000), 4000);
+document.addEventListener('visibilitychange', () => !document.hidden && checkAlive(12000));
 
 // Yedek oyuncu, ev sahibinin son kopyasıyla aynı oda kodunda ev sahibi olur. Diğerleri yeniden bağlanma
 // döngüsünde aynı koda bağlanır ve kendiliğinden yeni ev sahibine geçer. Kod hala tutuluyorsa false (sonra yine denenir).
@@ -279,6 +294,7 @@ async function takeover() {
   attachLocal(host);
   host.schedule();
   host.persist();
+  resumeMark('host');
   G.toast('Ev sahibi masadan kalktı; oyun artık senin tarayıcında sürüyor.', '', 'crown');
   return true;
 }
@@ -311,6 +327,7 @@ async function startHost(saved = null) {
           const conn = await joinRoom(code);
           Object.assign(app, { mode: 'join', code, status: 'connecting' });
           store.set('lastJoin', code);
+          resumeMark(null);
           history.replaceState(null, '', `#${code}`);
           useConn(conn);
           return;
@@ -341,6 +358,7 @@ async function startHost(saved = null) {
   app.hb = setInterval(() => host.heartbeat(), 5000);
   attachLocal(host);
   host.schedule();
+  resumeMark('host');
 }
 
 function startLocal(saved = null) {
@@ -353,6 +371,7 @@ function startLocal(saved = null) {
   app.code = 'YEREL';
   attachLocal(host);
   host.schedule();
+  resumeMark('local');
 }
 
 async function startJoin(raw) {
@@ -372,6 +391,7 @@ async function startJoin(raw) {
     if (app.mode !== 'join') return conn.close();
     history.replaceState(null, '', `#${code}`);
     store.set('lastJoin', code);
+    resumeMark(null);
     useConn(conn);
   } catch (e) {
     app.mode = null;
@@ -383,6 +403,7 @@ async function startJoin(raw) {
 
 function leave(msg = '') {
   app.leaving = true;
+  resumeMark(null);
   try {
     app.conn && app.conn.close();
   } catch {}
@@ -414,9 +435,17 @@ function inviteLink() {
   return `${location.origin}${location.pathname}#${app.code}`;
 }
 
+// Telefonda paylaşma penceresi açılır (WhatsApp vb.); bilgisayarda link panoya kopyalanır.
 async function copyLink() {
   if (app.mode === 'local') return;
   const link = inviteLink();
+  if (canShare()) {
+    try {
+      return await navigator.share({ title: 'Rantçı Dayı', text: 'Masaya otur:', url: link });
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
   try {
     await navigator.clipboard.writeText(link);
     G.toast('Davet linki kopyalandı', '', 'link');
@@ -799,5 +828,13 @@ document.body.classList.toggle('dark', (store.get('theme') || (matchMedia('(pref
 // Kenarlı piyon resimleri hazır olunca (pawns.js) ekran onlarla yeniden çizilir.
 onPawnsReady(() => (app.screen === 'game' ? G.gameMounted() && G.updateGame() : render()));
 render();
-// Davet linkiyle girmiş oyuncu sayfayı yenilerse aynı odaya kendiliğinden döner.
+// Davet linkiyle girmiş oyuncu sayfayı yenilerse aynı odaya kendiliğinden döner; ev sahibi ve bot oyunu kayıttan sürer.
+let resumeKind = null;
+try {
+  resumeKind = sessionStorage.getItem('rant.resume');
+} catch {}
 if (app.joinCode && app.joinCode === store.get('lastJoin') && profile.name) startJoin(app.joinCode);
+else if (resumeKind === 'host' && savedGame('host') && profile.name) startHost(savedGame('host'));
+else if (resumeKind === 'local' && savedGame('local') && profile.name) startLocal(savedGame('local'));
+// Geri-ileri önbelleğinden dönen sayfanın bağlantıları ölüdür; oyun açıksa sayfa yeniden yüklenir ve kaldığı yerden sürer.
+addEventListener('pageshow', (e) => e.persisted && app.mode && location.reload());

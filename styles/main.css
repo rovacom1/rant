@@ -25,9 +25,13 @@ body.dark {
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
+html, body { margin: 0; height: 100%; overscroll-behavior: none; } /* telefonda aşağı çekip yenileme ve yana kaydırıp geri gitme yok */
 body { font-family: var(--bf); color: var(--ink); background: var(--page); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; color: inherit; }
+/* oyun bir uygulama gibi davranır: yazılar seçilip kopyalanmaz, resimler sürüklenmez; yalnız yazı kutuları ve oda kodu seçilir */
+body { -webkit-user-select: none; user-select: none; }
+input, textarea, .room-code { -webkit-user-select: text; user-select: text; }
+img { -webkit-user-drag: none; }
 .hidden { display: none !important; }
 h1, h2, h3, h4 { font-family: var(--hf); margin: 0; letter-spacing: -0.015em; }
 
@@ -518,9 +522,12 @@ body.dark .tip { background: #26324f; box-shadow: 0 0 0 1px rgba(255, 255, 255, 
    Giriş, lobi ve sonuç ekranı dar ya da alçak ekranda tek sütun olur ve dikey kayar. */
 .fs-btn, .turn-phone { display: none; }
 @media (hover: none) {
-  /* uzun basma yazı seçmez, menü açmaz; dokunulan yer mavi parlamaz */
-  .game, .turn-phone { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  /* uzun basma menü açmaz (resmi kaydet, kopyala); dokunulan yer mavi parlamaz */
+  .game, .turn-phone, button, img { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  /* çift dokunma sayfayı yakınlaştırmaz; kayan kutuların sonuna gelen kaydırma sayfaya geçip onu yenilemez */
+  .game, .game :is(.sheet-body, .layer, .pop, .center, .hand-grid, .players, .player-panel, .trade-props, .rules-grid), .results, .screen { touch-action: manipulation; }
 }
+.sheet-body, .layer, .pop, .center, .hand-grid, .players, .player-panel, .trade-props, .rules-grid, .results { overscroll-behavior: contain; }
 @media (hover: none) and (orientation: portrait) and (max-width: 760px) {
   body:not(.portrait-ok) .turn-phone {
     position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
@@ -625,6 +632,8 @@ body.dark .tip { background: #26324f; box-shadow: 0 0 0 1px rgba(255, 255, 255, 
     padding: 4px; gap: 6px;
   }
   body.can-fs .side-head .fs-btn { display: inline-flex; }
+  /* sayfa kaymaz: tahtada parmak kayınca sayfa da oynamaz, yenilenmez, yakınlaşmaz (kayan kutular kendi içinde kayar) */
+  .game { touch-action: none; }
   :root:fullscreen .side-head .fs-btn { display: none; }
   .board { border-radius: 10px; }
   .center { padding: 6px 10px; gap: 4px; }

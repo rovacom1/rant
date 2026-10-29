@@ -1,0 +1,15 @@
+{
+  "name": "Rantçı Dayı",
+  "short_name": "Rantçı Dayı",
+  "description": "Türkiye temalı, internetten 4-5 kişilik emlak ve kart oyunu.",
+  "lang": "tr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#ece3cf",
+  "theme_color": "#c8912f",
+  "icons": [
+    { "src": "assets/ikon/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/ikon/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

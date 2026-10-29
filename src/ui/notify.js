@@ -1,7 +1,9 @@
 // Sekme arkadayken sıra sana gelince masaüstü bildirimi. İzin yalnız düğmeye basınca istenir.
 import { store } from './dom.js';
 
-const supported = () => typeof Notification !== 'undefined';
+// Telefon tarayıcısı sayfadan bildirim göstermez (Android hata verir, iPhone desteklemez); orada düğme de çıkmaz.
+const touch = globalThis.matchMedia?.('(hover: none)');
+const supported = () => typeof Notification !== 'undefined' && !touch?.matches;
 let wanted = store.get('notify', false);
 let wasMine = false;
 let shown = null;
@@ -22,7 +24,9 @@ export async function toggleNotify() {
 }
 
 // Her saniye çağrılır; yalnız "sıra bende değil" -> "sıra bende" geçişinde ve sekme arkadayken bildirir.
+// Telefon masada dururken sıra gelince kısa titrer (Android; iPhone titreşimi sayfaya açmaz).
 export function watchTurn(mine, body) {
+  if (mine && !wasMine && touch?.matches && !document.hidden && navigator.userActivation?.hasBeenActive) navigator.vibrate?.([60, 80, 60]);
   if (mine && !wasMine && document.hidden && isNotifyOn()) {
     try {
       shown = new Notification('Rantçı Dayı — Sıra sende!', { body, tag: 'rant-turn', icon: document.querySelector('link[rel=icon]')?.href });
