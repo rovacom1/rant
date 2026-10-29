@@ -73,7 +73,7 @@
 }
 .deed.tr { --dc: #2b3448; --di: #ffffff; }
 body.dark .deed.tr { --dc: #4a5a80; }
-body.dark .deed { --paper: #1f2944; --dline: #33406a; --dmuted: #a9b2c8; background: var(--paper); color: #eef1f8; }
+body.dark .deed { --paper: #3e3328; --dline: #574735; --dmuted: #c9b89c; background: var(--paper); color: #f4ead6; }
 .deed .d-top { background: var(--dc); color: var(--di); padding: 9px 12px 8px; display: flex; flex-direction: column; gap: 2px; }
 .deed .d-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .deed .d-title .ic { font-size: 18px; flex: none; }

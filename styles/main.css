@@ -19,15 +19,16 @@
   --ink-fixed: #1b2233; --err-bg: #fde8e4; --err-line: #f2b8ae; --err-ink: #6b1d16; --tip-bg: #1b2233; --tip-ink: #f6f2e8; --title-red: #e4572e; --title-edge: #1b2233;
   color-scheme: light;
 }
+/* koyu tema: ceviz ve tütün (kraft köşelerle aynı aile); siyaha yakın değil */
 body.dark {
-  --page: #0c1220; --center: #151d33; --panel: #1b2540; --panel2: #141c31; --line: #2c3858;
-  --ink: #eef1f8; --muted: #a9b2c8; --chip: #25304d; --accent: #e6bc66; --track: #2c3858;
-  --strip-off: rgba(170, 180, 205, 0.28); --pedge: rgba(238, 241, 248, 0.55);
+  --page: #2a211a; --center: #33291f; --panel: #3c3126; --panel2: #30271e; --line: #5a4a3a;
+  --ink: #f4ead6; --muted: #c9b89c; --chip: #4a3d30; --accent: #e6bc66; --track: #5a4a3a;
+  --strip-off: rgba(230, 215, 190, 0.28); --pedge: rgba(244, 234, 214, 0.55);
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.5); --pos: #5ad19a; --neg: #ff7a7a;
-  --hatch: rgba(10, 15, 30, 0.55);
+  --hatch: rgba(30, 22, 16, 0.55);
   --sec-line: #c8912f; --ghost: #e6bc66;
   --speck: rgba(255, 255, 255, 0.05); --vig: rgba(0, 0, 0, 0.3);
-  --err-bg: #3a2430; --err-line: #6b3a48; --err-ink: #ffd6d0; --tip-bg: #26324f; --title-edge: #0a0f1c;
+  --err-bg: #4a2a24; --err-line: #7a3f34; --err-ink: #ffd6d0; --tip-bg: #4a3d30; --title-edge: #1a130e;
   color-scheme: dark;
 }
 
@@ -130,7 +131,8 @@ body.dark .disc { background: color-mix(in srgb, var(--pc) 22%, transparent); }
 @keyframes autoRun { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 .btn .autoend { font-variant-numeric: tabular-nums; opacity: 0.75; min-width: 1ch; }
 .countdown { font-family: var(--hf); font-weight: 700; font-size: 14px; color: var(--neg); min-height: 16px; }
-.sheet { box-sizing: border-box; padding: 20px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); display: flex; flex-direction: column; gap: 12px; max-height: 100%; max-width: 100%; }
+/* kağıt yüzey (pencere, panel, giriş kartı): tapu kartının çerçevesi gibi dış çizgi ve 3 px içeride ikinci ince çizgi */
+.sheet { box-sizing: border-box; padding: 20px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--shadow); display: flex; flex-direction: column; gap: 12px; max-height: 100%; max-width: 100%; }
 .sheet.S { width: 400px; } .sheet.M { width: 290px; } .sheet.W { width: 520px; } .sheet.L { width: 600px; } .sheet.XL { width: 772px; }
 .sheet-head { display: flex; align-items: center; gap: 10px; }
 .sheet-head .ic { font-size: 24px; }
@@ -174,16 +176,15 @@ body.dark .disc { background: color-mix(in srgb, var(--pc) 22%, transparent); }
 /* giriş sahnesi (src/ui/intro.js): arkada canlı şehir, kartın arkasında dayı. Dayının krem zemini tuvalde silinir. */
 .intro-bg, .intro-shade { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -2; display: none; }
 .intro-bg { object-fit: cover; object-position: center bottom; }
-.intro-shade { z-index: -1; background: linear-gradient(rgba(10, 15, 30, 0.8), rgba(10, 15, 30, 0.6)); }
+.intro-shade { z-index: -1; background: linear-gradient(rgba(26, 19, 14, 0.78), rgba(26, 19, 14, 0.55)); }
 body.intro-on { --page: #f2ebc6; }
 body.intro-on .intro-bg { display: block; }
-body.dark.intro-on { --page: #0c1220; }
+body.dark.intro-on { --page: #2a211a; }
 body.dark.intro-on .intro-shade { display: block; }
-/* başlığın arkasında gök renginde hale: binalar yazıyı bozmasın */
-.home .hero::before { content: ''; position: absolute; left: 50%; top: 50%; width: 760px; height: 520px; transform: translate(-50%, -50%); z-index: -1; pointer-events: none; background: radial-gradient(closest-side, rgba(242, 235, 198, 0.94) 60%, transparent); }
-body.dark .home .hero::before { background: radial-gradient(closest-side, rgba(10, 15, 30, 0.88) 60%, transparent); }
+/* başlık şehir resminin üstünde kendi başına okunur: afiş gibi koyu kontur ve kayık gölge; alt yazı gazete şeridinde */
 .title { display: flex; flex-direction: column; align-items: center; font-family: var(--df); font-weight: 400; line-height: 0.95; letter-spacing: 0.01em; }
-.title .w1 { display: flex; font-size: 92px; color: var(--accent); }
+.title .w1 { display: flex; font-size: 92px; color: var(--gold); -webkit-text-stroke: 3px var(--title-edge); paint-order: stroke fill; text-shadow: 4px 5px 0 var(--title-edge); }
+.home .tagline { padding: 6px 14px; border-radius: var(--r-s); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--sh-2); }
 .title .w1 span { display: inline-block; }
 .title .w2 { display: inline-block; font-size: 110px; color: var(--title-red); transform: rotate(-4deg); -webkit-text-stroke: 3px var(--title-edge); paint-order: stroke fill; text-shadow: 5px 6px 0 var(--title-edge); }
 /* dayı masada: belden aşağısı kartın arkasında, tespihli eli kartın solundan görünür */
@@ -202,7 +203,7 @@ body.dark .home .hero::before { background: radial-gradient(closest-side, rgba(1
 @keyframes introDrop { from { transform: translateY(-110px) rotate(-12deg); opacity: 0; } 60% { opacity: 1; } }
 @keyframes introStamp { from { transform: scale(2.4) rotate(-14deg); opacity: 0; } to { transform: scale(1) rotate(-4deg); opacity: 1; } }
 @keyframes introFade { from { opacity: 0; transform: translateY(10px); } }
-.start-card { width: 440px; padding: 24px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); display: flex; flex-direction: column; gap: 14px; }
+.start-card { width: 440px; padding: 24px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--sh-3); display: flex; flex-direction: column; gap: 14px; }
 .pawn-pick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .pawn-pick button { appearance: none; cursor: pointer; padding: 8px 4px 6px; border-radius: var(--r-l); display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: var(--center); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); }
 .pawn-pick .pn { font-size: 12px; font-weight: 600; line-height: 1.15; text-align: center; min-height: 2.3em; display: flex; align-items: center; }
@@ -215,7 +216,7 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 .lobby { width: min(1240px, 100%); min-height: 100dvh; margin: 0 auto; display: flex; flex-direction: column; padding: 26px 44px; gap: 18px; }
 .lobby-head { display: flex; align-items: center; gap: 12px; }
 .lobby-main { display: flex; gap: 20px; flex: 1; min-height: 0; align-items: flex-start; }
-.panel { border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line); }
+.panel { border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line); }
 .lobby-seats { flex: 1.2; padding: 22px; display: flex; flex-direction: column; gap: 10px; }
 .lobby-cfg { flex: 1; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
 .room-code { font-family: var(--hf); font-weight: 800; font-size: 34px; letter-spacing: 0.14em; }
@@ -334,7 +335,7 @@ body.dark .delta { background: color-mix(in srgb, var(--me) 26%, transparent); c
 @keyframes toastIn { from { transform: translateY(12px); opacity: 0; } }
 
 /* kare penceresi */
-.pop { position: absolute; z-index: 25; padding: 12px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); display: flex; gap: 14px; animation: popIn 0.14s ease-out; }
+.pop { position: absolute; z-index: 25; padding: 12px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--shadow); display: flex; gap: 14px; animation: popIn 0.14s ease-out; }
 @keyframes popIn { from { transform: scale(0.95); opacity: 0; } }
 .pop-side { display: flex; flex-direction: column; gap: 8px; width: 230px; }
 .pop .preview { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: var(--r-m); background: color-mix(in srgb, var(--me) 9%, transparent); font-size: 16px; font-weight: 600; }
@@ -343,7 +344,7 @@ body.dark .pop .preview { background: color-mix(in srgb, var(--me) 20%, transpar
 /* tapu kartı */
 .deed { --dw: 240px; --dc: #3b465c; position: relative; width: var(--dw); overflow: hidden; flex: none; text-align: left; }
 .deed .dmort { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: repeating-linear-gradient(135deg, rgba(255, 250, 240, 0.78) 0 8px, rgba(255, 250, 240, 0.6) 8px 16px); font-family: var(--hf); font-weight: 700; font-size: 14px; }
-body.dark .deed .dmort { background: repeating-linear-gradient(135deg, rgba(10, 15, 30, 0.72) 0 8px, rgba(10, 15, 30, 0.55) 8px 16px); }
+body.dark .deed .dmort { background: repeating-linear-gradient(135deg, rgba(30, 22, 16, 0.72) 0 8px, rgba(30, 22, 16, 0.55) 8px 16px); }
 .deed .dmort .ic { font-size: 24px; }
 /* küçük tapu (pazarlık): yalnız şehir şeridi, ad ve fiyat */
 .deed.mini { --dw: 106px; cursor: pointer; }
@@ -366,7 +367,7 @@ body.dark .deed .dmort { background: repeating-linear-gradient(135deg, rgba(10, 
 .kart.mini { --w: 64px; }
 
 /* dava düellosu */
-.duel { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 24px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); }
+.duel { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 24px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--shadow); }
 .duel-row { display: flex; align-items: center; gap: 22px; }
 .duel-side { width: 210px; padding: 16px 12px; border-radius: var(--r-l); background: color-mix(in srgb, var(--pc) 10%, var(--center)); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pc) 45%, transparent); display: flex; flex-direction: column; align-items: center; gap: 8px; transition: opacity 0.4s, box-shadow 0.4s, transform 0.4s; }
 .duel-die { height: 96px; display: grid; place-items: center; }
@@ -399,7 +400,7 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .prow .pcash.neg { color: var(--neg); }
 .prow .pwait { width: 8px; height: 8px; border-radius: 50%; background: var(--pc); animation: blink 1s infinite; flex: none; box-shadow: 0 0 0 1px var(--pedge); }
 @keyframes blink { 50% { opacity: 0.25; } }
-.hand-panel { flex: 1; min-height: 0; position: relative; border-radius: var(--r-l); background: var(--panel2); box-shadow: 0 0 0 1px var(--line); display: flex; flex-direction: column; padding: 10px 14px 14px; gap: 8px; }
+.hand-panel { flex: 1; min-height: 0; position: relative; border-radius: var(--r-l); background: var(--panel2); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel2), inset 0 0 0 4px var(--line); display: flex; flex-direction: column; padding: 10px 14px 14px; gap: 8px; }
 .hand-head { display: flex; align-items: center; gap: 6px; }
 .deck { display: inline-flex; align-items: center; gap: 4px; font-family: var(--hf); font-weight: 700; font-size: 14px; color: var(--muted); }
 .hand-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--cols, 3), var(--hw, 110px)); gap: 8px; align-content: center; justify-content: center; }
@@ -413,8 +414,8 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .tools { display: flex; gap: 8px; flex: none; }
 .tools .btn { flex: 1; padding: 0 10px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
 .tools .btn.on { box-shadow: inset 0 0 0 2px var(--pr); background: color-mix(in srgb, var(--pr) 16%, var(--panel)); }
-.sound-pop { position: absolute; right: 0; top: 54px; width: 300px; z-index: 60; padding: 16px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); display: flex; flex-direction: column; gap: 12px; }
-.player-panel { flex: 1; min-height: 0; border-radius: var(--r-l); background: var(--panel2); box-shadow: 0 0 0 1px var(--line); padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+.sound-pop { position: absolute; right: 0; top: 54px; width: 300px; z-index: 60; padding: 16px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--shadow); display: flex; flex-direction: column; gap: 12px; }
+.player-panel { flex: 1; min-height: 0; border-radius: var(--r-l); background: var(--panel2); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel2), inset 0 0 0 4px var(--line); padding: 14px; display: flex; flex-direction: column; gap: 10px; overflow: auto; }
 .stat3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .stat { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 10px; border-radius: var(--r-s); background: var(--chip); font-size: 16px; }
 .cdot { width: 12px; height: 12px; border-radius: 3px; background: var(--dc); flex: none; display: inline-block; }
@@ -446,7 +447,7 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .rule-item > .ic { font-size: 24px; }
 .rules-more { font-size: 14px; color: var(--muted); line-height: 1.5; }
 .rules-more summary { cursor: pointer; font-family: var(--hf); font-weight: 700; color: var(--ink); }
-.news-card { width: 640px; max-width: 100%; display: flex; border-radius: var(--r-l); overflow: hidden; background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--shadow); cursor: pointer; animation: newsIn 0.4s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.news-card { width: 640px; max-width: 100%; display: flex; border-radius: var(--r-l); overflow: hidden; background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--shadow); cursor: pointer; animation: newsIn 0.4s cubic-bezier(0.2, 0.8, 0.3, 1); }
 .news-card .nimg { width: 230px; flex: none; background: var(--chip) center / cover no-repeat; display: grid; place-items: center; font-size: 80px; }
 .news-card .h28 { font-family: var(--df); font-weight: 400; letter-spacing: 0; line-height: 1.05; }
 .news-card .nbody { padding: 20px 22px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; text-align: left; }
@@ -553,7 +554,6 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .screen { flex-direction: column; gap: 24px; padding: 24px 16px; }
   .title .w1 { font-size: 56px; }
   .title .w2 { font-size: 66px; }
-  .home .hero::before { width: 420px; height: 300px; }
   .desk { width: 100%; padding-top: 190px; }
   .dayi-slot { left: 50%; width: 240px; margin-left: -120px; }
   .start-card { width: 100%; }
@@ -578,7 +578,6 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
 @media (orientation: landscape) and (max-height: 520px) {
   .home.screen { flex-direction: row; gap: 72px; padding: 4px 16px; }
   .home .hero { flex: 0 1 auto; gap: 10px; }
-  .home .hero::before { width: 360px; height: 260px; }
   .title .w1 { font-size: 50px; }
   .title .w2 { font-size: 58px; }
   .tagline { font-size: 16px; }
