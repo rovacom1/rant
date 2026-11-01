@@ -538,6 +538,7 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .float.t-big { font-size: 24px; }
 /* büyük kira: tahtanın ortasında eğik, büyüyüp oturan tutar */
 .float.burst { font-size: 30px; translate: -50% -50%; rotate: -4deg; animation: burst 1.6s ease-out forwards; text-shadow: 3px 3px 0 var(--panel), -3px 3px 0 var(--panel), 3px -3px 0 var(--panel), -3px -3px 0 var(--panel), 0 8px 14px rgba(27, 34, 51, 0.3); }
+.float.burst.t-medium { font-size: 20px; } /* kira patlaması: ödeyenin piyonundan (gameview.js burstAt) */
 @keyframes burst { 0% { transform: scale(0.4); opacity: 0; } 12% { transform: scale(1.9); opacity: 1; } 24% { transform: scale(1.55); } 80% { transform: scale(1.6); opacity: 1; } 100% { transform: translateY(-20px) scale(1.6); opacity: 0; } }
 @keyframes floatUp { to { transform: translateY(-40px); opacity: 0; } }
 /* jetonlar resim (assets/fx/jeton-a, jeton-b), havuzdan (sprite.js) */
@@ -617,6 +618,7 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .au-art { width: 42px; height: 40px; margin: -6px 0; }
   .coin { width: 20px; }
   .float.burst { font-size: 24px; }
+  .float.burst.t-medium { font-size: 16px; }
   .au-res .big-num { font-size: 26px; }
   .au-res .h22 { font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .au-res > .pawn { display: none; }

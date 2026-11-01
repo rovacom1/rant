@@ -47,7 +47,7 @@ commit + push (main'e birleştirme yok). Haftalar tahmin.
    `ui/phone.js` (dikey perde kalkar), CLAUDE.md telefon maddesi yeniden. Bitti: 390x844 ve 360x740'ta kaydırmasız tur.
 6. [x] **Eğik tahta, kamera** (v0.43): `ui/camera.js` (masa, izle, odak, hedef); tahta görünümü soyutlanır (hücre yerleri, piyon
    noktaları, kamera odakları) ki Mahalle arazisi da kullansın. Bitti: 60 fps, kamera bütçeyi uzatmaz.
-7. [ ] **Zar, yürüyüş, para** (v0.44): yükselen adım tıkları, varışta ezilme + toz, varılacak kare önceden; kira patlaması,
+7. [x] **Zar, yürüyüş, para** (v0.44): yükselen adım tıkları, varışta ezilme + toz, varılacak kare önceden; kira patlaması,
    jeton yayı, iki sayaç; büyük anda dayı videosu (`assets/dayi`, `ui/dayi.js`).
 8. [ ] **El, kartlar, pencereler** (v0.45): telefonda yelpaze; iki platformda kaldır-bırak, hedefler parlar; satın al, inşaat,
    pazarlık, tepki yeni tasarımda (telefonda alttan, masaüstünde ortada).

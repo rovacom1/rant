@@ -1531,7 +1531,11 @@ function pawnPop(tok, big) {
 
 // Kira ve maaş: jetonlar piyonlar arasında (maaşta Başlangıç köşesinden piyona) uçar. Kademe (fx.js) jeton sayısını,
 // sesi, tutarın boyunu ve darbe anını (ilk jetonun konduğu an) belirler: maaş küçük, kira orta, büyük kira büyük.
+// Kira patlaması: tutar ödeyenin piyonundan eğik ve kenarlı patlar (büyük kirada darbe anında tahtanın ortasında), jetonlar
+// yay çizerek alana uçar, iki bakiye birlikte sayar (countCash). Dikey telefonda kamera yürüyen piyona yakın durur ve
+// bakiyeler üstte: kira jetonları ödeyenin cüzdanından alanın yüzüne uçar.
 // quiet: aynı anda başka bir büyük an var (ör. kirayı ödeyemeyen iflas etti); kira orta kademede kalır, tek darbe olur.
+// Döner: son jetonun konduğu an (ms, şimdiden).
 function pawnFlight(v, e, delay, quiet = false) {
   const ms = T.flight * spd();
   const tier = quiet && moneyTier(e) === 'big' ? 'medium' : moneyTier(e);
@@ -1540,9 +1544,12 @@ function pawnFlight(v, e, delay, quiet = false) {
   const n = coinsFor(tier, e.amount);
   const tok = (p) => tokens.els.get(P(v, p).id);
   const salary = e.from === null;
-  const a = salary ? centerOf(cells[0]) : centerOf(tok(e.from));
+  const wallets = !salary && isTel() && cashEl(e.from) && cashEl(e.to);
+  const a = salary ? centerOf(cells[0]) : centerOf(wallets ? cashEl(e.from) : tok(e.from));
   const toTok = tok(e.to);
-  const b = centerOf(toTok);
+  const toEl = wallets ? cashEl(e.to) : toTok;
+  const b = centerOf(toEl);
+  const burstFrom = !salary && centerOf(tok(e.from));
   const hitAt = ms * LAND; // ilk jetonun konduğu an
   // Büyük kirada ilk jetonda bütün canlandırmalar FREEZE ms durur; sonraki jetonlar o kadar geç konar.
   const late = tier === 'big' && !calm() ? FREEZE : 0;
@@ -1551,16 +1558,36 @@ function pawnFlight(v, e, delay, quiet = false) {
   setTimeout(() => {
     if (!els) return;
     coinSounds({ n, landAt: land, tier, board: els.board, startCell: salary ? cells[0] : null, flight: ms });
-    if (!salary && a) floatAt(a, -e.amount, tier);
+    if (tier === 'medium' && burstFrom) burstAt(burstFrom, -e.amount);
+    else if (tier === 'small' && !salary && a) floatAt(a, -e.amount, tier);
   }, delay);
   setTimeout(() => {
     if (!els) return;
     impact(tier, els.board, { me });
-    if (tier !== 'small') pawnPop(toTok, tier === 'big');
+    if (tier !== 'small') {
+      pawnPop(toTok, tier === 'big');
+      if (wallets) walletPop(toEl);
+    }
     if (tier === 'big') bigAmount(me && v.you === e.from ? -e.amount : e.amount);
     if (b) floatAt(b, e.amount, tier);
   }, delay + (a && b && !calm() ? hitAt : 0));
   if (a && b && !calm()) flyCoins(a, b, { n, delay, ms, gap, size: c.size, spread: c.spread });
+  return delay + land(n - 1);
+}
+
+// Kira patlaması: tutar ödeyenin piyonunun üstünde eğik, kenarlı, büyüyüp oturur ve söner (okuma etiketi, bütçeye girmez).
+function burstAt(pt, delta) {
+  const el = floatEl(delta, 'medium');
+  el.classList.add('burst');
+  el.style.left = `${pt.x}px`;
+  el.style.top = `${pt.y - 34}px`;
+  setTimeout(() => el.remove(), 1700);
+}
+
+// Cüzdana jeton konunca bakiye bir an büyür.
+function walletPop(el) {
+  if (!el || calm()) return;
+  el.animate([{ transform: 'none' }, { transform: 'scale(1.22)', offset: 0.35 }, { transform: 'none' }], { duration: 320, easing: 'ease-out' });
 }
 
 // Sahne katmanı: haber, sürpriz ve rakip kartı tahtanın ortasında, kareleri kapatmadan gösterilir.
@@ -1909,14 +1936,15 @@ export async function present(prev, v, events, fast) {
   // Büyük anda dayı köşeden bir laf eder (hızlı oyunda ve yetişmeye çalışırken susar); ortadaki sahne kapanınca.
   const moment = live && spd() >= 1 ? dayiMoment(events) : null;
   if (moment) afterStage().then(() => els && dayiSay(isTel() ? els.game : els.board, moment));
-  pawnFlights.forEach((e, i) => pawnFlight(v, e, i * FLIGHT_GAP, jolt !== null));
+  const pawnEnds = pawnFlights.map((e, i) => pawnFlight(v, e, i * FLIGHT_GAP, jolt !== null));
   if (flights.length && els) {
     for (const f of flights) flyPanel(f);
   }
   if ((flights.length || pawnFlights.length) && els) {
-    // Bakiyeler ilk jeton kalkınca saymaya başlar, son jeton konunca biter.
-    const lastDelay = Math.max(0, ...flights.map((f) => f.delay + (f.n - 1) * COINS[f.tier].gap), (pawnFlights.length - 1) * FLIGHT_GAP);
-    countCash(prev, v, FLIGHT_MS * spd() + lastDelay);
+    // Bakiyeler ilk jeton kalkınca birlikte saymaya başlar, son jeton konunca biter (ödeyenin kırmızı, alanın yeşil iz).
+    const F = FLIGHT_MS * spd();
+    const end = Math.max(F, ...flights.map((f) => f.delay + (f.n - 1) * COINS[f.tier].gap * spd() + F), ...pawnEnds);
+    countCash(prev, v, end);
   }
   if ((flights.length || pawnFlights.length) && els) await sleep(FLIGHT_MS * spd() * 0.6); // jetonlar yola çıksın, sayılar sonra değişsin
   if (v.phase === 'over' && !app.ui.seenOver) {

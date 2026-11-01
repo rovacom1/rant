@@ -11,6 +11,7 @@ import { icon, ic } from './icons.js';
 import { boardPawn } from './pawns.js';
 import { stepDurations } from './slots.js';
 import { bldSrc } from './map.js';
+import { dust } from './sprite.js';
 
 // Izgara kenarı G kare; köşeler 0, K, 2K, 3K. Kare 0 sağ altta, sıra saat yönünde.
 export const G = BOARD.length / 4 + 1;
@@ -201,20 +202,24 @@ export class Tokens {
   }
 
   // Yürüyüş: kalkışta hızlanır, ortada hızlı, varışta yavaşlar (toplam stepMs x adım); her adımda yay çizer, inişte adım
-  // sesi çalar. Son inişte ezilir, altında toz halkası açılır ve kısa durur (host PACE.step bütçesinin içinde).
-  // onStep(k, ms): her adımın başında (kamera piyonu izler, camera.js).
+  // tıkı çalar, tık her adımda yarım ton yükselir. Varılacak kare yürüyüş boyunca altın kenarla bekler. Son inişte tok
+  // vuruş, piyon ezilip toparlanır, ayağının dibinde toz bulutu (sprite.js) kalkar ve kısa durur (host PACE.step
+  // bütçesinin içinde). onStep(k, ms): her adımın başında (kamera piyonu izler, camera.js).
   async walk(id, path, fast, stepMs = 150, onStep = null) {
     const el = this.els.get(id);
     if (!el || fast) {
       this.place(id, path[path.length - 1]);
       return;
     }
+    const hint = this.dest(path[path.length - 1]);
+    const pitch = (k) => ({ rate: 2 ** (Math.min(k, 12) / 12) });
     if (calm()) {
-      for (const sq of path) {
-        this.place(id, sq);
-        play('step', stepMs / 1000);
+      for (let k = 0; k < path.length; k++) {
+        this.place(id, path[k]);
+        play('step', stepMs / 1000, pitch(k));
         await sleep(stepMs);
       }
+      hint.end();
       return;
     }
     const fig = el.querySelector('.fig');
@@ -234,21 +239,41 @@ export class Tokens {
         const dy = y0 - el.offsetTop;
         el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: d, easing: 'cubic-bezier(.45,0,.55,1)' });
         fig?.animate([{ transform: 'none' }, { transform: `translateY(${-arc}px)`, offset: 0.45 }, { transform: 'none' }], { duration: d, easing: 'ease-in-out' });
-        play('step', Math.min(d, 280) / 1000, { at: d / 1000, hit: true });
+        play('step', Math.min(d, 280) / 1000, { at: d / 1000, hit: true, ...pitch(k) });
+        if (k === path.length - 1) play('thud', 0.3, { at: d / 1000, hit: true, vol: 0.55 });
         await sleep(d);
       }
-      fig?.animate([{ transform: 'scale(1.14, 0.82)' }, { transform: 'scale(0.96, 1.05)', offset: 0.5 }, { transform: 'none' }], { duration: 260, easing: 'ease-out' });
-      const dust = document.createElement('i');
-      dust.className = 'dust';
-      Object.assign(dust.style, { left: `${el.offsetLeft + this.size / 2}px`, top: `${el.offsetTop + this.size}px` });
-      dust.style.setProperty('--s', `${this.size}px`);
-      this.layer.appendChild(dust);
-      setTimeout(() => dust.remove(), 560);
+      fig?.animate([{ transform: 'scale(1.15, 0.85)' }, { transform: 'scale(0.97, 1.04)', offset: 0.55 }, { transform: 'none' }], { duration: 200, easing: 'ease-out' });
+      // iki küçük bulut ayağın iki yanından kalkar (figürün önüne geçmez)
+      const s = this.size;
+      for (const side of [-1, 1]) dust(this.layer, el.offsetLeft + s * (0.5 + side * 0.52), el.offsetTop + s * 1.02, s * 0.72, 0, 420).classList.add('fx-walk');
+      hint.end();
       await sleep(Math.round(stepMs * 0.8));
     } finally {
       el.classList.remove('walking');
       el.classList.add('idle');
+      hint.end();
     }
+  }
+
+  // Varılacak karenin üstünde ince altın kenar: yürüyüş başında belirir (yalnız opacity), varışta bir an parlayıp söner.
+  // Kareye yazı ya da işaret konmaz; kenar piyonların altında kalır.
+  dest(sq) {
+    const b = this.view.box(sq);
+    const el = document.createElement('i');
+    el.className = 'fx fx-dest';
+    Object.assign(el.style, { left: `${b.x}px`, top: `${b.y}px`, width: `${b.w}px`, height: `${b.h}px` });
+    this.layer.appendChild(el);
+    el.animate([{ opacity: 0 }, { opacity: 0.85 }], { duration: 200, easing: 'ease-out', fill: 'forwards' });
+    let done = false;
+    return {
+      end() {
+        if (done) return;
+        done = true;
+        el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 320, easing: 'ease-in', fill: 'forwards' }).onfinish = () => el.remove();
+        setTimeout(() => el.remove(), 400);
+      },
+    };
   }
 
   settle(players) {

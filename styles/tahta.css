@@ -199,10 +199,9 @@ body.dark .dayi-pop .bub { box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), var(--
 .fx-ghost.tk { display: block; }
 /* piyon kaldırımdan ortaya taşar: ortadaki sahne (haber, rakip kartı, sürpriz) açıkken piyonlar yarım kesilmesin, önünde dursun */
 .board:has(.stage-layer) .tokens { z-index: 41; }
-/* son inişte ayağın altında açılan toz halkası */
-.tokens .dust { position: absolute; z-index: 1; width: calc(var(--s) * 1.3); height: calc(var(--s) * 0.45); translate: -50% -50%; border-radius: 50%; border: 2px solid rgba(255, 250, 240, .9); box-shadow: 0 0 0 1px rgba(27, 34, 51, .15); pointer-events: none; animation: pawnDust 520ms var(--e-out) forwards; }
-body.dark .tokens .dust { border-color: rgba(230, 236, 250, .7); }
-@keyframes pawnDust { from { opacity: .9; transform: scale(.5); } to { opacity: 0; transform: scale(1.8); } }
+/* yürüyüş (board.js walk): varılacak kare ince altın kenarla bekler (yalnız opacity canlanır); son inişte ayağın iki yanında toz (sprite.js) */
+.tokens .fx-dest { z-index: 1; border-radius: 3px; box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 1px var(--pedge); opacity: 0; }
+.tokens .fx-walk { z-index: 2; }
 
 /* bina efektleri (boardfx.js): karedeki resmin kopyası, resmin kutusunda */
 .fx-bld { transform-origin: 50% 100%; z-index: 1; }

@@ -78,7 +78,7 @@ body.tel .board {
   position: absolute; left: var(--bx, 8px); top: var(--by, 0px); overflow: visible; transform-origin: 50% 50%;
 }
 body.tel .board { --nmf: max(7px, calc(var(--ch) * 0.16)); --so: 1px; --sw-on: 4px; }
-body.tel :is(.token .fig > .pawn, .cell .bld img, .cell .art, .cell .nm, .board .fx-tag) { scale: 1 var(--stand, 1); transform-origin: 50% 100%; }
+body.tel :is(.token .fig > .pawn, .cell .bld img, .cell .art, .cell .nm, .board .fx-tag, .tokens .fx-walk) { scale: 1 var(--stand, 1); transform-origin: 50% 100%; }
 body.tel .cell.side-t .nm { transform-origin: 50% 0; }
 body.tel .cell .face { padding: 0 1px 2px; --in: calc(var(--band) + 8px); --in-art: calc(var(--band) + 1px); --out: 1px; }
 /* yan sütunlarda bant ve şerit payı kalır: ad bandın yanında biter, karenin dışına taşmaz */
