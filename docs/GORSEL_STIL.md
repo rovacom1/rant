@@ -67,7 +67,7 @@ Flat 2D cartoon animation in the exact same style, static camera. He keeps holdi
 
 - Özel kareler ve ulaşım (2026-11-01, mobil kalite planı adım 0): `src/ui/icons.js`'teki elle çizilmiş SVG'lerin yerine
   üretilmiş resimler gelir: `assets/kare/<tür>.webp` (`baslangic`, `tapu`, `cay`, `zabita`, `firsat`, `surpriz`, `gar`,
-  `havalimani`), saydam, görünen nesneye kırpılmış, uzun kenarı 256 px. Koda bağlanana kadar SVG'ler kullanılır (adım 3).
+  `havalimani`), saydam, görünen nesneye kırpılmış, uzun kenarı 256 px. Adım 3'te koda bağlandı (`icons.js` `KARE`); SVG'ler silindi.
   v0.6'daki "yapay zeka resmi kalabalık" sorunu sahneli resimlerdi; bunlar tek nesne, piyon tarzında.
 - Nesneler: Başlangıç banknot dolu maaş zarfı, Tapu Dairesi kırmızı mühürlü rulo tapu, Çay Ocağı ince belli çay bardağı, Zabıta
   rozetli kasket, Fırsat altın dolu sandık, Sürpriz içinden konfeti fışkıran hediye kutusu, gar önden lokomotif, havalimanı
@@ -75,7 +75,10 @@ Flat 2D cartoon animation in the exact same style, static camera. He keeps holdi
 - Komut piyon kalıbıdır ("Board game square icon, a single compact iconic object ... readable at 40 px ... Subject: ..."). İlk iki
   simge (`baslangic`, `gar`) `itiraz.jpg` ve `galata.png` referansıyla, kalan altısı bu iki simge referans verilerek üretildi
   (aynı çizgi kalınlığı, aynı palet: domates kırmızısı, turkuaz, hardal, krem). Yeni simge de bu ikisini referans alır.
-- Koyu temada lacivert dış çizgi zeminle birleşir; simge krem dolgusuyla okunur, kodda ince açık kontur verilir (`.ic.c` gibi).
+- Koyu temada lacivert dış çizgi zeminle birleşir; bu yüzden resme 4 px'lik (256 px'te) krem kontur bir kez işlenir:
+  `python tools/kare_kontur.py <konturuz kaynak> assets/kare`. Konturuz kaynak `tasks/gorsel-ham/kare/` (git geçmişinde
+  c7870dd); script iki kez aynı resme çalıştırılmaz. Tarayıcıda filtre yok; açık temada krem kontur krem zeminde kaybolur,
+  kraft köşede piyon gibi ince bir çıkartma kenarı olur.
 - 40 px'te denenir; ayrıntılı bina (ör. gar binası) küçükte bulanır, tek büyük nesne seçilir.
 - Mülk kareleri simgesiz: üstte setin tam doygun renginde bant, altta il adı, arada bina resmi (aşağıda); sahiplik yalnız iç kenardaki şeritte. Kare zemini sahibin rengine boyanmaz.
 

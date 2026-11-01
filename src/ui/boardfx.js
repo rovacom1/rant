@@ -160,7 +160,7 @@ export function setFx(board, setCells, color, sound = true) {
   if (sound) hit('sparkle', star + starMs / 2);
 }
 
-// Karedeki bina resmi ve kopyası. Kopya resmin kutusunda (.bld) durur: karenin yüzüyle birlikte döner, piyonların altında kalır.
+// Karedeki bina resmi ve kopyası. Kopya resmin kutusunda (.bld) durur, piyonların altında kalır.
 const bldImg = (cell) => {
   const img = cell.querySelector('.bld img');
   return img && !img.hidden && img.getAttribute('src') ? img : null;

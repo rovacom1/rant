@@ -1,9 +1,9 @@
 // Tahta: 10x10 ızgaranın kenarındaki 36 kare (kenar derinliği her yanda aynı, köşeler kare; tahta.css) ve piyonlar. Zarlar dice.js.
-// Mülk karesi: üstte setin tam doygun renginde bant, altta il adı (hiçbir şey örtmez), aradaki alanda kat kat bina resmi;
+// Mülk karesi: ortaya bakan kenarda setin tam doygun renginde bant, dış tarafta il adı (hiçbir şey örtmez), aradaki alanda kat kat bina resmi;
 // sahibi yalnız iç kenardaki şerit gösterir (sahipsizken ince ve soluk, sahipliyken kalın ve sahibinin renginde).
 // Karede fiyat/kira yazmaz; tıklayınca açılır. Piyonlar "kaldırım" düzeninde karenin iç kenarında durur (slots.js).
-// Monopoly gibi her kenarın kareleri dıştan içe bakar: içerik (.face) alt sırada dik, sol sütunda 90, üst sırada 180,
-// sağ sütunda -90 derece döner; bant hep ortaya bakan kenarda, ad dış kenarda.
+// İçerik (.face) dört kenarda da dik durur (baş çevirmeden okunur); bant ve şerit hep ortaya bakan kenarda (tahta.css).
+// Köşe, ulaşım ve Fırsat/Sürpriz simgeleri resimdir (assets/kare, icons.js).
 import { BOARD, GROUPS, inFullSet } from '../engine/index.js';
 import { html, raw, sleep, esc } from './dom.js';
 import { play } from './sound.js';
@@ -63,7 +63,8 @@ export function buildBoard(boardEl) {
   return [...boardEl.querySelectorAll('.cell')];
 }
 
-// Ad kareye sığmazsa kelime ortasından bölünmez, kesilmez; yazısı küçülür.
+// Ad kareye sığmazsa kelime ortasından bölünmez, kesilmez; yazısı küçülür. Yan sütunlarda ad şeridin altına kadar uzanır,
+// şerit adın üstünde biter (--nmh: adın yüzün altından yüksekliği).
 function fitNames(boardEl) {
   for (const n of boardEl.querySelectorAll('.cell .nm')) {
     n.style.fontSize = '';
@@ -71,6 +72,8 @@ function fitNames(boardEl) {
       const f = parseFloat(getComputedStyle(n).fontSize);
       n.style.fontSize = `${((f * n.clientWidth * 0.97) / n.scrollWidth).toFixed(2)}px`;
     }
+    const face = n.parentElement;
+    if (face.parentElement.matches('.side-l, .side-r')) face.style.setProperty('--nmh', `${face.clientHeight - n.offsetTop}px`);
   }
 }
 
