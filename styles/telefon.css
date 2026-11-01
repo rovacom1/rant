@@ -62,6 +62,9 @@ body.tel .prow.turn { background: none; box-shadow: none; }
 body.tel .prow.turn .disc { box-shadow: 0 0 0 3px var(--pc), 0 0 0 5px var(--page), 0 0 0 7px var(--gold); }
 body.tel .prow .pcash { font-size: 14px; }
 body.tel .prow .pwait { position: absolute; top: 2px; right: 2px; }
+body.tel .prow:is(.drop-ok, .drop-hot) { background: none; box-shadow: none; }
+body.tel .prow.drop-ok .disc { box-shadow: 0 0 0 3px var(--pc), 0 0 0 5px var(--page), 0 0 0 8px var(--gold); }
+body.tel .prow.drop-hot .disc { box-shadow: 0 0 0 3px var(--pc), 0 0 0 5px #fff3c4, 0 0 0 9px var(--gold); }
 body.tel #gundem { position: fixed; z-index: 15; right: 8px; top: calc(var(--top) + 4px); max-width: 156px; }
 body.tel .gpill { height: 46px; gap: 6px; padding: 0 6px 0 10px; max-width: 156px; box-shadow: var(--sh-1); }
 body.tel .gpill .chip { display: none; }
@@ -128,6 +131,14 @@ body.tel .card-prompt > :is(.deed, .deed-wrap) { zoom: 0.62; align-self: center;
 body.tel .card-prompt > .kart.big, body.tel .card-prompt > .chain { align-self: center; }
 body.tel .card-prompt .kart.big { --w: 96px; }
 body.tel .chain { zoom: 0.62; }
+/* karar pencereleri (satın al, tepki, kira) alttan sayfada tam genişlik; Satın al başparmağın altında, tam satır */
+body.tel :is(.buy-win, .react-win) { width: 100%; }
+body.tel .buy-acts { flex-direction: column-reverse; align-items: stretch; }
+body.tel .buy-acts > .btn { flex: none; }
+body.tel .buy-acts > .btn.sec { align-self: flex-start; height: 46px; padding: 0 18px; font-size: 16px; }
+body.tel .rw-mid .kart.big { --w: 104px; }
+body.tel .rw-mid .chain { zoom: 1; }
+body.tel .rw-rent { flex-direction: column; align-items: flex-start; gap: 4px; }
 body.tel :is(.opt-col, .opt-col.wide) { width: 100% !important; }
 body.tel .opt-col > .row { flex-wrap: wrap; }
 body.tel .center .big-num, body.tel .layer .big-num { font-size: 36px; }
@@ -165,11 +176,19 @@ body.tel .hand-panel:not(.open), body.tel .player-panel:not(.open) { display: no
 body.tel .hand-panel.open { position: fixed; z-index: 45; left: 0; right: 0; bottom: 0; padding: 18px 14px 14px; gap: 6px; flex: none; }
 body.tel .hand-panel .hand-head .deck { display: inline-flex; }
 body.tel .hand-head .tel-only { display: inline-flex; }
-body.tel .hand-grid {
-  flex: none; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: var(--hw, 100px); overflow-x: auto; overflow-y: hidden;
-  justify-content: safe center; align-content: start; padding: 10px 2px 8px; scrollbar-width: none; touch-action: pan-x;
+/* el yelpaze (hand.js layoutFan): kartlar alttaki bir noktadan açılır, ortadaki en yüksekte; kart her yöne kaldırılıp
+   tahtaya bırakılır (sayfa kaymaz). Seçilen ya da tepki zamanı gelen kart biraz kalkar. */
+body.tel .hand-grid.fan { display: block; position: relative; flex: none; height: calc(var(--hw, 96px) * 1.4 + 60px); overflow: visible; touch-action: none; } /* altta 34: hand.js FAN_DROP ve kenar kartın eğimi; üstte 26: kalkan kart */
+body.tel .hand-grid.fan:empty { height: auto; }
+body.tel .hand-grid.fan .hslot {
+  position: absolute; left: 50%; bottom: 34px; width: var(--hw, 96px); margin-left: calc(var(--hw, 96px) / -2);
+  transform: translate(var(--fx, 0px), var(--fy, 0px)) rotate(var(--fr, 0deg)); transform-origin: 50% 120%; touch-action: none;
 }
-body.tel .hslot { touch-action: pan-x; }
+body.tel .hand-grid.fan .hslot.selected, body.tel .hand-grid.fan .hslot.lift { translate: 0 -16px; }
+body.tel .hand-grid.fan .hslot.dragging { transform: translate(var(--fx, 0px), var(--fy, 0px)) rotate(var(--fr, 0deg)); }
+@media (hover: hover) {
+  body.tel .hand-grid.fan .hslot:hover { transform: translate(var(--fx, 0px), calc(var(--fy, 0px) - 22px)) rotate(var(--fr, 0deg)) scale(1.18); z-index: 50 !important; }
+}
 body.tel .player-panel.open { position: fixed; z-index: 46; left: 0; right: 0; bottom: 0; max-height: 72dvh; padding: 20px 16px 18px; }
 
 /* ---------- ayarlar, kare, pencereler, bildirimler ---------- */
@@ -189,14 +208,6 @@ body.tel .layer > .sheet { height: auto !important; }
 body.tel .sheet-head .h22 { font-size: 19px; }
 body.tel .sheet-foot { flex-wrap: wrap; gap: 8px; }
 body.tel .trade-cols { flex-direction: column; gap: 10px; }
-body.tel .trade-col { padding: 10px; gap: 6px; }
-body.tel .trade-props { max-height: 150px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-body.tel .partners { justify-content: flex-start; }
-body.tel .sheet-head:has(.partners) { flex-wrap: wrap; row-gap: 10px; }
-body.tel .build-row { gap: 6px; padding: 0 8px; }
-body.tel .build-row .bname { width: 84px; }
-body.tel .build-row .blvl { width: auto; }
-body.tel .build-row .brent { display: none; }
 body.tel .news-card { flex-direction: column; padding: 0; }
 body.tel .news-card .nimg { width: 100%; height: 150px; }
 body.tel .surp { flex-direction: column; }
@@ -209,7 +220,3 @@ body.tel .center .prompt { scrollbar-width: none; }
 body.tel .center.pickp .card-prompt > :is(.kart, .deed), body.tel .center.pickp .opt-col > .body { display: none; }
 body.tel .center.pickp .opt-col { gap: 8px; align-items: center; }
 body.tel .center.pickp .opt-col > .btn { align-self: center !important; }
-/* pazarlık: ortaklar başlığın altında kendi satırında; özet tam satır, düğmeler altında */
-body.tel .sheet-head .partners { order: 5; flex-basis: 100%; }
-body.tel .sheet > .row:has([data-trade-sum]) { flex-wrap: wrap; justify-content: flex-end; }
-body.tel [data-trade-sum] { flex-basis: 100%; }

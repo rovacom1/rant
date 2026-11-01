@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fitGrid, cardFace, emWidth, CARD_SHORT, CARD_GROUP, CARD_GROUPS, RULE_MAX } from '../src/ui/hand.js';
+import { fitGrid, fanLayout, fanWidth, FAN_DROP, cardFace, emWidth, CARD_SHORT, CARD_GROUP, CARD_GROUPS, RULE_MAX } from '../src/ui/hand.js';
 import { deed, setLine } from '../src/ui/deed.js';
 import { CARDS, BOARD, OWNABLE } from '../src/engine/index.js';
 import { started } from './helpers.js';
@@ -71,4 +71,16 @@ test('tapu: set illeri, bina resimleri, kaçak ve af işareti', () => {
   out = String(deed(s, tr, { ladder: true }));
   assert.ok(out.includes('deed tr') && !out.includes('assets/bina'));
   assert.ok(String(deed(s, q, { mini: true, sel: true })).includes('mini sel'));
+});
+
+test('el yelpazesi: kartlar kutudan taşmaz, görünen şerit parmakla tutulur, kenar kart az düşer', () => {
+  for (const width of [336, 348, 400]) {
+    for (let n = 1; n <= 8; n++) {
+      const w = fanWidth(n, width);
+      const f = fanLayout(n, w, width);
+      assert.ok(Math.abs(f[0].x) + w / 2 <= width / 2 + 0.5, `${n} kart ${width}: taşma`);
+      if (n > 1) assert.ok(f[1].x - f[0].x >= 34, `${n} kart ${width}: şerit ${f[1].x - f[0].x}`);
+      assert.ok(Math.max(...f.map((c) => c.y)) <= FAN_DROP && Math.max(...f.map((c) => Math.abs(c.r))) <= 15);
+    }
+  }
 });

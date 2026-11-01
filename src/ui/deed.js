@@ -89,3 +89,45 @@ export function deed(v, sq, o = {}) {
   const mort = ps && ps.ipotek && !o.mini ? html`<div class="dmort">${I('ipotek')}<span>İpotekli</span></div>` : '';
   return html`<div class="${cls}" style="${style}" ${attrs}>${top}<div class="d-bd">${body}</div>${mort}</div>`;
 }
+
+// Satın alma penceresinin küçük tapusu: setin renginde bant ve ad, altında en yüksek kattaki bina (ulaşımda simgesi).
+export function deedFace(v, sq) {
+  const B = boardFor(v);
+  const s = B.squares[sq];
+  const tr = s.kind === 'transport';
+  const color = tr ? null : B.groups[s.group].color;
+  const style = `${color ? `--dc:${color};--di:${bandInk(color)};` : ''}--ne:${Math.max(3, emWidth(s.name))}`;
+  const art = tr ? html`<span class="df-ic">${I(s.mode)}</span>` : html`<img src="${binaSrc(B.groups[s.group].bina || s.group, 4)}" alt="">`;
+  return html`<div class="deed-face ${tr ? 'tr' : ''}" style="${style}" aria-hidden="true"><div class="df-top"><span class="d-name">${s.name}</span></div><div class="df-art">${art}</div></div>`;
+}
+
+// Kira çubukları: arsadan 4 kata (ulaşımda 1-4 tane) kiralar, boyu kiraya oranlı; o anki kira dolu renkte.
+export function rentBars(v, sq) {
+  const B = boardFor(v);
+  const s = B.squares[sq];
+  const tr = s.kind === 'transport';
+  const vals = tr ? E.TRANSPORT_RENT[s.mode].slice(1).map((x) => E.money(v, x)) : s.rents.map((x) => scaled(v, sq, x));
+  const top = Math.max(...vals);
+  const kicker = tr ? `Kira, ${E.TRANSPORT_LABEL[s.mode].toLowerCase()} sayısına göre` : 'Kira, kat sayısına göre';
+  const bars = vals.map((x, i) => html`<span class="rb ${i === 0 ? 'now' : ''}" style="--h:${Math.round(6 + (x / top) * 46)}px;--a:${(0.3 + i * 0.16).toFixed(2)}"><b>${x}</b><i></i></span>`);
+  return html`<div class="rent-bars" role="img" aria-label="${kicker}: ${vals.join(', ')}"><span class="kicker">${kicker}</span><div class="rb-row">${bars}</div></div>`;
+}
+
+// Setin (ulaşımda aynı türün, Mahalle'de bölgenin) kareleri: her biri setin renginde, sahibinin şeridiyle; bu kare halkalı.
+// Mahalle'nin büyük bölgelerinde (6'dan çok arsa) gösterilmez: orada set değil komşuluk sayılır.
+export function setRow(v, sq) {
+  const B = boardFor(v);
+  const s = B.squares[sq];
+  const tr = s.kind === 'transport';
+  const qs = tr ? B.squares.map((x, q) => (x.kind === 'transport' && x.mode === s.mode ? q : -1)).filter((q) => q >= 0) : B.groupSquares[s.group];
+  if (qs.length > 6) return '';
+  const color = tr ? '#2b3448' : B.groups[s.group].color;
+  const label = tr ? E.TRANSPORT_LABEL[s.mode] : E.isMahalle(v) ? 'Bölge' : 'Set';
+  const items = qs.map((q) => {
+    const o = v.props[q]?.owner;
+    const who = o !== null && o !== undefined ? v.players[o].name : 'sahipsiz';
+    const tip = q === sq ? `${B.squares[q].name}: bu kare` : `${B.squares[q].name}: ${who}`;
+    return html`<span class="set-sq ${q === sq ? 'cur' : ''}" style="--dc:${color}${o !== null && o !== undefined ? `;--oc:${v.players[o].color}` : ''}" data-tip="${tip}" tabindex="0" aria-label="${tip}"></span>`;
+  });
+  return html`<div class="set-row"><span class="kicker">${label}</span>${items}</div>`;
+}

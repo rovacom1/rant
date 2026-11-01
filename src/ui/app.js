@@ -636,21 +636,12 @@ const A = {
     const k = el.dataset.k;
     if (app.ui.dialog && app.ui.dialog.type === k) return closeDialog();
     if (k === 'trade') return A.trade();
-    if (k === 'build') app.ui.build = {};
     openDialog({ type: k });
   },
-  // İnşaat panelinde kat sayısını değiştirir (henüz gönderilmez).
-  bstep(el) {
-    const sq = Number(el.dataset.sq);
-    const b = (app.ui.build ||= {});
-    b[sq] = (b[sq] || 0) + Number(el.dataset.d);
+  // İnşaat penceresinde mülk seçer.
+  buildSel(el) {
+    app.ui.buildSq = Number(el.dataset.sq);
     G.renderModal();
-  },
-  // Seçilen katları satar, sonra eşit çıkma sırasıyla diker.
-  buildGo() {
-    for (const a of G.buildOrder(app.view, app.ui.build || {}) || []) act(a);
-    app.ui.build = {};
-    closeDialog();
   },
 
   roll: () => act({ type: 'roll' }),
@@ -759,7 +750,14 @@ const A = {
   tradeTo(el) {
     app.ui.trade.to = Number(el.dataset.p);
     app.ui.trade.take.props = [];
+    app.ui.trade.add = null;
     app.ui.binds.tradeTake = '0';
+    G.renderModal();
+  },
+  // Pazarlık kutusunda "Mülk ekle" listesini açar ya da kapatır.
+  tradeAdd(el) {
+    const t = app.ui.trade;
+    t.add = t.add === el.dataset.side ? null : el.dataset.side;
     G.renderModal();
   },
   tradePick(el) {
@@ -832,14 +830,25 @@ const A = {
 };
 Object.assign(A, MAHALLE_ACTIONS); // Mahalle: arsa seç, torpil, park, AVM, gecekondu (arazi.js)
 
-// Elden gelen kart olayları: tıklayınca ayrıntı, tahtaya sürükleyip bırakınca oyna.
+// Elden gelen kart olayları: tıklayınca ayrıntı, tahtaya sürükleyip bırakınca oyna. Kart bir hedefin (parlayan kare ya da
+// oyuncu) üstüne bırakıldıysa o hedefle oynar; takasta bırakılan kendi mülkün ilk adımdır, rakibinki tahtadan seçilir.
 document.addEventListener('rant:card', (e) => {
   const v = V();
   if (!v) return;
   const { uid, how } = e.detail;
   if (how === 'click' || (v.pending && v.pending.type === 'discard')) return A.openCard({ dataset: { uid } });
   if (!G.canPlay(v, uid)) return;
+  const hit = how === 'drop' ? G.dropHit(uid) : null;
   if (how === 'drop') app.ui.handOpen = false; // telefonda el sayfası tahtayı boşaltır
+  if (hit && hit.swapMine !== undefined) {
+    A.pickBoard({ dataset: { uid } });
+    app.ui.swapMine = hit.swapMine;
+    return G.updateGame();
+  }
+  if (hit) {
+    act({ type: 'playCard', uid, target: hit });
+    return G.updateGame();
+  }
   const target = E.CARDS[E.cardId(uid)].target;
   if (target === 'none') return act({ type: 'playCard', uid, target: {} });
   if (isBoardPickable(uid, v)) return A.pickBoard({ dataset: { uid } });

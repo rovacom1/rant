@@ -49,7 +49,7 @@ commit + push (main'e birleştirme yok). Haftalar tahmin.
    noktaları, kamera odakları) ki Mahalle arazisi da kullansın. Bitti: 60 fps, kamera bütçeyi uzatmaz.
 7. [x] **Zar, yürüyüş, para** (v0.44): yükselen adım tıkları, varışta ezilme + toz, varılacak kare önceden; kira patlaması,
    jeton yayı, iki sayaç; büyük anda dayı videosu (`assets/dayi`, `ui/dayi.js`).
-8. [ ] **El, kartlar, pencereler** (v0.45): telefonda yelpaze; iki platformda kaldır-bırak, hedefler parlar; satın al, inşaat,
+8. [x] **El, kartlar, pencereler** (v0.45): telefonda yelpaze; iki platformda kaldır-bırak, hedefler parlar; satın al, inşaat,
    pazarlık, tepki yeni tasarımda (telefonda alttan, masaüstünde ortada).
 9. [ ] **Rakip sırası, son** (v0.46): izleyici modu, resimli tepki çıkartmaları, İtiraz anı; giriş, lobi, oyun sonu telefonda dikey; masa zemini.
 K. [ ] **Mahalle modu** (v0.47): ayrı plan.

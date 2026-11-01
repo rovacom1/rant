@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BOARD, GROUPS, OWNABLE, price } from '../src/engine/index.js';
-import { isBoardPickable, pickSquares, pickClick, tapuSquares } from '../src/ui/pick.js';
+import { isBoardPickable, pickSquares, pickClick, tapuSquares, dropTargets } from '../src/ui/pick.js';
 import { started, give, own } from './helpers.js';
 
 // Her şehirden ilk mülk: tek başına set tamamlamaz.
@@ -53,4 +53,25 @@ test('Tapu Dairesi: yalniz sirasi gelen oyuncuda parasi yeten sahipsiz kareler p
   assert.equal(tapuSquares({ ...s, you: 1 }), null, 'baskasinin tapusu');
   s.pending = null;
   assert.equal(tapuSquares(view(s)), null);
+});
+
+test('Kaldir-birak: kart, hedefin uzerine birakilinca o hedefle oynar', () => {
+  const s = started();
+  own(s, 0, a);
+  own(s, 1, b, c);
+  const v = view(s);
+  const dest = (n) => (v.players[0].pos + n) % BOARD.length;
+  const kam = dropTargets(v, give(s, 0, 'kamulastirma'), dest);
+  assert.deepEqual([...kam.squares.entries()].sort(), [[b, { sq: b }], [c, { sq: c }]].sort());
+  assert.equal(kam.players.size, 0);
+  const tak = dropTargets(v, give(s, 0, 'takas'), dest);
+  assert.deepEqual([...tak.squares.entries()], [[a, { swapMine: a }]], 'takasta once kendi mulkun');
+  v.players.forEach((pl, i) => (pl.pos = [0, 5, 5, 9][i]));
+  const dava = dropTargets(v, give(s, 0, 'dava'), dest);
+  assert.deepEqual([...dava.players.keys()].sort(), [1, 2, 3]);
+  assert.deepEqual([...dava.squares.entries()], [[9, { player: 3 }]], 'iki rakibin durdugu kare hedef degil');
+  const taksi = dropTargets(v, give(s, 0, 'taksi'), dest);
+  assert.equal(taksi.squares.size, 12);
+  assert.deepEqual(taksi.squares.get(dest(5)), { steps: 5 });
+  assert.equal(dropTargets(v, give(s, 0, 'piyango'), dest).squares.size, 0, 'hedefsiz kart tahtanin herhangi bir yerine birakilir');
 });

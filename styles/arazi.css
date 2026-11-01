@@ -107,3 +107,7 @@ body.tel .plot :is(.bld img, .mk) { scale: 1 var(--stand, 1); transform-origin: 
   :is(.mh-choose, .mh-torpil, .mh-kes) .dface { width: 22px; height: 22px; padding: 3px; }
   .mh-choose .btn.L { height: 40px; font-size: 15px; }
 }
+
+/* dikey telefonda arsa penceresi alttan sayfa: tapu küçülür (klasik sayfalardaki gibi), işler katlanmadan görünür */
+body.tel .mh-pop { align-items: stretch; gap: 8px; }
+body.tel .mh-pop > .deed { zoom: 0.62; align-self: center; }

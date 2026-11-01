@@ -278,6 +278,16 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 .cell.pick::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: 0 0 18px rgba(245, 197, 66, 0.85); animation: pickPulse 1.2s ease-in-out infinite; }
 @keyframes pickPulse { 50% { opacity: 0.3; } }
 .board.picking .cell:not(.pick):not(.hl) { opacity: 0.35; filter: saturate(0.4); }
+/* kaldır-bırak (gameview.js dropAim): kart sürüklenirken bırakılabileceği kareler ve oyuncular parlar, öbürleri solar;
+   kartın altındaki hedef açık altın çift kenar alır. Kare büyümez. */
+/* avoid-ai-design-ignore: C5 (bırakılacak hedefin nabzı işlevsel bir işaret; yalnız opaklık canlanır) */
+:is(.cell, .plot).drop-ok { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }
+:is(.cell, .plot).drop-ok::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: 0 0 18px rgba(245, 197, 66, 0.85); animation: pickPulse 1.2s ease-in-out infinite; }
+.board.dropping :is(.cell, .plot):not(.drop-ok) { opacity: 0.4; }
+:is(.cell, .plot).drop-hot { box-shadow: 0 0 0 3px #fff3c4, 0 0 0 6px var(--gold); z-index: 4; }
+.prow.drop-ok { box-shadow: inset 0 0 0 2px var(--gold); background: color-mix(in srgb, var(--gold) 16%, transparent); }
+.prow.drop-hot { box-shadow: inset 0 0 0 3px var(--gold), 0 0 0 2px #fff3c4; }
+.players.dropping .prow:not(.drop-ok) { opacity: 0.45; }
 .cell.open { box-shadow: 0 0 0 3px var(--accent); z-index: 3; }
 
 /* piyonlar tahtada */
@@ -441,7 +451,7 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .discpile .kart { --w: var(--pw); rotate: 6deg; box-shadow: var(--sh-2); }
 .discpile > i { rotate: 6deg; opacity: 0.85; }
 .pile.empty { box-shadow: inset 0 0 0 2px var(--line); border: 0; opacity: 0.6; }
-.hslot.dragging { transform: translate(var(--dx), var(--dy)) scale(1.1); transition: none; z-index: 200; cursor: grabbing; }
+.hslot.dragging { transform: translate(var(--dx), var(--dy)) scale(1.1); transition: none; z-index: 200; cursor: grabbing; pointer-events: none; } /* altındaki hedef görünsün (gameview.js dropAim) */
 .hslot.dragging.armed .kart { box-shadow: 0 0 0 3px #fff3c4, 0 0 34px #ffd166; }
 /* kayan elde sürüklenen kartın sayfaya sabit kopyası (hand.js ghostOf); asıl kart yerinde solar */
 .kart-drag { position: fixed; z-index: 200; pointer-events: none; }
@@ -461,24 +471,128 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 
 /* ---------- pencerelerin içi ---------- */
 .build-row { display: flex; align-items: center; gap: 8px; height: 46px; padding: 0 10px; border-radius: var(--r-m); background: var(--chip); }
-.build-row .bname { font-family: var(--hf); font-weight: 700; font-size: 16px; width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.build-row .blvl { display: flex; gap: 2px; width: 92px; font-size: 16px; }
-.build-row .bval { font-family: var(--hf); font-weight: 800; font-size: 19px; width: 24px; text-align: center; }
-.build-row .brent { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-family: var(--hf); font-weight: 700; font-size: 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.set-head { display: flex; align-items: center; gap: 8px; font-family: var(--hf); font-weight: 700; font-size: 16px; }
 .sheet-foot { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .trade-cols { display: flex; gap: 16px; flex: 1; min-height: 0; }
-.trade-col { flex: 1; min-width: 0; padding: 14px; border-radius: var(--r-l); background: var(--chip); display: flex; flex-direction: column; gap: 10px; box-shadow: inset 0 3px 0 var(--pc); }
-.trade-props { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 8px; align-content: start; overflow: auto; padding: 4px 2px; min-height: 80px; max-height: 300px; }
-.trade-props .deed.mini { --dw: 100%; }
-.trade-cash { display: flex; align-items: baseline; justify-content: space-between; }
-.trade-cash .m { font-weight: 800; font-size: 24px; }
-.partners { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.partners .btn { padding: 0 12px 0 6px; }
-.partners .btn.on { box-shadow: inset 0 0 0 2px var(--pc), inset 0 0 0 3px var(--pedge); background: color-mix(in srgb, var(--pc) 12%, transparent); }
 .trade-box { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; border-radius: var(--r-l); background: var(--chip); }
 .cash-chip { display: inline-flex; align-items: baseline; gap: 2px; font-family: var(--hf); font-weight: 700; font-size: 16px; padding: 5px 12px; border-radius: var(--r-s); background: color-mix(in srgb, var(--pr) 18%, transparent); }
 .sum-row { display: inline-flex; align-items: center; gap: 6px; font-family: var(--hf); font-weight: 700; font-size: 16px; flex-wrap: wrap; }
+
+/* ---------- satın al, inşaat, pazarlık, tepki (tasarım: "Telefon ve masaüstü" 3, 7, 8, 9) ----------
+   Telefonda alttan sayfa, masaüstünde tahtanın ortasında; yüzeyler kağıt, düğmeler üç boyda. */
+/* satın al: küçük tapu (eğik), kira çubukları ve setin kareleri */
+.buy-win { display: flex; flex-direction: column; gap: 10px; width: 440px; max-width: 100%; }
+.buy-top { display: flex; align-items: stretch; gap: 16px; }
+.buy-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.buy-acts { gap: 10px; }
+.buy-set { gap: 8px; flex-wrap: wrap; }
+.deed-face {
+  --dc: #2b3448; --di: #fff; container-type: inline-size;
+  width: 124px; flex: none; display: flex; flex-direction: column; border-radius: var(--r-m); overflow: hidden; rotate: -3deg;
+  background: #fbf3df; box-shadow: 0 0 0 1px #d9c9a0, inset 0 0 0 4px #fbf3df, inset 0 0 0 5px #d9c9a0, var(--sh-3);
+}
+body.dark .deed-face { background: #3e3328; box-shadow: 0 0 0 1px #574735, inset 0 0 0 4px #3e3328, inset 0 0 0 5px #574735, var(--sh-3); }
+.deed-face .df-top { margin: 7px 7px 0; height: 44px; border-radius: var(--r-s) var(--r-s) 0 0; background: var(--dc); color: var(--di); display: grid; place-items: center; padding: 0 6px; }
+.deed-face .d-name { font-family: var(--hf); font-weight: 800; font-size: min(16px, calc(86cqw / var(--ne, 6))); white-space: nowrap; overflow: hidden; max-width: 100%; }
+.deed-face .df-art { flex: 1; min-height: 84px; display: flex; align-items: flex-end; justify-content: center; padding: 6px 8px 10px; }
+.deed-face .df-art img { width: 100%; height: 78px; object-fit: contain; object-position: 50% 100%; }
+.deed-face .df-ic { font-size: 56px; align-self: center; line-height: 0; }
+.rent-bars { display: flex; flex-direction: column; gap: 6px; }
+.rb-row { display: flex; align-items: flex-end; gap: 5px; height: 76px; }
+.rb { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; }
+.rb b { font-family: var(--hf); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+.rb i { display: block; width: 100%; height: var(--h); border-radius: 4px 4px 0 0; background: color-mix(in srgb, var(--dc, var(--pr)) calc(var(--a) * 100%), transparent); }
+.buy-win .rb i { background: color-mix(in srgb, var(--pr) calc(var(--a) * 100%), var(--chip)); }
+.buy-win .rb.now i { background: var(--pr); }
+.set-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.set-sq { width: 24px; height: 24px; border-radius: 5px; background: var(--panel); box-shadow: inset 0 5px 0 var(--dc), 0 0 0 1px var(--line); }
+.set-sq[style*="--oc"] { box-shadow: inset 0 5px 0 var(--dc), inset 0 -5px 0 var(--oc), 0 0 0 1px var(--line); }
+.set-sq.cur { box-shadow: inset 0 5px 0 var(--dc), 0 0 0 2px var(--gold); }
+.btn.paz-opt { height: 42px; justify-content: flex-start; gap: 10px; padding: 0 14px 0 8px; box-shadow: none; border: 1.5px dashed #e9b10c; font-weight: 500; }
+.btn.paz-opt img { width: 30px; height: 30px; border-radius: var(--r-s); object-fit: cover; box-shadow: 0 0 0 2px #e9b10c; }
+.btn.paz-opt .grow { text-align: left; }
+
+/* inşaat: mülk çipleri, şimdi ve bir kat sonra, dört iş */
+.build-win { width: 520px; }
+/* alçak ekranda pencere kendi içinde kayar; parçaları ezilmez */
+:is(.build-win, .trade-win) { overflow: hidden auto; overscroll-behavior: contain; scrollbar-width: thin; }
+:is(.build-win, .trade-win) > * { flex: none; }
+.bchips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px; overscroll-behavior: contain; }
+.bchip { appearance: none; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 10px; border: 0; border-radius: 999px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); cursor: pointer; }
+.bchip i { width: 10px; height: 10px; border-radius: 3px; background: var(--dc); }
+.bchip .num { font-size: 12px; color: var(--muted); }
+.bchip.on { background: var(--ink); color: var(--page); box-shadow: none; }
+.bchip.on .num { color: inherit; opacity: 0.75; }
+.bhead { display: flex; align-items: center; gap: 8px; }
+.bstat { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; }
+.bstage { display: flex; align-items: flex-end; justify-content: center; gap: 24px; height: 128px; padding-bottom: 6px; border-bottom: 3px solid color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.bnow { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bnow img { height: 76px; width: auto; max-width: 110px; object-fit: contain; object-position: 50% 100%; }
+.bnow.next img { height: 100px; }
+.bnow span { font-size: 14px; color: var(--muted); }
+.bnow.next span { font-size: 16px; color: var(--pos); }
+.barr { align-self: center; color: var(--accent); font-size: 24px; line-height: 0; }
+.btiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.btile {
+  appearance: none; min-height: 56px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 6px 14px;
+  border: 0; border-radius: var(--r-l); font: inherit; text-align: left; color: var(--ink); background: var(--panel); cursor: pointer;
+  box-shadow: inset 0 0 0 1.5px var(--line), 0 3px 0 var(--line); transition: translate var(--t-tap) var(--e-out), filter var(--t-tap);
+}
+.btile .bt-l { font-family: var(--hf); font-weight: 700; font-size: 16px; }
+.btile .bt-s { font-size: 14px; color: var(--muted); }
+.btile.pri { background: var(--pr); color: var(--pr-ink); box-shadow: 0 3px 0 var(--pr-d); }
+.btile.pri .bt-s { color: inherit; }
+.btile.kac { box-shadow: inset 0 0 0 1.5px var(--neg), 0 3px 0 var(--neg); }
+.btile.kac .bt-l { color: var(--neg); }
+.btile:hover:not(:disabled) { translate: 0 -1px; filter: brightness(1.04); }
+.btile:active:not(:disabled) { translate: 0 2px; }
+.btile:disabled { opacity: 0.45; cursor: default; }
+
+/* pazarlık: ortaklar, iki kutu, denge çubuğu */
+.trade-win { gap: 14px; }
+.partners { display: flex; gap: 16px; overflow-x: auto; scrollbar-width: none; padding: 9px 9px 2px; margin: -5px -5px 0; }
+.partner { appearance: none; flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); opacity: 0.6; cursor: pointer; }
+.partner .disc { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; display: grid; place-items: end center; background: var(--center); box-shadow: 0 0 0 3px var(--pc); }
+.partner.on { opacity: 1; font-weight: 700; }
+.partner.on .disc { box-shadow: 0 0 0 3px var(--pc), 0 0 0 6px var(--panel), 0 0 0 8px var(--ink); }
+.tr-box { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--r-l); background: var(--panel2); }
+.tr-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pchip2 { appearance: none; display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px 0 6px; border: 0; border-radius: var(--r-m); font: inherit; font-size: 15px; font-weight: 600; color: var(--ink); background: var(--panel); box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+.pchip2.on { box-shadow: 0 0 0 2px var(--pc); }
+.pchip2:disabled { opacity: 0.45; cursor: default; }
+.pc-sq { width: 30px; height: 30px; flex: none; border-radius: var(--r-s); background: var(--center); box-shadow: inset 0 5px 0 var(--dc), 0 0 0 1px var(--line); display: grid; place-items: center; font-size: 16px; }
+.btn.tr-add { height: 44px; box-shadow: inset 0 0 0 1.5px var(--line); background: transparent; color: var(--muted); border: 1.5px dashed var(--line); box-shadow: none; }
+.btn.tr-add.on { color: var(--ink); border-style: solid; }
+.tr-list { display: flex; flex-wrap: wrap; gap: 8px; max-height: 148px; overflow-y: auto; padding: 2px; }
+.tr-cash { display: flex; align-items: center; gap: 12px; }
+.tr-cash .rng { flex: 1; }
+.tr-cash .num { min-width: 64px; text-align: right; font-size: 19px; font-weight: 800; display: inline-flex; justify-content: flex-end; align-items: baseline; gap: 2px; }
+.tr-bal { display: flex; flex-direction: column; gap: 6px; }
+.tb-track { position: relative; height: 12px; border-radius: 999px; background: var(--track); }
+.tb-mid { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--muted); }
+.tb-pos { position: absolute; inset: 0; transition: transform var(--t-ui) var(--e-out); }
+.tb-pos b { position: absolute; left: 0; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--pr); box-shadow: 0 0 0 3px var(--panel), var(--sh-2); }
+.tb-lbl { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--muted); }
+
+/* tepki: kim kime ne oynadı, kart eğik, hedefi ve etkisi; altta İtiraz et / Dayın Çıktı ve Kabul / Öde */
+.react-win { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 460px; max-width: 100%; }
+.rw-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px 0 6px; border-radius: 999px; background: var(--ink); color: var(--page); font-weight: 600; font-size: 16px; max-width: 100%; }
+.rw-pill .pawn { flex: none; }
+.rw-mid { display: flex; align-items: center; justify-content: center; gap: 18px; width: 100%; }
+.rw-mid > :is(.kart, .chain) { rotate: -6deg; flex: none; }
+.rw-mid .kart.big { --w: 124px; }
+.rw-info { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; flex: 1; }
+.rw-rent { display: flex; align-items: center; gap: 14px; }
+.rw-acts { display: flex; flex-direction: column; gap: 10px; width: 100%; padding: 14px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--sh-2); }
+.rw-acts > .muted { text-align: center; }
+/* masaüstünde ve yatay telefonda tahtanın ortası alçak: kart solda, sağında başlık, hedef ve düğmeler */
+body:not(.tel) .react-win { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 22px; row-gap: 10px; width: 560px; }
+body:not(.tel) .react-win .rw-mid { display: contents; }
+body:not(.tel) .react-win > .rw-pill { grid-column: 2; justify-self: start; }
+body:not(.tel) .react-win .rw-mid > :is(.kart, .chain) { grid-column: 1; grid-row: 1 / span 3; }
+body:not(.tel) .react-win .rw-info, body:not(.tel) .react-win > .rw-acts { grid-column: 2; }
+body:not(.tel) .react-win:not(:has(.rw-mid > :is(.kart, .chain))) { grid-template-columns: minmax(0, 1fr); width: 440px; }
+body:not(.tel) .react-win:not(:has(.rw-mid > :is(.kart, .chain))) > * { grid-column: 1; }
+.btn.rw-card img { width: 32px; height: 32px; border-radius: var(--r-s); object-fit: cover; box-shadow: 0 0 0 2px var(--panel); }
 .hist-row { display: flex; align-items: center; gap: 8px; font-size: 16px; min-height: 30px; }
 .rules-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; overflow: auto; }
 .rule-item { display: flex; gap: 12px; align-items: flex-start; }
@@ -585,9 +699,9 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   /* uzun basma menü açmaz (resmi kaydet, kopyala); dokunulan yer mavi parlamaz */
   .game, button, img { -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
   /* çift dokunma sayfayı yakınlaştırmaz; kayan kutuların sonuna gelen kaydırma sayfaya geçip onu yenilemez */
-  .game, .game :is(.sheet-body, .layer, .pop, .center, .hand-grid, .players, .player-panel, .trade-props, .rules-grid), .results, .screen { touch-action: manipulation; }
+  .game, .game :is(.sheet-body, .layer, .pop, .center, .hand-grid, .players, .player-panel, .tr-list, .rules-grid), .results, .screen { touch-action: manipulation; }
 }
-.sheet-body, .layer, .pop, .center, .hand-grid, .players, .player-panel, .trade-props, .rules-grid, .results, .prompt, .sound-pop { overscroll-behavior: contain; }
+.sheet-body, .layer, .pop, .center, .hand-grid, .players, .player-panel, .tr-list, .rules-grid, .results, .prompt, .sound-pop { overscroll-behavior: contain; }
 
 @media (max-width: 760px), (orientation: landscape) and (max-height: 520px) {
   .screen { flex-direction: column; gap: 24px; padding: 24px 16px; }
@@ -667,6 +781,24 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .center .bidder .pawn { scale: 0.8; }
   .center .rng-scale { display: none; }
   .center .opt-col { width: auto !important; flex: 1 1 0; min-width: 0; gap: 6px; }
+  /* satın al ve tepki alçak ortada: küçük tapu, set ve kart gizli (karede ve elde görünüyor), çubuklar basık */
+  .center :is(.buy-win, .react-win) { width: 100% !important; gap: 6px; }
+  .center .buy-win :is(.deed-face, .set-row, .rent-bars .kicker, .buy-info > .h18) { display: none; }
+  .build-win .bstage { height: 84px; }
+  .build-win .bnow img { height: 48px; }
+  .build-win .bnow.next img { height: 62px; }
+  .btile { min-height: 46px; }
+  .center .buy-win .rb-row { height: 40px; }
+  .center .buy-win .rb i { height: calc(var(--h) * 0.45); }
+  .center .buy-win .btn.paz-opt { height: 36px; }
+  .center .react-win { grid-template-columns: minmax(0, 1fr) !important; row-gap: 6px !important; }
+  .center .react-win .rw-mid > :is(.kart, .chain) { display: none; }
+  .center .react-win > * { grid-column: 1 !important; }
+  .center .react-win .rw-info { flex-direction: row; align-items: center; gap: 8px; }
+  .center .react-win .rw-info .deed.mini { zoom: 0.8; flex: none; }
+  .center .react-win .rw-info .body { font-size: 14px; line-height: 1.3; }
+  .center .rw-pill { height: 32px; font-size: 14px; }
+  .center .rw-acts { padding: 8px; gap: 6px; }
   .center .h22 { font-size: 19px; }
   .center .big-num { font-size: 30px; }
   .center .who { font-size: 17px; }
@@ -698,9 +830,6 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .sheet { max-height: calc(100dvh - 16px); max-width: 100%; padding: 14px; gap: 10px; }
   .sheet .btn.L { height: 46px; padding: 0 18px; font-size: 17px; }
   .sheet-head .h22 { font-size: 19px; }
-  .partners { min-width: 0; }
-  .trade-col { padding: 10px; gap: 6px; }
-  .trade-props { flex: 1; min-height: 0; max-height: none; }
   .card-prompt .kart.big { --w: 96px; }
   .pop { position: fixed !important; left: auto !important; top: 4px !important; right: 4px; bottom: 4px; width: var(--sw); z-index: 55; flex-direction: column; gap: 8px; padding: 10px; border-radius: var(--r-l); overflow: auto; }
   .pop-side { width: 100%; }

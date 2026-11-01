@@ -79,3 +79,30 @@ export function impact(tier, board, { me = false } = {}) {
     buzz('big');
   } else if (me) buzz(tier);
 }
+
+// Pencere kaynağından açılır (plan "Kalite dokunuşları"): az önce basılan noktadan ya da kaynak öğeden büyüyerek gelir;
+// telefonda alttan sayfa aşağıdan kayar. Yalnız transform ve opacity; hareket azaltmada yalnız belirir.
+let press = null;
+if (typeof document !== 'undefined') document.addEventListener('pointerdown', (e) => (press = { x: e.clientX, y: e.clientY, t: Date.now() }), true);
+export function openFrom(el, src = null) {
+  if (!el?.animate) return;
+  const r = el.getBoundingClientRect();
+  if (!r.width) return;
+  if (calm()) return el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 });
+  const ease = 'cubic-bezier(0.2, 0.8, 0.3, 1)';
+  if (document.body.classList.contains('tel') && r.bottom >= innerHeight - 2 && r.width >= innerWidth - 2) {
+    return el.animate([{ transform: 'translateY(56px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: ease });
+  }
+  const s = src?.getBoundingClientRect?.();
+  const p = press && Date.now() - press.t < 700 ? press : s?.width ? { x: s.left + s.width / 2, y: s.top + s.height / 2 } : null;
+  const ox = p ? Math.max(-r.width, Math.min(2 * r.width, p.x - r.left)) : r.width / 2;
+  const oy = p ? Math.max(-r.height, Math.min(2 * r.height, p.y - r.top)) : r.height / 2;
+  return el.animate(
+    [
+      { transformOrigin: `${ox}px ${oy}px`, transform: 'scale(0.3)', opacity: 0 },
+      { transformOrigin: `${ox}px ${oy}px`, transform: 'scale(1.02)', opacity: 1, offset: 0.7 },
+      { transformOrigin: `${ox}px ${oy}px`, transform: 'none', opacity: 1 },
+    ],
+    { duration: 280, easing: ease },
+  );
+}

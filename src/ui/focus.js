@@ -1,5 +1,8 @@
 // Pencere odağı (klavye ve ekran okuyucu için): pencere açılınca odak içine girer, Tab pencerenin içinde döner,
 // pencere kapanınca odak onu açan öğeye döner. Pencere yeniden çizilince odak aynı sıradaki öğeye geri konur.
+// Açılan pencere kaynağından (basılan nokta ya da açan öğe) büyüyerek gelir (fx.js openFrom).
+import { openFrom } from './fx.js';
+
 const SEL = 'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea, summary, [tabindex]:not([tabindex="-1"])';
 const items = (root) => [...root.querySelectorAll(SEL)].filter((n) => n.getClientRects().length);
 const open = []; // açık pencereler, en üstteki sonda: { box, opener }
@@ -45,6 +48,7 @@ export function withDialog(box, draw, sel = '.sheet') {
   if (dlg && !was) {
     open.push({ box, opener: a && a !== document.body ? a : null });
     dlg.focus({ preventScroll: true });
+    openFrom(dlg, a && a !== document.body ? a : null);
   } else if (dlg && dlg !== was && inside) {
     const list = items(dlg);
     (idx >= 0 ? list[Math.min(idx, list.length - 1)] || dlg : dlg).focus({ preventScroll: true });

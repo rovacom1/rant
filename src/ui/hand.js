@@ -1,6 +1,7 @@
-// Elde kartlar: sağ sütunda, oyuncuların altında ızgara. Kart boyu sütunda kalan yere göre ayarlanır, tahtanın önüne geçmez.
-// Üstüne gelince kart büyür; oynanabilir kart tahtaya sürüklenip bırakılınca oynanır, tıklayınca ayrıntısı açılır.
-// Bileşen olayları belgeye 'rant:card' olarak yollar: { uid, how: 'click' | 'drop' }.
+// Elde kartlar: sağ sütunda, oyuncuların altında ızgara; dikey telefonda alttan sayfada yelpaze. Kart boyu kalan yere göre
+// ayarlanır, tahtanın önüne geçmez. Üstüne gelince kart büyür; oynanabilir kart kaldırılıp tahtaya bırakılınca oynanır
+// (sürüklerken geçerli hedefler parlar, hedefin üstüne bırakılan kart o hedefle oynar), tıklayınca ayrıntısı açılır.
+// Bileşen olayları belgeye 'rant:card' olarak yollar: { uid, how: 'click' | 'drop' }; bırakılan hedefi aim bilir.
 import { CARDS, cardId } from '../engine/index.js';
 import { html, raw } from './dom.js';
 import { ic } from './icons.js';
@@ -70,6 +71,14 @@ export function cardFace(id, cls = '') {
 const REDUCE = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
 const still = () => !!REDUCE?.matches;
 const center = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+// Kartın döndürülmemiş kutusu (yelpazede kart eğik durur; çevreleyen kutu kartı büyük gösterir).
+const boxOf = (k) => {
+  const r = k.getBoundingClientRect();
+  const w = k.offsetWidth || r.width;
+  const h = k.offsetHeight || r.height;
+  const c = center(r);
+  return { left: c.x - w / 2, top: c.y - h / 2, width: w, height: h };
+};
 // Kartın arka yüzü (dönerken görünür). Kartla aynı kutuda, ters çevrili durur.
 const backFace = () => {
   const b = document.createElement('i');
@@ -107,12 +116,48 @@ export function drawFx(cardEl, from) {
   });
 }
 
+// El kapalıyken (telefonda alttan sayfa) çekilen kart desteden (from) dönerek çıkar, bir an yüzünü gösterir ve elin
+// düğmesine (to) küçülerek girer.
+export function drawToFx(id, from, to) {
+  if (!from || !to || !to.width || still()) return Promise.resolve();
+  const w = 72;
+  const a = center(from);
+  const b = center(to);
+  const ghost = document.createElement('div');
+  ghost.className = 'kart-ghost';
+  Object.assign(ghost.style, { left: `${a.x - w / 2}px`, top: `${a.y - w * 0.7}px`, width: `${w}px`, height: `${w * 1.4}px` });
+  ghost.style.setProperty('--gw', `${w}px`);
+  const flip = document.createElement('div');
+  flip.className = 'k-flip';
+  flip.innerHTML = String(cardFace(id));
+  flip.appendChild(backFace());
+  ghost.appendChild(flip);
+  document.body.appendChild(ghost);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const t = (x, y, sc, z, ry) => `perspective(800px) translate(${x}px, ${y}px) scale(${sc}) rotateZ(${z}deg) rotateY(${ry}deg)`;
+  return flip
+    .animate(
+      [
+        { transform: t(0, 0, 0.6, -14, 180) },
+        { transform: t(0, -30, 1.25, -4, 0), offset: 0.4 },
+        { transform: t(0, -30, 1.25, 0, 0), offset: 0.62 },
+        { transform: t(dx, dy, 0.45, 10, 0) },
+      ],
+      { duration: 900, easing: 'cubic-bezier(0.45, 0, 0.3, 1)', fill: 'forwards' },
+    )
+    .finished.catch(() => {})
+    .finally(() => ghost.remove());
+}
+
 // Oynanan kart elden tahtanın ortasına uçar, havada döner ve masaya iner; kısa durup söner.
-// cardEl: eldeki kart (.hslot ya da .kart, hala sayfada); to: inilecek alanın kutusu (ör. tahtanın ortası).
-export function playFx(cardEl, to) {
+// cardEl: eldeki kart (.hslot ya da .kart, hala sayfada); to: inilecek alanın kutusu (ör. tahtanın ortası); at: kartın
+// kalktığı kutu (verilmezse kartın kendi yeri; kart bırakıldığı yerden ya da el kapalıyken elin düğmesinden kalkar).
+export function playFx(cardEl, to, at = null) {
   const k = cardEl?.classList.contains('kart') ? cardEl : cardEl?.querySelector('.kart');
   if (!k || !to) return Promise.resolve();
-  const from = k.getBoundingClientRect();
+  const from = at || boxOf(k);
+  if (!from.width) return Promise.resolve();
   // Dış kutu yalnız söner; içteki kutu 3B döner (saydamlık 3B'yi düzleştirmesin diye ayrı).
   const ghost = document.createElement('div');
   ghost.className = 'kart-ghost';
@@ -152,20 +197,36 @@ export function playFx(cardEl, to) {
 const DRAG_START = 8; // px
 const GAP = 8; // kartlar arası boşluk (CSS .hand-grid gap ile aynı)
 const MAX_W = 128; // kartın en geniş hali
-const TEL_W = 104; // telefon düzeninde elin kartı (alttan sayfa tahtanın altını az örtsün)
 const ZOOM_W = 220; // üstüne gelince kartın genişliği
+const FAN_W = 96; // dikey telefonda yelpazedeki kart
 const RATIO = 1.42; // kart yüksekliği / genişliği (CSS .kart)
-// Telefon düzenleri (eşikler phone.js TEL ve styles/main.css ile aynı): dikeyde el alttan sayfada yatay bir şeritte kayar,
-// yatayda (alçak ekran) sağ sütunda dikey kayar. İkisinde de kart, kaydırılan yönün tersine sürüklenince oynanır (tarayıcı
-// kaydırmayı yapar); kayan kutu kartı kesmesin diye sürüklenen kartın sayfaya sabit bir kopyası parmağı izler.
+// Telefon düzenleri: dikeyde (body.tel, phone.js TEL) el alttan sayfada yelpaze olur, kart her yöne kaldırılır. Yatayda
+// (alçak ekran) sağ sütunda dikey kayar; kart kaydırılan yönün tersine sürüklenince oynanır (tarayıcı kaydırmayı yapar).
+// Kayan ya da eğik dizilen kart kesilmesin diye sürüklenen kartın sayfaya sabit bir kopyası parmağı izler.
 const SHORT = globalThis.matchMedia?.('(orientation: landscape) and (max-height: 520px)');
-const PHONE = globalThis.matchMedia?.('(max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px)');
+const fanned = () => typeof document !== 'undefined' && document.body.classList.contains('tel');
+
+// Yelpaze: n kartın yatay kayması, düşüşü ve eğimi (kart genişliği w, kutu genişliği width). Ortadaki kart en yüksekte,
+// kenardaki kart en fazla FAN_DROP px aşağıda ve en çok 15 derece eğik; kartlar kutudan taşmaz.
+export const FAN_DROP = 22;
+export function fanLayout(n, w, width) {
+  const half = (n - 1) / 2;
+  const step = n > 1 ? Math.min(w * 0.72, (width - w) / (n - 1)) : 0;
+  const deg = n > 1 ? Math.min(7, 30 / (n - 1)) : 0;
+  const k = half ? Math.min(4, FAN_DROP / (half * half)) : 0;
+  return Array.from({ length: n }, (_, i) => {
+    const m = i - half;
+    return { x: Math.round(m * step), y: Math.round(m * m * k), r: +(m * deg).toFixed(1) };
+  });
+}
+// Yelpazedeki kartın genişliği: kalabalık elde küçülür ki her kartın görünen şeridi parmakla tutulabilsin.
+export const fanWidth = (n, width) => Math.floor(Math.min(FAN_W, width / 3.4, width / (1 + 0.42 * Math.max(0, n - 1))));
 
 // n kartı w x h alana en büyük boyda yerleştiren sütun sayısı ve kart genişliği.
-// h yoksa (dar ekranda sütun içerik kadar uzar) yalnız genişliğe bakılır, kart 100 px'ten küçülmez.
+// h yoksa (el gizliyken) yalnız genişliğe bakılır, kart 100 px'ten küçülmez.
 // scroll: alçak ekranda kart en fazla h boyunda olur, sığmayan satırlar dikey kayar.
-export function fitGrid(n, w, h, scroll = false, max = MAX_W) {
-  if (!n) return { cols: 1, w: max };
+export function fitGrid(n, w, h, scroll = false) {
+  if (!n) return { cols: 1, w: MAX_W };
   if (scroll) {
     const cw = Math.max(64, Math.min(MAX_W, h / RATIO));
     const cols = Math.max(1, Math.min(n, Math.floor((w + GAP) / (cw + GAP))));
@@ -173,7 +234,7 @@ export function fitGrid(n, w, h, scroll = false, max = MAX_W) {
   }
   if (!h) {
     const cols = Math.max(1, Math.min(n, Math.floor((w + GAP) / (100 + GAP))));
-    return { cols, w: Math.floor(Math.min(max, (w - (cols - 1) * GAP) / cols)) };
+    return { cols, w: Math.floor(Math.min(MAX_W, (w - (cols - 1) * GAP) / cols)) };
   }
   // En büyük kart; eşitse daha az satır (ızgara dolu görünür), satır da eşitse daha az sütun (dengeli dizilir).
   let best = { cols: 1, rows: n, w: 0 };
@@ -185,10 +246,10 @@ export function fitGrid(n, w, h, scroll = false, max = MAX_W) {
   return { cols: best.cols, w: Math.floor(best.w) };
 }
 
-// Sürüklenen kartın sayfaya sabit kopyası (kayan elde kart kutunun dışına çıkınca kesilmesin); asıl kart yerinde solar.
+// Sürüklenen kartın sayfaya sabit kopyası (kayan ya da eğik elde kart kesilmesin); asıl kart yerinde solar.
 function ghostOf(slot) {
   const k = slot.querySelector('.kart');
-  const r = k.getBoundingClientRect();
+  const r = boxOf(k);
   const g = document.createElement('div');
   g.className = 'kart-drag';
   Object.assign(g.style, { left: `${r.left}px`, top: `${r.top}px` });
@@ -202,10 +263,15 @@ function ghostOf(slot) {
 export class Hand {
   // el: kartların ızgarası; drop: üzerine bırakılınca kartın oynandığı alan (tahta);
   // deck (isteğe bağlı): deste; verilirse yeni çekilen kart oradan dönerek gelir (drawFx).
-  constructor(el, drop, deck = null) {
+  // aim (isteğe bağlı): sürüklemede hedefler { start(uid), over(x, y) -> hedefin üstünde mi, end() }.
+  // hidden(uid) (isteğe bağlı): el görünmezken (telefonda sayfa kapalı) çekilen kart için.
+  constructor(el, drop, deck = null, { aim = null, hidden = null } = {}) {
     this.el = el;
     this.drop = drop;
     this.deck = deck;
+    this.aim = aim;
+    this.hidden = hidden;
+    this.dropAt = null; // son bırakılan kart ve yeri: oynanınca kart oradan kalkar
     this.tilted = null;
     this.items = new Map(); // uid -> element
     this.order = [];
@@ -225,7 +291,7 @@ export class Hand {
     // Tarayıcı dokunuşu kaydırmaya çevirince: ne sürükleme ne tıklama.
     window.addEventListener('pointercancel', () => this.cancel());
     new ResizeObserver(() => this.layout()).observe(el);
-    for (const q of [PHONE, SHORT]) q?.addEventListener('change', () => this.layout());
+    SHORT?.addEventListener('change', () => this.layout());
   }
 
   // uids: eldeki kartlar; state(uid) -> { playable, selected }; fresh: yeni gelenler (desteden dönerek gelir).
@@ -260,7 +326,8 @@ export class Hand {
     this.layout();
     if (this.deck) {
       const from = this.deck.getBoundingClientRect();
-      for (const uid of fresh) if (this.items.has(uid)) drawFx(this.items.get(uid), from);
+      const shown = this.el.offsetParent !== null && from.width > 0;
+      for (const uid of fresh) if (this.items.has(uid)) (shown ? drawFx(this.items.get(uid), from) : this.hidden?.(uid));
     }
   }
 
@@ -288,10 +355,16 @@ export class Hand {
 
   layout() {
     const n = this.order.length;
+    const fan = fanned();
+    this.el.classList.toggle('fan', fan);
+    if (fan) return this.layoutFan(n);
+    for (const el of this.items.values()) {
+      for (const p of ['--fx', '--fy', '--fr']) el.style.removeProperty(p);
+      el.style.zIndex = '';
+    }
     const short = !!SHORT?.matches;
     // Alçak ekranda ızgaranın iç boşluğu düşülür; tek satır kart kaydırma çubuğu çıkarmasın.
-    const tel = PHONE?.matches && !short; // telefon düzeninde el alttan sayfada tek sıra, kart en çok TEL_W
-    const { cols, w } = fitGrid(n, this.el.clientWidth - (short ? 4 : 0), tel ? 0 : this.el.clientHeight - (short ? 6 : 0), short, tel ? TEL_W : MAX_W);
+    const { cols, w } = fitGrid(n, this.el.clientWidth - (short ? 4 : 0), this.el.clientHeight - (short ? 6 : 0), short);
     this.el.style.setProperty('--cols', cols);
     this.el.style.setProperty('--hw', `${w}px`);
     this.el.style.setProperty('--zoom', Math.max(1, ZOOM_W / w).toFixed(3));
@@ -306,6 +379,30 @@ export class Hand {
     });
   }
 
+  // Dikey telefonda yelpaze: kartlar alttaki bir noktadan açılır, ortadaki en yüksekte; sağdaki kart üstte durur.
+  layoutFan(n) {
+    const width = (this.el.clientWidth || 360) - 28; // kenar kartın eğimi taşmasın
+    const w = fanWidth(n, width);
+    this.el.style.setProperty('--hw', `${w}px`);
+    fanLayout(n, w, width).forEach((f, i) => {
+      const el = this.items.get(this.order[i]);
+      el.style.setProperty('--fx', `${f.x}px`);
+      el.style.setProperty('--fy', `${f.y}px`);
+      el.style.setProperty('--fr', `${f.r}deg`);
+      el.style.transformOrigin = '';
+      el.style.zIndex = String(i + 1);
+    });
+  }
+
+  // Oynanan kartın kalkacağı kutu: az önce bırakıldıysa bırakıldığı yer, el görünüyorsa kendi yeri, yoksa null.
+  fromRect(uid) {
+    const d = this.dropAt;
+    if (d && d.uid === uid && Date.now() - d.t < 4000) return d.rect;
+    const el = this.items.get(uid);
+    const k = el?.querySelector('.kart');
+    return k && el.offsetParent !== null ? boxOf(k) : null;
+  }
+
   // Eldeki kartın öğesi (.hslot; playFx için), yoksa null.
   cardEl(uid) {
     return this.items.get(uid) || null;
@@ -314,6 +411,12 @@ export class Hand {
   overDrop(e) {
     const r = this.drop.getBoundingClientRect();
     return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  }
+
+  // Bırakılabilir mi: bir hedefin (kare, oyuncu) ya da tahtanın üstünde; hot: hedefin üstünde.
+  armedAt(e) {
+    const hot = !!this.aim?.over(e.clientX, e.clientY);
+    return { armed: hot || this.overDrop(e), hot };
   }
 
   down(e) {
@@ -332,16 +435,20 @@ export class Hand {
       if (Math.hypot(dx, dy) < DRAG_START) return;
       d.moved = true; // parmak kaydı: bırakınca kart açılmaz
       if (!d.el.classList.contains('playable')) return;
-      d.moving = true;
+      Object.assign(d, { moving: true, rot: 0, lx: e.clientX });
       this.untilt();
       document.body.classList.add('carddrag'); // tahtadaki kareler sürüklerken kalkmaz
       const st = getComputedStyle(this.el);
-      if (st.overflowX === 'visible' && st.overflowY === 'visible') d.el.classList.add('dragging');
+      if (!this.el.classList.contains('fan') && st.overflowX === 'visible' && st.overflowY === 'visible') d.el.classList.add('dragging');
       else d.ghost = ghostOf(d.el);
+      this.aim?.start(d.uid);
     }
-    const armed = this.overDrop(e);
+    const { armed, hot } = this.armedAt(e);
     if (d.ghost) {
-      d.ghost.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+      // kaldırılan kart elin hızıyla hafifçe yana yatar; hedefin üstünde küçülüp oturmaya hazırlanır
+      d.rot = still() ? 0 : Math.max(-14, Math.min(14, d.rot * 0.8 + (e.clientX - d.lx) * 0.5));
+      d.lx = e.clientX;
+      d.ghost.style.transform = `translate(${dx}px, ${dy}px) rotate(${d.rot.toFixed(1)}deg) scale(${hot ? 0.92 : 1.1})`;
       d.ghost.classList.toggle('armed', armed);
       return;
     }
@@ -351,9 +458,11 @@ export class Hand {
   }
 
   up(e) {
+    const g = this.drag;
+    const armed = !!g?.moving && this.armedAt(e).armed;
+    if (armed) this.dropAt = { uid: g.uid, rect: boxOf((g.ghost || g.el).querySelector('.kart')), t: Date.now() };
     const d = this.cancel();
     if (!d) return;
-    const armed = d.moving && this.overDrop(e);
     if (d.moved && !armed) return;
     document.dispatchEvent(new CustomEvent('rant:card', { detail: { uid: d.uid, how: armed ? 'drop' : 'click' } }));
   }
@@ -363,6 +472,7 @@ export class Hand {
     const d = this.drag;
     if (!d) return null;
     this.drag = null;
+    if (d.moving) this.aim?.end();
     d.ghost?.remove();
     d.el.classList.remove('dragging', 'armed', 'ghosted');
     document.body.classList.remove('carddrag');
