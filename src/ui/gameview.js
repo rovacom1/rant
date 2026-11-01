@@ -589,7 +589,7 @@ function auctionHTML(v, pd) {
   const can = cash >= min;
   return html`<div class="card-prompt">${card}<div class="opt-col wide">${head}
     <div class="row" style="align-items:flex-end;gap:16px"><div class="col" style="gap:2px"><span class="kicker">Teklifin</span><span class="big-num" data-show="raise">${M(bid)}</span></div><span class="delta" data-delta="raise" data-base="${pd.high}">+${bid - pd.high}</span><span class="grow"></span>${high}</div>
-    ${can ? html`<input type="range" class="rng" min="${min}" max="${cash}" step="5" data-bind="raise" aria-label="Toplam teklif" style="--c:${P(v, me).color}"><div class="rng-scale"><span>en az ${fmt(min).replace(' ₺', '')}</span><span>nakdin ${fmt(cash).replace(' ₺', '')}</span></div>` : html`<p class="reason">Nakdin en az teklife (${fmt(min)}) yetmiyor.</p>`}
+    ${can ? html`<div class="bidrow"><input type="range" class="rng" min="${min}" max="${cash}" step="5" data-bind="raise" aria-label="Toplam teklif" style="--c:${P(v, me).color}"><div class="chips" role="group" aria-label="Teklifi artır">${[10, 50, 100].map((n) => { const add = E.money(v, n); return html`<button class="btn S ton" data-act="raiseAdd" data-add="${add}" ${min + add > cash ? 'disabled' : ''}>${M(add, true)}</button>`; })}</div></div><div class="rng-scale"><span>en az ${fmt(min).replace(' ₺', '')}</span><span>nakdin ${fmt(cash).replace(' ₺', '')}</span></div>` : html`<p class="reason">Nakdin en az teklife (${fmt(min)}) yetmiyor.</p>`}
     <div class="row"><button class="btn L pri flex" data-act="raiseCustom" ${can ? '' : 'disabled'} data-primary><span data-show="raise">${M(bid)}</span> ile artır</button><button class="btn L gho" data-act="auctionPass">Çekil</button></div>${timerHTML(v, [me])}</div></div>`;
 }
 
