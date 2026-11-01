@@ -1,6 +1,6 @@
 // Klasik tahta: 36 karelik halka, zar toplamı kadar yürüyüş, Başlangıç'tan geçince maaş, köşeler (Tapu, Çay, Zabıta),
 // Fırsat ve Sürpriz. Oyun akışı (game.js) tahtaya özel her şeyi buradaki mod nesnesinden çağırır; Mahalle modu aynı
-// biçimde `mahalle.js` olarak eklenir (docs/TASARIM.md "Mahalle modu").
+// biçimde `mahalle.js` içindedir (docs/TASARIM.md "Mahalle modu").
 
 import { BOARD, CARDS, SURPRIZ, OWNABLE, MODE_SQUARES, AMOUNTS } from './data.js';
 import { randInt, rollDie } from './rng.js';

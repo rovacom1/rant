@@ -144,6 +144,20 @@ test('oyun sonu: son kalan (iflas) modu motora geçer', () => {
   assert.equal(host.game.config.maxRounds, 40);
 });
 
+test('oyun türü: ev sahibi Mahalle seçer, bilinmeyen tür reddedilir, oyun o türde kurulur', () => {
+  const { host, me } = room();
+  assert.equal(host.config.mode, 'klasik');
+  me.say({ t: 'lobby', cmd: 'config', mode: 'satranc' });
+  assert.equal(host.config.mode, 'klasik');
+  me.say({ t: 'lobby', cmd: 'config', mode: 'mahalle' });
+  assert.equal(host.config.mode, 'mahalle');
+  me.say({ t: 'lobby', cmd: 'addBot' });
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  assert.equal(host.game.mode, 'mahalle');
+  assert.equal(host.game.props.length, 36);
+});
+
 test('tempo: bekleme süresi olayların canlandırma süresinden hesaplanır', () => {
   assert.equal(paceOf([]), 0);
   assert.equal(paceOf([{ type: 'dice' }, { type: 'move', path: [1, 2, 3] }]), PACE.dice + PACE.step * 4);

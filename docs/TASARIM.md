@@ -315,18 +315,19 @@ Sürüm uyuşmazsa istemciye "sayfayı yenile" denir.
 
 ## 13. Mahalle modu (ikinci oyun türü)
 
-> Kurallar onaylandı (2026-11-01, `tasks/mahalle-modu-plani.md`). Motoru K2'de (`src/engine/mahalle.js`), arayüzü K3'te gelir.
-> Bu bölümdeki **bütün sayılar ilk değerdir, simülasyonla ayarlanır** (`node tools/sim.js` mod argümanıyla; hedef: konkordato
-> klasikten fazla değil, 20 tur, park, AVM ve gecekondu oyun başına kullanılıyor). Burada yazmayan her kural klasikle aynıdır.
+> Kurallar onaylandı (2026-11-01, `tasks/mahalle-modu-plani.md`). Motor K2'de geldi (`src/engine/mahalle.js`, sayılar
+> `data.js` `MAHALLE`), arayüzü K3'te gelir. Sayılar simülasyonla ayarlandı (`node tools/sim.js 200 5 mahalle`; hedef: konkordato
+> klasikten fazla değil, 20 tur, park, AVM ve gecekondu oyun başına kullanılıyor; sonuç bölümün sonunda). Burada yazmayan her kural
+> klasikle aynıdır.
 
 ### Arazi
 
 - Şehir yok; köşe ve özel kare yok (Başlangıç, Tapu Dairesi, Çay Ocağı, Zabıta, Fırsat, Sürpriz, gar, havalimanı yok). 6x6 = 36 adsız
   arsa vardır, her biri yeriyle anılır: "3. satır 5. sütun". Satırlar yukarıdan aşağı, sütunlar soldan sağa 1-6. 6. sütun denize bakar.
 - Komşu: bir arsanın dört yanındaki arsalar (sağ, sol, üst, alt). Yalnız AVM çevredeki 8 arsaya (çaprazlar dahil) bakar.
-- Bölgeler ve fiyatlar (Endeks ile ölçeklenir, ilk değer):
+- Bölgeler ve fiyatlar (Endeks ile ölçeklenir):
 
-| Bölge | Arsalar | Adet | Fiyat | Kat fiyatı | Kira cetveli (boş / 1-4 kat) | Binalar |
+| Bölge | Arsalar | Adet | Fiyat | Kat fiyatı | Kaynak kira cetveli (boş / 1-4 kat), x3 uygulanır | Binalar |
 |---|---|---|---|---|---|---|
 | Dış halka | 1. ve 6. satır, 1. sütun (kıyı hariç) | 14 | 80 | 50 | 4 / 20 / 60 / 180 / 320 (Çorum) | Çorum seti (sade ev) |
 | İç halka | 2-5. satır x 2-5. sütun, merkez hariç | 12 | 140 | 100 | 10 / 50 / 150 / 450 / 625 (Balıkesir) | Bursa seti |
@@ -334,13 +335,14 @@ Sürüm uyuşmazsa istemciye "sayfayı yenile" denir.
 | Kıyı | 6. sütun, 6 satırın hepsi | 6 | 160 | 100 | 12 / 60 / 180 / 500 / 700 (Bursa), sonra +%25 | Antalya seti (sahil binası) |
 
 Her bölge, fiyatı ona en yakın bugünkü mülkün kira cetvelini ve o setin kat fiyatını kullanır; bina resmi bölgenin setinden gelir.
-Arazinin toplam fiyatı 4.560.
+**Kiralar bu cetvelin 3 katıdır** (dış halkada boş arsa 10, 4 kat 960; merkezde 4 kat 2.400): oyuncu iki arsadan birini seçtiği
+için kira klasiğe göre seyrek ödenir, cetvel aynı kalınca oyun başına dönen kira klasiğin onda biriydi. Arazinin toplam fiyatı 4.560.
 
 ### Başlangıç
 
 - Nakit, oturma bonusu, el (3 kart), el sınırı (6), tur sayısı, bitiş seçenekleri (tur, değer hedefi, son kalan) klasikle aynıdır.
 - Piyonlar arazinin dışında başlar; ilk zarla araziye iner.
-- Her oyuncu 1 **Torpil** jetonuyla başlar (en çok 3).
+- Her oyuncu 1 **Torpil** jetonuyla başlar (en çok 2).
 
 ### Bir sıra
 
@@ -362,8 +364,9 @@ Arazinin toplam fiyatı 4.560.
    - Kendi arsan: bir şey olmaz. Park arsasına gelmek kira doğurmaz.
 5. **Serbest evre** ve **Turu Bitir** klasikteki gibi.
 
-**Her 3 turda** (4., 7., 10., 13., 16., 19. tur başı, yeni gündemle birlikte) herkes 1 kart çeker (elinde 5'ten az kart varsa) ve
-1 Torpil alır (en çok 3). Gündem masada kapalıysa kart ve torpil yine 3 turda bir gelir.
+**Her 3 turda** (4., 7., 10., 13., 16., 19. tur başı, yeni gündemle birlikte) herkes 1 kart çeker (elinde 5'ten az kart varsa).
+**10. ve 19. tur başında** herkes 1 Torpil alır (en çok 2). Gündem masada kapalıysa kart ve torpil yine bu turlarda gelir. (Torpil her
+3 turda gelince botlar kiranın çoğunu atlattı: oyun başına 10 kira ödemesi.)
 
 ### İnşaat
 
@@ -400,7 +403,7 @@ işlediği görünür.
 
 ### Kira hesabı
 
-Kira = cetvel (boş arsa ya da 1-4 kat) x kıyı (+%25) x site (x2) x blok (+%25) x park komşusu (+%50 her biri) x gecekondu komşusu
+Kira = cetvel x 3 (boş arsa ya da 1-4 kat) x kıyı (+%25) x site (x2) x blok (+%25) x park komşusu (+%50 her biri) x gecekondu komşusu
 (-%25 her biri) x gündem (Kira İndirimi, Kira Artışı, Turizm Sezonu, Metro) x iflas çarpanı; Endeks ile ölçeklenir, 5'e yuvarlanır,
 en az 5. Klasikteki "set tamamlanmamışsa kat kirası yarı" kuralı yoktur (yasal kat zaten komşu ister). Kira Zammı ve AVM payı
 bundan sonra uygulanır.
@@ -440,3 +443,22 @@ Gündem destesi aynıdır; tahtaya bağlı kartlar bölgeye bağlanır:
 Net değer ve puan klasikteki gibi: nakit + arsa fiyatı (ipotekliyse yarısı) + yasal kat x kat fiyatı + kaçak kat x kat fiyatının
 yarısı - konkordato cezası. AVM 4 yasal kat sayılır; park ve AVM dönüşüm bedeli ile gecekondu değere girmez. Oyun sonu sayaçlarına
 kurulan gecekondu, park ve AVM de eklenir (dayının yorumu için; puanı etkilemez).
+
+### Simülasyon (K2, 2026-11-01)
+
+`node tools/sim.js 200 5 mahalle` (klasik `node tools/sim.js 200 5` karşısında):
+
+| | Mahalle | Klasik |
+|---|---|---|
+| Tur | 20,0 | 20,0 |
+| Konkordato / oyun | 1,6 | 2,9 |
+| Kira ödemesi / oyun, ortalaması | 15,6 x 262 | 46,0 x 158 |
+| En büyük kira ort. | 1.537 | 1.194 |
+| Kira / maaş (hakediş) | 0,82 | 1,69 |
+| Birinci-sonuncu farkı | 4.260 | 5.896 |
+| Yasal / kaçak kat | 69,1 / 6,8 | 32,2 / 14,3 |
+| Gecekondu / park / AVM / torpil (oyun başına) | 9,8 / 3,6 / 10,1 / 12,0 | |
+| Kullanıldığı oyun: gecekondu / park / AVM | %100 / %96 / %100 | |
+
+Oturma sırasına göre kazanma %17-25. Botlar site kurmayı zor buluyor (oyuncuların %78'inin oyun sonunda sitesi yok); ilk deneme
+(cetvel x1, torpil her 3 turda) oyun başına 16 kira ödemesi (ortalama 26) ve konkordato 0 verdi; para dönmüyordu.

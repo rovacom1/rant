@@ -39,7 +39,9 @@ oyununa sonra başka ad bulunur. Bütün sayılar simülasyonla ayarlanır (kull
 - [x] K1 Çekirdek (bitti: `engine/core.js` ortak parçalar, `engine/klasik.js` klasik tahtanın mod nesnesi, `engine/board.js` tahta
       verisi `s.mode`'a bağlı; sim raporu ve 120 oyunluk olay olay karşılaştırma aynı) (1 hafta): motorun ortak parçaları (para, kart, artırma, pazarlık, borç, gündem) tahtadan ayrılır, tahta verisi
       oyunun durumuna bağlanır. Klasik oyun değişmez: bütün testler, 125 bot oyunu ve sim raporu aynı.
-- [ ] K2 Mahalle motoru (1,5 hafta): `engine/mahalle.js`; 36 arsa, bölge fiyatları, `pick` hamlesi ve zıplama olayı, hakediş,
+- [x] K2 Mahalle motoru (bitti: `engine/mahalle.js` mod nesnesi, `board.js` 6x6 arazi, `rules.js` Mahalle bölümü ve
+      `rentBreakdown`, botlar, `test/mahalle.test.js` ve 25 bot oyunu, `sim.js 200 5 mahalle`; simülasyonla kira cetveli x3,
+      torpil en çok 2 ve 10./19. turda; klasik oyun olay olay aynı) (1,5 hafta): `engine/mahalle.js`; 36 arsa, bölge fiyatları, `pick` hamlesi ve zıplama olayı, hakediş,
       torpil, kat kuralı, site, park, AVM, blok, gecekondu, tahliye, af; kart ve gündem uyarlamaları; botlar;
       `test/mahalle.test.js`; `tools/sim.js` mod argümanı. Sayılar simülasyonla: konkordato klasikten fazla değil, 20 tur,
       park/AVM/gecekondu oyun başına kullanılıyor. PROTOCOL ve SAVE_VERSION artar.

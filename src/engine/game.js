@@ -7,15 +7,17 @@ import { CARDS, GUNDEM, GUNDEM_PERIOD, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, T
 import { randInt, rollDie, shuffle } from './rng.js';
 import * as R from './rules.js';
 import { boardOf, modeOf, GAME_MODES } from './board.js';
-import { GameError, need, emit, say, nm, sqName, others, hasCard, tableHolds, hasUid, newStats, stat, discardCard, drawCards, transfer, acquire, demolishKacak, payRent, goBroke, sellFloorAt, mortgageAt, autoLiquidate, auctionStep, startAuction, nextBidder } from './core.js';
+import { GameError, need, emit, say, nm, sqName, others, isOpp, hasCard, tableHolds, hasUid, newStats, stat, discardCard, drawCards, transfer, acquire, demolishKacak, payRent, goBroke, sellFloorAt, mortgageAt, autoLiquidate, auctionStep, startAuction, nextBidder } from './core.js';
 import { klasik } from './klasik.js';
+import { mahalle } from './mahalle.js';
 
 export { GameError, hasCard, auctionStep };
 
 const { fmt, cardId } = R;
 
-// Oyun türleri: tahtaya özel davranış (mahalle K2'de eklenir, docs/TASARIM.md "Mahalle modu").
-const MODES = { klasik };
+// Oyun türleri: tahtaya özel davranış (docs/TASARIM.md §13 "Mahalle modu"). Mod nesnesinin isteğe bağlı kancaları:
+// setup (kurulum), roundStart, turnStart, cards (kart uyarlamaları), gundemText, noGundem, asgari, salaryWord.
+const MODES = { klasik, mahalle };
 const M = (s) => MODES[modeOf(s)];
 
 const MANAGE_STEPS = ['preroll', 'free'];
@@ -43,7 +45,7 @@ export function createGame({ players, config = {}, seed = 1, mode = 'klasik' }) 
     mods: {},
     gundem: null,
     players: [],
-    props: boardOf({ mode }).squares.map((q) => (q.kind === 'prop' || q.kind === 'transport' ? { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 } : null)),
+    props: boardOf({ mode }).squares.map((q) => (q.kind === 'prop' || q.kind === 'transport' ? { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0, ...MODES[mode].propExtra } : null)),
     deck: [],
     discard: [],
     gundemDeck: [],
@@ -77,9 +79,10 @@ export function createGame({ players, config = {}, seed = 1, mode = 'klasik' }) 
       kiraZammi: false,
     };
   });
+  M(s).setup?.(s);
   const copies = (defs) => Object.entries(defs).flatMap(([id, c]) => Array.from({ length: c.count }, (_, n) => `${id}:${n}`));
   s.deck = shuffle(s, copies(CARDS));
-  s.gundemDeck = shuffle(s, copies(GUNDEM));
+  s.gundemDeck = shuffle(s, copies(GUNDEM).filter((u) => !M(s).noGundem?.includes(cardId(u))));
   const ctx = { events: [] };
   s.players.forEach((_, p) => drawCards(s, ctx, p, cfg.startHand, true));
   say(s, ctx, 'Masa kuruldu, oyun başlıyor.');
@@ -91,6 +94,13 @@ export function createGame({ players, config = {}, seed = 1, mode = 'klasik' }) 
 // ---------- tur akışı ----------
 
 function startRound(s, ctx) {
+  openRound(s, ctx);
+  M(s).roundStart?.(s, ctx);
+}
+
+const gundemText = (s, id) => M(s).gundemText?.[id] ?? GUNDEM[id].text;
+
+function openRound(s, ctx) {
   s.round++;
   s.roundStart = { net: s.players.map((_, p) => R.netWorth(s, p)), owners: s.props.map((ps) => (ps ? ps.owner : null)) };
   if (s.round === 1) s.worth = [s.roundStart.net];
@@ -113,7 +123,7 @@ function startRound(s, ctx) {
   s.gundemDiscard.push(uid);
   const id = cardId(uid);
   s.gundem = { id, detail: null, until: Math.min(s.round + GUNDEM_PERIOD - 1, s.config.maxRounds) };
-  emit(s, ctx, { type: 'gundem', id, round: s.round, text: `— ${s.round}. tur — Gündem: ${GUNDEM[id].name}. ${GUNDEM[id].text}${last}` });
+  emit(s, ctx, { type: 'gundem', id, round: s.round, text: `— ${s.round}. tur — Gündem: ${GUNDEM[id].name}. ${gundemText(s, id)}${last}` });
   applyGundem(s, ctx, id);
 }
 
@@ -123,6 +133,7 @@ function startTurn(s, ctx, p) {
   // İhtiyati Tedbir, kartı oynayanın 2 sırası boyunca sürer (sıra başında azalır).
   for (const ps of s.props) if (ps && ps.tedbir > 0 && ps.tedbirBy === p) ps.tedbir--;
   emit(s, ctx, { type: 'turn', p });
+  M(s).turnStart?.(s, ctx, p);
 }
 
 // Tur sonu özeti: net değer farkları ve el değiştiren mülkler (bankadan ilk satın alma sayılmaz).
@@ -213,8 +224,8 @@ function applyGundem(s, ctx, id) {
       for (const p of all) transfer(s, ctx, p, null, R.round5(Math.max(0, s.players[p].cash) * 0.1), 'Dolar kuru');
       break;
     case 'asgari':
-      s.salary += AMOUNTS.asgari;
-      s.gundem.detail = `Maaş artık ${fmt(s.salary)}.`;
+      s.salary += M(s).asgari ?? AMOUNTS.asgari;
+      s.gundem.detail = `${M(s).salaryWord ?? 'Maaş'} artık ${fmt(s.salary)}.`;
       break;
     case 'imarAffi': {
       let n = 0;
@@ -226,24 +237,40 @@ function applyGundem(s, ctx, id) {
           n++;
         }
       }
+      // Mahalle: gecekondulu sahipsiz arsa bedavaya kondurana geçer, gecekondu 1 yasal kata döner.
+      let g = 0;
+      for (const ps of s.props) {
+        if (ps && ps.gk) {
+          Object.assign(ps, { owner: ps.gk.p, kat: 1, affed: true, gk: null });
+          g++;
+        }
+      }
       s.gundem.detail = n ? `${n} kaçak kat yasallaştı.` : 'Affedilecek kaçak kat yoktu.';
+      if (g) s.gundem.detail += ` ${g} gecekondu tapu aldı.`;
       break;
     }
     case 'operasyon': {
       let n = 0;
+      let g = 0;
       for (const ps of s.props) {
         if (ps && ps.kacak) {
           ps.kacak = 0;
           n++;
         }
+        if (ps && ps.gk) {
+          ps.gk = null; // Mahalle: gecekondular da yıkılır
+          g++;
+        }
       }
       s.gundem.detail = n ? `${n} kaçak kat yıkıldı.` : 'Yıkılacak kaçak kat yoktu, kepçeler boş döndü.';
+      if (g) s.gundem.detail += ` ${g} gecekondu yıkıldı.`;
       break;
     }
     case 'deprem':
       for (const p of all) {
         const f = R.floorsOf(s, p);
-        transfer(s, ctx, p, null, f.kat * R.money(s, AMOUNTS.depremKat) + f.kacak * R.money(s, AMOUNTS.depremKacak), 'Deprem güçlendirmesi');
+        const kacak = f.kacak + R.gecekondular(s, p); // Mahalle: gecekondu başı kaçak kat gibi
+        transfer(s, ctx, p, null, f.kat * R.money(s, AMOUNTS.depremKat) + kacak * R.money(s, AMOUNTS.depremKacak), 'Deprem güçlendirmesi');
       }
       break;
     case 'emlakVergisi':
@@ -253,7 +280,7 @@ function applyGundem(s, ctx, id) {
       for (const p of all) transfer(s, ctx, null, p, R.money(s, AMOUNTS.bayram), 'Bayram ikramiyesi');
       break;
     case 'kentsel': {
-      const eligible = (q) => s.props[q].owner !== null && !s.props[q].ipotek && R.level(s.props[q]) < 4;
+      const eligible = (q) => s.props[q].owner !== null && !s.props[q].ipotek && !s.props[q].park && R.level(s.props[q]) < 4;
       const B = boardOf(s);
       const groups = Object.keys(B.groups).filter((gr) => B.groupSquares[gr].some(eligible));
       if (!groups.length) {
@@ -311,10 +338,13 @@ const victimOf = (s, id, t) => {
   return t.player;
 };
 
-const isOpp = (s, p, o) => Number.isInteger(o) && o >= 0 && o < s.players.length && o !== p && !s.players[o].out;
+// Modun kart uyarlaması (block, targets, apply, text); yoksa klasik kural.
+const modeCard = (s, id) => M(s).cards?.[id];
 
 // Kartın verilen hedefle oynanamama sebebi; oynanabiliyorsa null.
 export function cardBlock(s, p, id, t = {}) {
+  const mc = modeCard(s, id);
+  if (mc?.block) return mc.block(s, p, t);
   const pl = s.players[p];
   const ps = R.isOwnable(s, t.sq) ? s.props[t.sq] : null;
   switch (id) {
@@ -360,7 +390,7 @@ export function cardBlock(s, p, id, t = {}) {
       return isOpp(s, p, t.player) ? null : 'Dava açacağın rakibi seç.';
     case 'pazarlik': {
       const pd = s.pending;
-      return pl.cash >= R.round5(R.price(s, pd.sq) / 2) ? null : 'Yarı fiyata bile paran yetmiyor.';
+      return pl.cash >= R.round5(R.price(s, pd.sq) / 2) + R.evictCost(s, pd.sq, p) ? null : 'Yarı fiyata bile paran yetmiyor.';
     }
     default:
       return 'Bilinmeyen kart.';
@@ -369,6 +399,8 @@ export function cardBlock(s, p, id, t = {}) {
 
 // Arayüz ve botlar için: kartın geçerli hedefleri.
 export function cardTargets(s, p, id) {
+  const mc = modeCard(s, id);
+  if (mc?.targets) return mc.targets(s, p).filter((t) => !cardBlock(s, p, id, t));
   const opps = others(s, p);
   const oppProps = boardOf(s).ownable.filter((q) => opps.includes(s.props[q].owner));
   switch (CARDS[id].target) {
@@ -393,6 +425,8 @@ export function cardTargets(s, p, id) {
 }
 
 function cardText(s, p, id, t) {
+  const mc = modeCard(s, id);
+  if (mc?.text) return mc.text(s, p, t);
   const who = nm(s, p);
   const name = CARDS[id].name;
   switch (id) {
@@ -469,6 +503,8 @@ function finishVictim(s, ctx) {
 }
 
 function applyCard(s, ctx, card, victim) {
+  const mc = modeCard(s, card.id);
+  if (mc?.apply) return mc.apply(s, ctx, card, victim);
   const p = card.by;
   const t = card.target;
   switch (card.id) {
@@ -629,6 +665,7 @@ const TURN = {
     needMine(s, p, a.sq);
     const ps = s.props[a.sq];
     need(!ps.ipotek, 'Zaten ipotekli.');
+    need(!ps.park, 'Park ipotek edilmez.');
     need(R.level(ps) === 0, 'Önce katları satmalısın.');
     mortgageAt(s, ctx, p, a.sq);
   },
@@ -670,7 +707,7 @@ const PENDING = {
     buy(s, p, a, ctx) {
       const sq = s.pending.sq;
       const cost = R.price(s, sq);
-      need(s.players[p].cash >= cost, s.config.rules.ihale ? 'Paran yetmiyor, ihaleye çıkarabilirsin.' : 'Paran yetmiyor.');
+      need(s.players[p].cash >= cost + R.evictCost(s, sq, p), s.config.rules.ihale ? 'Paran yetmiyor, ihaleye çıkarabilirsin.' : 'Paran yetmiyor.');
       s.pending = null;
       acquire(s, ctx, p, sq, cost, 'satın aldı:');
     },
@@ -687,7 +724,7 @@ const PENDING = {
       const pd = s.pending;
       const min = pd.high + auctionStep(s);
       need(Number.isInteger(a.amount) && a.amount >= min, `En az ${fmt(min)} teklif vermelisin.`);
-      need(a.amount <= s.players[p].cash, 'Nakdinden fazla teklif veremezsin.');
+      need(a.amount + R.evictCost(s, pd.sq, p) <= s.players[p].cash, 'Nakdinden fazla teklif veremezsin.');
       pd.high = a.amount;
       pd.leader = p;
       emit(s, ctx, { type: 'bid', p, amount: a.amount, text: `${nm(s, p)} ${sqName(s, pd.sq)} için ${fmt(a.amount)} verdi.` });

@@ -2,5 +2,5 @@
 // PROTOCOL yalnız mesaj ya da görünüm biçimi uyumsuz değiştiğinde artar; farklıysa oyuncu odaya giremez.
 // SAVE_VERSION kayıtlı oyunun biçimi değişince artar; eski kayıt açılmaz.
 export const APP_VERSION = '0.38.0';
-export const PROTOCOL = 13;
-export const SAVE_VERSION = 13;
+export const PROTOCOL = 14;
+export const SAVE_VERSION = 14;

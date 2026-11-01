@@ -1,8 +1,8 @@
 // State'ten türetilen değerler: fiyatlar, kiralar, inşaat kuralları, net değer.
 // Buradaki fonksiyonlar state'i değiştirmez.
 
-import { TRANSPORT_RENT } from './data.js';
-import { boardOf } from './board.js';
+import { TRANSPORT_RENT, MAHALLE } from './data.js';
+import { boardOf, isMahalle } from './board.js';
 
 // Karenin verisi (tahta oyunun durumuna bağlı, board.js).
 export const sqOf = (s, sq) => boardOf(s).squares[sq];
@@ -47,7 +47,9 @@ export function ownsGroup(s, p, group) {
   return boardOf(s).groupSquares[group].every((q) => s.props[q].owner === p);
 }
 
+// Mahalle'de "tam set" yerine site sayılır (kartlar: Kamulaştırma, Zorla Takas).
 export const inFullSet = (s, sq) => {
+  if (isMahalle(s)) return inSite(s, sq);
   const ps = s.props[sq];
   const sqd = sqOf(s, sq);
   return sqd.kind === 'prop' && ps.owner !== null && ownsGroup(s, ps.owner, sqd.group);
@@ -66,6 +68,7 @@ export function transportCount(s, p, mode) {
 
 // Bu kareye gelen bir rakibin ödeyeceği kira (Kira Zammı hariç).
 export function rentFor(s, sq) {
+  if (isMahalle(s)) return rentBreakdown(s, sq).amount;
   const ps = s.props[sq];
   if (!ps || ps.owner === null || ps.ipotek || ps.tedbir > 0) return 0;
   const sqd = sqOf(s, sq);
@@ -91,6 +94,7 @@ export function rentFor(s, sq) {
 
 // Engel varsa Türkçe sebep döndürür, yoksa null.
 export function buildBlock(s, p, sq, kacak) {
+  if (isMahalle(s)) return buildBlockM(s, p, sq, kacak);
   const B = boardOf(s);
   const sqd = B.squares[sq];
   const ps = s.props[sq];
@@ -158,5 +162,126 @@ export function scoreOf(s, p) {
 }
 
 export function hasLiquidAssets(s, p) {
-  return propsOf(s, p).some((q) => level(s.props[q]) > 0 || !s.props[q].ipotek);
+  return propsOf(s, p).some((q) => level(s.props[q]) > 0 || (!s.props[q].ipotek && !s.props[q].park));
+}
+
+// ---------- Mahalle (docs/TASARIM.md §13) ----------
+
+const adjOf = (s, sq) => boardOf(s).adj[sq];
+// Oyuncunun bu arsaya komşu (dört yan) arsa sayısı.
+export const ownNeighbors = (s, p, sq) => adjOf(s, sq).filter((q) => s.props[q].owner === p).length;
+
+// Site: arsanın içinde olduğu 2x2 bloklardan birinin dördü de aynı sahibin ve hepsinde en az 1 kat var.
+export function inSite(s, sq) {
+  const ps = s.props[sq];
+  if (!ps || ps.owner === null) return false;
+  return boardOf(s).blocks.some((b) => b.includes(sq) && b.every((q) => s.props[q].owner === ps.owner && level(s.props[q]) > 0));
+}
+
+// İnşaat yalnız piyonun durduğu arsada ve ona komşu arsalarda (piyon dışarıdayken hiçbir yerde).
+export function nearPawn(s, p, sq) {
+  const pos = s.players[p].pos;
+  return pos !== null && (pos === sq || adjOf(s, pos).includes(sq));
+}
+
+// Bu arsaya gelen bir rakibin ödeyeceği kira ve hangi etkilerin işlediği (Kira Zammı ve AVM payı hariç).
+// items: [{ key, mult, n? }] sırayla çarpılır; key: kiyi | site | blok | park | gecekondu | metro | turizm | kiraTavani |
+// kiraArtisi | iflas. Kira yoksa amount 0 ve none: sahipsiz | park | ipotek | tedbir.
+export function rentBreakdown(s, sq) {
+  const ps = s.props[sq];
+  const none = (why) => ({ amount: 0, base: 0, level: 0, items: [], none: why });
+  if (!ps || ps.owner === null) return none('sahipsiz');
+  if (ps.park) return none('park');
+  if (ps.ipotek) return none('ipotek');
+  if (ps.tedbir > 0) return none('tedbir');
+  const B = boardOf(s);
+  const sqd = B.squares[sq];
+  const sahil = !!B.groups[sqd.group].sahil;
+  const L = level(ps);
+  const items = [];
+  const add = (key, mult, n) => items.push(n ? { key, mult, n } : { key, mult });
+  if (sahil) add('kiyi', MAHALLE.kiyi);
+  if (inSite(s, sq)) add('site', MAHALLE.site);
+  if (ownNeighbors(s, ps.owner, sq) >= 2) add('blok', MAHALLE.blok);
+  const parks = adjOf(s, sq).filter((q) => s.props[q].park).length;
+  if (parks) add('park', MAHALLE.park ** parks, parks);
+  const gks = adjOf(s, sq).filter((q) => s.props[q].gk).length;
+  if (gks) add('gecekondu', MAHALLE.gecekondu ** gks, gks);
+  const gm = groupMult(s, sq);
+  if (gm !== 1) add('metro', gm);
+  if (s.mods.turizm && sahil) add('turizm', 2);
+  if (s.mods.kiraTavani) add('kiraTavani', 0.5);
+  if (s.mods.kiraArtisi) add('kiraArtisi', 1.5);
+  const im = iflasMult(s);
+  if (im !== 1) add('iflas', im);
+  const mult = items.reduce((m, x) => m * x.mult, 1);
+  const base = sqd.rents[L] * MAHALLE.rent;
+  return { amount: Math.max(5, round5(((base * s.index) / 100) * mult)), base, level: L, items };
+}
+
+// Kiradan AVM'lerin payı: çevredeki 8 arsada AVM'si olan (arsanın sahibinden başka) her oyuncuya kiranın %20'si.
+export function avmCuts(s, sq, amount) {
+  const ring = boardOf(s).ring;
+  if (!ring) return [];
+  const owner = s.props[sq].owner;
+  return ring[sq]
+    .filter((q) => s.props[q].avm && s.props[q].owner !== owner && !s.props[q].tedbir)
+    .map((q) => ({ sq: q, owner: s.props[q].owner, amount: round5(amount * MAHALLE.avmCut) }));
+}
+
+function buildBlockM(s, p, sq, kacak) {
+  const ps = s.props[sq];
+  if (!ps) return 'Buraya kat dikilemez.';
+  if (ps.owner !== p) return 'Bu arsa senin değil.';
+  if (s.mods.durgunluk) return 'Piyasa durgun: bu dönem kat dikilemez.';
+  if (ps.park) return 'Parka kat dikilmez.';
+  if (ps.ipotek) return 'İpotekli arsaya kat dikilemez.';
+  if (ps.tedbir > 0) return 'Arsada ihtiyati tedbir var.';
+  if (level(ps) >= 4) return 'Bu arsa en üst seviyede.';
+  if (!nearPawn(s, p, sq)) return 'İnşaat yalnız piyonunun durduğu arsada ve ona komşu arsalarında yapılır.';
+  if (kacak) {
+    if (ps.kacak > 0) return 'Bir arsada en fazla 1 kaçak kat olur.';
+    return s.players[p].cash < kacakCost(s, sq) ? 'Paran yetmiyor.' : null;
+  }
+  if (!ownNeighbors(s, p, sq)) return 'Yasal kat için komşu bir arsan daha olmalı.';
+  return s.players[p].cash < katCost(s, sq) ? 'Paran yetmiyor.' : null;
+}
+
+// Park ve AVM'nin bedeli 1 kat fiyatıdır.
+export function parkBlock(s, p, sq) {
+  const ps = s.props[sq];
+  if (!ps || ps.owner !== p) return 'Bu arsa senin değil.';
+  if (ps.park) return 'Burası zaten park.';
+  if (level(ps) > 0) return 'Katlı arsaya park yapılmaz.';
+  if (ps.ipotek) return 'İpotekli arsaya park yapılmaz.';
+  if (ps.tedbir > 0) return 'Arsada ihtiyati tedbir var.';
+  if (!nearPawn(s, p, sq)) return 'Park yalnız piyonunun durduğu arsada ve ona komşu arsalarında yapılır.';
+  return s.players[p].cash < katCost(s, sq) ? 'Paran yetmiyor.' : null;
+}
+
+export function avmBlock(s, p, sq) {
+  const ps = s.props[sq];
+  if (!ps || ps.owner !== p) return 'Bu arsa senin değil.';
+  if (ps.avm) return 'Burası zaten AVM.';
+  if (ps.kat < 4) return 'AVM için 4 yasal kat gerekir.';
+  if (ps.tedbir > 0) return 'Arsada ihtiyati tedbir var.';
+  if (!nearPawn(s, p, sq)) return 'AVM yalnız piyonunun durduğu arsada ve ona komşu arsalarında açılır.';
+  return s.players[p].cash < katCost(s, sq) ? 'Paran yetmiyor.' : null;
+}
+
+// Gecekondu: kaçak kat bedelinin yarısı (dış 15, öteki bölgeler 25); tahliye bedeli bunun 2 katı.
+export const gecekonduCost = (s, sq) => round5(katValue(s, sq) / 4);
+export const gecekondular = (s, p) => s.props.filter((ps) => ps && ps.gk && ps.gk.p === p).length;
+// Gecekondulu sahipsiz arsayı alanın kondurana ödeyeceği tahliye bedeli (konduran kendisi alırsa 0). Klasikte hep 0.
+export function evictCost(s, sq, p) {
+  const g = s.props[sq] && s.props[sq].gk;
+  return g && g.p !== p ? g.cost * MAHALLE.tahliye : 0;
+}
+
+export function gecekonduBlock(s, p, sq) {
+  const ps = s.props[sq];
+  if (!ps || ps.owner !== null) return 'Sahipli arsaya gecekondu kondurulmaz.';
+  if (ps.gk) return 'Bu arsada zaten gecekondu var.';
+  if (gecekondular(s, p) >= MAHALLE.gecekonduMax) return `En çok ${MAHALLE.gecekonduMax} gecekondun olabilir.`;
+  return s.players[p].cash < gecekonduCost(s, sq) ? 'Paran yetmiyor.' : null;
 }

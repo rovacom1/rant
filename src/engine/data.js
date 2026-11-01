@@ -220,3 +220,23 @@ export const PLAYER_COLORS = ['#009c9c', '#e81c8c', '#a6e000', '#4a3aff', '#2b2f
 // Oyuncu adı en fazla bu kadar karakter; arayüz (podyum, oyuncu listesi, sonuç balonu) bu uzunluğa göre denendi.
 export const NAME_MAX = 16;
 export const BOT_NAMES = ['Hacı Müteahhit', 'Emlakçı Nuri', 'Kooperatif Sevim', 'Tapucu Rıza', 'Arsa Kemal', 'Rezidans Bülent'];
+
+// Mahalle modunun sayıları (docs/TASARIM.md §13; simülasyonla ayarlandı: node tools/sim.js 200 5 mahalle).
+export const MAHALLE = {
+  rent: 3, // kira cetveli çarpanı: bölgenin bugünkü cetveli x3 (iki arsadan biri seçildiği için kira daha seyrek ödenir)
+  hakedis: 50, // her sıra başında (Endeksle ölçeklenmez)
+  asgari: 10, // Asgari Ücrete Zam: hakediş artışı
+  torpilStart: 1,
+  torpilMax: 2,
+  torpilEvery: 9, // 10. ve 19. tur başında herkese 1 torpil
+  grantEvery: 3, // her 3 turda herkese 1 kart
+  kiyi: 1.25,
+  site: 2,
+  blok: 1.25, // komşulardan en az ikisi de seninse
+  park: 1.5, // her park komşusu için
+  gecekondu: 0.75, // her gecekondu komşusu için
+  avmCut: 0.2, // çevredeki 8 arsada ödenen kiradan AVM sahibinin payı
+  gecekonduIncome: 10, // sıra başında (Endeksle ölçeklenir)
+  gecekonduMax: 3,
+  tahliye: 2, // tahliye bedeli = kondurma bedeli x 2
+};
