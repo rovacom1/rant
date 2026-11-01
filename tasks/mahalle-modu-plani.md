@@ -45,7 +45,7 @@ oyununa sonra başka ad bulunur. Bütün sayılar simülasyonla ayarlanır (kull
       torpil, kat kuralı, site, park, AVM, blok, gecekondu, tahliye, af; kart ve gündem uyarlamaları; botlar;
       `test/mahalle.test.js`; `tools/sim.js` mod argümanı. Sayılar simülasyonla: konkordato klasikten fazla değil, 20 tur,
       park/AVM/gecekondu oyun başına kullanılıyor. PROTOCOL ve SAVE_VERSION artar.
-- [ ] K3 Arayüz (2 hafta, mevcut planın 6. adımından sonra): lobide oyun türü; `ui/arazi.js` (masaüstünde 6x6, telefonda eğik);
+- [x] K3 Arayüz (2 hafta, mevcut planın 6. adımından sonra): lobide oyun türü; `ui/arazi.js` (masaüstünde 6x6, telefonda eğik);
       zar sonrası iki arsa parlar, dokunarak seçilir; yay çizen zıplama; arsa penceresinde kira ve etkiler; park, AVM, gecekondu, torpil.
 - [ ] K4 Deneme (1 hafta): arkadaş oyunu, Nasıl oynanır, dayının yorumları. v0.47.
 
