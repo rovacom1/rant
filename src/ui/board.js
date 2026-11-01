@@ -65,8 +65,7 @@ export function buildBoard(boardEl) {
   return [...boardEl.querySelectorAll('.cell')];
 }
 
-// Ad kareye sığmazsa kelime ortasından bölünmez, kesilmez; yazısı küçülür. Yan sütunlarda ad şeridin altına kadar uzanır,
-// şerit adın üstünde biter (--nmh: adın yüzün altından yüksekliği).
+// Ad kareye sığmazsa kelime ortasından bölünmez, kesilmez; yazısı küçülür. Yan sütunlarda da ad şeridin yanında biter.
 function fitNames(boardEl) {
   for (const n of boardEl.querySelectorAll('.cell .nm')) {
     n.style.fontSize = '';
@@ -74,8 +73,6 @@ function fitNames(boardEl) {
       const f = parseFloat(getComputedStyle(n).fontSize);
       n.style.fontSize = `${((f * n.clientWidth * 0.97) / n.scrollWidth).toFixed(2)}px`;
     }
-    const face = n.parentElement;
-    if (face.parentElement.matches('.side-l, .side-r')) face.style.setProperty('--nmh', `${face.clientHeight - n.offsetTop}px`);
   }
 }
 

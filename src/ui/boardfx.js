@@ -118,9 +118,10 @@ export function ownFx(board, cell, color, sound = true) {
   if (!calm()) trace(board, cell, color, 0, draw);
   const strip = cell.querySelector('.strip');
   if (!strip) return;
-  // Şerit karenin dönen yüzünde hep yatay (yan sütunlarda yüzle birlikte döner).
-  strip.style.transformOrigin = '0 50%';
-  strip.animate([{ transform: 'scaleX(0)' }, { transform: 'none' }], { duration: fill, delay: draw, easing: 'ease-out', fill: 'backwards' });
+  // Şerit boyunca dolar: alt ve üst sırada soldan, yan sütunlarda (şerit dikey) yukarıdan.
+  const v = vertical(cell);
+  strip.style.transformOrigin = v ? '50% 0' : '0 50%';
+  strip.animate([{ transform: v ? 'scaleY(0)' : 'scaleX(0)' }, { transform: 'none' }], { duration: fill, delay: draw, easing: 'ease-out', fill: 'backwards' });
 }
 
 // Tam set: setin kareleri sırayla sahibinin renginde dolanır; her kare tamamlanınca bir nota (giderek tizleşir),
