@@ -255,6 +255,8 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 .feedcol .ev { font-size: 14px; align-items: flex-start; }
 .feedcol .ev .ic { margin-top: 2px; flex: none; }
 .feedcol .ev span { white-space: normal; }
+/* tahtanın penceresi yalnız dikey telefonda kutudur (telefon.css, kamera); burada yokmuş gibi */
+.boardcam { display: contents; }
 .board {
   position: relative; flex: none; width: var(--bw); height: var(--bh); border-radius: var(--r-l); overflow: hidden; background: var(--center); box-shadow: 0 0 0 1px var(--line);
   display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(10, 1fr);

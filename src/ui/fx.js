@@ -40,7 +40,8 @@ export function buzz(tier) {
   } catch {}
 }
 
-// Tahtanın görsel kabı sönerek sarsılır (yalnız transform; oyunun durumu ve piyonların yeri değişmez).
+// Tahtanın görsel kabı sönerek sarsılır (yalnız transform; oyunun durumu ve piyonların yeri değişmez). Sarsıntı tahtanın
+// kendi transform'una eklenir: telefondaki eğim ve kamera (camera.js) yerinde kalır.
 export function shake(board, k = 1) {
   if (!board || calm() || !shakeOn) return;
   const n = 8;
@@ -51,7 +52,7 @@ export function shake(board, k = 1) {
     const y = SHAKE.px * 0.6 * a * Math.sin(i * 2.9 + 1);
     frames.push({ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${(SHAKE.deg * a * Math.sin(i * 1.7)).toFixed(3)}deg)` });
   }
-  board.animate(frames, { duration: SHAKE.ms, easing: 'linear' });
+  board.animate(frames, { duration: SHAKE.ms, easing: 'linear', composite: 'add' });
 }
 
 // Donma (hit-stop): o an oynayan bütün canlandırmalar ms boyunca durur, sonra kaldıkları yerden sürer. Dokunuşlar

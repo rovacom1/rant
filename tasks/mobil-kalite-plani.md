@@ -45,7 +45,7 @@ commit + push (main'e birleştirme yok). Haftalar tahmin.
 4. [x] **İhale** (v0.41): çubuk + çipler (`ui/gameview.js`, `styles/main.css`).
 5. [x] **Telefon iskeleti** (v0.42): `styles/telefon.css` + `body.tel`, `ui/sheet.js` (alttan sayfa yığını, geri hareketi),
    `ui/phone.js` (dikey perde kalkar), CLAUDE.md telefon maddesi yeniden. Bitti: 390x844 ve 360x740'ta kaydırmasız tur.
-6. [ ] **Eğik tahta, kamera** (v0.43): `ui/camera.js` (masa, izle, odak, hedef); tahta görünümü soyutlanır (hücre yerleri, piyon
+6. [x] **Eğik tahta, kamera** (v0.43): `ui/camera.js` (masa, izle, odak, hedef); tahta görünümü soyutlanır (hücre yerleri, piyon
    noktaları, kamera odakları) ki Mahalle arazisi da kullansın. Bitti: 60 fps, kamera bütçeyi uzatmaz.
 7. [ ] **Zar, yürüyüş, para** (v0.44): yükselen adım tıkları, varışta ezilme + toz, varılacak kare önceden; kira patlaması,
    jeton yayı, iki sayaç; büyük anda dayı videosu (`assets/dayi`, `ui/dayi.js`).

@@ -9,7 +9,7 @@ import { html, raw, sleep, esc } from './dom.js';
 import { play } from './sound.js';
 import { icon, ic } from './icons.js';
 import { boardPawn } from './pawns.js';
-import { PAWN, feet, stepDurations } from './slots.js';
+import { stepDurations } from './slots.js';
 import { bldSrc } from './map.js';
 
 // Izgara kenarı G kare; köşeler 0, K, 2K, 3K. Kare 0 sağ altta, sıra saat yönünde.
@@ -129,10 +129,11 @@ function setPart(el, cls, on, make) {
 
 // ---- piyonlar ----
 
+// view: tahta görünümü (boardview.js); piyonların yeri ve boyu ondan gelir, Mahalle arazisinde de aynı sınıf çalışır.
 export class Tokens {
-  constructor(layer, cells) {
+  constructor(layer, view) {
     this.layer = layer;
-    this.cells = cells;
+    this.view = view;
     this.els = new Map();
     this.pos = new Map();
     this.size = 0;
@@ -174,13 +175,11 @@ export class Tokens {
 
   layoutAll() {
     if (!this.players) return;
-    const size = Math.round(this.cells[1].offsetHeight * PAWN);
+    const size = this.view.pawnSize();
     if (size !== this.size) {
       this.size = size;
       this.sync(this.players);
     }
-    const W = this.layer.clientWidth;
-    const H = this.layer.clientHeight;
     const groups = new Map();
     for (const pl of this.players) {
       if (pl.out) continue;
@@ -188,25 +187,23 @@ export class Tokens {
       if (!groups.has(sq)) groups.set(sq, []);
       groups.get(sq).push(pl.id);
     }
-    // Önce bütün kutular okunur, sonra yazılır: okuma ile yazma iç içe olursa her grupta yerleşim yeniden hesaplanır.
-    const boxes = [...groups.keys()].map((sq) => {
-      const c = this.cells[sq];
-      return { x: c.offsetLeft, y: c.offsetTop, w: c.offsetWidth, h: c.offsetHeight };
-    });
-    [...groups].forEach(([sq, ids], g) => {
-      const fs = feet(cellPos(sq).side, boxes[g], size, ids.length, W, H);
+    // Önce bütün noktalar okunur, sonra yazılır: okuma ile yazma iç içe olursa her grupta yerleşim yeniden hesaplanır.
+    const pts = [...groups].map(([sq, ids]) => this.view.feet(sq, size, ids.length));
+    [...groups.values()].forEach((ids, g) => {
       ids.forEach((id, k) => {
         const el = this.els.get(id);
-        el.style.left = `${Math.round(fs[k].x - size / 2)}px`;
-        el.style.top = `${Math.round(fs[k].y - size)}px`;
-        el.style.zIndex = 10 + Math.round(fs[k].y);
+        const f = pts[g][k];
+        el.style.left = `${Math.round(f.x - size / 2)}px`;
+        el.style.top = `${Math.round(f.y - size)}px`;
+        el.style.zIndex = 10 + Math.round(f.y);
       });
     });
   }
 
   // Yürüyüş: kalkışta hızlanır, ortada hızlı, varışta yavaşlar (toplam stepMs x adım); her adımda yay çizer, inişte adım
   // sesi çalar. Son inişte ezilir, altında toz halkası açılır ve kısa durur (host PACE.step bütçesinin içinde).
-  async walk(id, path, fast, stepMs = 150) {
+  // onStep(k, ms): her adımın başında (kamera piyonu izler, camera.js).
+  async walk(id, path, fast, stepMs = 150, onStep = null) {
     const el = this.els.get(id);
     if (!el || fast) {
       this.place(id, path[path.length - 1]);
@@ -228,6 +225,7 @@ export class Tokens {
     try {
       for (let k = 0; k < path.length; k++) {
         const d = Math.round(ds[k]);
+        onStep?.(k, d);
         // Yer bir kerede değişir, aradaki yol transform ile çizilir (her karede yerleşim ve boyama olmasın).
         const x0 = el.offsetLeft;
         const y0 = el.offsetTop;

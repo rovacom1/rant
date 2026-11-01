@@ -26,11 +26,17 @@ const hit = (name, ms, o = {}) => play(name, undefined, { at: ms / 1000, hit: tr
 const from = (name, ms, o = {}) => play(name, undefined, { at: ms / 1000, ...o });
 
 const boxOf = (el) => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
-// Karenin içindeki bir parçanın (SVG simge de olabilir) tahtaya göre kutusu.
+// Karenin içindeki bir parçanın tahtaya göre düz kutusu (yerleşim zinciriyle: telefonda tahta eğik, ekrandaki kutusu
+// tahtanın düzleminde değil).
 const inCell = (cell, el) => {
-  const board = cell.offsetParent.getBoundingClientRect();
-  const r = el.getBoundingClientRect();
-  return { x: r.left - board.left, y: r.top - board.top, w: r.width, h: r.height };
+  const board = cell.offsetParent;
+  let x = 0;
+  let y = 0;
+  for (let n = el; n && n !== board; n = n.offsetParent) {
+    x += n.offsetLeft;
+    y += n.offsetTop;
+  }
+  return { x, y, w: el.offsetWidth, h: el.offsetHeight };
 };
 const vertical = (cell) => cell.classList.contains('side-l') || cell.classList.contains('side-r');
 

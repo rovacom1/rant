@@ -12,6 +12,8 @@ import { deed } from './deed.js';
 import { Dice } from './dice.js';
 import { isNotifyOn, notifySupported } from './notify.js';
 import { buildBoard, updateBoard, Tokens, cellPos } from './board.js';
+import { classicView } from './boardview.js';
+import { Camera } from './camera.js';
 import { CityMap } from './map.js';
 import { app, isHost, act } from './state.js';
 import { RULES_HTML } from './rules.js';
@@ -39,6 +41,8 @@ const PW = (pl, s) => raw(pawn(pl.avatar, pl.color, s));
 let els = null;
 let cells = null;
 let tokens = null;
+let view = null;
+let camera = null;
 let cityMap = null;
 let dice = null;
 let hand = null;
@@ -50,7 +54,7 @@ export function mountGame(root) {
   root.innerHTML = `
   <div class="game">
     <div class="feedcol" id="feedcol"></div>
-    <div class="board" id="board">
+    <div class="boardcam" id="boardcam"><div class="board" id="board">
       <div class="center" id="center">
         <div id="gundem"></div>
         <div id="banner"></div>
@@ -63,7 +67,7 @@ export function mountGame(root) {
       <div id="stage"></div>
       <div id="modal"></div>
       <div class="toasts" id="toasts"></div>
-    </div>
+    </div></div>
     <aside class="side">
       <div class="side-head">
         <button class="me-pill tel-only" id="mePill" data-act="player" aria-label="Senin durumun"></button>
@@ -95,7 +99,7 @@ export function mountGame(root) {
     prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'), players: g('players'), feed: g('feed'), handPanel: g('handPanel'),
     handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), deckPile: g('deckPile'), discPile: g('discPile'), audioPop: g('audioPop'), playerPanel: g('playerPanel'), tools: g('tools'),
     modal: g('modal'), stage: g('stage'), results: g('results'), stick: g('stick'), feedcol: g('feedcol'), game: root.querySelector('.game'), toasts: g('toasts'),
-    me: g('mePill'), telbar: g('telbar'), tbHand: g('tbHand'), tbMain: g('tbMain'), tbTools: g('tbTools'), tbStick: g('tbStick'), handGo: g('handGo'),
+    boardcam: g('boardcam'), me: g('mePill'), telbar: g('telbar'), tbHand: g('tbHand'), tbMain: g('tbMain'), tbTools: g('tbTools'), tbStick: g('tbStick'), handGo: g('handGo'),
   };
   cells = buildBoard(els.board);
   preloadFx();
@@ -108,18 +112,20 @@ export function mountGame(root) {
     if (els.feed.parentElement !== (side ? els.feedcol : els.center)) (side ? els.feedcol : els.center).appendChild(els.feed);
   }).observe(game);
   cityMap = new CityMap(els.board);
-  tokens = new Tokens(els.tokens, cells);
-  // Zarlar tahtanın neredeyse tamamına savrulur. Telefon düzeninde zar kutusu tahtanın hemen altında: tepsi ikisini kapsar,
-  // zarlar kutuya tepsinin içinden döner.
+  view = classicView(els.board, cells);
+  tokens = new Tokens(els.tokens, view);
+  camera = new Camera(view, els.boardcam);
+  // Zarlar tahtanın neredeyse tamamına savrulur. Telefon düzeninde zar kutusu tahtanın hemen altında: tepsi tahtanın
+  // penceresini (kamera yaklaşsa da yerinde durur) ve kutuyu kapsar, zarlar kutuya tepsinin içinden döner.
   const telArena = {
     getBoundingClientRect() {
-      const b = els.board.getBoundingClientRect();
+      const b = els.boardcam.getBoundingClientRect();
       const d = els.dice.getBoundingClientRect();
       const bottom = d.height ? Math.max(b.bottom, d.bottom + 8) : b.bottom;
       return { left: b.left, top: b.top, right: b.right, bottom, width: b.width, height: bottom - b.top };
     },
   };
-  dice = new Dice(els.dice, 2, () => (isTel() ? telArena : els.board));
+  dice = new Dice(els.dice, 2, () => (isTel() ? telArena : els.board), isTel);
   const deckBox = { getBoundingClientRect: () => (els.deckPile.offsetParent ? els.deckPile : els.deck).getBoundingClientRect() };
   hand = new Hand(els.handGrid, els.board, deckBox);
   initTips();
@@ -204,6 +210,7 @@ export function telMode(on) {
     for (const el of [els.pop, els.stage, els.modal, els.toasts]) (on ? els.game.insertBefore(el, els.telbar) : els.board.appendChild(el));
   }
   if (!on) app.ui.handOpen = false;
+  camera.enable(on);
   if (app.view) updateGame();
   dice.relayout();
 }
@@ -871,18 +878,20 @@ export function showSticker(p, id) {
   const pl = v && v.players[p];
   const tok = pl && tokens && tokens.els.get(pl.id);
   if (!els || !tok || !STICKERS[id]) return;
-  const b = els.board.getBoundingClientRect();
+  // Telefonda tahta eğik: çıkartma tahtanın dışında, piyonun ekrandaki yerinde (eğilmez).
+  const tel = isTel();
+  const b = tel ? els.boardcam.getBoundingClientRect() : els.board.getBoundingClientRect();
   const r = tok.getBoundingClientRect();
-  const x = r.left + r.width / 2 - b.left;
-  const y = r.top + r.height / 2 - b.top;
-  const down = y < b.height / 2;
+  const x = r.left + r.width / 2 - (tel ? 0 : b.left);
+  const y = r.top + r.height / 2 - (tel ? 0 : b.top);
+  const down = y - (tel ? b.top : 0) < b.height / 2;
   const el = document.createElement('span');
   el.className = `sticker ${down ? 'down' : ''}`;
   el.style.setProperty('--pc', pl.color);
   el.style.left = `${Math.max(60, Math.min(b.width - 60, x))}px`;
   el.style.top = `${down ? y + r.height * 0.4 : y - r.height * 0.6}px`;
   el.textContent = STICKERS[id];
-  els.board.appendChild(el);
+  (tel ? els.game : els.board).appendChild(el);
   play('tap');
   setTimeout(() => el.remove(), 2000);
 }
@@ -1297,6 +1306,31 @@ export function updateGame() {
   renderModal();
   renderResults(v);
   tickTimers();
+  if (!animating) aimCamera(v);
+}
+
+// Telefonda kamera (camera.js): tahtadan kare seçerken bütün tahta, yol seçerken gidilebilecek kareler sayfanın üstüne
+// sığar; açılan sayfa bir kareyle ilgiliyse (dokunulan kare, satın alma, artırma, kira) kamera o kareyi sayfanın üstünde
+// gösterir; yoksa bütün masa.
+function aimCamera(v) {
+  if (!isTel()) return;
+  const cover = sheetTop();
+  if (els.board.classList.contains('picking')) return camera.hedef(cover);
+  // yol seçimi (Kestirme, Taksi): gidilebilecek kareler ve piyonun karesi sayfanın üstünde
+  const steps = stepBadges(v);
+  if (steps && cover < innerHeight) return camera.hedef(cover, [...Object.keys(steps).map(Number), P(v, v.you).pos]);
+  const sq = app.ui.popSq ?? (els.center.classList.contains('big') ? highlightOf(v) : -1);
+  if (sq !== null && sq >= 0 && cover < innerHeight) return camera.odak(sq, cover);
+  camera.masa();
+}
+
+// Alttan açılan sayfaların en üstteki kenarı (ekranda px); açık sayfa yoksa ekranın altı. Yerleşim kutusu okunur
+// (sayfa açılırken kayıyor olabilir).
+function sheetTop() {
+  const open = [els.center.classList.contains('big') && els.center, els.pop.classList.contains('pop') && els.pop, els.handPanel.classList.contains('open') && els.handPanel, els.playerPanel.classList.contains('open') && els.playerPanel];
+  let top = innerHeight;
+  for (const el of open) if (el && el.offsetHeight) top = Math.min(top, innerHeight - el.offsetHeight);
+  return top;
 }
 
 // Atılan zarlar tur boyunca yerlerindeki kutuda çıkan sayıyla görünür. Sıra sende ve zar atılacaksa tepside bekler.
@@ -1848,7 +1882,12 @@ export async function present(prev, v, events, fast) {
           await dice.roll(e.dice, fast, PACE.dice * spd(), '', spd());
         } else if (e.type === 'dava') {
           if (!fast) await showDava(v, e);
-        } else if (e.type === 'move') await tokens.walk(P(v, e.p).id, e.path, fast, PACE.step * spd());
+        } else if (e.type === 'move') {
+          // Kamera piyonu bir kare önünden izler (yalnız telefonda, beklemeden; adımın süresi değişmez).
+          const follow = !fast && isTel() ? (k, ms) => camera.izle(e.path[Math.min(k + 1, e.path.length - 1)], ms) : null;
+          if (follow) dice.home(); // telefonda zarlar kutuya yürüyüşle birlikte döner: yaklaşan tahtada piyonu örtmesin
+          await tokens.walk(P(v, e.p).id, e.path, fast, PACE.step * spd(), follow);
+        }
         else if (fast) continue;
         else if (e.type === 'surpriz') await showSurpriz(v, e);
         else if (e.card === 'itiraz' && prev.pending && prev.pending.type === 'react') {
@@ -1869,7 +1908,7 @@ export async function present(prev, v, events, fast) {
   if (jolt !== null) setTimeout(() => els && impact('big', els.board), jolt);
   // Büyük anda dayı köşeden bir laf eder (hızlı oyunda ve yetişmeye çalışırken susar); ortadaki sahne kapanınca.
   const moment = live && spd() >= 1 ? dayiMoment(events) : null;
-  if (moment) afterStage().then(() => els && dayiSay(els.board, moment));
+  if (moment) afterStage().then(() => els && dayiSay(isTel() ? els.game : els.board, moment));
   pawnFlights.forEach((e, i) => pawnFlight(v, e, i * FLIGHT_GAP, jolt !== null));
   if (flights.length && els) {
     for (const f of flights) flyPanel(f);

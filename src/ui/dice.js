@@ -21,11 +21,13 @@ const dieHTML = () =>
 
 export class Dice {
   // n: zar sayısı (oyun zarı 2, dava düellosunda her oyuncunun kendi tek zarı). arena: tepsi olacak öğeyi veren işlev
-  // (null dönerse tepsi el'in kendisidir).
-  constructor(el, n = 2, arena = null) {
+  // (null dönerse tepsi el'in kendisidir). boxed: true dönerse duran zarlar kutunun içinde ortalanır (telefonda kutu
+  // tahtanın hemen altında; yerden R yüksekteki zar kutunun ortasında görünür, üstündeki tahtaya taşmaz).
+  constructor(el, n = 2, arena = null, boxed = () => false) {
     this.el = el;
     this.n = n;
     this.arena = arena;
+    this.boxed = boxed;
     el.innerHTML = `<div class="zar-tepsi"><div class="zar-zemin">${Array.from({ length: n }, dieHTML).join('')}</div>${n > 1 ? '<span class="zar-toplam"></span>' : ''}</div>`;
     this.dice = [...el.querySelectorAll('.zar')].map((w) => ({ w, sh: w.previousElementSibling, faces: SLOTS.map((s) => w.querySelector(`.zf-${s}`)) }));
     this.sum = el.querySelector('.zar-toplam');
@@ -226,7 +228,8 @@ export class Dice {
   // Zarların yerindeki kutunun ortası, tepsi düzleminde: zarların yan yana duracağı noktalar.
   homeAt(n, R) {
     const r = this.el.getBoundingClientRect();
-    const [hx, hy] = r.width ? this.planeXY(r.left + r.width / 2, r.top + r.height / 2) : [R * 4, R * 1.5];
+    const lift = this.boxed() ? R * Math.sin(TILT) : 0; // zarın ortası yerden R yüksekte, ekranda bu kadar yukarıda
+    const [hx, hy] = r.width ? this.planeXY(r.left + r.width / 2, r.top + r.height / 2 + lift) : [R * 4, R * 1.5];
     return Array.from({ length: n }, (_, i) => [hx + (i - (n - 1) / 2) * 3.2 * R, hy + (i ? 4 : -4) * (n > 1 ? 1 : 0), R]);
   }
 
