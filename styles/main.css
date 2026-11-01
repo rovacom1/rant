@@ -214,6 +214,8 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 .pawn-pick button:disabled:not(.on) { opacity: 0.3; filter: grayscale(1); }
 .pawn-pick .pawn img { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
 .version { position: fixed; right: 12px; bottom: 8px; font-size: 12px; color: var(--muted); }
+/* ?debug gecikme göstergesi (app.js debugNote) */
+.sync-debug { position: fixed; left: 8px; top: 8px; z-index: 600; padding: 4px 8px; border-radius: var(--r-s); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--sh-1); color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
 .lobby { width: min(1240px, 100%); min-height: 100dvh; margin: 0 auto; display: flex; flex-direction: column; padding: 26px 44px; gap: 18px; }
 .lobby-head { display: flex; align-items: center; gap: 12px; }
 .lobby-main { display: flex; gap: 20px; flex: 1; min-height: 0; align-items: flex-start; }

@@ -285,8 +285,8 @@ export function coinSounds(n, landAt, salary, board, startCell) {
 
 // Açık artırma bitti: teklif penceresi yerinde "Gidiyor... gidiyor... Satıldı!" der (say ile); iki tok vuruş, üçüncüsünde
 // mühür ve satış sesi. Sözü pencereye yazmak çağıranın işi. Her sözde tokmak bir kez iner (assets/ihale/tokmak-vurus.webp);
-// bloğa değdiği an sözün başından lead ms sonra, ses o ana çalar.
-export const CALL = { beat: 450, lead: 240, words: ['Gidiyor...', 'gidiyor...', 'Satıldı!'] };
+// bloğa değdiği an sözün başından lead ms sonra, ses o ana çalar. hold: "Satıldı!"dan sonra pencerenin açık kaldığı süre.
+export const CALL = { beat: 450, lead: 240, hold: 1500, words: ['Gidiyor...', 'gidiyor...', 'Satıldı!'] };
 export function auctionFx(say) {
   const { beat, lead, words } = CALL;
   words.forEach((w, i) => {

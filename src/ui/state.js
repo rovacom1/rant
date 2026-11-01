@@ -30,6 +30,10 @@ export const app = {
   lobby: null,
   view: null,
   meta: null,
+  clock: [], // ev sahibinin saatini ölçümler (ui/sync.js)
+  clockLb: -Infinity,
+  clockOffset: 0,
+  rush: 1, // geç kalan ekranın oynatma hızı
   status: '',
   error: '',
   leaving: false,

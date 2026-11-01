@@ -97,7 +97,7 @@ export function joinRoom(code) {
     };
     const timer = setTimeout(() => fail('Odaya ulaşılamadı (zaman aşımı). Kodu ve ev sahibinin sayfasının açık olduğunu kontrol et.'), 20000);
     peer.on('open', () => {
-      const dc = peer.connect(PREFIX + code, { reliable: true, serialization: 'json' });
+      const dc = peer.connect(PREFIX + code, { reliable: true, serialization: 'binary' });
       dc.on('open', () => {
         done = true;
         clearTimeout(timer);

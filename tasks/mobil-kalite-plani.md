@@ -34,7 +34,7 @@ commit + push (main'e birleştirme yok). Haftalar tahmin.
    jeton + toz + masa zemini + tepki çıkartmaları (~30), şehirlerin simge yapıları 8 (~32), Mahalle modu için arazi zemini, park, AVM, torpil (~12);
    kalırsa kaçak eklentileri, konfeti, iskele, banknot, kepçe, bekleyen dayı (~22). İlk gün iki simge, zemin, jeton, toz ile stil
    denemesi onaya. GORSEL_STIL.md güncellenir ("özel kareler SVG" kuralı değişir).
-1. [ ] **Senkron** (v0.39): `net/host.js` her yayına `at` (şimdi + 250 ms) ve `readyAt` +250; `ui/app.js` drain o anda başlar
+1. [x] **Senkron** (v0.39): `net/host.js` her yayına `at` (şimdi + 250 ms) ve `readyAt` +250; `ui/app.js` drain o anda başlar
    (`meta.now` saat farkı), geç kalan kalan süreye göre hızlanır (en çok 2x, `gameview.js` `spd()`), 3+ durum birikirse son duruma
    geçer + tek satır özet; `test/pace.test.js` her efektin `paceOf` bütçesini aşmadığını denetler; `?debug` gecikme göstergesi;
    PROTOCOL 14. Bitti: iki cihaz, 300 ms gecikme, 4x yavaş işlemci, 20 tur, bitiş farkı < 200 ms.

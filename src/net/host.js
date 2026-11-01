@@ -15,8 +15,11 @@ export const PACE = {
   news: 5000,
   newsSum: 7500, // haber + geçen turun özeti
   read: 1800, // artırma sonucu, iflas, yıkım gibi bildirimler
-  build: 1100, // kat dikme / mülk alma
-  money: 900, // ilk para hareketi; sonrakilerin her biri +moneyStep
+  build: 1100, // kat dikme
+  own: 2200, // mülk alma; set tamamlandıysa ardından setin parıltısı
+  auction: 2800, // artırma sonucu: "Gidiyor... gidiyor... Satıldı!", tapuda şerit ve set; pencere açık kalır
+  turn: 1000, // tur başı: piyon zıplar, halkalar yayılır
+  money: 1350, // ilk para hareketi (jetonların uçuşu, büyük kirada sarsıntı); sonrakilerin her biri +moneyStep
   moneyStep: 300,
   flight: 900, // jetonların uçuşu
 };
@@ -33,9 +36,13 @@ export const STICKER_GAP = 2000; // ms, oyuncu başına iki çıkartma arası en
 const MAX_SEATS = 6;
 // Lobideki oyun hızı: bekleme ve canlandırma süreleri bu çarpanla uzar ya da kısalır (istemci de aynısını kullanır).
 export const SPEEDS = { slow: 1.5, normal: 1, fast: 0.5 };
+// Yayın payı (ms): her durum ev sahibinin saatiyle "at" anında bütün ekranlarda birlikte oynamaya başlar (ui/sync.js);
+// bu pay mesajın uzaktaki oyuncuya varması içindir. Yalnız uzaktan bağlı biri varken (bot masasında beklemeye gerek yok).
+export const LEAD = 250;
 
 // Olayların istemcide canlandırılması normal hızda ne kadar sürer (ms). Ev sahibi bot hamlesini bunun
-// bitişine erteler, insanın süresi de o zaman başlar; böylece hamleler okunmadan geçmez.
+// bitişine erteler, insanın süresi de o zaman başlar; böylece hamleler okunmadan geçmez. Her efekt bu bütçeye
+// sığar (test/pace.test.js).
 export function paceOf(events) {
   let block = 0;
   let read = 0;
@@ -62,7 +69,11 @@ export function paceOf(events) {
         read = Math.max(read, has('summary') ? PACE.newsSum : PACE.news);
         break;
       case 'auction':
+        read = Math.max(read, PACE.auction);
+        break;
       case 'tradeDone':
+        read = Math.max(read, PACE.card); // ortada kim ne aldı penceresi
+        break;
       case 'demolish':
       case 'collapse':
       case 'konkordato':
@@ -71,8 +82,13 @@ export function paceOf(events) {
         read = Math.max(read, PACE.read);
         break;
       case 'build':
-      case 'own':
         read = Math.max(read, PACE.build);
+        break;
+      case 'own':
+        read = Math.max(read, PACE.own);
+        break;
+      case 'turn':
+        read = Math.max(read, PACE.turn);
         break;
       case 'money':
         money++;
@@ -233,6 +249,9 @@ export class Host {
         return this.onLobby(client, m);
       case 'sticker':
         return this.onSticker(client, m);
+      case 'clock':
+        // Saat ölçümü: istemcinin gönderdiği an (c) ile ev sahibinin saati (h); istemci gidiş-dönüşten saat farkını bulur.
+        return this.send(client, { t: 'clock', c: Number(m.c) || 0, h: Date.now() });
       default:
     }
   }
@@ -361,10 +380,14 @@ export class Host {
     return SPEEDS[this.config.speed] || 1;
   }
 
+  lead() {
+    return [...this.clients].some((c) => !c.local && c.playerId) ? LEAD : 0;
+  }
+
   apply(seat, action) {
     const { state, events } = E.applyAction(this.game, seat, action);
     this.game = state;
-    this.readyAt = Date.now() + Math.round(paceOf(events) * this.speed());
+    this.readyAt = Date.now() + this.lead() + Math.round(paceOf(events) * this.speed());
     this.schedule();
     this.broadcast(events);
     this.persist();
@@ -381,14 +404,16 @@ export class Host {
     return { code: this.code, hostId: this.hostId, seats: this.seats, config: this.config };
   }
 
+  // at: durumun bütün ekranlarda oynamaya başlayacağı an (ev sahibinin saati).
   broadcast(events = []) {
+    const at = Date.now() + this.lead();
     for (const c of this.clients) {
       if (!c.playerId) continue;
       if (!this.game) {
         this.send(c, { t: 'lobby', lobby: this.lobbyInfo() });
         continue;
       }
-      this.send(c, { t: 'state', view: E.viewFor(this.game, this.seatIndex(c.playerId)), events, meta: this.meta(), lobby: this.lobbyInfo() });
+      this.send(c, { t: 'state', view: E.viewFor(this.game, this.seatIndex(c.playerId)), events, at, meta: this.meta(), lobby: this.lobbyInfo() });
     }
   }
 

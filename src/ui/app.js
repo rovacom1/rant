@@ -1,6 +1,6 @@
 // Uygulama girişi: menü, lobi, bağlantılar ve tıklama yönlendirmesi.
 import * as E from '../engine/index.js';
-import { Host } from '../net/host.js';
+import { Host, paceOf, SPEEDS } from '../net/host.js';
 import { localPair, openRoom, joinRoom, randomCode, normalizeCode } from '../net/transport.js';
 import { APP_VERSION, PROTOCOL, SAVE_VERSION } from '../version.js';
 import { html, raw, $, store, sleep } from './dom.js';
@@ -15,6 +15,7 @@ import { mountIntro } from './intro.js';
 import { withDialog, trapTab } from './focus.js';
 import { setShake } from './boardfx.js';
 import { phoneGame, canShare } from './phone.js';
+import { addSample, clockOffset, rushFor, PILE } from './sync.js';
 
 const root = document.getElementById('app');
 const SAVE = { host: 'save.host', local: 'save.local' };
@@ -136,34 +137,96 @@ function render() {
 
 // ---------- bağlantı ----------
 
+// Gelen durumlar sırayla oynatılır. Her biri ev sahibinin saatiyle m.at anında başlar (ui/sync.js): bütün ekranlar
+// aynı anda zar atar, aynı anda yürür. Geç başlayan ekran kalan efektleri en çok 2 kat hızlı oynar (app.rush);
+// PILE kadar durum birikirse (sekme arkadaydı, bağlantı takıldı) aradakiler oynatılmaz, son duruma geçilir.
 const queue = [];
 let draining = false;
+const DEBUG = new URLSearchParams(location.search).has('debug');
 
 function enqueue(m) {
   queue.push(m);
   if (!draining) drain();
 }
 
+function show(m) {
+  app.view = m.view;
+  app.meta = m.meta;
+  if (m.lobby) app.lobby = m.lobby;
+  if (app.screen !== 'game') {
+    app.screen = 'game';
+    render();
+  }
+}
+
 async function drain() {
   draining = true;
   while (queue.length) {
-    const m = queue.shift();
     const prev = app.view;
-    app.view = m.view;
-    app.meta = m.meta;
-    if (m.lobby) app.lobby = m.lobby;
-    if (app.screen !== 'game') {
-      app.screen = 'game';
-      render();
-    }
     try {
-      await G.present(prev, m.view, m.events || [], queue.length > 5 || !prev);
+      if (queue.length >= PILE) {
+        const ms = queue.splice(0);
+        show(ms.at(-1));
+        // Atlananlardan yalnız sonuçta görünenler: son oynanan kart, sıranın kimde olduğu, oyun sonu.
+        const evs = ms.flatMap((m) => m.events || []);
+        const keep = ['card', 'turn', 'over'].map((t) => evs.findLast((e) => e.type === t)).filter(Boolean);
+        await G.present(prev, app.view, keep, true);
+        const n = ms.filter((m) => m.events && m.events.length).length;
+        if (n) G.toast(`${n} hamle hızlı geçti, ayrıntısı olaylarda`, '', 'refresh');
+        if (DEBUG) debugNote({ at: ms.at(-1).at, start: Date.now(), late: 0, rush: 1, jump: ms.length, ev: evs.map((e) => e.type).join() });
+        continue;
+      }
+      const m = queue[0];
+      const start = m.at ? m.at - (app.clockOffset || 0) : Date.now();
+      if (start > Date.now()) await sleep(start - Date.now());
+      if (queue.length >= PILE) continue;
+      queue.shift();
+      show(m);
+      const late = Date.now() - start;
+      const evs = m.events || [];
+      const budget = paceOf(evs) * (SPEEDS[app.lobby?.config?.speed] || 1);
+      app.rush = rushFor(late, budget);
+      if (DEBUG) debugNote({ at: m.at, start, late, rush: app.rush, ev: evs.map((e) => e.type).join() });
+      // Bütçeden de geç kalındıysa (öbür ekranlar bu durumu bitirdi) canlandırma yok, doğrudan sonuç.
+      await G.present(prev, m.view, evs, !prev || (budget > 0 && late >= budget));
+      if (DEBUG) debugNote({ end: Date.now() });
     } catch (e) {
       console.error(e);
       G.updateGame();
+    } finally {
+      app.rush = 1;
     }
   }
   draining = false;
+}
+
+// Saat farkı: ev sahibine sorulur (bağlanınca birkaç kez, sonra her yoklamada), cevabın gidiş-dönüşünden bulunur.
+const askClock = () => send({ t: 'clock', c: Date.now() });
+
+function onClock(m) {
+  addSample(app.clock, m.c, m.h, Date.now());
+  app.clockOffset = clockOffset(app.clock, app.clockLb);
+  if (app.clock.length < 4) askClock();
+  if (DEBUG) debugNote({});
+}
+
+// ?debug: köşede gecikme göstergesi (saat farkı, gidiş-dönüş, son durumun ne kadar geç başladığı, hız). Ölçümler
+// window.syncLog'a da yazılır (her durum için başlangıç ve bitiş, bu cihazın saatiyle).
+function debugNote(o) {
+  const log = (window.syncLog ||= []);
+  if (o.at) log.push(o);
+  else if (o.end && log.length) log.at(-1).end = o.end;
+  let el = document.getElementById('syncDebug');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'syncDebug';
+    el.className = 'sync-debug';
+    document.body.appendChild(el);
+  }
+  const best = app.clock.reduce((a, s) => (!a || s.rtt < a.rtt ? s : a), null);
+  const last = log.at(-1);
+  const off = app.clockOffset || 0;
+  el.textContent = [`saat ${off >= 0 ? '+' : ''}${off} ms`, `gidis-donus ${best ? best.rtt : '-'} ms`, `gec ${last ? Math.round(last.late) : 0} ms`, `hiz ${last ? last.rush.toFixed(2) : '1.00'}x`].join(' · ');
 }
 
 function onMsg(m) {
@@ -171,6 +234,12 @@ function onMsg(m) {
   switch (m.t) {
     case 'welcome':
       Object.assign(app, { me: m.you, hostId: m.hostId, code: m.code, spectator: m.spectator, status: 'online', error: '' });
+      // Ev sahibi değişmiş olabilir (devir): saat yeniden ölçülür.
+      Object.assign(app, { clock: [], clockLb: -Infinity, clockOffset: 0 });
+      askClock();
+      break;
+    case 'clock':
+      onClock(m);
       break;
     case 'lobby':
       app.lobby = m.lobby;
@@ -182,10 +251,10 @@ function onMsg(m) {
       render();
       break;
     case 'state':
-      // Ev sahibinin saati: süre çubuğu onunla işler (yarım saniyeden küçük oynamalar yok sayılır).
+      // Ev sahibinin saati: süre çubuğu ve oynatma anı onunla işler. Mesajın gönderildiği an, saat farkına alt sınırdır.
       if (m.meta && m.meta.now) {
-        const off = m.meta.now - Date.now();
-        if (app.clockOffset === undefined || Math.abs(off - app.clockOffset) > 500) app.clockOffset = off;
+        app.clockLb = m.meta.now - Date.now();
+        app.clockOffset = clockOffset(app.clock, app.clockLb);
       }
       enqueue(m);
       break;
@@ -211,6 +280,7 @@ function onMsg(m) {
       break;
     case 'ping':
       send({ t: 'pong' });
+      askClock();
       break;
     case 'sticker':
       if (app.screen === 'game') G.showSticker(m.p, m.id);

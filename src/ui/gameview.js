@@ -197,8 +197,9 @@ export const canManage = (v) => myTurnFree(v) && ['preroll', 'free'].includes(v.
 
 export { canPlay };
 
-// Oyun hızı çarpanı (lobi ayarı); animasyon süreleri ev sahibinin beklemesiyle aynı oranda uzar.
-const spd = () => SPEEDS[app.lobby?.config?.speed] || 1;
+// Oyun hızı çarpanı (lobi ayarı); animasyon süreleri ev sahibinin beklemesiyle aynı oranda uzar. Geç kalan ekran
+// (app.rush, ui/sync.js) yetişmek için en çok 2 kat hızlı oynar.
+const spd = () => (SPEEDS[app.lobby?.config?.speed] || 1) / (app.rush || 1);
 const hostNow = () => Date.now() + (app.clockOffset || 0);
 
 // Süre çubuğu: ince ve sakin; saniye yalnız son 10 saniyede görünür. Toplam süre ev sahibinden gelir.
@@ -590,7 +591,6 @@ function auctionHTML(v, pd) {
 
 // Açık artırma bitti: teklif penceresi kapanmadan yerinde sonuca döner. Önce "Gidiyor... gidiyor..." (CALL), "Satıldı!"
 // vuruşunda tapuda yeni sahip, altta kazananın piyonu, adı ve fiyatı. Teklif gelmediyse tapu solar. Tıklayınca kapanır.
-const AUCTION_HOLD = 1500; // "Satıldı!"dan sonra pencerenin açık kaldığı süre
 function auctionEnding() {
   const e = app.ui.auctionEnd;
   return !!e && Date.now() < e.until;
@@ -604,7 +604,7 @@ export function closeAuctionEnd() {
 function startAuctionEnd(prev, ev) {
   const e = { sq: ev.sq, winner: ev.winner, high: ev.high || 0, order: prev.pending?.order || [], call: '', sold: false };
   const sold = e.winner !== null && e.winner !== undefined;
-  e.until = Date.now() + (sold ? 2 * CALL.beat + CALL.lead + AUCTION_HOLD : AUCTION_HOLD) * spd();
+  e.until = Date.now() + (sold ? 2 * CALL.beat + CALL.lead + CALL.hold : CALL.hold) * spd();
   app.ui.auctionEnd = e;
   setTimeout(() => app.ui.auctionEnd === e && closeAuctionEnd(), e.until - Date.now() + 20);
   if (!sold) return;
@@ -1729,7 +1729,7 @@ export async function present(prev, v, events, fast) {
       post.push(() => setTimeout(() => {
         if (!els) return;
         [...sets].forEach(([g, o], k) => setFx(els.board, GROUP_SQUARES[g].map((q) => cells[q]), P(v, o).color, k === 0));
-      }, T.own.ms));
+      }, wait + T.own.ms));
     }
   }
   const myHandBefore = prev && prev.players[me] ? prev.players[me].hand : [];

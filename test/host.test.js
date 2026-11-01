@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Host, idFromToken, paceOf, PACE, STICKERS, STICKER_GAP } from '../src/net/host.js';
+import { Host, idFromToken, paceOf, PACE, LEAD, STICKERS, STICKER_GAP } from '../src/net/host.js';
 import { PROTOCOL } from '../src/version.js';
 
 // Ağsız sahte bağlantı: gönderilen mesajları biriktirir.
@@ -298,4 +298,40 @@ test('Kestirme penceresi oyun hızıyla ölçeklenir', () => {
   host.schedule();
   clearTimeout(host.timer);
   assert.equal(host.deadlines[host.game.players[host.game.turn.p].id].span, 750);
+});
+
+test('senkron: durum herkese aynı "at" anıyla gider, uzakta oyuncu varken pay kadar ileride', () => {
+  const { host, me } = room();
+  for (let i = 0; i < 2; i++) me.say({ t: 'lobby', cmd: 'addBot' });
+  me.say({ t: 'lobby', cmd: 'start' });
+  clearTimeout(host.timer);
+  const t0 = Date.now();
+  host.broadcast();
+  const solo = me.out.at(-1);
+  assert.ok(solo.at >= t0 && solo.at <= Date.now(), 'yalnız yerel ekran varsa beklemez');
+  const ali = fakeConn();
+  host.attach(ali);
+  ali.say(hello('a'.repeat(32), 'Ali')); // oyun başladı: izleyici olarak bağlanır
+  clearTimeout(host.timer);
+  const t1 = Date.now();
+  host.broadcast([{ type: 'dice', dice: [1, 2] }]);
+  const [a, b] = [me.out.at(-1), ali.out.at(-1)];
+  assert.equal(a.at, b.at, 'iki ekranda aynı başlama anı');
+  assert.ok(a.at >= t1 + LEAD && a.at <= Date.now() + LEAD);
+  const p = host.game.turn.p;
+  host.game.players[p].bot = false;
+  host.apply(p, { type: 'roll' });
+  clearTimeout(host.timer);
+  const ev = me.out.at(-1);
+  assert.ok(host.readyAt >= ev.at + Math.round(paceOf(ev.events)), 'bekleme başlama anından sayılır');
+});
+
+test('senkron: ev sahibi saat sorusuna kendi saatiyle cevap verir', () => {
+  const { me } = room();
+  const t0 = Date.now();
+  me.say({ t: 'clock', c: 123 });
+  const r = me.out.at(-1);
+  assert.equal(r.t, 'clock');
+  assert.equal(r.c, 123);
+  assert.ok(r.h >= t0 && r.h <= Date.now());
 });
