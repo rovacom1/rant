@@ -114,6 +114,7 @@ export function mountGame(root) {
   arazi = mh ? new Arazi(els.board) : null;
   cells = mh ? arazi.cells : buildBoard(els.board);
   preloadFx();
+  for (const src of STICKER_ART) new Image().src = src; // gelen çıkartma boş kutuyla belirmesin
   // Masaüstünde yer varsa son olaylar tahtanın solunda, altta durur (oyunlardaki sohbetin yeri); tahta en az 1,2 oranında
   // kalır. Yer yoksa ortanın altında kalır.
   const game = root.querySelector('.game');
@@ -488,8 +489,17 @@ function renderPop(v) {
   els.pop.style.top = `${clamp(y, ph, bh, c.offsetHeight)}px`;
 }
 
-const waitHTML = (v, i, text, sub = '') =>
-  html`<div class="stagebox"><span class="wait-ring" style="--pc:${P(v, i).color}">${PW(P(v, i), 64)}</span><span class="h22">${text}</span>${sub ? (typeof sub === 'string' ? html`<span class="muted">${sub}</span>` : sub) : ''}<div style="width:260px">${timerHTML(v, [i])}</div></div>`;
+// Başkasını bekleme: piyonu halkasında, ne yaptığı ve süresi. Dikey telefonda tek satır (piyon solda, yazı sağda).
+// Yazı oyuncunun adıyla başlıyorsa ad ayrı tutulur: dar ekranda kısalan ad olur, fiil hep görünür.
+function waitHTML(v, i, text, sub = '') {
+  const pl = P(v, i);
+  const head = text.startsWith(pl.name) ? html`<span class="wb-n">${pl.name}</span><span class="wb-r">${text.slice(pl.name.length)}</span>` : text;
+  return html`<div class="stagebox waitbox"><span class="wait-ring" style="--pc:${pl.color}">${PW(pl, 64)}</span><span class="wb-t"><span class="h22">${head}</span>${sub ? (typeof sub === 'string' ? html`<span class="muted">${sub}</span>` : sub) : ''}</span><div class="wb-timer">${timerHTML(v, [i])}</div></div>`;
+}
+
+// İzleyici: sıra başkasında ve benden bir karar beklenmiyor. Arayüz sakinleşir (.game.spect): telefonda kamera sıradakinin
+// piyonunu izler, el küçülür, alttaki çubukta tepki çıkartmaları durur; oynanabilen tepki kartı yine elde kalkar.
+const spectating = (v) => v.phase === 'play' && !!v.turn && v.turn.p !== v.you && !(v.you >= 0 && E.waitingFor(v).includes(v.you));
 
 // İtiraz zinciri tek görselde: asıl kart solda, gelen itirazlar sağa doğru kayarak üstüne biner (yazısız, yalnız kart).
 const chainHTML = (id, n, cls = '') =>
@@ -521,8 +531,8 @@ function promptHTML(v) {
   if (t.p !== me) {
     const who = P(v, t.p);
     if (t.step === 'free' && who.cash < 0) return waitHTML(v, t.p, `${who.name} borcunu kapatıyor`, html`<span class="h22 neg">${M(who.cash)}</span>`);
-    const doing = { preroll: 'zar atmak üzere', choose: 'zarına bakıyor', free: 'işlerini hallediyor' }[t.step];
-    return waitHTML(v, t.p, `${who.name} ${doing}`, noteHTML(v));
+    const doing = { preroll: 'zar atmak üzere', choose: 'zarına bakıyor', free: 'işlerini hallediyor' }[t.step] || '';
+    return waitHTML(v, t.p, `${who.name} oynuyor`, html`<span class="muted">${doing}</span>${noteHTML(v)}`);
   }
   const pl = P(v, me);
   if (t.step === 'preroll') {
@@ -783,7 +793,27 @@ function showDropped(v, pd, n) {
   const t = c.target || {};
   const sq = (q) => BOARD[q].name;
   const what = t.sq !== undefined ? `${sq(t.sq)} el değiştirmedi.` : t.theirs !== undefined ? `${sq(t.mine)} ve ${sq(t.theirs)} el değiştirmedi.` : 'Kart etkisiz kaldı.';
-  return stageShow(html`<div class="card-prompt reveal">${chainHTML(c.id, n, 'dropped')}<div class="opt-col">${vs(v, c.by, pd.victim)}<span class="h22">${CARDS[c.id].name} itirazla düştü</span><span class="line-row">${I('shield')}<span class="grow">${what}</span></span><span class="muted small">kapatmak için tıkla</span></div></div>`, Math.round(PACE.card * spd()));
+  slamHit(v, pd);
+  return stageShow(html`<div class="card-prompt reveal">${chainHTML(c.id, n, 'dropped slam')}<div class="opt-col">${vs(v, c.by, pd.victim)}<span class="h22">${CARDS[c.id].name} itirazla düştü</span><span class="line-row">${I('shield')}<span class="grow">${what}</span></span><span class="muted small">kapatmak için tıkla</span></div></div>`, Math.round(PACE.card * spd()));
+}
+
+// İtiraz anı: yeni İtiraz kartı ortadaki yığının üstüne çakılır (tokmak sesi o anda), altındaki kart sarsılır; kim itiraz
+// etti büyük yazar. Zincir sürüyorsa (karşı itiraz sorulacak) kısa kalır (T.itiraz, PACE.card bütçesinin içinde); kart
+// itirazla düştüyse bu an ayrıca oynamaz, showDropped aynı çakılmayla açılır. n: yığındaki itiraz sayısı.
+function itirazMoment(v, pd, e, n) {
+  const c = pd.card;
+  const other = e.p === c.by ? pd.victim : c.by;
+  const title = n > 1 ? 'İtiraza itiraz!' : e.p === v.you ? 'İtiraz ettin' : `${P(v, e.p).name} itiraz etti`;
+  const what = n % 2 ? `${CARDS[c.id].name} durdu` : `${CARDS[c.id].name} yeniden masada`;
+  slamHit(v, pd);
+  return stageShow(html`<div class="card-prompt reveal itiraz-an">${chainHTML(c.id, n, 'slam')}<div class="opt-col">${vs(v, e.p, other)}<span class="h28">${title}</span><span class="line-row">${I('shield')}<span class="grow">${what}</span></span></div></div>`, Math.round(T.itiraz.ms * spd()));
+}
+
+// Çakılma anında tokmak sesi; ilgili iki oyuncunun telefonu titrer (orta kademe).
+function slamHit(v, pd) {
+  const at = T.itiraz.slam * spd();
+  play('itiraz', undefined, { at: at / 1000, hit: true });
+  setTimeout(() => els && impact('medium', els.board, { me: v.you === pd.card.by || v.you === pd.victim }), at);
 }
 
 // Tur notu: kira ya da maaş neden gelmedi (ortadaki istemde, oyuncunun adının altında; karelere bir şey yazılmaz).
@@ -892,6 +922,11 @@ function renderTelbar(v) {
     if (t.step === 'preroll') main = html`<button class="btn pri tb-big" data-act="roll">${I('dice')}Zar At</button>`;
     else if (t.step === 'free' && pl.cash >= 0) main = endButton(v, true);
   }
+  // izlerken ana düğmenin yerinde tepki çıkartmaları (dokununca gider; aynı aralık sınırı)
+  if (!main && !pl.out && spectating(v)) {
+    const wait = stickerWait();
+    main = html`<div class="tb-stk" role="group" aria-label="Tepki gönder">${STICKERS.map((_, i) => stickerBtn(i, wait, false))}</div>`;
+  }
   setHTML(els.tbMain, main);
   const d = app.ui.dialog?.type;
   const build = E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false));
@@ -944,37 +979,52 @@ function toolsHTML(v) {
   return html`${t('trade', 'deal', 'Pazarlık', 'Bir rakibe mülk ve para teklif et; her an gönderebilirsin')}${t('mortgage', 'ipotek', 'İpotek', 'Mülklerini ipotek et ya da ipoteği kaldır')}${t('build', 'build', 'İnşaat', 'Bütün setlerinde kat dik ya da sat')}`;
 }
 
-// Tepki çıkartması: elin başlığında küçük düğme, açılınca 6 hazır çıkartma (serbest yazı yok).
+// Tepki çıkartmaları resimdir (assets/tepki, STICKERS sırasıyla); yazısı koddan, resmin altında.
+const STICKER_ART = ['yuh', 'helal', 'olmaz', 'hadiya', 'dayi', 'kira'].map((n) => `assets/tepki/${n}.webp`);
+const stickerWait = () => Date.now() < (app.ui.stickerAt || 0) + STICKER_GAP;
+const stickerBtn = (i, wait, cap = true) =>
+  html`<button class="stk" ${cap ? raw('role="menuitem"') : ''} data-act="sticker" data-id="${i}" ${wait ? 'disabled' : ''} aria-label="${STICKERS[i]}"><img src="${STICKER_ART[i]}" alt="">${cap ? html`<span>${STICKERS[i]}</span>` : ''}</button>`;
+
+// Tepki çıkartması: elin başlığında (telefonda üst satırda) küçük düğme, açılınca 6 hazır çıkartma (serbest yazı yok).
 function stickerHTML(v) {
   if (v.you < 0) return '';
   const open = app.ui.stickerOpen;
-  const wait = Date.now() < (app.ui.stickerAt || 0) + STICKER_GAP;
-  const menu = open ? html`<div class="sticker-pick" role="menu" aria-label="Tepki">${STICKERS.map((s, i) => html`<button class="btn S sec" role="menuitem" data-act="sticker" data-id="${i}" ${wait ? 'disabled' : ''}>${s}</button>`)}</div>` : '';
+  const wait = stickerWait();
+  const menu = open ? html`<div class="sticker-pick" role="menu" aria-label="Tepki">${STICKERS.map((_, i) => stickerBtn(i, wait))}</div>` : '';
   return html`<span class="sticker-wrap"><button class="btn S sq ton ${open ? 'on' : ''}" data-act="stickers" aria-expanded="${open ? 'true' : 'false'}" aria-label="Tepki gönder" data-tip="Tepki gönder">${I('smile')}</button>${menu}</span>`;
 }
 
-// Çıkartma o oyuncunun piyonundan yükselir: tahtanın üst yarısında aşağı, alt yarısında yukarı.
+// Çıkartma o oyuncudan yükselir. Masaüstünde ve yatay telefonda piyonundan (tahtanın üst yarısında aşağı, alt yarısında
+// yukarı); dikey telefonda kamera yakın olabilir, çıkartma üst satırdaki yuvarlağının altına iner (konuşma balonu gibi).
 export function showSticker(p, id) {
   const v = app.view;
   const pl = v && v.players[p];
   const tok = pl && tokens && tokens.els.get(pl.id);
   if (!els || !tok || !STICKERS[id]) return;
-  // Telefonda tahta eğik: çıkartma tahtanın dışında, piyonun ekrandaki yerinde (eğilmez).
-  const tel = isTel();
-  const b = tel ? els.boardcam.getBoundingClientRect() : els.board.getBoundingClientRect();
-  const r = tok.getBoundingClientRect();
-  const x = r.left + r.width / 2 - (tel ? 0 : b.left);
-  const y = r.top + r.height / 2 - (tel ? 0 : b.top);
-  const down = y - (tel ? b.top : 0) < b.height / 2;
   const el = document.createElement('span');
-  el.className = `sticker ${down ? 'down' : ''}`;
   el.style.setProperty('--pc', pl.color);
-  el.style.left = `${Math.max(60, Math.min(b.width - 60, x))}px`;
-  el.style.top = `${down ? y + r.height * 0.4 : y - r.height * 0.6}px`;
-  el.textContent = STICKERS[id];
-  (tel ? els.game : els.board).appendChild(el);
+  el.innerHTML = String(html`<img src="${STICKER_ART[id]}" alt=""><span class="stk-cap">${STICKERS[id]}</span>`);
+  const tel = isTel();
+  const disc = tel && (p === v.you ? els.me : els.players.querySelector(`.prow[data-p="${p}"]`))?.querySelector('.disc');
+  if (disc && disc.getClientRects().length) {
+    const r = disc.getBoundingClientRect();
+    el.className = 'sticker down';
+    el.style.left = `${Math.max(56, Math.min(innerWidth - 56, r.left + r.width / 2))}px`;
+    el.style.top = `${r.bottom + 6}px`;
+    els.game.appendChild(el);
+  } else {
+    const b = els.board.getBoundingClientRect();
+    const r = tok.getBoundingClientRect();
+    const x = r.left + r.width / 2 - b.left;
+    const y = r.top + r.height / 2 - b.top;
+    const down = y < b.height / 2;
+    el.className = `sticker ${down ? 'down' : ''}`;
+    el.style.left = `${Math.max(60, Math.min(b.width - 60, x))}px`;
+    el.style.top = `${down ? y + r.height * 0.4 : y - r.height * 0.6}px`;
+    els.board.appendChild(el);
+  }
   play('tap');
-  setTimeout(() => el.remove(), 2000);
+  setTimeout(() => el.remove(), 2200);
 }
 
 function renderAudioPop() {
@@ -1273,8 +1323,9 @@ const MAHALLE_RULE_ITEMS = [
   ['trophy', 'Seçim Günü', 'Son turun sonunda puanı en yüksek olan kazanır.'],
 ];
 
+// Kurallar penceresi; üstteki seçiciyle Klasik ve Mahalle kuralları arasında geçilir (app.ui.rulesMh, app.js rulesMode).
 export const rulesSheet = (mahalle = false) =>
-  html`<div class="sheet XL" style="max-height:100%">${sheetHead('book', 'Nasıl oynanır?')}<div class="sheet-body"><div class="rules-grid">${(mahalle ? MAHALLE_RULE_ITEMS : RULE_ITEMS).map(([icn, h, t]) => html`<div class="rule-item">${typeof icn === 'string' ? I(icn) : icn}<span class="col" style="gap:2px"><b class="h16">${h}</b><span class="body" style="font-size:14px">${t}</span></span></div>`)}</div>
+  html`<div class="sheet XL" style="max-height:100%">${sheetHead('book', 'Nasıl oynanır?')}<div class="seg rules-mode" role="group" aria-label="Oyun türü">${[[false, 'Klasik'], [true, 'Mahalle']].map(([m, t]) => html`<button class="btn S ${m === mahalle ? 'on' : ''}" data-act="rulesMode" data-v="${m ? 'mahalle' : 'klasik'}" aria-pressed="${m === mahalle ? 'true' : 'false'}">${t}</button>`)}</div><div class="sheet-body"><div class="rules-grid">${(mahalle ? MAHALLE_RULE_ITEMS : RULE_ITEMS).map(([icn, h, t]) => html`<div class="rule-item">${typeof icn === 'string' ? I(icn) : icn}<span class="col" style="gap:2px"><b class="h16">${h}</b><span class="body" style="font-size:14px">${t}</span></span></div>`)}</div>
     <details class="rules-more"><summary>Bütün kurallar</summary>${raw(mahalle ? MAHALLE_RULES_HTML : RULES_HTML)}</details></div></div>`;
 
 export function renderModal() {
@@ -1311,7 +1362,7 @@ function drawModal() {
       body = tradeDialog(v);
       break;
     case 'rules':
-      body = rulesSheet(mh);
+      body = rulesSheet(app.ui.rulesMh ?? mh);
       break;
     case 'history':
       body = historyHTML();
@@ -1378,6 +1429,7 @@ export function updateGame() {
   if (app.ui.pick && !(v.players[v.you]?.hand.includes(app.ui.pick.uid) && canPlay(v, app.ui.pick.uid))) app.ui.pick = null;
   if (app.ui.pick) app.ui.popSq = null;
   const turnPl = v.phase === 'play' && v.turn ? P(v, v.turn.p) : null;
+  els.game.classList.toggle('spect', spectating(v));
   const bo = {
     highlight: highlightOf(v),
     pick: app.ui.pick ? pickSquares(v, app.ui.pick.uid, app.ui.swapMine) : tapuSquares(v),
@@ -1448,6 +1500,9 @@ function aimCamera(v) {
   if (steps && cover < innerHeight) return camera.hedef(cover, [...Object.keys(steps).map(Number), P(v, v.you).pos]);
   const sq = app.ui.popSq ?? (els.center.classList.contains('big') ? highlightOf(v) : -1);
   if (sq !== null && sq >= 0 && cover < innerHeight) return camera.odak(sq, cover);
+  // izlerken kamera sıradakinin piyonunu biraz yakından izler (Mahalle'de ilk zardan önce piyon tahtada değil)
+  const pos = spectating(v) && !app.ui.handOpen ? P(v, v.turn.p).pos : null;
+  if (pos !== null && pos !== undefined && cover >= innerHeight) return camera.takip(pos);
   camera.masa();
 }
 
@@ -1523,7 +1578,7 @@ function drawResults(v) {
   const podium = podOrder.map((p) => {
     const k = r.ranking.indexOf(p);
     const pl = P(v, p);
-    return html`<div class="pod" style="--pc:${pl.color}">${k === 0 ? I('crown') : ''}${PW(pl, k === 0 ? 84 : 64)}<span class="h18 ${pl.name.length > 12 ? 'long' : ''}">${pl.name}</span><div class="block" style="height:${H[k]}px"><span class="h28">${score(p)}</span><span class="rank">${k + 1}</span></div></div>`;
+    return html`<div class="pod" style="--pc:${pl.color};--k:${2 - k}">${k === 0 ? I('crown') : ''}${PW(pl, k === 0 ? 84 : 64)}<span class="h18 ${pl.name.length > 12 ? 'long' : ''}">${pl.name}</span><div class="block" style="height:${H[k]}px"><span class="h28" data-score="pod${p}">${score(p)}</span><span class="rank">${k + 1}</span></div></div>`;
   });
   // Dayı kazanana konuşur; sonuncu oyuncu kendi ekranında kendi azarını büyük görür, herkes de satırının altında.
   const vd = verdict(v);
@@ -1532,8 +1587,8 @@ function drawResults(v) {
   const rows = r.ranking.map((p, k) => {
     const pl = P(v, p);
     const note = vd.lose && vd.lose.p === p && !mine ? html`<span class="rank-note"><b>${pl.name}</b>, ${vd.lose.text}</span>` : '';
-    return html`<div class="rank-row ${k === 0 ? 'first' : ''} ${pl.out ? 'out' : ''}" style="--pc:${pl.color}"><span class="rank-n">${k + 1}</span><span class="disc">${PW(pl, 30)}</span>
-      <span class="col grow" style="gap:0;min-width:0"><span class="h16">${pl.name}</span><span class="muted small">${sub(p)}</span></span>${pl.out ? I('iflas') : ''}<span class="h22">${score(p)}</span>${note}</div>`;
+    return html`<div class="rank-row ${k === 0 ? 'first' : ''} ${pl.out ? 'out' : ''}" style="--pc:${pl.color};--k:${k}"><span class="rank-n">${k + 1}</span><span class="disc">${PW(pl, 30)}</span>
+      <span class="col grow" style="gap:0;min-width:0"><span class="h16">${pl.name}</span><span class="muted small">${sub(p)}</span></span>${pl.out ? I('iflas') : ''}<span class="h22 num" data-score="row${p}">${score(p)}</span>${note}</div>`;
   });
   const sp = P(v, say.p);
   const bubble = html`<div class="verdict"><div class="verdict-dayi"></div><div class="bubble"><p><b>${sp.name}</b>, ${say.text}</p></div></div>`;
@@ -1543,6 +1598,27 @@ function drawResults(v) {
       <div class="row">${isHost() ? html`<button class="btn L pri" data-act="newGame">${I('refresh')}Aynı masayla yeni oyun</button>` : ''}<button class="btn L sec" data-act="resultsClose">Tahtaya dön</button><button class="btn L gho" data-act="leave">Ana menü</button></div></div>
     <div class="right">${rows}${worthChart(v)}</div></div>`);
   mountDayi(els.results.querySelector('.verdict-dayi'), mine ? 'kayip' : vd.win.clip);
+  countScores(v);
+}
+
+// Sayarak ilerleyen oyun sonu: ekran ilk açılınca puanlar sıfırdan sayar; sonuncu önce biter, kazananınki en son
+// (kürsü blokları da alttan yükselir, styles/main.css). Yeniden çizimde sayım baştan başlamaz.
+function countScores(v) {
+  const r = v.results;
+  const key = `${v.round}:${r.ranking.join(',')}`;
+  if (els.results._counted === key || calm()) return (els.results._counted = key);
+  els.results._counted = key;
+  r.ranking.forEach((p, k) => {
+    if (P(v, p).out) return;
+    const ms = 1100 + (r.ranking.length - 1 - k) * 300;
+    for (const at of ['pod', 'row']) {
+      const find = () => els?.results.querySelector(`[data-score="${at}${p}"]`);
+      const el = find();
+      if (!el) continue;
+      el.textContent = '0';
+      count(`${at}${p}`, 0, r.scores[p].total, ms, find, cashText);
+    }
+  });
 }
 
 // Tur tur net değer çizgisi (konkordato cezası yok; kazananın çizgisi kalın).
@@ -1911,10 +1987,14 @@ export async function present(prev, v, events, fast) {
   const live = !fast && !!prev && !!els;
   const post = [];
   const pawnMoney = (e) => e.type === 'money' && e.amount > 0 && e.to !== null && (e.why === 'Maaş' || (/^Kira/.test(e.why || '') && e.from !== null));
+  // Tepkiye gelen İtiraz (benimki de) elden uçmaz: ortada İtiraz anı oynar (itirazMoment, ya da düşen kartta showDropped).
+  const objection = (e) => live && e.type === 'card' && e.card === 'itiraz' && prev.pending?.type === 'react';
+  const drops = events.some((e) => e.type === 'log' && /itirazla düştü/.test(e.text || ''));
   for (const ev of events) {
     switch (ev.type) {
       case 'card':
         app.ui.lastCard = ev.card;
+        if (objection(ev)) break;
         // Benim kartım elden uçarken; rakibinki ortada gösterilirken (revealCard) çalar.
         if (ev.p === me) {
           play(ev.card === 'itiraz' ? 'itiraz' : 'card', 1.1);
@@ -2038,7 +2118,8 @@ export async function present(prev, v, events, fast) {
   const myHandBefore = prev && prev.players[me] ? prev.players[me].hand : [];
   app.ui.newCards = me >= 0 ? v.players[me].hand.filter((u) => !myHandBefore.includes(u)) : [];
   // Olay sırasıyla canlandır: zar, yürüyüş, sürpriz ve rakip kartları birbirinin üstüne binmez.
-  const seq = events.filter((e) => ['dice', 'dava', 'move', 'surpriz'].includes(e.type) || (e.type === 'card' && e.p !== me));
+  const seq = events.filter((e) => ['dice', 'dava', 'move', 'surpriz'].includes(e.type) || (e.type === 'card' && (e.p !== me || objection(e))));
+  let chain = prev?.pending?.chain || 0;
   if (seq.length && prev && els) {
     animating = true;
     try {
@@ -2057,9 +2138,9 @@ export async function present(prev, v, events, fast) {
         }
         else if (fast) continue;
         else if (e.type === 'surpriz') await showSurpriz(v, e);
-        else if (e.card === 'itiraz' && prev.pending && prev.pending.type === 'react') {
-          play('itiraz');
-          toast(`${P(v, e.p).name} itiraz etti`, '', 'shield');
+        else if (objection(e)) {
+          chain += 1;
+          if (!drops) await itirazMoment(v, prev.pending, e, chain);
         }
         else await revealCard(prev, v, e);
       }

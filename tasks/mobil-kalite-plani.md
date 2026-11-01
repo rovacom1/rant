@@ -51,7 +51,10 @@ commit + push (main'e birleştirme yok). Haftalar tahmin.
    jeton yayı, iki sayaç; büyük anda dayı videosu (`assets/dayi`, `ui/dayi.js`).
 8. [x] **El, kartlar, pencereler** (v0.45): telefonda yelpaze; iki platformda kaldır-bırak, hedefler parlar; satın al, inşaat,
    pazarlık, tepki yeni tasarımda (telefonda alttan, masaüstünde ortada).
-9. [ ] **Rakip sırası, son** (v0.46): izleyici modu, resimli tepki çıkartmaları, İtiraz anı; giriş, lobi, oyun sonu telefonda dikey; masa zemini.
+9. [x] **Rakip sırası, son** (v0.47): izleyici modu (`.game.spect`, kamera `takip`, alttaki çubukta çıkartmalar), resimli tepki
+   çıkartmaları (`assets/tepki`), İtiraz anı (`T.itiraz`), giriş, lobi, oyun sonu telefonda dikey (sayarak açılan oyun sonu, lobide
+   sabit Oyunu başlat), masa zemini (`assets/masa`); kurallarda Klasik/Mahalle seçici; 667x320'de pencereler kaymadan sığar,
+   Mahalle'de atılan zar gündemin altında. Bitti: iki tür bot oyunu sonuna kadar, 1440x900, 844x340, 667x320, 390x844, 360x740.
 K. [ ] **Mahalle modu** (v0.47): ayrı plan.
 
 ## Kalite dokunuşları (adımların içinde)

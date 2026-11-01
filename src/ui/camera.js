@@ -4,6 +4,7 @@
 // sarsıntı (fx.js) transform'a eklenir, ikisi çakışmaz. Kipler ("Hissiyat kılavuzu", tasks/mobil-kalite-plani.md 6):
 //   masa   bütün tahta (karar öncesi, tur başı)
 //   izle   yürüyen piyonu 1,7 kat yakından, bir kare önünden izler
+//   takip  sıra başkasındayken (izleyici) onun piyonunu 1,3 kat yakından gösterir
 //   odak   bir kareye yaklaşır; kare alttan sayfanın üstünde kalan alanın ortasında durur
 //   hedef  bütün tahta alttan sayfanın üstündeki alana sığar (geçerli hedefler parlar, ötekiler kararır: board .picking)
 // Kamera hiçbir şeyi beklemez, hiçbir canlandırma onu beklemez: ev sahibinin süre bütçesini (net/host.js PACE) uzatmaz.
@@ -12,7 +13,7 @@
 
 export const TILT = 30; // derece; telefon.css --stand = 1 / cos(TILT) buradan yazılır
 export const PERSP = 1300; // px
-export const ZOOM = { izle: 1.7, odak: 1.6 };
+export const ZOOM = { izle: 1.7, odak: 1.6, takip: 1.3 };
 const MS = 420; // kip geçişi
 const rad = (d) => (d * Math.PI) / 180;
 
@@ -58,7 +59,7 @@ export function fitTilt(slot, { tilt = TILT, persp = PERSP, amin = 1, amax = 1.4
 // Kameranın duruşu: düz tahtadaki p noktası, s kat yakınlaşınca pencerede at noktasına gelsin. box: tahtanın penceredeki
 // düz kutusu; view: görünen alan { w, top, bottom } (pencerede px). Tahta görünen alanı doldurur: yatayda kenarı içeri
 // kaçmaz (sığmıyorsa ortalanır), dikeyde kenarıyla alanın kenarı arasında en çok boşluğun %12'si kadar boşluk kalır
-// (alt sıradaki kare sayfanın hemen üstüne iner, üstünde tahta görünür). Döner { x, y, s }.
+// (alt sıradaki kare sayfanın hemen üstüne iner, üstünde tahta görünür); dikeyde sığıyorsa ortalanır. Döner { x, y, s }.
 export function pose(box, p, s, at, view) {
   const q = project(p.x - box.w / 2, p.y - box.h / 2);
   const cx = box.x + box.w / 2;
@@ -73,7 +74,7 @@ export function pose(box, p, s, at, view) {
   if (u - t > room) {
     const g = room * 0.12;
     by = Math.min(view.top + g - t, Math.max(view.bottom - g - u, by));
-  }
+  } else by = view.top + (room - (u - t)) / 2 - t; // sığıyorsa dikeyde ortada: altında ya da üstünde boş masa kalmaz
   return { x: bx - cx, y: by - cy, s };
 }
 
@@ -141,6 +142,11 @@ export class Camera {
     this.set({ mode: 'izle', sq }, Math.max(260, ms * 1.6), 'cubic-bezier(.3,.6,.4,1)');
   }
 
+  // İzleyici (sıra başkasında): sıradakinin piyonu biraz yakından, pencerenin ortasında; çevresi de görünür.
+  takip(sq) {
+    this.set({ mode: 'takip', sq });
+  }
+
   set(want, ms = MS, ease = 'cubic-bezier(.65,0,.35,1)') {
     this.want = want;
     if (!this.on || !this.box) return;
@@ -164,7 +170,7 @@ export class Camera {
     const top = this.win.getBoundingClientRect().top;
     const bottom = want.cover === undefined ? H : Math.min(H, want.cover - top);
     const view = { w: W, top: 0, bottom };
-    if (want.mode === 'izle') return pose(box, this.view.focus(want.sq), ZOOM.izle, { x: W / 2, y: H * 0.5 }, { w: W, top: 0, bottom: H });
+    if (want.mode === 'izle' || want.mode === 'takip') return pose(box, this.view.focus(want.sq), ZOOM[want.mode], { x: W / 2, y: H * 0.5 }, { w: W, top: 0, bottom: H });
     if (want.mode === 'odak') {
       const room = Math.max(40, bottom - 8);
       const b = this.view.box(want.sq);

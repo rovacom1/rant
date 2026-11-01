@@ -19,6 +19,7 @@ export const T = {
   build: { ms: 800, impact: 440, bounce: 600 },
   demolish: { ms: 1300, shake: 450, shakeMs: 320, burst: 800 },
   iflas: { ms: 1710, fall: 430, strips: 900, stripsSpread: 600 }, // büyük an: fall'da FREEZE ms donar, sonrası o kadar kayar
+  itiraz: { ms: 1900, slam: 260 }, // İtiraz anı: yeni itiraz kartı slam'de yığına çakılır (tokmak, orta darbe), ms boyunca ortada
 };
 
 // Darbe sesi: sesin en yüksek anı ms sonraya denk gelir. Sürekli ses (süzülme, düşüş, düdük...): ms sonra başlar.

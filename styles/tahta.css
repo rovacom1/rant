@@ -162,21 +162,41 @@ body.dark .cell.owned .strip { box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2
 }
 body.dark .dayi-pop .bub { box-shadow: 0 0 0 1px rgba(255, 255, 255, .2), var(--sh-3); }
 
-/* ---------- tepki çıkartması: piyondan yükselir (üst yarıda aşağı iner) ---------- */
+/* ---------- tepki çıkartması: resim (assets/tepki) ve altında yazısı; piyondan yükselir (üst yarıda aşağı iner) ---------- */
 .sticker {
-  position: absolute; z-index: 42; pointer-events: none; translate: -50% -100%; white-space: nowrap;
-  padding: 5px 11px; border-radius: var(--r-m); background: #fffaf0; color: #1b2233; font-family: var(--hf); font-weight: 800; font-size: clamp(13px, calc(var(--ch) * 0.2), 18px);
-  box-shadow: 0 0 0 2px var(--pc), 0 0 0 3px var(--pedge), var(--sh-2); animation: stickerUp 1.9s var(--e-out) forwards;
+  position: absolute; z-index: 42; pointer-events: none; translate: -50% -100%; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  animation: stickerUp 2.1s var(--e-out) forwards;
+}
+.sticker img { display: block; width: clamp(54px, calc(var(--ch) * 0.95), 84px); height: auto; }
+.sticker .stk-cap {
+  padding: 3px 10px; border-radius: 999px; background: #fffaf0; color: #1b2233; font-family: var(--hf); font-weight: 800; font-size: 14px; white-space: nowrap;
+  box-shadow: 0 0 0 2px var(--pc), 0 0 0 3px var(--pedge), var(--sh-2);
 }
 .sticker.down { translate: -50% 0; animation-name: stickerDown; }
-@keyframes stickerUp { 0% { opacity: 0; transform: translateY(10px) scale(.6); } 15% { opacity: 1; transform: translateY(0) scale(1.08); } 25% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-40px); } }
-@keyframes stickerDown { 0% { opacity: 0; transform: translateY(-10px) scale(.6); } 15% { opacity: 1; transform: translateY(0) scale(1.08); } 25% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(40px); } }
+@keyframes stickerUp {
+  0% { opacity: 0; transform: translateY(14px) scale(.3) rotate(-14deg); } 14% { opacity: 1; transform: translateY(0) scale(1.15) rotate(5deg); }
+  24% { transform: scale(.96) rotate(-2deg); } 32% { transform: none; } 80% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-36px) scale(.9); }
+}
+@keyframes stickerDown {
+  0% { opacity: 0; transform: translateY(-14px) scale(.3) rotate(14deg); } 14% { opacity: 1; transform: translateY(0) scale(1.15) rotate(-5deg); }
+  24% { transform: scale(.96) rotate(2deg); } 32% { transform: none; } 80% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(36px) scale(.9); }
+}
 .sticker-wrap { position: relative; display: flex; flex: none; }
 .sticker-pick {
-  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 250px; padding: 10px;
-  border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--sh-3);
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 300px; padding: 10px;
+  border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--sh-3);
 }
-.sticker-pick .btn { width: 100%; padding: 0 8px; }
+/* çıkartma düğmesi: resim ve altında yazısı (alt çubuktaki şeritte yalnız resim) */
+.stk {
+  appearance: none; cursor: pointer; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 44px; padding: 6px 2px;
+  border-radius: var(--r-m); background: var(--center); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font-size: 14px; font-weight: 600; line-height: 1.1;
+  transition: transform var(--t-tap) var(--e-out);
+}
+.stk img { display: block; width: 52px; height: 44px; object-fit: contain; }
+.stk span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.stk:active:not(:disabled) { transform: scale(.92); }
+@media (hover: hover) { .stk:hover:not(:disabled) img { transform: scale(1.1) rotate(-4deg); transition: transform var(--t-tap) var(--e-out); } }
+.stk:disabled { cursor: default; opacity: .45; }
 
 /* ---------- piyonlar: kaldırım düzeni (src/ui/slots.js) ---------- */
 .token { width: var(--s); height: var(--s); transition: left var(--t-ui) var(--e-out), top var(--t-ui) var(--e-out); will-change: transform; } /* kendi katmanı: konturlu resim her karede yeniden boyanmasın */

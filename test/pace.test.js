@@ -30,6 +30,7 @@ const EFFECTS = [
   ['sürpriz', [{ type: 'surpriz' }], PACE.surpriz],
   ['rakibin kartı', [{ type: 'card' }], PACE.card],
   ['itirazla düşen kart', [{ type: 'card' }, { type: 'log' }], PACE.card],
+  ['İtiraz anı (zincir sürüyor)', [{ type: 'card' }], T.itiraz.ms],
   ['haber', [{ type: 'gundem' }], PACE.news],
   ['haber ve özet', [{ type: 'summary' }, { type: 'gundem' }], PACE.newsSum],
   ['tur başı', [{ type: 'turn' }], T.turn.ms],

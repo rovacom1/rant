@@ -34,7 +34,8 @@ export function setVibrate(on) {
   if (buzzOn) buzz('medium'); // açınca bir kez titrer: çalıştığı hissedilsin
 }
 export function buzz(tier) {
-  if (!buzzOn || !canVibrate() || document.hidden) return;
+  // sayfaya hiç dokunulmadıysa tarayıcı titreşimi engeller (ve konsola yazar): denemez
+  if (!buzzOn || !canVibrate() || document.hidden || navigator.userActivation?.hasBeenActive === false) return;
   try {
     navigator.vibrate(BUZZ[tier]);
   } catch {}

@@ -63,7 +63,7 @@ function menuHTML() {
       ${host ? resume('host', host, 'Kurduğun oda') : ''}${local ? resume('local', local, 'Bot oyunun') : ''}
       <button class="btn L pri full" data-act="host" ${busy ? 'disabled' : ''}>Oda kur</button>
       <div class="row" style="gap:8px"><input class="input code" id="codeInput" maxlength="8" placeholder="ODA KODU" aria-label="Oda kodu" value="${app.joinCode || ''}"><button class="btn sec" data-act="join" ${busy ? 'disabled' : ''}>Katıl</button></div>
-      <div class="row" style="gap:8px"><button class="btn ton flex" data-act="local" ${busy ? 'disabled' : ''}>${I('bot')}Botlarla dene</button><button class="btn ton flex" data-act="rules">${I('book')}Nasıl oynanır?</button></div>
+      <div class="row start-more" style="gap:8px"><button class="btn ton flex" data-act="local" ${busy ? 'disabled' : ''}>${I('bot')}Botlarla dene</button><button class="btn ton flex" data-act="rules">${I('book')}Nasıl oynanır?</button></div>
     </div></div></div>${modalShell()}<div class="version">Rantçı Dayı ${APP_VERSION}</div>`;
 }
 
@@ -126,7 +126,7 @@ function modePick(L, host) {
     <div class="seg">${opts.map(([v, t]) => html`<button class="btn S ${cur === v ? 'on' : ''}" data-act="cfgMode" data-v="${v}" ${host ? '' : 'disabled'}>${t}</button>`)}</div></div>`;
 }
 
-const modalShell = () => (app.ui.menuModal ? html`<div class="screen" style="position:fixed;inset:0;background:color-mix(in srgb, var(--page) 70%, transparent);z-index:60" data-act="backdrop">${G.rulesSheet()}</div>` : '');
+const modalShell = () => (app.ui.menuModal ? html`<div class="screen" style="position:fixed;inset:0;background:color-mix(in srgb, var(--page) 70%, transparent);z-index:60" data-act="backdrop">${G.rulesSheet(app.ui.rulesMh ?? app.lobby?.config?.mode === 'mahalle')}</div>` : '');
 
 function render() {
   if (app.screen === 'game' && app.view) {
@@ -578,11 +578,17 @@ const A = {
     render();
   },
   rules() {
+    app.ui.rulesMh = undefined; // pencere oynanan (lobide seçili) türle açılır
     if (app.screen === 'game') openDialog({ type: 'rules' });
     else {
       app.ui.menuModal = true;
       render();
     }
+  },
+  rulesMode(el) {
+    app.ui.rulesMh = el.dataset.v === 'mahalle';
+    if (app.screen === 'game') G.renderModal();
+    else render();
   },
   addBot: () => send({ t: 'lobby', cmd: 'addBot' }),
   removeSeat: (el) => send({ t: 'lobby', cmd: 'remove', id: el.dataset.id }),

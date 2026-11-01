@@ -9,6 +9,8 @@
   --hatch: rgba(255, 250, 240, 0.6);
   --pr: #c8912f; --pr-d: #8a6220; --pr-ink: #1b2233; --sec-line: #b07f22; --ghost: #74500f;
   --gold: #f5c542;
+  /* masa zemini (assets/masa): sayfanın ve oyunun arkasında döşenen ahşap, sayfa rengiyle örtülüp sakinleşir */
+  --masa: url(../assets/masa/acik.jpg); --masa-veil: color-mix(in srgb, var(--page) 58%, transparent);
   --speck: rgba(120, 85, 30, 0.11); --vig: rgba(90, 60, 15, 0.12);
   --hf: 'Rubik', system-ui, sans-serif;
   --bf: 'Rubik', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -28,6 +30,7 @@ body.dark {
   --hatch: rgba(30, 22, 16, 0.55);
   --sec-line: #c8912f; --ghost: #e6bc66;
   --speck: rgba(255, 255, 255, 0.05); --vig: rgba(0, 0, 0, 0.3);
+  --masa: url(../assets/masa/koyu.jpg); --masa-veil: color-mix(in srgb, var(--page) 42%, transparent);
   --err-bg: #4a2a24; --err-line: #7a3f34; --err-ink: #ffd6d0; --tip-bg: #4a3d30; --title-edge: #1a130e;
   color-scheme: dark;
 }
@@ -35,6 +38,8 @@ body.dark {
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overscroll-behavior: none; } /* telefonda aşağı çekip yenileme ve yana kaydırıp geri gitme yok */
 body { font-family: var(--bf); color: var(--ink); background: var(--page); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+/* masa zemini: lobi, oyun ve oyun sonu (girişte arkada şehir videosu var); filtre yok, yalnız örtü */
+body:not(.intro-on), .game, .results { background: linear-gradient(var(--masa-veil), var(--masa-veil)), var(--masa) 0 0 / 512px repeat, var(--page); }
 button, input, select { font: inherit; color: inherit; }
 /* oyun bir uygulama gibi davranır: yazılar seçilip kopyalanmaz, resimler sürüklenmez; yalnız yazı kutuları ve oda kodu seçilir */
 body { -webkit-user-select: none; user-select: none; }
@@ -209,6 +214,9 @@ body.dark.intro-on .intro-shade { display: block; }
 @keyframes introStamp { from { transform: scale(2.4) rotate(-14deg); opacity: 0; } to { transform: scale(1) rotate(-4deg); opacity: 1; } }
 @keyframes introFade { from { opacity: 0; transform: translateY(10px); } }
 .start-card { width: 440px; padding: 24px; border-radius: var(--r-l); background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--sh-3); display: flex; flex-direction: column; gap: 14px; }
+/* dar telefonda iki ikincil düğme sığmazsa alt alta */
+.start-more { flex-wrap: wrap; }
+.start-more > .btn { flex: 1 1 auto; }
 .pawn-pick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .pawn-pick button { appearance: none; cursor: pointer; padding: 8px 4px 6px; border-radius: var(--r-l); display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: var(--center); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); }
 .pawn-pick .pn { font-size: 12px; font-weight: 600; line-height: 1.15; text-align: center; min-height: 2.3em; display: flex; align-items: center; }
@@ -229,7 +237,7 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 .room-code { font-family: var(--hf); font-weight: 800; font-size: 34px; letter-spacing: 0.14em; }
 .seat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .seat { display: flex; min-width: 0; align-items: center; gap: 12px; height: 52px; padding: 0 10px 0 8px; border-radius: var(--r-l); background: var(--center); }
-.seat .h16 { flex: 1; min-width: 0; line-height: 1.1; overflow-wrap: anywhere; }
+.seat .h16 { flex: 1; min-width: 0; line-height: 1.1; overflow-wrap: break-word; }
 .seat.me { background: color-mix(in srgb, var(--pc) 12%, var(--center)); }
 .seat.off { opacity: 0.55; }
 .seat.empty { border: 2px dashed var(--line); background: transparent; padding: 0; }
@@ -245,7 +253,7 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
   --bh: min(calc(100dvh - 28px), calc(100vw - 360px));
   --bw: min(calc(var(--bh) * 1.45), calc(100vw - 360px));
   --cw: calc(var(--bw) / 10); --ch: calc(var(--bh) / 10);
-  position: fixed; inset: 0; display: flex; gap: 8px; padding: 14px 6px; justify-content: center; background: var(--page);
+  position: fixed; inset: 0; display: flex; gap: 8px; padding: 14px 6px; justify-content: center;
 }
 /* masaüstünde yer varsa son olaylar tahtanın solunda, altta (gameview.js feedside); tahta gerekirse biraz daralır */
 .feedcol { display: none; }
@@ -305,6 +313,8 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 .banner { display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 16px; border-radius: var(--r-l); background: var(--err-bg); box-shadow: inset 0 0 0 1px var(--err-line); flex: none; }
 .prompt { flex: 1; width: 100%; min-height: 0; display: flex; align-items: center; justify-content: safe center; flex-direction: column; overflow: hidden auto; scrollbar-gutter: stable both-edges; scrollbar-width: thin; }
 .stagebox { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.waitbox .wb-t { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
+.waitbox .wb-timer { width: 100%; max-width: 260px; }
 .who { display: flex; align-items: center; gap: 8px; font-family: var(--hf); font-weight: 700; font-size: 19px; }
 .wait-ring { width: 110px; height: 110px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--pc) 12%, transparent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--pc) 35%, transparent); }
 /* Küçük ekranda kart ve seçenekler tahtanın ortasına sığacak kadar küçülür (kaydırma çubuğu çıkıp ekranı titretmesin). */
@@ -360,6 +370,18 @@ body.dark .delta { background: color-mix(in srgb, var(--me) 26%, transparent); c
 .chain-n { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); font-family: var(--hf); font-weight: 700; font-size: 14px; padding: 3px 10px; border-radius: 999px; background: #d1342f; color: #fff; white-space: nowrap; z-index: 5; }
 /* itirazla düşen kart soluk durur, itirazlar üstünde */
 .chain.dropped > .kart { opacity: 0.45; filter: grayscale(0.6); }
+/* İtiraz anı (gameview.js itirazMoment): en üstteki itiraz yukarıdan büyük gelip yığına çakılır (T.itiraz.slam = 260 ms),
+   altındaki kartlar o anda sarsılır, sayı rozeti vurulur; yalnız scale, translate ve opacity */
+.chain.slam .chain-it:last-of-type { animation: itSlam 0.26s cubic-bezier(0.5, 0, 0.9, 0.5) backwards; z-index: 4; }
+.chain.slam > .kart, .chain.slam .chain-it:not(:last-of-type) { animation: itJolt 0.34s ease-out 0.26s; }
+.chain.slam .chain-n { animation: itBadge 0.4s cubic-bezier(0.3, 1.6, 0.5, 1) 0.26s backwards; }
+.chain.dropped.slam > .kart { animation: itJolt 0.34s ease-out 0.26s, itFade 0.5s ease-out 0.4s backwards; }
+@keyframes itSlam { from { scale: 2.1; translate: 70px -90px; opacity: 0; } 55% { opacity: 1; } to { scale: 1; translate: 0 0; opacity: 1; } }
+@keyframes itJolt { 0% { translate: 0 0; } 20% { translate: -7px 4px; } 45% { translate: 5px -2px; } 70% { translate: -2px 1px; } 100% { translate: 0 0; } }
+@keyframes itBadge { from { scale: 0.2; opacity: 0; } to { scale: 1; opacity: 1; } }
+@keyframes itFade { from { opacity: 1; } }
+.itiraz-an .h28 { color: #d1342f; }
+body.dark .itiraz-an .h28 { color: #ff7a6e; }
 .toasts { position: absolute; left: var(--cw); right: var(--cw); bottom: calc(var(--ch) + 12px); z-index: 45; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
 .toast { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 16px 8px 12px; border-radius: var(--r-l); background: var(--tip-bg); color: var(--tip-ink); font-size: 16px; font-weight: 600; box-shadow: var(--sh-3); animation: toastIn 0.25s ease-out; max-width: 100%; }
 .toast.bad { background: #8f2b24; }
@@ -438,10 +460,12 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .hand-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--cols, 3), var(--hw, 110px)); gap: 8px; align-content: center; justify-content: center; }
 .hand-grid:empty::after { content: 'Elinde kart yok. Başlangıç Noktası\'ndan geçince ve FIRSAT karesinde kart gelir.'; grid-column: 1 / -1; color: var(--muted); font-size: 14px; text-align: center; padding: 10px; }
 .hand-grid .kart { --w: var(--hw, 110px); }
-.hslot { position: relative; z-index: 1; transition: transform 0.22s cubic-bezier(0.22, 0.8, 0.32, 1), translate var(--t-ui) var(--e-out); cursor: pointer; touch-action: none; }
+.hslot { position: relative; z-index: 1; transition: transform 0.22s cubic-bezier(0.22, 0.8, 0.32, 1), translate var(--t-ui) var(--e-out), opacity var(--t-ui); cursor: pointer; touch-action: none; }
 @media (hover: hover) { .hslot:hover { z-index: 50; transform: scale(var(--zoom, 1.6)); } }
 /* tepki zamanı: sıra başkasındayken oynanabilen kart elde hafifçe kalkar */
 .hslot.lift { translate: 0 -8px; }
+/* izlerken (sıra başkasında, .game.spect) el geri çekilir; tepki kartı kalkmış ve tam parlaklıkta kalır */
+body:not(.tel) .game.spect .hslot:not(.lift, :hover, :focus-visible, .dragging) { opacity: 0.7; }
 /* deste ve atılan kartlar: elin altında, masadaki gibi iki yığın (telefonda yer yok, deste sayısı başlıkta) */
 .hand-head .deck { display: none; }
 .piles { flex: none; display: flex; justify-content: center; gap: 18px; padding-top: 4px; --pw: 56px; }
@@ -594,6 +618,7 @@ body:not(.tel) .react-win:not(:has(.rw-mid > :is(.kart, .chain))) { grid-templat
 body:not(.tel) .react-win:not(:has(.rw-mid > :is(.kart, .chain))) > * { grid-column: 1; }
 .btn.rw-card img { width: 32px; height: 32px; border-radius: var(--r-s); object-fit: cover; box-shadow: 0 0 0 2px var(--panel); }
 .hist-row { display: flex; align-items: center; gap: 8px; font-size: 16px; min-height: 30px; }
+.rules-mode { flex: none; align-self: flex-start; width: 240px; max-width: 100%; }
 .rules-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; overflow: auto; }
 .rule-item { display: flex; gap: 12px; align-items: flex-start; }
 .rule-item > .ic { font-size: 24px; }
@@ -615,7 +640,7 @@ body:not(.tel) .react-win:not(:has(.rw-mid > :is(.kart, .chain))) > * { grid-col
 .reveal:hover { animation-play-state: paused; }
 
 /* ---------- sonuç ekranı ---------- */
-.results { position: fixed; inset: 0; z-index: 70; background: var(--page); display: flex; padding: 30px 44px; gap: 28px; overflow: auto; }
+.results { position: fixed; inset: 0; z-index: 70; display: flex; padding: 30px 44px; gap: 28px; overflow: auto; }
 .results .left { flex: 1.15; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .results .right { flex: 1; display: flex; flex-direction: column; gap: 8px; }
 .podium { display: flex; align-items: flex-end; gap: 12px; margin-top: 10px; }
@@ -630,12 +655,16 @@ body:not(.tel) .react-win:not(:has(.rw-mid > :is(.kart, .chain))) > * { grid-col
 .rank-row { appearance: none; cursor: default; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 62px; padding: 6px 18px 6px 12px; border-radius: var(--r-l); border: 0; font: inherit; text-align: left; color: var(--ink); background: var(--panel); box-shadow: 0 0 0 1px var(--line); }
 .rank-row.first { background: color-mix(in srgb, var(--pc) 13%, var(--panel)); box-shadow: inset 0 0 0 2px var(--pc), inset 0 0 0 3px var(--pedge); }
 .rank-row.out { opacity: 0.75; }
+/* oyun sonu sayarak açılır (gameview.js countScores): kürsü blokları alttan yükselir, satırlar sırayla gelir, dayı sonra konuşur */
+.pod .block { transform-origin: 50% 100%; animation: podRise 0.6s cubic-bezier(0.3, 1.3, 0.5, 1) backwards; animation-delay: calc(0.15s + var(--k) * 0.3s); }
+.results .rank-row { animation: introFade 0.4s ease-out backwards; animation-delay: calc(0.2s + var(--k) * 90ms); }
+@keyframes podRise { from { transform: scaleY(0); } }
 .rank-note { flex-basis: 100%; margin: -2px 0 6px 38px; padding: 8px 12px; border-radius: var(--r-m); background: var(--chip); font-size: 14px; line-height: 1.35; font-style: italic; }
 .rank-note b { font-style: normal; font-family: var(--hf); }
 /* Oyun sonu dayı yorumu: dayı videosu (tuvalde zemini silinmiş) ve sağında konuşma balonu. */
 .verdict { display: flex; align-items: center; width: 100%; max-width: 720px; margin-top: 6px; }
 .verdict-dayi { width: 260px; aspect-ratio: 1; flex: none; }
-.verdict .bubble { position: relative; flex: 1; padding: 22px 26px; border-radius: 24px; background: var(--panel); box-shadow: 0 0 0 2px var(--pr), var(--shadow); animation: introFade 0.5s ease-out 0.4s backwards; }
+.verdict .bubble { position: relative; flex: 1; padding: 22px 26px; border-radius: 24px; background: var(--panel); box-shadow: 0 0 0 2px var(--pr), var(--shadow); animation: introFade 0.5s ease-out 1.4s backwards; }
 .verdict .bubble::before { content: ''; position: absolute; left: -14px; top: 50%; width: 24px; height: 24px; margin-top: -12px; background: var(--panel); transform: rotate(45deg); box-shadow: -2px 2px 0 0 var(--pr); }
 .verdict .bubble p { position: relative; margin: 0; font-family: var(--hf); font-weight: 700; font-size: 24px; line-height: 1.2; letter-spacing: -0.015em; }
 .verdict .bubble b { color: var(--accent); font-weight: 800; }
@@ -720,13 +749,27 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .seg { flex-wrap: wrap; }
   .results { flex-direction: column; padding: 20px 16px; }
   .verdict { flex-direction: column; }
-  .verdict-dayi { width: 200px; }
+  .verdict-dayi { width: 170px; }
   .verdict .bubble::before { left: 50%; top: -12px; margin: 0 0 0 -12px; box-shadow: -2px -2px 0 0 var(--pr); }
   .verdict .bubble p { font-size: 21px; }
   .results .logo { font-size: 34px !important; }
   .podium { width: 100%; justify-content: center; gap: 8px; }
   .pod { width: 31%; }
   .results .left .row { flex-wrap: wrap; justify-content: center; }
+  .rules-grid { grid-template-columns: 1fr; }
+  /* telefonda lobi uzun: Oyunu başlat ekranın altında hep görünür; sürüm yazısı akışta, içeriğin üstüne binmez */
+  .lobby-foot { position: sticky; bottom: 0; z-index: 5; margin: 0 -16px -16px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--panel); box-shadow: 0 -1px 0 var(--line), var(--sh-2); }
+  .lobby ~ .version { position: static; display: block; padding: 8px 0 12px; text-align: center; }
+}
+/* dikey telefonda (390x844, 360x740) giriş tek ekrana sığar: başlık, boşluklar ve dayı biraz küçülür */
+@media (max-width: 760px) and (max-height: 880px) and (orientation: portrait) {
+  .home.screen { gap: 14px; padding-top: 16px; }
+  .title .w1 { font-size: 48px; }
+  .title .w2 { font-size: 58px; }
+  .home .tagline { font-size: 16px; }
+  .desk { padding-top: 160px; }
+  .dayi-slot { width: 210px; margin-left: -105px; }
+  .start-card { padding: 18px; gap: 10px; }
 }
 /* yatay telefonda giriş yan yana kalır: solda başlık, sağda kart; dayı kartın solundan bakar */
 @media (orientation: landscape) and (max-height: 520px) {
@@ -795,7 +838,7 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .center .react-win { grid-template-columns: minmax(0, 1fr) !important; row-gap: 6px !important; }
   .center .react-win .rw-mid > :is(.kart, .chain) { display: none; }
   .center .react-win > * { grid-column: 1 !important; }
-  .center .react-win .rw-info { flex-direction: row; align-items: center; gap: 8px; }
+  .center .react-win .rw-info { grid-column: 1 !important; flex-direction: row; align-items: center; gap: 8px; } /* rw-mid "contents": bilgi de tek sütunda kalsın */
   .center .react-win .rw-info .deed.mini { zoom: 0.8; flex: none; }
   .center .react-win .rw-info .body { font-size: 14px; line-height: 1.3; }
   .center .rw-pill { height: 32px; font-size: 14px; }
@@ -840,5 +883,10 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
 @container (max-width: 250px) { .tools .btn .ic { display: none; } }
 /* en alçak yatay telefonda (320 px) ortadaki istem kaydırma çubuğu çıkarmasın */
 @media (orientation: landscape) and (max-height: 330px) { .center .btn.L { height: 42px; } }
+/* alçak yatay telefonda satın al ve tepki penceresi içeride kaymadan sığsın: pencere açıkken gündem hapı çekilir, üst boşluk daralır */
+@media (orientation: landscape) and (max-height: 360px) {
+  .board:not(.mh) > .center:has(> .prompt > :is(.buy-win, .react-win)) { padding-top: 6px; }
+  .board:not(.mh) > .center:has(> .prompt > :is(.buy-win, .react-win)) > #gundem { display: none; }
+}
 .bidrow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
 .bidrow .rng { flex: 1 1 160px; width: auto; min-width: 0; }

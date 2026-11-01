@@ -48,7 +48,7 @@ body.tel .side-head .sticker-wrap .btn { width: 48px; height: 48px; border-radiu
 .me-pill .me-cash b { display: inline-block; contain: layout paint; will-change: transform; } /* sayan bakiye piyonu yeniden boyatmasın */
 .me-pill .me-cash.neg { color: var(--neg); }
 .me-pill .me-net { font-size: 12px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-body.tel .sticker-pick { position: fixed; z-index: 66; left: 8px; right: 8px; top: 66px; width: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 10px; }
+body.tel .sticker-pick { position: fixed; z-index: 66; left: 8px; right: 8px; top: 66px; width: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 10px; }
 
 /* ---------- rakipler ve gündem ---------- */
 body.tel .players {
@@ -62,6 +62,11 @@ body.tel .prow.turn { background: none; box-shadow: none; }
 body.tel .prow.turn .disc { box-shadow: 0 0 0 3px var(--pc), 0 0 0 5px var(--page), 0 0 0 7px var(--gold); }
 body.tel .prow .pcash { font-size: 14px; }
 body.tel .prow .pwait { position: absolute; top: 2px; right: 2px; }
+/* izlerken (gameview.js spectating, .game.spect): sıradaki öne çıkar, ötekiler çekilir */
+body.tel .prow { transition: opacity var(--t-ui); }
+body.tel .prow .disc { transition: transform var(--t-ui) var(--e-out); }
+body.tel .game.spect .prow:not(.turn) { opacity: .6; }
+body.tel .game.spect .prow.turn .disc { transform: scale(1.12); }
 body.tel .prow:is(.drop-ok, .drop-hot) { background: none; box-shadow: none; }
 body.tel .prow.drop-ok .disc { box-shadow: 0 0 0 3px var(--pc), 0 0 0 5px var(--page), 0 0 0 8px var(--gold); }
 body.tel .prow.drop-hot .disc { box-shadow: 0 0 0 3px var(--pc), 0 0 0 5px #fff3c4, 0 0 0 9px var(--gold); }
@@ -112,6 +117,19 @@ body.tel .center .wait-ring { width: 56px; height: 56px; box-shadow: 0 0 0 3px c
 body.tel .center .wait-ring .pawn { scale: 0.55; }
 body.tel .center:not(.big) .stagebox > .body { font-size: 14px; }
 body.tel .center .countdown:empty { display: none; }
+/* başkasını bekleme tek satır: halkasında piyon solda, kim ne yapıyor sağda, süre altta */
+body.tel .center:not(.big) .waitbox { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px 12px; text-align: left; }
+body.tel .center:not(.big) .waitbox .wait-ring { width: 48px; height: 48px; flex: none; overflow: hidden; place-items: center; background: var(--center); box-shadow: 0 0 0 3px var(--pc); }
+body.tel .center:not(.big) .waitbox .wait-ring .pawn { scale: 0.6; }
+body.tel .center:not(.big) .waitbox .wb-t { display: flex; flex-direction: column; align-items: flex-start; gap: 0; min-width: 0; max-width: calc(100% - 64px); }
+body.tel .center:not(.big) .waitbox .wb-t .h22 { display: flex; overflow: hidden; font-size: 19px; line-height: 1.2; white-space: nowrap; }
+body.tel .center:not(.big) .waitbox .wb-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+body.tel .center:not(.big) .waitbox .wb-r { flex: none; white-space: pre; }
+body.tel .center:not(.big) .waitbox .wb-t > :not(.h22) { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.tel .center:not(.big) .waitbox .wb-t .hint { height: auto; padding: 0; background: none; }
+body.tel .center:not(.big) .waitbox .wb-timer { flex: 0 0 100%; width: auto; display: flex; justify-content: center; }
+body.tel .center:not(.big) .waitbox .wb-timer:empty { display: none; }
+body.tel .center:not(.big) .waitbox .timer { width: min(260px, 100%); }
 body.tel .hint.tel-only { display: inline-flex; }
 /* son olay: istemin altında tek satırlık hap; dokununca geçmiş */
 body.tel .center .events { width: auto; max-width: 100%; padding: 0; border-top: 0; gap: 0; }
@@ -170,6 +188,14 @@ body.tel .telbar.hidden { display: none; }
 .tb-tool .tb-dot { right: -2px; top: -2px; }
 .tb-tool .tb-lbl { display: none; }
 @media (min-height: 800px) { .tb-tool .tb-lbl { display: block; } .tb-tools { gap: 4px; } }
+/* izlerken ana düğmenin yerinde tepki çıkartmaları (3x2, yalnız resim; yazısı düğmenin adında) */
+.tb-stk { display: grid; grid-template-columns: repeat(3, 52px); gap: 4px 6px; }
+.tb-stk .stk { width: 52px; height: 46px; padding: 2px; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 3px 0 var(--line); }
+.tb-stk .stk img { width: 40px; height: 38px; }
+.game > .telbar .tb-main:has(.tb-stk) { bottom: 14px; }
+/* izlerken el küçük durur; oynanabilen tepki kartı varsa (şimşek noktası) tam boy */
+.tb-hand { transition: transform var(--t-ui) var(--e-out), opacity var(--t-ui); transform-origin: 0 100%; }
+body.tel .game.spect .tb-hand:not(:has(.tb-dot)) { transform: scale(.84); opacity: .85; }
 
 /* ---------- el ve oyuncu: alttan sayfa ---------- */
 body.tel .hand-panel:not(.open), body.tel .player-panel:not(.open) { display: none; }
