@@ -12,6 +12,7 @@ import { boardPawn } from './pawns.js';
 import { stepDurations } from './slots.js';
 import { bldSrc } from './map.js';
 import { dust } from './sprite.js';
+import { arcHeight, JUMP_FLY, JUMP_SETTLE } from './arazigeom.js';
 
 // Izgara kenarı G kare; köşeler 0, K, 2K, 3K. Kare 0 sağ altta, sıra saat yönünde.
 export const G = BOARD.length / 4 + 1;
@@ -159,7 +160,7 @@ export class Tokens {
         el.style.setProperty('--pc', pl.color);
       }
       el.classList.toggle('out', !!pl.out); // iflas eden oyuncunun piyonu tahtadan kalkar
-      this.pos.set(pl.id, this.pos.get(pl.id) ?? pl.pos);
+      if (!this.pos.has(pl.id)) this.pos.set(pl.id, pl.pos); // yeri yürüyüşte ve settle'da değişir
     });
     this.players = players;
   }
@@ -183,8 +184,10 @@ export class Tokens {
     }
     const groups = new Map();
     for (const pl of this.players) {
-      if (pl.out) continue;
       const sq = this.pos.get(pl.id) ?? pl.pos;
+      const off = sq === null || sq === undefined; // tahtanın dışında (Mahalle'de ilk zardan önce)
+      this.els.get(pl.id).classList.toggle('off', off);
+      if (pl.out || off) continue;
       if (!groups.has(sq)) groups.set(sq, []);
       groups.get(sq).push(pl.id);
     }
@@ -243,10 +246,7 @@ export class Tokens {
         if (k === path.length - 1) play('thud', 0.3, { at: d / 1000, hit: true, vol: 0.55 });
         await sleep(d);
       }
-      fig?.animate([{ transform: 'scale(1.15, 0.85)' }, { transform: 'scale(0.97, 1.04)', offset: 0.55 }, { transform: 'none' }], { duration: 200, easing: 'ease-out' });
-      // iki küçük bulut ayağın iki yanından kalkar (figürün önüne geçmez)
-      const s = this.size;
-      for (const side of [-1, 1]) dust(this.layer, el.offsetLeft + s * (0.5 + side * 0.52), el.offsetTop + s * 1.02, s * 0.72, 0, 420).classList.add('fx-walk');
+      this.land(el);
       hint.end();
       await sleep(Math.round(stepMs * 0.8));
     } finally {
@@ -254,6 +254,60 @@ export class Tokens {
       el.classList.add('idle');
       hint.end();
     }
+  }
+
+  // Zıplama (Mahalle arsaları, path tek kare): piyon yay çizerek uçar (yalnız transform; yükseklik mesafeyle büyür),
+  // inişte tok vuruş, ezilip toparlanır, toz kalkar. Tahtanın dışından gelen piyon yukarıdan süzülüp iner. Varılacak arsa
+  // uçuş boyunca altın kenarla bekler. k: oyun hızı çarpanı (JUMP_FLY + JUMP_SETTLE normal hızda host PACE.jump içinde).
+  async jump(id, to, fast, k = 1, onStep = null) {
+    const el = this.els.get(id);
+    if (!el || fast) return this.place(id, to);
+    const fly = Math.round(JUMP_FLY * k);
+    const settle = Math.round(JUMP_SETTLE * k);
+    const hint = this.dest(to);
+    if (calm()) {
+      this.place(id, to);
+      play('step', fly / 1000);
+      await sleep(fly);
+      hint.end();
+      return;
+    }
+    const fig = el.querySelector('.fig');
+    el.classList.add('walking');
+    el.classList.remove('idle');
+    try {
+      onStep?.(0, fly);
+      const off = el.classList.contains('off');
+      const x0 = el.offsetLeft;
+      const y0 = el.offsetTop;
+      this.place(id, to);
+      play('hop', fly / 1000);
+      if (off) {
+        el.animate([{ transform: `translateY(${-this.size * 3}px)`, opacity: 0 }, { opacity: 1, offset: 0.4 }, { transform: 'none', opacity: 1 }], { duration: fly, easing: 'cubic-bezier(.3,0,.7,1)' });
+      } else {
+        const dx = x0 - el.offsetLeft;
+        const dy = y0 - el.offsetTop;
+        const h = arcHeight(dx, dy, this.size);
+        el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: fly, easing: 'cubic-bezier(.4,0,.6,1)' });
+        fig?.animate([{ transform: 'none', easing: 'cubic-bezier(.2,.6,.4,1)' }, { transform: `translateY(${-h}px) scale(1.08)`, offset: 0.5, easing: 'cubic-bezier(.6,0,.8,.4)' }, { transform: 'none' }], { duration: fly });
+      }
+      play('thud', 0.3, { at: fly / 1000, hit: true, vol: 0.55 });
+      await sleep(fly);
+      this.land(el);
+      hint.end();
+      await sleep(settle);
+    } finally {
+      el.classList.remove('walking');
+      el.classList.add('idle');
+      hint.end();
+    }
+  }
+
+  // Varış: piyon ezilip toparlanır, iki küçük bulut ayağın iki yanından kalkar (figürün önüne geçmez).
+  land(el) {
+    el.querySelector('.fig')?.animate([{ transform: 'scale(1.15, 0.85)' }, { transform: 'scale(0.97, 1.04)', offset: 0.55 }, { transform: 'none' }], { duration: 200, easing: 'ease-out' });
+    const s = this.size;
+    for (const side of [-1, 1]) dust(this.layer, el.offsetLeft + s * (0.5 + side * 0.52), el.offsetTop + s * 1.02, s * 0.72, 0, 420).classList.add('fx-walk');
   }
 
   // Varılacak karenin üstünde ince altın kenar: yürüyüş başında belirir (yalnız opacity), varışta bir an parlayıp söner.

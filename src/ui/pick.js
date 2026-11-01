@@ -1,10 +1,11 @@
 // Tahtadan hedef seçme: mülk hedefli kartlarda (Kamulaştırma, Tedbir, Müteahhit, Takas)
 // hangi karelerin parlayacağını ve bir kareye tıklamanın ne yapacağını hesaplar. DOM yok.
-import { CARDS, OWNABLE, cardId, cardTargets, price } from '../engine/index.js';
+import { CARDS, OWNABLE, cardId, cardTargets, price, isMahalle } from '../engine/index.js';
 
 const KINDS = ['opp-prop', 'self-prop', 'swap'];
 
-export const isBoardPickable = (uid) => KINDS.includes(CARDS[cardId(uid)]?.target);
+// Mahalle'de Taksi de tahtadan seçilir: piyonun satırındaki ya da sütunundaki bir arsa.
+export const isBoardPickable = (uid, v) => KINDS.includes(CARDS[cardId(uid)]?.target) || (!!v && isMahalle(v) && cardId(uid) === 'taksi');
 
 // Parlayacak kareler. Takasta önce kendi mülkün, sonra onunla değiştirilebilecek rakip mülkü.
 export function pickSquares(v, uid, swapMine) {

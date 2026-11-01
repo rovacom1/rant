@@ -12,11 +12,15 @@
 //   focus(i)            kameranın o karede baktığı nokta: { x, y }
 //   pawnSize()          piyon kutusu (px)
 //   feet(i, s, n)       i karesinde duran n piyonun ayak noktaları [{ x, y }] (s: piyon kutusu); figür ayaktan yukarı çizilir
+//   aspect              (isteğe bağlı) telefonda eğik tahtanın boy/en oranı sınırları { amin, amax } (camera.js fitTilt)
+//
+// Tahtanın dışındaki piyonun karesi null'dır (Mahalle'de ilk zardan önce); Tokens onu gizler, view'a sormaz.
 //
 // Yeni tahta bu nesneyi döndüren bir işlev yazar (aşağıdaki classicView gibi). Bu işlevler yalnız okur, hiçbir şey
 // yazmaz (Tokens önce bütün noktaları okur, sonra yazar; yerleşim bir kez hesaplanır).
 import { cellPos } from './board.js';
 import { PAWN, feet } from './slots.js';
+import { layout, cellRect, focusPoint, pawnSize, pawnFeet, SIDE } from './arazigeom.js';
 
 const boxOf = (el) => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
 
@@ -32,5 +36,21 @@ export function classicView(el, cells) {
     },
     pawnSize: () => Math.round(cells[1].offsetHeight * PAWN),
     feet: (i, s, n) => feet(cellPos(i).side, boxOf(cells[i]), s, n, el.clientWidth, el.clientHeight),
+  };
+}
+
+// Mahalle arazisi: 6x6 arsa (arazigeom.js). Yerleşim Arazi.layout'tan (tahtanın boyu ve ortanın yeri değişince yenilenir);
+// henüz ölçülmediyse boş bir yerleşim, piyonlar ilk ölçümde yerine geçer. Telefonda tahta kareye yakın durur (arazi kare,
+// sağda kıyı payı).
+export function araziView(arazi) {
+  const L = () => arazi.L || layout(1, 1, false);
+  return {
+    el: arazi.board,
+    count: SIDE * SIDE,
+    box: (i) => cellRect(L(), i),
+    focus: (i) => focusPoint(L(), i),
+    pawnSize: () => pawnSize(L()),
+    feet: (i, s, n) => pawnFeet(L(), i, n, s),
+    aspect: { amin: 0.9, amax: 1 },
   };
 }

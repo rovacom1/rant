@@ -111,7 +111,7 @@ export class Camera {
     const W = this.win.clientWidth;
     const H = this.win.clientHeight;
     if (!W || !H) return;
-    const f = fitTilt({ x: 6, y: 8, w: W - 12, h: H - 12 });
+    const f = fitTilt({ x: 6, y: 8, w: W - 12, h: H - 12 }, this.view.aspect);
     this.box = f;
     const ws = this.win.style;
     ws.setProperty('--bw', `${f.w.toFixed(1)}px`);

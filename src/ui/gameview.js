@@ -12,7 +12,7 @@ import { deed } from './deed.js';
 import { Dice } from './dice.js';
 import { isNotifyOn, notifySupported } from './notify.js';
 import { buildBoard, updateBoard, Tokens, cellPos } from './board.js';
-import { classicView } from './boardview.js';
+import { classicView, araziView } from './boardview.js';
 import { Camera } from './camera.js';
 import { CityMap } from './map.js';
 import { app, isHost, act } from './state.js';
@@ -31,8 +31,12 @@ import { sheetLayer, closeTop, sheetBox } from './sheet.js';
 import { mountDayi } from './dayi.js';
 import { dayiMoment, dayiSay } from './dayisay.js';
 import { canPlay, idleTurn, AUTO_END_MS } from './idle.js';
+import { Arazi, plotPopHTML, choosePromptHTML, buyExtraHTML, araziEvent } from './arazi.js';
+import { setTextMode, cardText, gundemText, modLabel } from './modetext.js';
 
-const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, GUNDEM_PERIOD, fmt, cardId } = E;
+const { CARDS, GUNDEM, GUNDEM_PERIOD, fmt, cardId } = E;
+// Tahta oyunun türüne göre (mountGame): Klasik il kareleri ya da Mahalle arsaları; ikisi de 36 kare.
+let { BOARD, GROUPS, GROUP_SQUARES } = E;
 const N = BOARD.length;
 const I = (name, cls = '') => raw(ic(name, cls));
 const M = (n, sign = false) => raw(money(n, sign));
@@ -47,6 +51,8 @@ let cityMap = null;
 let dice = null;
 let hand = null;
 let animating = false;
+let arazi = null; // Mahalle arazisi (arazi.js)
+let mh = false; // oyun türü Mahalle
 
 // ---------- iskelet ----------
 
@@ -101,7 +107,12 @@ export function mountGame(root) {
     modal: g('modal'), stage: g('stage'), results: g('results'), stick: g('stick'), feedcol: g('feedcol'), game: root.querySelector('.game'), toasts: g('toasts'),
     boardcam: g('boardcam'), me: g('mePill'), telbar: g('telbar'), tbHand: g('tbHand'), tbMain: g('tbMain'), tbTools: g('tbTools'), tbStick: g('tbStick'), handGo: g('handGo'),
   };
-  cells = buildBoard(els.board);
+  // Oyun türü: Mahalle'de klasik tahtanın yerine 6x6 arazi kurulur (arazi.js); gerisi ortak.
+  ({ squares: BOARD, groups: GROUPS, groupSquares: GROUP_SQUARES } = E.boardOf(app.view));
+  mh = E.isMahalle(app.view);
+  setTextMode(app.view.mode);
+  arazi = mh ? new Arazi(els.board) : null;
+  cells = mh ? arazi.cells : buildBoard(els.board);
   preloadFx();
   // Masaüstünde yer varsa son olaylar tahtanın solunda, altta durur (oyunlardaki sohbetin yeri); tahta en az 1,2 oranında
   // kalır. Yer yoksa ortanın altında kalır.
@@ -111,9 +122,11 @@ export function mountGame(root) {
     game.classList.toggle('feedside', side);
     if (els.feed.parentElement !== (side ? els.feedcol : els.center)) (side ? els.feedcol : els.center).appendChild(els.feed);
   }).observe(game);
-  cityMap = new CityMap(els.board);
-  view = classicView(els.board, cells);
+  cityMap = mh ? { update() {} } : new CityMap(els.board);
+  // Tahta görünümü sözleşmesi (boardview.js): piyonlar ve kamera iki tahtada da aynı sınıf.
+  view = mh ? araziView(arazi) : classicView(els.board, cells);
   tokens = new Tokens(els.tokens, view);
+  if (mh) arazi.listeners.push(() => tokens.layoutAll());
   camera = new Camera(view, els.boardcam);
   // Zarlar tahtanın neredeyse tamamına savrulur. Telefon düzeninde zar kutusu tahtanın hemen altında: tepsi tahtanın
   // penceresini (kamera yaklaşsa da yerinde durur) ve kutuyu kapsar, zarlar kutuya tepsinin içinden döner.
@@ -309,12 +322,12 @@ function gundemHTML(v) {
     return html`<div class="gpill" aria-label="${road}">${I('trophy')}<span class="h16">${road}</span></div>`;
   }
   const g = GUNDEM[v.gundem.id];
-  const mods = Object.keys(v.mods).map((m) => MOD_LABEL[m]).filter(Boolean);
+  const mods = Object.keys(v.mods).map((m) => modLabel(m, MOD_LABEL)).filter(Boolean);
   const left = Math.max(0, v.gundem.until - v.round) + 1;
   const ring = last ? html`<span class="ring" data-tip="Son tur">${I('trophy')}</span>` : html`<span class="ring" data-tip="Gündem ${GUNDEM_PERIOD} turda bir değişir; bu gündemin ${left} turu kaldı">${left}</span>`;
   const open = app.ui.gundemOpen;
   return html`<button class="gpill" data-act="gundem" aria-expanded="${open ? 'true' : 'false'}" aria-label="Gündem: ${g.name}, ayrıntı">${I(GUNDEM_IC[v.gundem.id] || 'news')}<span class="h16">${g.name}</span>${mods.length ? html`<span class="chip">${mods[0]}</span>` : ''}${ring}</button>
-    ${open ? html`<div class="gdetail sheet"><div class="sheet-head">${I('news')}<span class="h18">${g.name}</span><span class="grow"></span><button class="btn S sq ton" data-act="gundem" aria-label="Kapat">${I('close')}</button></div><span class="body">${g.text}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</span>${mods.length > 1 ? html`<div class="row" style="flex-wrap:wrap">${mods.map((m) => html`<span class="chip">${m}</span>`)}</div>` : ''}<span class="note">${I('timer')}Gündem ${GUNDEM_PERIOD} turda bir değişir.${last ? ' Bu son tur.' : ` ${left} tur daha geçerli.`}</span></div>` : ''}`;
+    ${open ? html`<div class="gdetail sheet"><div class="sheet-head">${I('news')}<span class="h18">${g.name}</span><span class="grow"></span><button class="btn S sq ton" data-act="gundem" aria-label="Kapat">${I('close')}</button></div><span class="body">${gundemText(v.gundem.id)}${v.gundem.detail ? ` ${v.gundem.detail}` : ''}</span>${mods.length > 1 ? html`<div class="row" style="flex-wrap:wrap">${mods.map((m) => html`<span class="chip">${m}</span>`)}</div>` : ''}<span class="note">${I('timer')}Gündem ${GUNDEM_PERIOD} turda bir değişir.${last ? ' Bu son tur.' : ` ${left} tur daha geçerli.`}</span></div>` : ''}`;
 }
 
 function bannerHTML() {
@@ -333,6 +346,7 @@ const SPECIAL_INFO = {
 
 // Kareye tıklayınca açılan pencere: tapu kartı ve kira cetveli. Kendi karende kat dik / kaçak kat / kat sat / ipotek.
 function popHTML(v, sq) {
+  if (mh) return plotPopHTML(v, sq, { manage: canManage(v) });
   const s = BOARD[sq];
   const ps = v.props[sq];
   const close = html`<button class="btn S sq ton" data-act="popClose" aria-label="Kapat">${I('close')}</button>`;
@@ -399,6 +413,7 @@ function renderPop(v) {
   setHTML(els.pop, popHTML(v, sq));
   els.pop.className = 'pop';
   els.pop.setAttribute('role', 'dialog');
+  if (mh) return arazi.placePop(els.pop);
   const c = cells[sq];
   const pw = els.pop.offsetWidth;
   const ph = els.pop.offsetHeight;
@@ -439,7 +454,7 @@ function promptHTML(v) {
     const id = cardId(app.ui.pick.uid);
     const c = CARDS[id];
     const step = c.target === 'swap' ? (app.ui.swapMine === null ? '1) Vereceğin mülkü seç' : `2) ${BOARD[app.ui.swapMine].name} karşılığı alacağını seç`) : 'Parlayan bir mülke tıkla';
-    return html`<div class="card-prompt">${cardFace(id, 'big glow')}<div class="opt-col"><span class="h22">${c.name}</span><span class="hint">${I('target')}${step}</span><span class="body">${c.text}</span><button class="btn sec" data-act="pickCancel" style="align-self:flex-start">Vazgeç</button>${timerHTML(v, [me])}</div></div>`;
+    return html`<div class="card-prompt">${cardFace(id, 'big glow')}<div class="opt-col"><span class="h22">${c.name}</span><span class="hint">${I('target')}${step}</span><span class="body">${cardText(id)}</span><button class="btn sec" data-act="pickCancel" style="align-self:flex-start">Vazgeç</button>${timerHTML(v, [me])}</div></div>`;
   }
   if (auctionEnding()) return auctionEndHTML(v);
   if (pd) return pendingHTML(v, pd);
@@ -456,6 +471,7 @@ function promptHTML(v) {
       <button class="btn L pri" style="min-width:240px" data-act="roll" data-primary>${I('dice')}Zar At</button><div style="width:260px">${timerHTML(v, [me])}</div></div>`;
   }
   if (t.step === 'choose') {
+    if (mh) return choosePromptHTML(v, timerHTML(v, [me]));
     // Kısa, tıklamasız pencere (ev sahibi bekler, sonra toplam kadar yürütür). Kartı olmayan yalnız zarı görür;
     // kartı olanın Toplam düğmesi de yok: kimse erken geçemez, kimde Kestirme olduğu sızmaz.
     const kes = !t.hamle && pl.hand.find((u) => cardId(u) === 'kestirme');
@@ -553,13 +569,13 @@ function pendingHTML(v, pd) {
   switch (pd.type) {
     case 'buy': {
       if (pd.p !== me) return waitHTML(v, pd.p, `${P(v, pd.p).name} karar veriyor`, `${BOARD[pd.sq].name}: ${v.config.rules.ihale ? 'alacak mı, artırmaya mı çıkaracak?' : 'alacak mı?'}`);
-      const cost = E.price(v, pd.sq);
+      const cost = E.price(v, pd.sq) + E.evictCost(v, pd.sq, me);
       const cash = P(v, me).cash;
       const paz = P(v, me).hand.find((u) => cardId(u) === 'pazarlik');
       const half = Math.round(cost / 10) * 5;
       return html`<div class="card-prompt" style="gap:34px">${deed(v, pd.sq, { w: 270 })}<div class="opt-col" style="width:260px">
         <button class="btn L pri full" data-act="buy" data-primary ${cash < cost ? 'disabled' : ''}>Satın al ${M(cost)}</button>
-        <button class="btn L sec full" data-act="decline">${v.config.rules.ihale ? html`${I('gavel')}Açık artırma` : 'Alma'}</button>
+        <button class="btn L sec full" data-act="decline">${v.config.rules.ihale ? html`${I('gavel')}Açık artırma` : 'Alma'}</button>${mh ? buyExtraHTML(v, pd) : ''}
         ${paz && !v.turn.hamle && cash >= half ? html`<button class="btn sec full" data-act="pazarlik" data-uid="${paz}">${I('deal')}Pazarlık Ustası ${M(half)}</button>` : ''}
         ${cash < cost ? html`<p class="reason">Nakdin yetmiyor${v.config.rules.ihale ? '; artırmaya çıkarabilirsin.' : '.'}</p>` : ''}${timerHTML(v, [me])}</div></div>`;
     }
@@ -971,7 +987,7 @@ function cardDialog(v, uid) {
   const c = CARDS[id];
   const me = v.you;
   const timing = c.type === 'tepki' ? 'Gerektiğinde sana sorulur' : WHEN[c.when] || 'Sıra sendeyken';
-  const top = html`<div class="row">${I(c.type)}<span class="h22">${c.name}</span><span class="grow"></span><button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div><span class="card-text">${c.text}</span><span class="chip" style="align-self:flex-start">${I('timer')}${timing}</span>`;
+  const top = html`<div class="row">${I(c.type)}<span class="h22">${c.name}</span><span class="grow"></span><button class="btn S sq ton" data-act="close" aria-label="Kapat">${I('close')}</button></div><span class="card-text">${cardText(id)}</span><span class="chip" style="align-self:flex-start">${I('timer')}${timing}</span>`;
   if (!canPlay(v, uid)) {
     let why = 'Bu kart şu an oynanamaz.';
     if (c.type === 'tepki') why = 'Bu bir tepki kartı; zamanı gelince sana sorulur.';
@@ -983,12 +999,12 @@ function cardDialog(v, uid) {
   const targets = E.cardTargets(v, me, id);
   const play = (t, label, cls = 'btn sec full') => html`<button class="${cls}" data-act="play" data-uid="${uid}" data-t="${JSON.stringify(t)}">${label}</button>`;
   let body;
-  switch (c.target) {
+  switch (mh && id === 'taksi' ? 'board' : c.target) {
     case 'steps':
       body = html`<span class="h18">Kaç kare gideceksin?</span><div class="steps">${targets.map((t) => html`<button data-act="play" data-uid="${uid}" data-t="${JSON.stringify(t)}"><b>${t.steps}</b><span>${BOARD[destOf(v, t.steps, false)].name}</span></button>`)}</div>`;
       break;
     case 'die':
-      body = html`<div class="row">${targets.map((t) => play(t, html`${v.turn.dice[t.die]}${I('arrow')}${BOARD[destOf(v, v.turn.dice[t.die], v.turn.backward)].name}`, 'btn L sec flex'))}</div>`;
+      body = mh ? html`<div class="row">${targets.map((t) => play(t, html`${t.die + 1}. zar: ${v.turn.dice[t.die]}${I('refresh')}`, 'btn L sec flex'))}</div>` : html`<div class="row">${targets.map((t) => play(t, html`${v.turn.dice[t.die]}${I('arrow')}${BOARD[destOf(v, v.turn.dice[t.die], v.turn.backward)].name}`, 'btn L sec flex'))}</div>`;
       break;
     case 'opp-player':
       body = html`<span class="h18">Kime?</span><div class="col" style="gap:8px">${targets.map((t) => play(t, html`${PW(P(v, t.player), 26)}${P(v, t.player).name}<span class="grow"></span>${id === 'ihbar' ? html`${I('kacak')}${E.floorsOf(v, t.player).kacak}` : M(P(v, t.player).cash)}`))}</div>`;
@@ -1011,25 +1027,25 @@ function buildDialog(v) {
   const groups = Object.keys(GROUPS).filter((g) => mine.some((q) => BOARD[q].group === g));
   let total = 0;
   const sets = groups.map((g) => {
-    const full = E.ownsGroup(v, me, g);
-    const qs = GROUP_SQUARES[g].filter((q) => v.props[q].owner === me);
+    const full = mh || E.ownsGroup(v, me, g);
+    const qs = GROUP_SQUARES[g].filter((q) => v.props[q].owner === me && !(mh && (v.props[q].park || v.props[q].avm)));
     const rows = qs.map((q) => {
       const ps = v.props[q];
       const d = st[q] || 0;
       const lvl = E.level(ps) + d;
       total += d > 0 ? d * E.katCost(v, q) : d < 0 ? d * Math.round(E.katValue(v, q) / 10) * 5 : 0;
-      const plusBlock = !full ? 'Yasal kat için şehrin hepsi gerekir.' : lvl >= 4 ? 'En üst seviye.' : d === 0 ? E.buildBlock(v, me, q, false) : E.unevenBlock(v, q, st);
+      const plusBlock = !full ? 'Yasal kat için şehrin hepsi gerekir.' : lvl >= 4 ? 'En üst seviye.' : d === 0 || mh ? E.buildBlock(v, me, q, false) : E.unevenBlock(v, q, st);
       const minusOk = ps.kat + Math.min(0, d) > 0 || d > 0;
       const now = E.rentFor(v, q);
       const icons = [...Array(Math.min(4, Math.max(0, ps.kat + d))).keys()].map(() => I('house'));
       if (ps.kacak) icons.push(I('kacak'));
-      const kac = !full && !ps.kacak && !E.buildBlock(v, me, q, true) ? html`<button class="btn S sec" data-act="buildKacak" data-sq="${q}" ${manage ? '' : 'disabled'}>${I('kacak')}${M(E.kacakCost(v, q))}</button>` : '';
+      const kac = (!full || mh) && !ps.kacak && !E.buildBlock(v, me, q, true) ? html`<button class="btn S sec" data-act="buildKacak" data-sq="${q}" ${manage ? '' : 'disabled'}>${I('kacak')}${M(E.kacakCost(v, q))}</button>` : '';
       return html`<div class="build-row"><span class="bname">${BOARD[q].name}</span><span class="blvl">${icons}</span>
         <button class="btn S sec sq" data-act="bstep" data-sq="${q}" data-d="-1" ${manage && minusOk ? '' : 'disabled'} aria-label="Azalt">${I('minus')}</button><span class="bval">${ps.kat + d}</span>
         <button class="btn S pri sq" data-act="bstep" data-sq="${q}" data-d="1" ${manage && !plusBlock ? '' : 'disabled'} data-tip="${plusBlock || ''}" aria-label="Artır">${I('plus')}</button>${kac}
-        <span class="brent">kira ${now}${d ? html`${I('arrow')}${scaled(v, q, BOARD[q].rents[Math.min(4, E.level(ps) + d)])}` : ''}</span></div>`;
+        <span class="brent">kira ${now}${d && !mh ? html`${I('arrow')}${scaled(v, q, BOARD[q].rents[Math.min(4, E.level(ps) + d)])}` : ''}</span></div>`;
     });
-    return html`<div class="col" style="gap:4px"><div class="set-head"><span class="cdot" style="--dc:${GROUPS[g].color}"></span>${GROUPS[g].name}<span class="muted small">${full ? `set tamam · kat ${fmt(E.katCost(v, qs[0]))}` : 'set yok · yalnız kaçak'}</span></div>${rows}</div>`;
+    return html`<div class="col" style="gap:4px"><div class="set-head"><span class="cdot" style="--dc:${GROUPS[g].color}"></span>${GROUPS[g].name}<span class="muted small">${mh ? `kat ${fmt(E.katCost(v, qs[0]))}` : full ? `set tamam · kat ${fmt(E.katCost(v, qs[0]))}` : 'set yok · yalnız kaçak'}</span></div>${rows}</div>`;
   });
   const empty = !sets.length ? html`<span class="body">Henüz mülkün yok. Sahipsiz bir arsaya gelince satın alabilirsin.</span>` : '';
   const lock = manage ? '' : html`<span class="note">${I('timer')}Kat dikmek ve satmak yalnız sıra sendeyken.</span>`;
@@ -1055,7 +1071,7 @@ export function buildOrder(v, plan) {
   const kat = (q) => v.props[q].kat + (done[q] || 0);
   while (left.size) {
     const q = [...left.keys()].sort((a, b) => kat(a) - kat(b))[0];
-    if (E.unevenBlock(v, q, done)) return null;
+    if (!mh && E.unevenBlock(v, q, done)) return null;
     step('build', q, 1);
     if (left.get(q) > 1) left.set(q, left.get(q) - 1);
     else left.delete(q);
@@ -1251,7 +1267,7 @@ function highlightOf(v) {
 // Taksi ve yol seçiminde gidilebilecek karelerde sayı rozeti.
 function stepBadges(v) {
   const t = v.turn;
-  if (!t || t.p !== v.you || v.pending || t.step !== 'choose' || !t.dice) return null;
+  if (mh || !t || t.p !== v.you || v.pending || t.step !== 'choose' || !t.dice) return null;
   const [a, b] = t.dice;
   const o = { [destOf(v, a + b, t.backward)]: a + b };
   if (!t.hamle && P(v, v.you).hand.some((u) => cardId(u) === 'kestirme')) {
@@ -1269,13 +1285,14 @@ export function updateGame() {
   if (app.ui.pick && !(v.players[v.you]?.hand.includes(app.ui.pick.uid) && canPlay(v, app.ui.pick.uid))) app.ui.pick = null;
   if (app.ui.pick) app.ui.popSq = null;
   const turnPl = v.phase === 'play' && v.turn ? P(v, v.turn.p) : null;
-  updateBoard(cells, v, {
+  const bo = {
     highlight: highlightOf(v),
     pick: app.ui.pick ? pickSquares(v, app.ui.pick.uid, app.ui.swapMine) : tapuSquares(v),
     open: app.ui.popSq,
     turn: turnPl && !turnPl.out ? { sq: turnPl.pos, color: turnPl.color } : null,
-    steps: stepBadges(v),
-  });
+  };
+  if (mh) arazi.update(v, bo);
+  else updateBoard(cells, v, { ...bo, steps: stepBadges(v) });
   paintFocus();
   cityMap.update(v);
   tokens.sync(v.players);
@@ -1315,13 +1332,19 @@ export function updateGame() {
 function aimCamera(v) {
   if (!isTel()) return;
   const cover = sheetTop();
-  if (els.board.classList.contains('picking')) return camera.hedef(cover);
+  // Mahalle'de zarın gösterdiği arsalar (ve piyonun arsası) sayfanın üstüne sığar; kart hedefinde bütün arazi.
+  if (els.board.classList.contains('picking')) return camera.hedef(cover, mh && !app.ui.pick ? araziCands(v) : null);
   // yol seçimi (Kestirme, Taksi): gidilebilecek kareler ve piyonun karesi sayfanın üstünde
   const steps = stepBadges(v);
   if (steps && cover < innerHeight) return camera.hedef(cover, [...Object.keys(steps).map(Number), P(v, v.you).pos]);
   const sq = app.ui.popSq ?? (els.center.classList.contains('big') ? highlightOf(v) : -1);
   if (sq !== null && sq >= 0 && cover < innerHeight) return camera.odak(sq, cover);
   camera.masa();
+}
+
+function araziCands(v) {
+  const pos = P(v, v.you)?.pos;
+  return [...E.moveOptions(v), ...(pos === null || pos === undefined ? [] : [pos])];
 }
 
 // Alttan açılan sayfaların en üstteki kenarı (ekranda px); açık sayfa yoksa ekranın altı. Yerleşim kutusu okunur
@@ -1617,7 +1640,7 @@ function showNews(v, ev) {
   const detail = v.gundem && v.gundem.id === ev.id ? v.gundem.detail : '';
   const sum = v.summary && v.summary.round === ev.round - 1 ? summaryHTML(v, v.summary) : '';
   const img = html`<div class="nimg" style="background-image:url(assets/gundem/${ev.id}.jpg)"></div>`;
-  stageShow(html`<div class="news-card">${img}<div class="nbody"><span class="kicker">Son dakika</span><span class="h28">${g.name}</span><span class="body">${g.text}</span>${detail ? html`<span class="hint" style="height:auto;padding:8px 12px;white-space:normal">${detail}</span>` : ''}${sum}</div></div>`, (sum ? PACE.newsSum : PACE.news) * spd());
+  stageShow(html`<div class="news-card">${img}<div class="nbody"><span class="kicker">Son dakika</span><span class="h28">${g.name}</span><span class="body">${gundemText(ev.id)}</span>${detail ? html`<span class="hint" style="height:auto;padding:8px 12px;white-space:normal">${detail}</span>` : ''}${sum}</div></div>`, (sum ? PACE.newsSum : PACE.news) * spd());
 }
 
 // Geçen turun özeti: en çok kazanan/kaybeden ve el değiştiren mülkler (en fazla 3).
@@ -1673,6 +1696,8 @@ function cardEffect(v, ev) {
   const t = ev.target || {};
   const sq = (q) => (BOARD[q] ? BOARD[q].name : '');
   const m = (k) => fmt(E.money(v, E.AMOUNTS[k]));
+  const mhx = mh && { taksi: `Taksiyle ${sq(t.sq)} arsasına gidiyor.`, kestirme: `${(t.die ?? 0) + 1}. zarı yeniden atıyor.`, geriVites: 'Önceki arsasına dönüyor.', ihbar: `Kaçak katları ve gecekonduları yıkılacak, her biri için ${m('ihbarFine')} ceza.` }[ev.card];
+  if (mhx) return mhx;
   switch (ev.card) {
     case 'kamulastirma':
       return `${sq(t.sq)} mülkünü fiyatını ödeyerek almak istiyor.`;
@@ -1705,7 +1730,7 @@ function cardEffect(v, ev) {
     case 'dayi':
       return 'Kirayı ödemiyor.';
     default:
-      return CARDS[ev.card] ? CARDS[ev.card].text : '';
+      return CARDS[ev.card] ? cardText(ev.card) : '';
   }
 }
 
@@ -1797,10 +1822,10 @@ export async function present(prev, v, events, fast) {
         else sfx('build');
         break;
       case 'demolish': {
-        const lost = BOARD.map((_, q) => q).filter((q) => prev && prev.props[q]?.kacak && !v.props[q]?.kacak);
+        const lost = BOARD.map((_, q) => q).filter((q) => prev && ((prev.props[q]?.kacak && !v.props[q]?.kacak) || (prev.props[q]?.gk && !v.props[q]?.gk)));
         if (live) later.push(() => lost.forEach((q, k) => demolishFx(els.board, cells[q], k === 0)));
         else sfx('crash');
-        toast(`${P(v, ev.p).name}: ${ev.n} kaçak kat yıkıldı`, 'error', 'kacak');
+        toast(ev.gk ? ev.text.replace(/!$/, '') : `${P(v, ev.p).name}: ${ev.n} kaçak kat yıkıldı`, 'error', 'kacak');
         break;
       }
       case 'collapse':
@@ -1865,7 +1890,7 @@ export async function present(prev, v, events, fast) {
         }
         break;
       case 'turn':
-        if (live && !P(v, ev.p).out) {
+        if (live && !P(v, ev.p).out && P(v, ev.p).pos !== null) {
           const pl = P(v, ev.p);
           post.push(() => turnFx(els.board, cells[pl.pos], tokens.els.get(pl.id), pl, ev.p === me));
         } else if (ev.p === me) play('turn');
@@ -1875,6 +1900,7 @@ export async function present(prev, v, events, fast) {
         confetti();
         break;
       default:
+        if (mh) araziEvent(ev, { live, post, board: els && els.board, cells, me });
     }
   }
   const flights = fast ? [] : coinFlights(live ? events.filter((e) => !pawnMoney(e)) : events);
@@ -1885,7 +1911,7 @@ export async function present(prev, v, events, fast) {
     const has = (t) => events.some((e) => e.type === t);
     const buy = has('own'); // ihale ve pazarlık kendi sesini zaten çalıyor
     const sets = new Map();
-    for (const q of gained) if (BOARD[q].group && E.inFullSet(v, q) && !E.inFullSet(prev, q)) sets.set(BOARD[q].group, v.props[q].owner);
+    for (const q of gained) if (!mh && BOARD[q].group && E.inFullSet(v, q) && !E.inFullSet(prev, q)) sets.set(BOARD[q].group, v.props[q].owner);
     // İhalede şerit "Satıldı!" ile aynı anda dolar.
     const wait = has('auction') ? Math.max(0, 2 * CALL.beat + CALL.lead - T.own.draw) : 0;
     post.push(() => setTimeout(() => els && gained.forEach((q, k) => ownFx(els.board, cells[q], P(v, v.props[q].owner).color, buy && k === 0)), wait));
@@ -1913,7 +1939,9 @@ export async function present(prev, v, events, fast) {
           // Kamera piyonu bir kare önünden izler (yalnız telefonda, beklemeden; adımın süresi değişmez).
           const follow = !fast && isTel() ? (k, ms) => camera.izle(e.path[Math.min(k + 1, e.path.length - 1)], ms) : null;
           if (follow) dice.home(); // telefonda zarlar kutuya yürüyüşle birlikte döner: yaklaşan tahtada piyonu örtmesin
-          await tokens.walk(P(v, e.p).id, e.path, fast, PACE.step * spd(), follow);
+          // Mahalle'de piyon arsaya zıplar (Klasik'te ışınlanma ve yer değiştirme tek adımlık yürüyüş kalır).
+          if (mh && e.jump) await tokens.jump(P(v, e.p).id, e.path[e.path.length - 1], fast, spd(), follow);
+          else await tokens.walk(P(v, e.p).id, e.path, fast, PACE.step * spd(), follow);
         }
         else if (fast) continue;
         else if (e.type === 'surpriz') await showSurpriz(v, e);

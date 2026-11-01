@@ -5,6 +5,7 @@ import { CARDS, cardId } from '../engine/index.js';
 import { html, raw } from './dom.js';
 import { ic } from './icons.js';
 import { APP_VERSION } from '../version.js';
+import { cardShort } from './modetext.js';
 
 export const cardArt = (id) => `assets/kart/${id}.jpg?v=${APP_VERSION}`; // sürüm, yeni görselin önbellekten eskisiyle gelmesini önler
 export const WHEN = { preroll: 'Zar atmadan önce', choose: 'Zar attıktan sonra', buy: 'Satın alırken' };
@@ -58,7 +59,7 @@ export const emWidth = (s) =>
 export function cardFace(id, cls = '') {
   const c = CARDS[id];
   const g = CARD_GROUPS[CARD_GROUP[id]] || CARD_GROUPS.kazanc;
-  const rule = CARD_SHORT[id] || c.text;
+  const rule = cardShort(id) || CARD_SHORT[id] || c.text;
   return html`<div class="kart ${c.type} g-${CARD_GROUP[id] || 'kazanc'} ${cls}" style="--t:${g.color};--ne:${emWidth(c.name)}" aria-label="${c.name} kartı, ${g.name}: ${rule}">
     <div class="k-art" style="background-image:url(${cardArt(id)})"></div>
     <span class="k-now">${raw(ic('bolt'))}</span>

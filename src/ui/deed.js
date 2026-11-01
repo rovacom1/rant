@@ -7,7 +7,8 @@ import { ic, money } from './icons.js';
 import { APP_VERSION } from '../version.js';
 import { emWidth } from './hand.js';
 
-const { BOARD, GROUPS, GROUP_SQUARES } = E;
+// Tahta oyunun türüne göre (Klasik: il ve set; Mahalle: arsa ve bölge, cetvel x3, kıyı +%25).
+const boardFor = (v) => E.boardOf(v || {});
 const I = (name) => raw(ic(name));
 const M = (n) => raw(money(n));
 
@@ -18,13 +19,20 @@ const lum = (hex) => {
 // Bant yazısı: açık renkte koyu, koyu renkte beyaz.
 export const bandInk = (hex) => (lum(hex) > 0.62 ? '#1b2233' : '#ffffff');
 
-// Endeks ve şehir çarpanıyla ölçeklenmiş tutar (kira tablosu için).
-const scaled = (v, sq, x) => Math.max(5, Math.round((x * (v.index / 100) * (BOARD[sq].group ? v.groupMult?.[BOARD[sq].group] || 1 : 1)) / 5) * 5);
+// Endeks ve şehir çarpanıyla ölçeklenmiş tutar (kira tablosu için). Mahalle'de cetvel x3, kıyıda +%25.
+const scaled = (v, sq, x) => {
+  const B = boardFor(v);
+  const g = B.squares[sq].group;
+  const m = E.isMahalle(v) ? E.MAHALLE.rent * (B.groups[g].sahil ? E.MAHALLE.kiyi : 1) : 1;
+  return Math.max(5, Math.round((x * m * (v.index / 100) * (g ? v.groupMult?.[g] || 1 : 1)) / 5) * 5);
+};
 
-// Setin illeri: "Giresun · Rize · Trabzon". Ulaşımda türü.
-export const setLine = (sq) => {
-  const s = BOARD[sq];
-  return s.group ? GROUP_SQUARES[s.group].map((q) => BOARD[q].name).join(' · ') : E.TRANSPORT_LABEL[s.mode];
+// Setin illeri: "Giresun · Rize · Trabzon". Ulaşımda türü; Mahalle'de bölgenin adı.
+export const setLine = (sq, v) => {
+  const B = boardFor(v);
+  const s = B.squares[sq];
+  if (E.isMahalle(v || {})) return B.groups[s.group].name;
+  return s.group ? B.groupSquares[s.group].map((q) => B.squares[q].name).join(' · ') : E.TRANSPORT_LABEL[s.mode];
 };
 
 // Bina resmi: n kat (0 = boş arsa); kaçak/affedilmiş üst katta k{n-1}.
@@ -33,14 +41,17 @@ export const binaSrc = (group, n, ugly = false) => `assets/bina/${group}/${ugly 
 // o: mini (küçük, yalnız ad ve fiyat), sel (seçili), off (seçilemez), cls, w (genişlik px), ladder (kira cetveli),
 // level (vurgulu satır: 0 arsa, 0.5 tam set, 1-4 kat; ulaşımda sahibi varsa herhangi bir değer), attrs (ek öznitelikler).
 export function deed(v, sq, o = {}) {
-  const s = BOARD[sq];
+  const B = boardFor(v);
+  const mh = E.isMahalle(v);
+  const s = B.squares[sq];
   const tr = s.kind === 'transport';
-  const color = tr ? null : GROUPS[s.group].color; // ulaşımın koyu bandı temaya göre CSS'te (.deed.tr)
+  const color = tr ? null : B.groups[s.group].color;
+  const bina = tr ? null : B.groups[s.group].bina || s.group; // Mahalle'de bölgenin bina seti // ulaşımın koyu bandı temaya göre CSS'te (.deed.tr)
   const ps = v.props[sq];
   const owner = ps && ps.owner !== null && ps.owner !== undefined ? v.players[ps.owner] : null;
   const cls = ['deed', tr ? 'tr' : '', o.mini ? 'mini' : '', o.sel ? 'sel' : '', o.off ? 'off' : '', o.cls || ''].join(' ');
   const style = `${color ? `--dc:${color};--di:${bandInk(color)};` : ''}--ne:${Math.max(3, emWidth(s.name))}${o.w ? `;--dw:${o.w}px` : ''}`;
-  const top = html`<div class="d-top"><div class="d-title">${tr ? I(s.mode) : ''}<span class="d-name">${s.name}</span>${o.sel ? I('check') : ''}</div>${o.mini ? '' : html`<span class="d-set">${setLine(sq)}</span>`}</div>`;
+  const top = html`<div class="d-top"><div class="d-title">${tr ? I(s.mode) : ''}<span class="d-name">${s.name}</span>${o.sel ? I('check') : ''}</div>${o.mini ? '' : html`<span class="d-set">${setLine(sq, v)}</span>`}</div>`;
   const own = owner ? html`<span class="d-own"><i style="--oc:${owner.color}"></i><span>${owner.name}</span></span>` : '';
   let body;
   if (o.mini) body = html`<div class="d-meta"><span class="d-price">${M(E.price(v, sq))}</span></div>`;
@@ -49,7 +60,9 @@ export function deed(v, sq, o = {}) {
     if (!o.ladder) {
       const rent = tr
         ? html`<div class="d-rent"><span>Kira <b>${M(E.money(v, E.TRANSPORT_RENT[s.mode][1]))}</b></span><span>${s.mode === 'air' ? 'her biri 2 katı' : 'gar başına artar'}</span></div>`
-        : html`<div class="d-rent"><span>Kira <b>${M(scaled(v, sq, s.rents[0]))}</b></span><span>Setle <b>${M(scaled(v, sq, s.rents[0] * 2))}</b></span></div>`;
+        : mh
+          ? html`<div class="d-rent"><span>Kira <b>${M(scaled(v, sq, s.rents[0]))}</b></span><span>4 kat <b>${M(scaled(v, sq, s.rents[4]))}</b></span></div>`
+          : html`<div class="d-rent"><span>Kira <b>${M(scaled(v, sq, s.rents[0]))}</b></span><span>Setle <b>${M(scaled(v, sq, s.rents[0] * 2))}</b></span></div>`;
       body = html`${meta}${rent}`;
     } else if (tr) {
       const n = owner && o.level !== undefined ? E.transportCount(v, ps.owner, s.mode) : 0;
@@ -66,9 +79,9 @@ export function deed(v, sq, o = {}) {
         const note = ugly ? html`<small class="${mark}">${mark === 'k' ? 'üstü kaçak' : 'kaçaktı, affedildi'}</small>` : '';
         const name = n === 0 ? (lv === 0.5 ? 'Setle arsa' : 'Arsa') : `${n} kat`;
         const rent = n === 0 && lv === 0.5 ? s.rents[0] * 2 : s.rents[n];
-        return html`<div class="d-lr ${cur ? 'cur' : ''}"><img src="${binaSrc(s.group, n, ugly)}" alt=""><span><span>${name}</span>${note}</span><b>${M(scaled(v, sq, rent))}</b></div>`;
+        return html`<div class="d-lr ${cur ? 'cur' : ''}"><img src="${binaSrc(bina, n, ugly)}" alt=""><span><span>${name}</span>${note}</span><b>${M(scaled(v, sq, rent))}</b></div>`;
       });
-      const foot = html`<div class="d-ft"><span>Setle <b>${M(scaled(v, sq, s.rents[0] * 2))}</b></span><span>Kat <b>${M(E.katCost(v, sq))}</b></span><span>Kaçak <b>${M(E.kacakCost(v, sq))}</b></span></div>`;
+      const foot = html`<div class="d-ft">${mh ? '' : html`<span>Setle <b>${M(scaled(v, sq, s.rents[0] * 2))}</b></span>`}<span>Kat <b>${M(E.katCost(v, sq))}</b></span><span>Kaçak <b>${M(E.kacakCost(v, sq))}</b></span></div>`;
       body = html`${meta}<div class="d-lad">${rows}</div>${foot}`;
     }
   }
