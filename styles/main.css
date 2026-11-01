@@ -521,11 +521,6 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .fx-drop { display: grid; place-items: center; transform-origin: 50% 100%; }
 .fx-drop .ic { width: 1.2em; height: 1.2em; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.3)); }
 .fx-dust { border-radius: 50%; background: var(--muted); opacity: 0; }
-/* tapu dairesinin mührü: oyuncu renginde ıslak mürekkep izi (boardfx.js seal) */
-.fx-seal { color: var(--c); opacity: 0; filter: drop-shadow(0 0 1px var(--pedge)); }
-.fx-seal svg { display: block; width: 100%; height: 100%; }
-.fx-seal circle { stroke: currentColor; }
-.fx-seal path { fill: currentColor; }
 /* açık artırma sonu: "Gidiyor... gidiyor... Satıldı!" tahtanın ortasında, manşet yazısıyla */
 .fx-call { left: 50%; top: 40%; z-index: 41; translate: -50% -50%; padding: 10px 26px; border-radius: var(--r-s); background: var(--panel); color: var(--ink); font-family: var(--df); font-size: clamp(22px, calc(var(--ch) * 0.42), 40px); white-space: nowrap; box-shadow: 0 0 0 2px var(--pr), var(--sh-3); opacity: 0; }
 .fx-call span { display: inline-block; }

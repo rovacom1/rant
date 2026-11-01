@@ -1618,10 +1618,9 @@ export async function present(prev, v, events, fast) {
     const buy = has('own'); // ihale ve pazarlık kendi sesini zaten çalıyor
     const sets = new Map();
     for (const q of gained) if (BOARD[q].group && E.inFullSet(v, q) && !E.inFullSet(prev, q)) sets.set(BOARD[q].group, v.props[q].owner);
-    // El değiştirende eski sahibin mührü üstüne yenisi vurulur; ihalede mühür "Satıldı!" ile aynı anda iner.
-    const oldColor = (q) => (prev.props[q]?.owner === null || prev.props[q]?.owner === undefined ? null : P(v, prev.props[q].owner).color);
+    // İhalede şerit "Satıldı!" ile aynı anda dolar.
     const wait = has('auction') ? Math.max(0, 2 * CALL.beat - T.own.draw) : 0;
-    post.push(() => setTimeout(() => els && gained.forEach((q, k) => ownFx(els.board, cells[q], P(v, v.props[q].owner).color, buy && k === 0, oldColor(q))), wait));
+    post.push(() => setTimeout(() => els && gained.forEach((q, k) => ownFx(els.board, cells[q], P(v, v.props[q].owner).color, buy && k === 0)), wait));
     if (sets.size) {
       post.push(() => setTimeout(() => {
         if (!els) return;
