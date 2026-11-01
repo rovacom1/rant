@@ -1,9 +1,11 @@
 // Bot karar verici. Yalnız bir oyuncunun görebileceği bilgiyi kullanır:
 // kendi eli + herkese açık tahta. Oyunun zarını değil kendi küçük üretecini kullanır.
 
-import { BOARD, CARDS, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS } from './data.js';
+import { BOARD, CARDS, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, MAHALLE } from './data.js';
 import { nextRandom } from './rng.js';
 import * as R from './rules.js';
+import { boardOf, isMahalle } from './board.js';
+import { pickOptions, lineOf } from './mahalle.js';
 import { waitingFor, moveOptions, cardBlock, cardTargets, tradeBlock, hasCard, auctionStep } from './game.js';
 
 const N = BOARD.length;
@@ -18,7 +20,7 @@ const myCards = (s, p, id) => s.players[p].hand.filter((u) => cid(u) === id);
 
 function reserve(s, p) {
   let maxRent = 0;
-  for (const q of OWNABLE) {
+  for (const q of boardOf(s).ownable) {
     const o = s.props[q].owner;
     if (o !== null && o !== p) maxRent = Math.max(maxRent, R.rentFor(s, q));
   }
@@ -27,6 +29,7 @@ function reserve(s, p) {
 
 // Bir mülkün bu oyuncu için değeri (fiyat x stratejik çarpan).
 export function propValue(s, p, sq) {
+  if (isMahalle(s)) return plotValue(s, p, sq);
   const sqd = BOARD[sq];
   let v = R.price(s, sq);
   if (sqd.kind === 'transport') {
@@ -150,7 +153,7 @@ function cardPlay(s, p) {
       case 'muteahhit':
         for (const t of targets) {
           const ps = s.props[t.sq];
-          const gain = BOARD[t.sq].rents[R.level(ps) + 1] - BOARD[t.sq].rents[R.level(ps)];
+          const gain = R.sqOf(s, t.sq).rents[R.level(ps) + 1] - R.sqOf(s, t.sq).rents[R.level(ps)];
           consider(uid, t, R.katValue(s, t.sq) * 0.6 + gain);
         }
         break;
@@ -168,7 +171,7 @@ function cardPlay(s, p) {
         for (const t of targets) consider(uid, t, R.rentFor(s, t.sq) * 1.2 - R.money(s, 45));
         break;
       case 'ihbar':
-        for (const t of targets) consider(uid, t, R.floorsOf(s, t.player).kacak * R.money(s, 60));
+        for (const t of targets) consider(uid, t, (R.floorsOf(s, t.player).kacak + R.gecekondular(s, t.player)) * R.money(s, 60));
         break;
       case 'dava': {
         const rich = targets.sort((a, b) => s.players[b.player].cash - s.players[a.player].cash)[0];
@@ -182,6 +185,7 @@ function cardPlay(s, p) {
 }
 
 function buildPlan(s, p, level) {
+  if (isMahalle(s)) return buildPlanM(s, p, level);
   const pl = s.players[p];
   const res = reserve(s, p);
   const mine = R.propsOf(s, p).filter((q) => BOARD[q].kind === 'prop');
@@ -234,6 +238,7 @@ function swapPlan(s, p) {
 // Önce karşılıklı set takası, sonra rakibin elindeki tek eksik parçayı nakitle almayı dene (turda bir kez). Kolay bot pazarlık önermez.
 function tradePlan(s, p, level) {
   if (s.turn.trades || level === 'kolay') return null;
+  if (isMahalle(s)) return tradePlanM(s, p);
   const swap = swapPlan(s, p);
   if (swap) return { type: 'proposeTrade', ...swap };
   const pl = s.players[p];
@@ -293,6 +298,10 @@ function tradeValue(s, p, pd) {
   let v = getting.cash - giving.cash;
   for (const q of getting.props) v += propValue(s, p, q);
   // Takas benim setimi de tamamlıyorsa rakibe set vermek ek ceza sayılmaz (karşılıklı set takası).
+  if (isMahalle(s)) {
+    for (const q of giving.props) v -= propValue(s, p, q);
+    return v;
+  }
   const mineToo = getting.props.some((q) => BOARD[q].group && GROUP_SQUARES[BOARD[q].group].every((x) => x === q || s.props[x].owner === p));
   for (const q of giving.props) {
     v -= propValue(s, p, q);
@@ -342,6 +351,7 @@ export function botAction(s, p, level = s.config.botLevel || 'normal') {
   if (pd) {
     switch (pd.type) {
       case 'buy': {
+        if (isMahalle(s)) return buyM(s, p, pd, level);
         const price = R.price(s, pd.sq);
         const v = propValue(s, p, pd.sq);
         const [pazarlik] = myCards(s, p, 'pazarlik');
@@ -356,7 +366,8 @@ export function botAction(s, p, level = s.config.botLevel || 'normal') {
         // Zor bot tavanını şaşmaz ve en az artışla gider; kolay bot erken çekilir.
         const sharp = level === 'zor';
         const v = propValue(s, p, pd.sq) * (sharp ? 0.9 : (level === 'kolay' ? 0.55 : 0.75) + noise(s, p, 1) * 0.3);
-        const cap = Math.min(v, pl.cash - res * 0.5, pl.cash);
+        const evict = R.evictCost(s, pd.sq, p);
+        const cap = Math.min(v - evict, pl.cash - res * 0.5 - evict, pl.cash - evict);
         const min = pd.high + auctionStep(s);
         if (cap < min || v < R.price(s, pd.sq) * 0.25) return { type: 'pass' };
         const bid = sharp ? min : Math.min(Math.floor(cap / 5) * 5, Math.max(min, R.round5(pd.high + (cap - pd.high) / 3)));
@@ -396,6 +407,7 @@ export function botAction(s, p, level = s.config.botLevel || 'normal') {
   }
 
   const step = s.turn.step;
+  if (isMahalle(s) && (step === 'preroll' || step === 'choose')) return moveM(s, p);
   if (step === 'preroll') {
     const [taksi] = myCards(s, p, 'taksi');
     if (taksi && !s.turn.hamle) {
@@ -426,4 +438,192 @@ export function botAction(s, p, level = s.config.botLevel || 'normal') {
   const trade = tradePlan(s, p, level);
   if (trade) return trade;
   return { type: 'endTurn' };
+}
+
+// ---------- Mahalle (docs/TASARIM.md §13) ----------
+
+// Arsanın değeri: fiyat, komşu arsalarım (yasal kat, blok), tamamlanacak 2x2 site, rakibin bloğunu bozmak.
+function plotValue(s, p, sq) {
+  const B = boardOf(s);
+  const adj = B.adj[sq];
+  const mine = adj.filter((q) => s.props[q].owner === p).length;
+  const free = adj.filter((q) => s.props[q].owner === null).length;
+  let v = R.price(s, sq) * (1 + 0.3 * mine + 0.08 * free);
+  if (B.blocks.some((b) => b.includes(sq) && b.every((q) => q === sq || s.props[q].owner === p))) v *= 1.3;
+  const opp = adj.map((q) => s.props[q].owner).filter((o) => o !== null && o !== p);
+  if (opp.length >= 2 && new Set(opp).size === 1) v *= 1.15;
+  return v;
+}
+
+// Piyon bu arsadayken yapılabilecek inşaatın kabaca değeri (burada ve komşu arsalarımda).
+function buildChance(s, p, sq) {
+  if (s.players[p].cash < reserve(s, p) + R.money(s, 60)) return 0;
+  let best = 0;
+  for (const q of [sq, ...boardOf(s).adj[sq]]) {
+    const ps = s.props[q];
+    if (ps.owner !== p || ps.park || ps.ipotek) continue;
+    if (ps.kat === 4 && !ps.avm) best = Math.max(best, 60);
+    else if (R.level(ps) < 4 && R.ownNeighbors(s, p, q)) best = Math.max(best, 25 + 10 * R.level(ps));
+    if (R.level(ps) === 0 && boardOf(s).blocks.some((b) => b.includes(q) && b.every((x) => s.props[x].owner === p && !s.props[x].park))) best = Math.max(best, 90);
+  }
+  return best;
+}
+
+// Bu arsaya inmenin değeri: sahipsizse alma (ya da gecekondu), rakibinse kira, benimse inşaat imkanı.
+function plotScore(s, p, sq) {
+  const pl = s.players[p];
+  const ps = s.props[sq];
+  if (ps.owner === null) {
+    if (pl.cash >= R.price(s, sq) + R.evictCost(s, sq, p)) return propValue(s, p, sq) * 0.5;
+    return R.gecekonduBlock(s, p, sq) ? 5 : 20;
+  }
+  if (ps.owner !== p) {
+    const rent = R.rentFor(s, sq) * (s.players[ps.owner].kiraZammi ? 2 : 1);
+    return -(hasCard(s, p, 'dayi') ? rent * 0.3 : rent);
+  }
+  return buildChance(s, p, sq);
+}
+
+const scoresOf = (s, p) => boardOf(s).ownable.map((q) => plotScore(s, p, q));
+// Bu zarlarla gidilebilecek en iyi arsa ve değeri (çiftte kart da gelir).
+function bestPick(s, p, sc, dice) {
+  let sq = null;
+  let score = -Infinity;
+  for (const q of pickOptions(dice)) {
+    if (sc[q] > score) {
+      score = sc[q];
+      sq = q;
+    }
+  }
+  const card = dice[0] === dice[1] && s.players[p].hand.length < s.config.drawCap ? 25 : 0;
+  return { sq, score: score + card };
+}
+
+function expectedPick(s, p, sc) {
+  let total = 0;
+  for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) total += bestPick(s, p, sc, [a, b]).score;
+  return total / 36;
+}
+
+// Zar öncesi Taksi ve Geri Vites, zar sonrası Torpil, Kestirme ve arsa seçimi.
+function moveM(s, p) {
+  const pl = s.players[p];
+  const sc = scoresOf(s, p);
+  if (s.turn.step === 'preroll') {
+    if (!s.turn.hamle && pl.pos !== null) {
+      const exp = expectedPick(s, p, sc);
+      const [taksi] = myCards(s, p, 'taksi');
+      if (taksi) {
+        const best = lineOf(pl.pos).reduce((a, b) => (sc[b] > sc[a] ? b : a));
+        if (sc[best] > exp + 50) return { type: 'playCard', uid: taksi, target: { sq: best } };
+      }
+      const [geri] = myCards(s, p, 'geriVites');
+      if (geri && pl.prev !== null && sc[pl.prev] > exp + 40) return { type: 'playCard', uid: geri };
+    }
+    return { type: 'roll' };
+  }
+  const dice = s.turn.dice;
+  const now = bestPick(s, p, sc, dice);
+  if (pl.torpil > 0 && !s.turn.torpil) {
+    let best = null;
+    for (const die of [0, 1]) {
+      for (const delta of [-1, 1]) {
+        const v = dice[die] + delta;
+        if (v < 1 || v > 6) continue;
+        const d = [...dice];
+        d[die] = v;
+        const gain = bestPick(s, p, sc, d).score - now.score;
+        if (!best || gain > best.gain) best = { die, delta, gain };
+      }
+    }
+    const need = pl.torpil >= MAHALLE.torpilMax ? 25 : 60;
+    if (best && best.gain > need) return { type: 'torpil', die: best.die, delta: best.delta };
+  }
+  const [kestirme] = myCards(s, p, 'kestirme');
+  if (kestirme && !s.turn.hamle) {
+    let best = null;
+    for (const die of [0, 1]) {
+      let total = 0;
+      for (let v = 1; v <= 6; v++) {
+        const d = [...dice];
+        d[die] = v;
+        total += bestPick(s, p, sc, d).score;
+      }
+      const gain = total / 6 - now.score;
+      if (!best || gain > best.gain) best = { die, gain };
+    }
+    if (best.gain > 50) return { type: 'playCard', uid: kestirme, target: { die: best.die } };
+  }
+  return { type: 'pick', sq: now.sq };
+}
+
+function buyM(s, p, pd, level) {
+  const pl = s.players[p];
+  const res = reserve(s, p);
+  const cost = R.price(s, pd.sq) + R.evictCost(s, pd.sq, p);
+  const v = propValue(s, p, pd.sq);
+  const [pazarlik] = myCards(s, p, 'pazarlik');
+  if (pazarlik && !s.turn.hamle && !cardBlock(s, p, 'pazarlik')) return { type: 'playCard', uid: pazarlik };
+  if (pl.cash >= cost && (pl.cash - cost >= res || (v >= cost * 2 && level !== 'kolay'))) return { type: 'buy' };
+  if (!s.config.rules.ihale && pl.cash >= cost && pl.cash - cost >= res * 0.5) return { type: 'buy' };
+  // Almıyorsa gecekondu kondurur (komşuları kendi arsalarıysa kendi kirasını düşürmesin diye kondurmaz).
+  if (!R.gecekonduBlock(s, p, pd.sq) && R.ownNeighbors(s, p, pd.sq) < 2 && !(level === 'kolay' && noise(s, p, 11) < 0.5)) return { type: 'gecekondu' };
+  return { type: 'decline' };
+}
+
+function buildPlanM(s, p, level) {
+  const pl = s.players[p];
+  const res = reserve(s, p);
+  if (pl.pos === null) return null;
+  const B = boardOf(s);
+  const spot = [pl.pos, ...B.adj[pl.pos]].filter((q) => s.props[q].owner === p);
+  const afford = (q) => pl.cash - R.katCost(s, q) >= res;
+  // AVM: çevresinde rakip arsaları varsa.
+  for (const q of spot) {
+    const oppRing = B.ring[q].filter((x) => s.props[x].owner !== null && s.props[x].owner !== p).length;
+    if (!R.avmBlock(s, p, q) && afford(q) && oppRing >= 2) return { type: 'avm', sq: q };
+  }
+  // Park: komşu kiralarımın yarısı (rakip komşulara gidenin bir kısmı düşülür) bu arsaya kat dikmekten iyiyse.
+  const gain = (q) => R.sqOf(s, q).rents[R.level(s.props[q]) + 1] - R.sqOf(s, q).rents[R.level(s.props[q])];
+  if (level !== 'kolay') {
+    for (const q of spot) {
+      if (R.parkBlock(s, p, q) || !afford(q)) continue;
+      // Site olabilecek bloğu (rakip arsası ve park yok) bozmaz.
+      const siteHope = (b) => b.includes(q) && b.every((x) => x === q || ((s.props[x].owner === null || s.props[x].owner === p) && !s.props[x].park));
+      if (B.blocks.some(siteHope)) continue;
+      let v = 0;
+      for (const x of B.adj[q]) {
+        const o = s.props[x].owner;
+        if (o === p) v += R.rentFor(s, x) * 0.5;
+        else if (o !== null) v -= R.rentFor(s, x) * 0.25;
+      }
+      if (v > Math.max(R.money(s, 40), gain(q) * 1.5)) return { type: 'park', sq: q };
+    }
+  }
+  // Yasal kat: önce siteyi tamamlayan katsız arsa, sonra düşük seviyeli, sonra kira artışı büyük olan.
+  const siteGap = (q) => (R.level(s.props[q]) === 0 && B.blocks.some((b) => b.includes(q) && b.every((x) => s.props[x].owner === p && !s.props[x].park)) ? 0 : 1);
+  const legal = spot.filter((q) => !R.buildBlock(s, p, q, false) && afford(q)).sort((a, b) => siteGap(a) - siteGap(b) || R.level(s.props[a]) - R.level(s.props[b]) || gain(b) - gain(a));
+  if (legal.length && !(level === 'kolay' && noise(s, p, 9) < 0.5)) return { type: 'build', sq: legal[0] };
+  const kacakCap = level === 'normal' ? 2 : 0;
+  if (R.floorsOf(s, p).kacak < kacakCap && !s.mods.durgunluk) {
+    const kacak = spot.filter((q) => !R.buildBlock(s, p, q, true) && pl.cash - R.kacakCost(s, q) >= res * 1.6).sort((a, b) => R.sqOf(s, b).rents[1] - R.sqOf(s, a).rents[1]);
+    if (kacak.length && noise(s, p, 5) < 0.55) return { type: 'buildKacak', sq: kacak[0] };
+  }
+  const mortgaged = R.propsOf(s, p).filter((q) => s.props[q].ipotek && pl.cash - R.unmortgageCost(s, q) >= res * 2);
+  if (mortgaged.length) return { type: 'unmortgage', sq: mortgaged[0] };
+  return null;
+}
+
+// Rakibin, iki komşusu benim olan katsız arsasını nakitle almayı dener (turda bir kez).
+function tradePlanM(s, p) {
+  const pl = s.players[p];
+  for (const q of boardOf(s).ownable) {
+    const ps = s.props[q];
+    if (ps.owner === null || ps.owner === p || R.level(ps) > 0 || ps.park || R.ownNeighbors(s, p, q) < 2) continue;
+    const offer = R.round5(R.price(s, q) * 2.2);
+    if (pl.cash - offer < reserve(s, p)) continue;
+    const t = { to: ps.owner, give: { cash: offer, props: [] }, take: { cash: 0, props: [q] } };
+    if (!tradeBlock(s, p, t)) return { type: 'proposeTrade', ...t };
+  }
+  return null;
 }

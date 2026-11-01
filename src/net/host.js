@@ -125,7 +125,7 @@ export class Host {
       for (const s of this.seats) s.connected = !!s.bot;
     } else {
       this.seats = [];
-      this.config = { maxRounds: E.DEFAULT_CONFIG.maxRounds, turnLimit: 120, endMode: 'rounds', targetScore: 3500, speed: 'normal', botLevel: 'normal', rules: { ...E.DEFAULT_CONFIG.rules } };
+      this.config = { mode: 'klasik', maxRounds: E.DEFAULT_CONFIG.maxRounds, turnLimit: 120, endMode: 'rounds', targetScore: 3500, speed: 'normal', botLevel: 'normal', rules: { ...E.DEFAULT_CONFIG.rules } };
       this.game = null;
       this.addSeat({ id: this.hostId, name: cleanName(hostName), avatar: cleanAvatar(hostAvatar), bot: false });
     }
@@ -320,6 +320,7 @@ export class Host {
       }
       case 'config': {
         if (this.game) return;
+        if (E.GAME_MODES.includes(m.mode)) this.config.mode = m.mode; // oyun türü: klasik | mahalle
         if (E.ROUND_OPTIONS.includes(m.maxRounds)) this.config.maxRounds = m.maxRounds;
         if (['rounds', 'score', 'iflas'].includes(m.endMode)) this.config.endMode = m.endMode;
         if (E.TARGET_OPTIONS.includes(m.targetScore)) this.config.targetScore = m.targetScore;
@@ -338,6 +339,7 @@ export class Host {
           players: this.seats.map((s) => ({ id: s.id, name: s.name, avatar: s.avatar, color: s.color, bot: s.bot })),
           config: { maxRounds: this.config.maxRounds, targetScore: this.config.endMode === 'score' ? this.config.targetScore : 0, iflas: this.config.endMode === 'iflas', rules: { ...this.config.rules }, botLevel: this.config.botLevel || 'normal' },
           seed: E.randomSeed(),
+          mode: this.config.mode || 'klasik', // eski kayıtlı lobilerde alan yok
         });
         this.waitSince = {};
         this.schedule();

@@ -1,5 +1,5 @@
 // Motorun tahtadan bağımsız ortak parçaları: olay, para, kart çekme, satın alma, kira ödeme, açık artırma, borç
-// (konkordato, iflas). Hem klasik tahta (klasik.js) hem oyun akışı (game.js) bunları kullanır; Mahalle de kullanacak.
+// (konkordato, iflas). Hem klasik tahta (klasik.js) hem oyun akışı (game.js) ve Mahalle (mahalle.js) bunları kullanır.
 // Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste) içermez.
 
 import { randInt, shuffle } from './rng.js';
@@ -32,6 +32,7 @@ export const nm = (s, p) => s.players[p].name;
 export const sqName = (s, sq) => R.sqOf(s, sq).name;
 export const others = (s, p) => R.activePlayers(s).filter((i) => i !== p);
 export const pick = (s, arr) => arr[randInt(s, arr.length)];
+export const isOpp = (s, p, o) => Number.isInteger(o) && o >= 0 && o < s.players.length && o !== p && !s.players[o].out;
 
 export const hasCard = (s, p, id) => s.players[p].hand.some((u) => R.cardId(u) === id);
 // Masada bu karttan biri var mı: tepki beklemeleri buna göre açılır, kimin elinde olduğu sızmaz.
@@ -84,8 +85,19 @@ export function transfer(s, ctx, from, to, amount, why, quiet = false) {
 
 export function acquire(s, ctx, p, sq, cost, how) {
   transfer(s, ctx, p, null, cost, `Tapu: ${sqName(s, sq)}`, true);
+  evict(s, ctx, p, sq);
   s.props[sq].owner = p;
   emit(s, ctx, { type: 'own', p, sq, text: `${nm(s, p)} ${sqName(s, sq)} mülkünü ${how} ${R.fmt(cost)}.` });
+}
+
+// Mahalle: gecekondulu sahipsiz arsayı alan, gecekonduyu yıkar ve kondurana tahliye bedeli öder (kendisininse ödemez).
+export function evict(s, ctx, p, sq) {
+  const g = s.props[sq].gk;
+  if (!g) return;
+  const fee = R.evictCost(s, sq, p);
+  s.props[sq].gk = null;
+  emit(s, ctx, { type: 'evict', p: g.p, by: p, sq, text: `${sqName(s, sq)} üstündeki gecekondu yıkıldı.` });
+  if (fee) transfer(s, ctx, p, g.p, fee, `Tahliye: ${sqName(s, sq)}`);
 }
 
 export function demolishKacak(s, ctx, victim, finePer, why, by) {
@@ -120,8 +132,14 @@ export function chargeRent(s, ctx, p, sq) {
 
 export function payRent(s, ctx, r) {
   if (r.zam) s.players[r.owner].kiraZammi = false;
-  stat(s, r.owner, 'kira', r.amount);
-  transfer(s, ctx, r.p, r.owner, r.amount, `Kira: ${sqName(s, r.sq)}${r.zam ? ', zamlı' : ''}`);
+  // Mahalle: çevredeki AVM'lerin payı kiradan kesilir (AVM kiracınınsa payı cebinde kalır).
+  let amount = r.amount;
+  for (const c of R.avmCuts(s, r.sq, r.amount)) {
+    amount -= c.amount;
+    if (c.owner !== r.p) transfer(s, ctx, r.p, c.owner, c.amount, `AVM payı: ${sqName(s, c.sq)}`);
+  }
+  stat(s, r.owner, 'kira', amount);
+  transfer(s, ctx, r.p, r.owner, amount, `Kira: ${sqName(s, r.sq)}${r.zam ? ', zamlı' : ''}`);
 }
 
 // ---------- borç ----------
@@ -134,7 +152,11 @@ export function goBroke(s, ctx, p) {
 // İflas: mülkler katsız ve ipoteksiz bankaya döner, kartlar desteye gider, oyuncu oyundan çıkar.
 function iflas(s, ctx, p) {
   const pl = s.players[p];
-  for (const q of R.propsOf(s, p)) Object.assign(s.props[q], { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 });
+  for (const q of R.propsOf(s, p)) {
+    Object.assign(s.props[q], { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 });
+    if (s.props[q].park !== undefined) Object.assign(s.props[q], { park: false, avm: false }); // Mahalle
+  }
+  for (const ps of s.props) if (ps && ps.gk && ps.gk.p === p) ps.gk = null; // gecekonduları da gider
   s.discard.push(...pl.hand);
   pl.hand = [];
   pl.cash = 0;
@@ -156,6 +178,11 @@ function konkordato(s, ctx, p) {
 export function sellFloorAt(s, ctx, p, sq) {
   const ps = s.props[sq];
   let refund;
+  // Mahalle: AVM'den kat satılırsa önce 4 katlı arsaya döner, bedeli geri gelmez.
+  if (ps.avm) {
+    ps.avm = false;
+    return say(s, ctx, `${sqName(s, sq)} AVM olmaktan çıktı.`);
+  }
   if (ps.kacak) {
     ps.kacak = 0;
     refund = R.round5(R.katValue(s, sq) / 4);
@@ -177,7 +204,7 @@ export function autoLiquidate(s, ctx, p) {
     const mine = R.propsOf(s, p);
     const kacak = mine.filter((q) => s.props[q].kacak).sort(byKat)[0];
     const kat = mine.filter((q) => s.props[q].kat > 0).sort(byKat)[0];
-    const free = mine.filter((q) => !s.props[q].ipotek && R.level(s.props[q]) === 0).sort((a, b) => R.price(s, a) - R.price(s, b))[0];
+    const free = mine.filter((q) => !s.props[q].ipotek && !s.props[q].park && R.level(s.props[q]) === 0).sort((a, b) => R.price(s, a) - R.price(s, b))[0];
     if (kacak !== undefined) sellFloorAt(s, ctx, p, kacak);
     else if (kat !== undefined) sellFloorAt(s, ctx, p, kat);
     else if (free !== undefined) mortgageAt(s, ctx, p, free);
@@ -208,7 +235,7 @@ export function nextBidder(s, ctx) {
   for (let k = 1; k <= pd.order.length; k++) {
     const q = pd.order[(at + k) % pd.order.length];
     if (pd.out.includes(q) || q === pd.leader) continue;
-    if (s.players[q].cash < min) {
+    if (s.players[q].cash < min + R.evictCost(s, pd.sq, q)) {
       pd.out.push(q);
       say(s, ctx, `${nm(s, q)} artıramıyor, çekildi.`);
       continue;
@@ -229,6 +256,7 @@ function resolveAuction(s, ctx) {
     return;
   }
   transfer(s, ctx, winner, null, pd.high, `İhale: ${sqName(s, pd.sq)}`, true);
+  evict(s, ctx, winner, pd.sq);
   s.props[pd.sq].owner = winner;
   stat(s, winner, 'ihale');
   emit(s, ctx, { type: 'auction', sq: pd.sq, winner, high: pd.high, text: `Açık artırma bitti: ${sqName(s, pd.sq)} → ${nm(s, winner)} (${R.fmt(pd.high)}).` });
