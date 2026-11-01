@@ -2,9 +2,15 @@
 
 Kullanıcı: "İhaleyi kimin kazandığı ve ne kadara gittiği çok anlaşılmıyor." Mühür kaldırıldı (beğenilmedi, v0.37.2).
 
-İlke: bir olay olunca oyuncu üç şeyi tahtaya bakarak anlamalı: **kim**, **ne oldu**, **ne kadar**. Bunlar ya olayın
-geçtiği yerde (kare, piyon) ya da tahtanın ortasında görünür; sağdaki olay satırına bakmak zorunda kalınmamalı.
+İlke: bir olay olunca oyuncu üç şeyi tahtaya bakarak anlamalı: **kim**, **ne oldu**, **ne kadar**. Bunlar tahtanın
+ortasında (istem, sahne) ya da alttaki bildirimde görünür; sağdaki olay satırına bakmak zorunda kalınmamalı.
 Yeni yazı az olur: piyon resmi, oyuncu rengi ve tutar çoğu zaman yeter.
+
+Kullanıcı kararları (2026-11-01):
+- Karelerin üstüne etiket, mühür ya da rozet konmaz: kareler küçük, okunmuyor.
+- Kodla çizilmiş süs görseli (damga, mühür, rozet) yapılmaz; görsel gerekirse Higgsfield ile oyunun resim tarzında
+  üretilir (`docs/GORSEL_STIL.md`).
+- Çizimler: https://claude.ai/artifact/Qq5Ms34XAkiB69bhJVNBYG (onaydan sonra uygulanır).
 
 ## Tarama: olay olunca ekranda ne oluyor
 
@@ -43,7 +49,7 @@ Motorun her olayı `present()` (src/ui/gameview.js) içinde nasıl gösterildiğ
   (bugünkü renk dolanması korunur).
 - Teklif yoksa: "Kimse almadı" balonu, kare kısa süre soluklaşır.
 - Köşedeki bildirim: "Konya: Ali 180 ₺'ye aldı".
-- Kendim kazanınca balonun yanında küçük konfeti, kaybedince yok (abartma yok).
+- "Satıldı!" kartının yanında tokmak görseli (Higgsfield ile üretilecek; yoksa görselsiz).
 
 ### 3. Pazarlık: kim kime ne verdi
 - Anlaşma olunca tahtanın ortasında 1,5 sn'lik küçük sahne: iki piyon karşılıklı, aralarında verilenlerin mini tapuları
@@ -54,12 +60,12 @@ Motorun her olayı `present()` (src/ui/gameview.js) içinde nasıl gösterildiğ
 - İtiraz zinciri bitince ortada kart kısa süre görünür: düştüyse soluklaşır ve altında "İtirazla düştü" yazar,
   geçtiyse etkisi her zamanki gibi oynar. Bildirim de sonucu söyler: "Kamulaştırma itirazla düştü".
 
-### 5. Kira alınmayan durumlar ve küçük olaylar
-- İpotekli ya da tedbirli kareye gelinince karede, tur başı etiketi gibi kısa etiket: "Kira yok · ipotekli" / "Kira yok ·
-  tedbir" (`turnFx`'teki etiketi yeniden kullan).
-- Deprem çökmesi: karede küçük yıkım canlandırması (`demolishFx`'in hafif hali) ve sarsıntı yok.
-- Grevde başlangıçtan geçince piyonun üstünde "Maaş yok · grev" etiketi.
-- Rakip borçtayken bekleme yazısı: "Ali borcunu kapatıyor".
+### 5. Kira alınmayan durumlar ve küçük olaylar (ortadaki istemde, karede değil)
+- İpotekli ya da tedbirli kareye gelinince ortadaki istemde, oyuncunun adının altında kısa not: "Kira yok: mülk ipotekli"
+  / "Kira yok: ihtiyati tedbir".
+- Grevde Başlangıç'tan geçince aynı yerde: "Maaş yok: bankacılar grevde".
+- Rakip borçtayken bekleme yazısı: "Köfteci borcunu kapatıyor" ve borç tutarı.
+- Deprem çökmesi: karede canlandırma yok; olay satırında kalır.
 
 ### 6. (İsteğe bağlı) Rakip kart çekince
 - Desteden rakibin oyuncu paneline uçan kart arkası; kartın ne olduğu gizli kalır.
