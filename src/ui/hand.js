@@ -151,18 +151,20 @@ export function playFx(cardEl, to) {
 const DRAG_START = 8; // px
 const GAP = 8; // kartlar arası boşluk (CSS .hand-grid gap ile aynı)
 const MAX_W = 128; // kartın en geniş hali
+const TEL_W = 104; // telefon düzeninde elin kartı (alttan sayfa tahtanın altını az örtsün)
 const ZOOM_W = 220; // üstüne gelince kartın genişliği
 const RATIO = 1.42; // kart yüksekliği / genişliği (CSS .kart)
-// Telefon düzenleri (CSS ile aynı eşikler, styles/main.css): dikeyde el yatay bir şeritte kayar, yatayda (alçak ekran)
-// sağ sütunda dikey kayar. İkisinde de kart, kaydırılan yönün tersine sürüklenince oynanır (tarayıcı kaydırmayı yapar).
+// Telefon düzenleri (eşikler phone.js TEL ve styles/main.css ile aynı): dikeyde el alttan sayfada yatay bir şeritte kayar,
+// yatayda (alçak ekran) sağ sütunda dikey kayar. İkisinde de kart, kaydırılan yönün tersine sürüklenince oynanır (tarayıcı
+// kaydırmayı yapar); kayan kutu kartı kesmesin diye sürüklenen kartın sayfaya sabit bir kopyası parmağı izler.
 const SHORT = globalThis.matchMedia?.('(orientation: landscape) and (max-height: 520px)');
 const PHONE = globalThis.matchMedia?.('(max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px)');
 
 // n kartı w x h alana en büyük boyda yerleştiren sütun sayısı ve kart genişliği.
 // h yoksa (dar ekranda sütun içerik kadar uzar) yalnız genişliğe bakılır, kart 100 px'ten küçülmez.
 // scroll: alçak ekranda kart en fazla h boyunda olur, sığmayan satırlar dikey kayar.
-export function fitGrid(n, w, h, scroll = false) {
-  if (!n) return { cols: 1, w: MAX_W };
+export function fitGrid(n, w, h, scroll = false, max = MAX_W) {
+  if (!n) return { cols: 1, w: max };
   if (scroll) {
     const cw = Math.max(64, Math.min(MAX_W, h / RATIO));
     const cols = Math.max(1, Math.min(n, Math.floor((w + GAP) / (cw + GAP))));
@@ -170,7 +172,7 @@ export function fitGrid(n, w, h, scroll = false) {
   }
   if (!h) {
     const cols = Math.max(1, Math.min(n, Math.floor((w + GAP) / (100 + GAP))));
-    return { cols, w: Math.floor(Math.min(MAX_W, (w - (cols - 1) * GAP) / cols)) };
+    return { cols, w: Math.floor(Math.min(max, (w - (cols - 1) * GAP) / cols)) };
   }
   // En büyük kart; eşitse daha az satır (ızgara dolu görünür), satır da eşitse daha az sütun (dengeli dizilir).
   let best = { cols: 1, rows: n, w: 0 };
@@ -180,6 +182,20 @@ export function fitGrid(n, w, h, scroll = false) {
     if (cw > best.w + 0.5 || (cw > best.w - 0.5 && rows < best.rows)) best = { cols, rows, w: cw };
   }
   return { cols: best.cols, w: Math.floor(best.w) };
+}
+
+// Sürüklenen kartın sayfaya sabit kopyası (kayan elde kart kutunun dışına çıkınca kesilmesin); asıl kart yerinde solar.
+function ghostOf(slot) {
+  const k = slot.querySelector('.kart');
+  const r = k.getBoundingClientRect();
+  const g = document.createElement('div');
+  g.className = 'kart-drag';
+  Object.assign(g.style, { left: `${r.left}px`, top: `${r.top}px` });
+  g.style.setProperty('--w', `${r.width}px`);
+  g.innerHTML = k.outerHTML;
+  document.body.appendChild(g);
+  slot.classList.add('ghosted');
+  return g;
 }
 
 export class Hand {
@@ -273,7 +289,8 @@ export class Hand {
     const n = this.order.length;
     const short = !!SHORT?.matches;
     // Alçak ekranda ızgaranın iç boşluğu düşülür; tek satır kart kaydırma çubuğu çıkarmasın.
-    const { cols, w } = fitGrid(n, this.el.clientWidth - (short ? 4 : 0), PHONE?.matches && !short ? 0 : this.el.clientHeight - (short ? 6 : 0), short);
+    const tel = PHONE?.matches && !short; // telefon düzeninde el alttan sayfada tek sıra, kart en çok TEL_W
+    const { cols, w } = fitGrid(n, this.el.clientWidth - (short ? 4 : 0), tel ? 0 : this.el.clientHeight - (short ? 6 : 0), short, tel ? TEL_W : MAX_W);
     this.el.style.setProperty('--cols', cols);
     this.el.style.setProperty('--hw', `${w}px`);
     this.el.style.setProperty('--zoom', Math.max(1, ZOOM_W / w).toFixed(3));
@@ -316,12 +333,20 @@ export class Hand {
       if (!d.el.classList.contains('playable')) return;
       d.moving = true;
       this.untilt();
-      d.el.classList.add('dragging');
       document.body.classList.add('carddrag'); // tahtadaki kareler sürüklerken kalkmaz
+      const st = getComputedStyle(this.el);
+      if (st.overflowX === 'visible' && st.overflowY === 'visible') d.el.classList.add('dragging');
+      else d.ghost = ghostOf(d.el);
+    }
+    const armed = this.overDrop(e);
+    if (d.ghost) {
+      d.ghost.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+      d.ghost.classList.toggle('armed', armed);
+      return;
     }
     d.el.style.setProperty('--dx', `${dx}px`);
     d.el.style.setProperty('--dy', `${dy}px`);
-    d.el.classList.toggle('armed', this.overDrop(e));
+    d.el.classList.toggle('armed', armed);
   }
 
   up(e) {
@@ -337,7 +362,8 @@ export class Hand {
     const d = this.drag;
     if (!d) return null;
     this.drag = null;
-    d.el.classList.remove('dragging', 'armed');
+    d.ghost?.remove();
+    d.el.classList.remove('dragging', 'armed', 'ghosted');
     document.body.classList.remove('carddrag');
     d.el.style.removeProperty('--dx');
     d.el.style.removeProperty('--dy');

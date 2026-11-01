@@ -24,7 +24,8 @@ import { worthLines } from './chart.js';
 import { ic, money, CARD_IC, GUNDEM_IC, SURPRIZ_IC } from './icons.js';
 import { pawn, warmPawns } from './pawns.js';
 import { verdict } from './verdict.js';
-import { canShare } from './phone.js';
+import { canShare, isTel } from './phone.js';
+import { sheetLayer, closeTop, sheetBox } from './sheet.js';
 import { mountDayi } from './dayi.js';
 import { dayiMoment, dayiSay } from './dayisay.js';
 import { canPlay, idleTurn, AUTO_END_MS } from './idle.js';
@@ -65,7 +66,10 @@ export function mountGame(root) {
     </div>
     <aside class="side">
       <div class="side-head">
+        <button class="me-pill tel-only" id="mePill" data-act="player" aria-label="Senin durumun"></button>
         <span class="logo sm">Rantçı Dayı</span><span class="round-chip" id="round"></span><span class="grow"></span>
+        <span id="tbStick" class="tel-only"></span>
+        <button class="btn sq tel-only" data-act="history" aria-label="Son olaylar">${ic('history')}</button>
         <button class="btn sq fs-btn" data-act="fullscreen" aria-label="Tam ekran">${ic('expand')}</button>
         <button class="btn sq" data-act="audio" id="tAudio" aria-label="Ses ve bildirim ayarları"></button>
         <button class="btn sq" data-act="theme" id="tTheme" aria-label="Tema"></button>
@@ -75,20 +79,14 @@ export function mountGame(root) {
       <div class="panel players" id="players"></div>
       <div id="audioPop"></div>
       <section class="hand-panel" id="handPanel">
-        <div class="hand-head"><span class="row muted" style="gap:4px" data-tip="Elindeki kart / en fazla">${ic('cards')}<span class="small num" id="handN"></span></span><span class="grow"></span><span class="deck" id="deck" data-tip="Destede kalan kart"></span><span id="stick"></span></div>
+        <div class="hand-head"><span class="row muted" style="gap:4px" data-tip="Elindeki kart / en fazla">${ic('cards')}<span class="small num" id="handN"></span></span><span class="grow"></span><span class="deck" id="deck" data-tip="Destede kalan kart"></span><span id="stick"></span><span id="handGo" class="tel-only"></span><button class="btn S sq ton tel-only" data-act="hand" aria-label="Eli kapat">${ic('close')}</button></div>
         <div class="hand-grid" id="handGrid"></div>
         <div class="piles"><div class="pile deckpile" id="deckPile" data-tip="Destede kalan kart"></div><div class="pile discpile" id="discPile" data-tip="Son oynanan kart"></div></div>
       </section>
       <div class="player-panel hidden" id="playerPanel"></div>
       <div class="tools" id="tools"></div>
     </aside>
-  </div>
-  <div class="turn-phone" role="dialog" aria-label="Telefonu yan çevir">
-    <span class="tp-ic">${ic('rotate')}</span>
-    <span class="h22">Telefonu yan çevir</span>
-    <span class="body">Tahta yatay ekranda rahat oynanır. Döndürme kilidi açıksa kapat.</span>
-    <button class="btn L pri fs-btn" data-act="fullscreen">${ic('expand')}Tam ekran, yatay</button>
-    <button class="btn S gho" data-act="portraitOk">Dikey devam et</button>
+    <div class="telbar" id="telbar"><button class="tb-hand" id="tbHand" data-act="hand"></button><div class="tb-main" id="tbMain"></div><div class="tb-tools" id="tbTools"></div></div>
   </div>
   <div id="results"></div>`;
   const g = (id) => document.getElementById(id);
@@ -96,7 +94,8 @@ export function mountGame(root) {
     round: g('round'), audio: g('tAudio'), theme: g('tTheme'), board: g('board'), center: g('center'), gundem: g('gundem'), banner: g('banner'),
     prompt: g('prompt'), dice: g('dice'), tokens: g('tokens'), pop: g('pop'), players: g('players'), feed: g('feed'), handPanel: g('handPanel'),
     handN: g('handN'), handGrid: g('handGrid'), deck: g('deck'), deckPile: g('deckPile'), discPile: g('discPile'), audioPop: g('audioPop'), playerPanel: g('playerPanel'), tools: g('tools'),
-    modal: g('modal'), stage: g('stage'), results: g('results'), stick: g('stick'), feedcol: g('feedcol'),
+    modal: g('modal'), stage: g('stage'), results: g('results'), stick: g('stick'), feedcol: g('feedcol'), game: root.querySelector('.game'), toasts: g('toasts'),
+    me: g('mePill'), telbar: g('telbar'), tbHand: g('tbHand'), tbMain: g('tbMain'), tbTools: g('tbTools'), tbStick: g('tbStick'), handGo: g('handGo'),
   };
   cells = buildBoard(els.board);
   preloadFx();
@@ -110,9 +109,17 @@ export function mountGame(root) {
   }).observe(game);
   cityMap = new CityMap(els.board);
   tokens = new Tokens(els.tokens, cells);
-  // Zarlar tahtanın neredeyse tamamına savrulur; dikey telefonda ortası alttan açılan sayfa olunca kendi kutusunda kalır.
-  const sheet = matchMedia('(max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px)');
-  dice = new Dice(els.dice, 2, () => (sheet.matches ? null : els.board));
+  // Zarlar tahtanın neredeyse tamamına savrulur. Telefon düzeninde zar kutusu tahtanın hemen altında: tepsi ikisini kapsar,
+  // zarlar kutuya tepsinin içinden döner.
+  const telArena = {
+    getBoundingClientRect() {
+      const b = els.board.getBoundingClientRect();
+      const d = els.dice.getBoundingClientRect();
+      const bottom = d.height ? Math.max(b.bottom, d.bottom + 8) : b.bottom;
+      return { left: b.left, top: b.top, right: b.right, bottom, width: b.width, height: bottom - b.top };
+    },
+  };
+  dice = new Dice(els.dice, 2, () => (isTel() ? telArena : els.board));
   const deckBox = { getBoundingClientRect: () => (els.deckPile.offsetParent ? els.deckPile : els.deck).getBoundingClientRect() };
   hand = new Hand(els.handGrid, els.board, deckBox);
   initTips();
@@ -135,7 +142,8 @@ export function mountGame(root) {
   });
   // Zarı tutup savurma: Zar At düğmesine ya da tepside bekleyen zarlara basılı tut, sürükle, bırak.
   // Basıp hemen bırakmak da olur (zarlar ileri savrulur); klavyeyle Zar At her zamanki gibi atar.
-  els.center.addEventListener('pointerdown', (e) => {
+  // Telefon düzeninde Zar At alttaki çubukta.
+  const toss = (e) => {
     const btn = e.target.closest('[data-act="roll"]');
     const ok = btn ? !btn.disabled : !!e.target.closest('#dice');
     if (!ok || e.button !== 0 || calm() || !app.view || !canToss(app.view)) return;
@@ -150,18 +158,54 @@ export function mountGame(root) {
       removeEventListener('pointercancel', end);
       if (ev.type === 'pointercancel') return dice.drop();
       dice.release(ev.clientX, ev.clientY - lift);
-      const b = els.prompt.querySelector('[data-act="roll"]');
-      if (b) b.disabled = true; // ardından gelen tıklama ikinci kez atmasın
+      for (const b of document.querySelectorAll('.game [data-act="roll"]')) b.disabled = true; // ardından gelen tıklama ikinci kez atmasın
       act({ type: 'roll' });
     };
     addEventListener('pointermove', move);
     addEventListener('pointerup', end);
     addEventListener('pointercancel', end);
-  });
+  };
+  els.center.addEventListener('pointerdown', toss);
+  els.telbar.addEventListener('pointerdown', toss);
+
   // Dokunmatikte uzun basma menü açmasın (menü dokunuşu iptal eder, zarlar elden düşer).
   root.querySelector('.game').addEventListener('contextmenu', (e) => {
     if (matchMedia('(hover: none)').matches && !e.target.closest('input, textarea')) e.preventDefault();
   });
+}
+
+// Telefon düzeninin alttan sayfaları, alttan üste. Geri hareketi en üsttekini kapatır (backStep).
+sheetLayer(() => app.ui.handOpen, () => (app.ui.handOpen = false));
+sheetLayer(() => app.ui.dialog?.type === 'player', () => (app.ui.dialog = null));
+sheetLayer(() => !!app.ui.pick, () => (app.ui.pick = null));
+sheetLayer(() => app.ui.gundemOpen, () => (app.ui.gundemOpen = false));
+sheetLayer(() => app.ui.stickerOpen, () => (app.ui.stickerOpen = false));
+sheetLayer(() => app.ui.popSq !== null && app.ui.popSq !== undefined, () => (app.ui.popSq = null));
+sheetLayer(() => app.ui.audioOpen, () => (app.ui.audioOpen = false));
+sheetLayer(() => !!app.ui.dialog && app.ui.dialog.type !== 'player', () => (app.ui.dialog = null));
+sheetLayer(() => !!app.ui.resultsOpen, () => (app.ui.resultsOpen = false));
+
+// Geri hareketi: açık sayfa varsa en üsttekini kapatır (true), yoksa false (oyundan çıkma uyarısı).
+export function backStep() {
+  if (!els || !closeTop()) return false;
+  updateGame();
+  return true;
+}
+
+// Telefon düzenine girince ya da çıkınca tahtanın ortası ve katmanları yer değiştirir: telefonda tahtanın dışında, ekrana
+// sabit (tahta sarsılınca onlar oynamaz, alttan sayfalar tahtanın altına da uzanır); masaüstünde ve yatay telefonda tahtanın
+// içinde. Sıra iskeletteki gibi kalır.
+export function telMode(on) {
+  if (!els) return;
+  const home = on ? els.game : els.board;
+  if (els.center.parentElement !== home) {
+    if (on) els.game.insertBefore(els.center, els.telbar);
+    else els.board.insertBefore(els.center, els.tokens);
+    for (const el of [els.pop, els.stage, els.modal, els.toasts]) (on ? els.game.insertBefore(el, els.telbar) : els.board.appendChild(el));
+  }
+  if (!on) app.ui.handOpen = false;
+  if (app.view) updateGame();
+  dice.relayout();
 }
 
 function focusPlayer(p) {
@@ -418,6 +462,7 @@ function promptHTML(v) {
   const hints = [];
   const note = noteHTML(v);
   if (note) hints.push(note);
+  if (t.again) hints.push(html`<span class="hint tel-only">${I('dice')}Çift attın, bir daha atacaksın</span>`); // telefonda düğme kısa
   if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push(html`<span class="hint">${I('bolt')}Kart oynayabilirsin</span>`);
   if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false))) hints.push(html`<span class="hint">${I('home')}Kat dikebilirsin</span>`);
   return html`<div class="stagebox"><div class="who">${BOARD[pl.pos].name}</div>${hints.length ? html`<div class="row">${hints}</div>` : ''}
@@ -426,14 +471,15 @@ function promptHTML(v) {
 
 // Turu bitir düğmesi. Yapacak bir şey kalmadıysa 3 sn geri sayar (düğmenin altında boşalan çubuk ve saniye),
 // süre dolunca tur kendiliğinden biter; ele gelmek, pencere açmak ya da tahtaya tıklamak bu tur için durdurur.
-function endButton(v) {
+function endButton(v, big = false) {
   const t = v.turn;
-  const label = t.again ? html`${I('dice')}Çift attın: bir daha at` : 'Turu bitir';
+  const label = t.again ? html`${I('dice')}${big ? 'Bir daha at' : 'Çift attın: bir daha at'}` : 'Turu bitir';
   const a = autoEnd.at && autoEnd.key === turnKey(v) ? autoEnd.at : 0;
   const left = a ? Math.max(0, a - Date.now()) : 0;
   const run = a ? html` <span class="autoend" data-autoend="${a}">${Math.ceil(left / 1000)}</span>` : '';
-  const bar = a ? raw(`style="min-width:240px;--auto:${AUTO_END_MS}ms;--auto-at:-${AUTO_END_MS - left}ms"`) : raw('style="min-width:240px"');
-  return html`<button class="btn L pri ${a ? 'autorun' : ''}" ${bar} data-act="endTurn" data-primary>${label}${run}</button>`;
+  const w = big ? '' : 'min-width:240px;';
+  const bar = a ? raw(`style="${w}--auto:${AUTO_END_MS}ms;--auto-at:-${AUTO_END_MS - left}ms"`) : raw(w ? `style="${w}"` : '');
+  return html`<button class="btn pri ${big ? 'tb-big' : 'L'} ${a ? 'autorun' : ''}" ${bar} data-act="endTurn" ${big ? '' : raw('data-primary')}>${label}${run}</button>`;
 }
 
 // Kendiliğinden tur bitirme (yalnız istemci; ev sahibine normal endTurn gider).
@@ -709,7 +755,7 @@ function renderPlayers(v) {
       box.appendChild(row);
     }
     const turn = v.phase === 'play' && v.turn && v.turn.p === i;
-    row.className = `prow ${turn ? 'turn' : ''} ${pl.out ? 'out' : ''}`;
+    row.className = `prow ${turn ? 'turn' : ''} ${pl.out ? 'out' : ''} ${i === v.you ? 'me' : ''}`;
     row.style.setProperty('--pc', pl.color);
     row.setAttribute('aria-label', `${pl.name}${i === v.you ? ' (sen)' : ''}, ${pl.out ? 'iflas etti' : `${fmt(pl.cash)}`}`);
     setHTML(row.firstElementChild, PW(pl, 30));
@@ -725,16 +771,61 @@ function renderPlayers(v) {
   });
 }
 
+// Telefon düzeninde üstte senin piyonun, paran ve net değerin (oyuncu sırasında kendi satırın yok). Dokununca ayrıntı.
+function renderMe(v) {
+  const me = v.you;
+  els.me.classList.toggle('hidden', me < 0);
+  if (me < 0) return;
+  const pl = P(v, me);
+  els.me.dataset.p = me;
+  els.me.style.setProperty('--pc', pl.color);
+  els.me.setAttribute('aria-label', `Sen: ${fmt(pl.cash)}, ayrıntı`);
+  if (!els.me.firstElementChild) els.me.innerHTML = '<span class="disc"></span><span class="me-rest"></span>';
+  setHTML(els.me.firstElementChild, PW(pl, 40));
+  setHTML(els.me.lastElementChild, html`<span class="me-cash ${pl.cash < 0 ? 'neg' : ''}">${I('tl')}<b data-cash="${me}">${cashText(shown(`cash${me}`, pl.cash))}</b></span><span class="me-net">Net değer ${cashText(E.netWorth(v, me))}</span>`);
+}
+
+// Telefon düzeninin alt çubuğu: solda el (kartların yelpazesi), ortada 72 px Zar At / Turu bitir, sağda Pazarlık ve İnşaat.
+function renderTelbar(v) {
+  const me = v.you;
+  const off = !isTel() || me < 0;
+  els.telbar.classList.toggle('hidden', off);
+  if (off) return setHTML(els.tbMain, '');
+  const pl = P(v, me);
+  const n = pl.hand.length;
+  const can = pl.hand.some((u) => canPlay(v, u));
+  const fan = pl.hand.slice(-3).map((u, i, a) => html`<span class="tb-k" style="--k:${i - (a.length - 1) / 2}">${cardFace(cardId(u), 'mini')}</span>`);
+  setHTML(els.tbHand, html`<span class="tb-fan">${fan}</span><span class="tb-n">${n}</span>${can ? html`<span class="tb-dot"></span>` : ''}<span class="tb-lbl">El</span>`);
+  els.tbHand.setAttribute('aria-label', `Elin: ${n} kart${can ? ', oynanabilen var' : ''}`);
+  els.tbHand.setAttribute('aria-expanded', app.ui.handOpen ? 'true' : 'false');
+  const t = v.turn;
+  let main = '';
+  if (v.phase === 'play' && t && t.p === me && !v.pending && !app.ui.pick) {
+    if (t.step === 'preroll') main = html`<button class="btn pri tb-big" data-act="roll">${I('dice')}Zar At</button>`;
+    else if (t.step === 'free' && pl.cash >= 0) main = endButton(v, true);
+  }
+  setHTML(els.tbMain, main);
+  const d = app.ui.dialog?.type;
+  const build = E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false));
+  const tool = (k, icon, label, dot = false) => html`<button class="tb-tool ${d === k ? 'on' : ''}" data-act="tool" data-k="${k}"><span class="tb-ic">${I(icon)}${dot ? html`<span class="tb-dot"></span>` : ''}</span><span class="tb-lbl">${label}</span></button>`;
+  setHTML(els.tbTools, html`${tool('trade', 'deal', 'Pazarlık')}${tool('build', 'build', 'İnşaat', build && canManage(v))}`);
+}
+
 // Sağ sütundaki el ve deste. İzleyicinin eli yoktur. Oyuncu ayrıntısı açıksa elin yerinde durur.
+// Telefon düzeninde el ve oyuncu ayrıntısı alttan sayfa; atılacak kart seçerken el kendiliğinden açılır.
 function renderHand(v) {
   const me = v.you;
+  const tel = isTel();
   const panel = app.ui.dialog && app.ui.dialog.type === 'player';
-  els.handPanel.classList.toggle('hidden', me < 0 || panel);
+  const discard = me >= 0 && v.pending && v.pending.type === 'discard' && v.pending.p === me;
+  els.handPanel.classList.toggle('hidden', me < 0 || (panel && !tel));
   els.playerPanel.classList.toggle('hidden', !panel);
+  sheetBox(els.handPanel, me >= 0 && (app.ui.handOpen || discard), 'El', tel);
+  sheetBox(els.playerPanel, !!panel, 'Oyuncu', tel);
   if (panel) setHTML(els.playerPanel, playerPanelHTML(v, app.ui.dialog.p));
+  setHTML(els.handGo, tel && discard ? html`<button class="btn S pri" data-act="discardGo" ${app.ui.selected.length !== v.pending.count ? 'disabled' : ''}>Seçileni at ${app.ui.selected.length}/${v.pending.count}</button>` : '');
   if (me < 0) return hand.render([], () => ({}));
   const pl = P(v, me);
-  const discard = v.pending && v.pending.type === 'discard' && v.pending.p === me;
   // Sıra bendeyken şu an oynanamayan kartlar soluk durur, oynanabilenler köşesindeki şimşekle belli olur.
   const myTurn = v.phase === 'play' && v.turn && v.turn.p === me && !discard;
   hand.render(pl.hand, (u) => {
@@ -811,7 +902,9 @@ function drawAudioPop() {
     <div class="row" style="gap:8px">${I('shake')}<span style="font-weight:600">Sarsıntı</span><span class="grow"></span><input type="checkbox" class="sw" data-act="shakeToggle" ${shakeEnabled() ? 'checked' : ''} aria-label="Büyük anlarda tahta sarsılsın"></div>
     ${canVibrate() ? html`<div class="row" style="gap:8px">${I('vibrate')}<span style="font-weight:600">Titreşim</span><span class="grow"></span><input type="checkbox" class="sw" data-act="vibrateToggle" ${vibrateEnabled() ? 'checked' : ''} aria-label="Önemli anlarda telefon titresin"></div>` : ''}
     ${notifySupported() ? html`<div class="row" style="gap:8px;padding-top:8px;border-top:1px solid var(--line)">${I(isNotifyOn() ? 'bell' : 'bellOff')}<span class="small">Sıra bana gelince bildir</span><span class="grow"></span><input type="checkbox" class="sw" data-act="notify" ${isNotifyOn() ? 'checked' : ''} aria-label="Bildirim"></div>` : ''}
-    ${online ? html`<button class="btn S ton" data-act="copyLink">${I('link')}Davet linkini ${canShare() ? 'gönder' : 'kopyala'} · ${app.code}</button>` : ''}</div>`);
+    ${online ? html`<button class="btn S ton" data-act="copyLink">${I('link')}Davet linkini ${canShare() ? 'gönder' : 'kopyala'} · ${app.code}</button>` : ''}
+    ${isTel() ? html`<div class="row pop-more"><button class="btn S ton flex" data-act="theme">${I(document.body.classList.contains('dark') ? 'sun' : 'moon')}${document.body.classList.contains('dark') ? 'Açık tema' : 'Koyu tema'}</button><button class="btn S ton flex" data-act="rules">${I('book')}Kurallar</button></div>
+      <div class="row pop-more"><button class="btn S ton flex fs-btn" data-act="fullscreen">${I('expand')}Tam ekran</button><button class="btn S ton flex" data-act="leave">${I('door')}Oyundan çık</button></div>` : ''}</div>`);
 }
 
 // Olaylar: sade, büyük yazı; zar, yürüme, maaş gibi gürültü gizlenir. Ortada son 3 olay, geçmişte turlara ayrılmış hepsi.
@@ -934,7 +1027,8 @@ function buildDialog(v) {
   const changed = Object.values(st).some((d) => d);
   const order = buildOrder(v, st);
   const why = changed && !order ? html`<span class="reason">Katlar eşit çıkar: setteki her mülke sırayla kat dik.</span>` : '';
-  return html`<div class="sheet L">${sheetHead('build', 'İnşaat', html`<span class="muted" data-tip="Bir setteki katlar eşit çıkar: bir ile ikinci kat dikilmeden öbürüne üçüncü kat çıkılmaz." tabindex="0" aria-label="İnşaat kuralı">${I('info')}</span>`)}<div class="sheet-body">${sets}${empty}</div>${lock}
+  const mort = isTel() ? html`<button class="btn S ton" data-act="tool" data-k="mortgage">${I('ipotek')}İpotek</button>` : '';
+  return html`<div class="sheet L">${sheetHead('build', 'İnşaat', html`<span class="muted" data-tip="Bir setteki katlar eşit çıkar: bir ile ikinci kat dikilmeden öbürüne üçüncü kat çıkılmaz." tabindex="0" aria-label="İnşaat kuralı">${I('info')}</span>${mort}`)}<div class="sheet-body">${sets}${empty}</div>${lock}
     <div class="sheet-foot">${why}<span class="muted small">Toplam</span><span class="h28">${M(-total)}</span><span class="grow"></span><button class="btn gho" data-act="close">Vazgeç</button><button class="btn pri" data-act="buildGo" ${manage && changed && order && total <= P(v, me).cash ? '' : 'disabled'}>${I('build')}İnşa et</button></div></div>`;
 }
 
@@ -1182,13 +1276,22 @@ export function updateGame() {
   setHTML(els.banner, bannerHTML());
   planAutoEnd(v);
   renderKeep(els.prompt, promptHTML(v));
+  // Telefonda kısa istem (sıra sende, bekleniyor) çubuğun üstünde kalır; seçenekli istem alttan sayfa olur. Tahtadan kare
+  // seçerken (kart hedefi, Tapu Dairesi) istem kısa kalır: tahta görünsün, kartın resmi ve tapu gizlenir.
+  const tel = isTel();
+  const pickp = tel && !!els.prompt.querySelector('[data-act="pickCancel"], [data-act="tapuBuy"]');
+  els.center.classList.toggle('pickp', pickp);
+  els.center.classList.toggle('big', tel && !pickp && !!els.prompt.querySelector('.card-prompt, .sheet, .deed, .chain, button:not([data-act="roll"], [data-act="endTurn"], [data-act="discardGo"])'));
   if (!animating) paintDice(v);
   renderPop(v);
   renderPlayers(v);
+  renderMe(v);
   warmPawns(v.players);
   renderHand(v);
+  renderTelbar(v);
   setHTML(els.tools, toolsHTML(v));
-  setHTML(els.stick, stickerHTML(v));
+  setHTML(isTel() ? els.tbStick : els.stick, stickerHTML(v));
+  setHTML(isTel() ? els.stick : els.tbStick, '');
   renderAudioPop();
   renderFeed();
   renderModal();
@@ -1308,12 +1411,15 @@ function showToast(text, kind = '', icon = '') {
 }
 
 // Tutar yazısı: kademeye göre boy (küçük, orta, büyük). Paneldeki sayının solunda belirir, sayıyı kapatmaz.
+// Oyuncunun ekranda görünen bakiyesi (telefonda kendi bakiyen üstteki kutuda, oyuncu sırasında değil).
+const cashEl = (p) => [...document.querySelectorAll(`[data-cash="${p}"]`)].find((el) => el.getClientRects().length) || null;
+
 function floatMoney(p, delta, tier = 'small') {
-  const anchor = document.querySelector(`[data-cash="${p}"]`);
+  const anchor = cashEl(p);
   if (!anchor) return;
   const r = anchor.getBoundingClientRect();
   const el = floatEl(delta, tier);
-  el.style.left = `${r.left - 70}px`;
+  el.style.left = `${Math.max(4, r.left - 70)}px`;
   el.style.top = `${r.top}px`;
   setTimeout(() => el.remove(), 1500);
 }
@@ -1335,7 +1441,7 @@ export function countCash(prev, v, ms) {
   v.players.forEach((pl, i) => {
     const before = prev.players[i]?.cash;
     if (before === undefined || before === pl.cash || pl.out) return;
-    const find = () => (els && !app.view?.players[i]?.out ? document.querySelector(`[data-cash="${i}"]`) : null);
+    const find = () => (els && !app.view?.players[i]?.out ? cashEl(i) : null);
     count(`cash${i}`, before, pl.cash, ms, find, cashText);
   });
 }
@@ -1367,7 +1473,7 @@ const centerOf = (el) => {
 };
 
 // Oyuncunun para kutusu ya da banka (tahtanın ortası) ekrandaki merkez noktası.
-const moneyPoint = (p) => centerOf(p === null ? els && els.center : document.querySelector(`[data-cash="${p}"]`));
+const moneyPoint = (p) => centerOf(p === null ? els && els.center : cashEl(p));
 
 // Kart, gündem ve vergi parası: oyuncu panelleri ve banka arasında kavis çizerek uçan jetonlar (küçük kademe).
 function flyPanel({ from, to, amount, tier, n, delay }) {

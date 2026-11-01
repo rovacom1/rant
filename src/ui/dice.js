@@ -214,6 +214,15 @@ export class Dice {
     this.total(values, states, R, false);
   }
 
+  // Düzen değişince (telefon dikey/yatay) duran zarlar yeni yerlerine konur.
+  relayout() {
+    const v = this.values;
+    if (!v || this.held || this.el.classList.contains('rolling')) return;
+    this.values = null;
+    if (v === 'ready') this.ready();
+    else this.show(v.split(',').map(Number));
+  }
+
   // Zarların yerindeki kutunun ortası, tepsi düzleminde: zarların yan yana duracağı noktalar.
   homeAt(n, R) {
     const r = this.el.getBoundingClientRect();

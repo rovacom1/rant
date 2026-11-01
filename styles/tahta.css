@@ -267,19 +267,7 @@ body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0
 }
 
 /* ---------- telefon ---------- */
-/* dikey (ya da dar pencere): tahtanın kareleri küçük, ortası alttan açılan sayfa */
-@media (max-width: 760px) and (orientation: portrait), (max-width: 760px) and (min-height: 521px) {
-  .cell .face { padding: 0 1px 2px; --in: calc(var(--band) + 8px); --in-art: calc(var(--band) + 1px); --out: 1px; }
-  .cell:not(.k-prop, .corner) .nm { min-height: 2em; }
-  .board { --nmf: max(7px, calc(var(--ch) * 0.16)); --so: 1px; --sw-on: 4px; }
-  .strip { left: 4px; right: 4px; }
-  .cell:is(.side-l, .side-r) .strip { top: 4px; }
-  .cell.corner .nm { font-size: 6.5px; letter-spacing: 0; }
-  /* ortası alttan açılan sayfa olunca harita tahtada kalır */
-  .citymap { inset: calc(var(--ch) + 2px) calc(var(--cw) + 2px); }
-  .map-btn { display: none; }
-  .center { padding-top: 12px; padding-bottom: 16px; }
-}
+/* dikey telefon: styles/telefon.css */
 /* yatay telefon: kare boyu ekranın yüksekliğiyle ölçeklenir; yazılar okunur kalsın diye en az 8 px */
 @media (orientation: landscape) and (max-height: 520px) {
   .cell .face { padding: 0 1px 2px; --in: calc(var(--band) + 6px); --in-art: calc(var(--band) + 1px); --out: 1px; }

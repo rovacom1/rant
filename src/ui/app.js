@@ -121,9 +121,11 @@ const modalShell = () => (app.ui.menuModal ? html`<div class="screen" style="pos
 function render() {
   if (app.screen === 'game' && app.view) {
     if (!G.gameMounted()) G.mountGame(root);
+    // Geri hareketi önce en üstteki alttan sayfayı kapatır; açık sayfa yoksa çıkış yolunu söyler. Telefon düzeni ilk
+    // çizimden önce kurulur (zarlar ve el yerlerini doğru ölçsün).
+    phoneGame(true, () => G.backStep() || G.toast('Oyundan çıkmak için kapı düğmesine bas.', '', 'door'), G.telMode);
     G.updateGame();
     mountIntro(null);
-    phoneGame(true, () => G.toast('Oyundan çıkmak için kapı düğmesine bas.', '', 'door'));
     return;
   }
   phoneGame(false);
@@ -793,18 +795,20 @@ const A = {
     app.ui.resultsOpen = false;
     G.updateGame();
   },
-  // Telefonda tam ekran ve yatay kilit. Kilit desteklenmezse tam ekran yine kalır.
+  // Telefonda tam ekran; yan tutuluyorsa yatay kilitlenir (dikeyde kilit yok: çevirince yatay düzen gelir).
+  // Kilit desteklenmezse tam ekran yine kalır.
   async fullscreen() {
     try {
       if (!document.fullscreenElement) await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
-      await screen.orientation.lock('landscape');
+      if (screen.orientation?.type.startsWith('landscape')) await screen.orientation.lock('landscape');
     } catch {
-      // desteklenmiyor ya da reddedildi: oyuncu telefonu kendisi çevirir
+      // desteklenmiyor ya da reddedildi
     }
   },
-  // Dikey ekranda "yan çevir" perdesini bu oturumda kapatır.
-  portraitOk() {
-    document.body.classList.add('portrait-ok');
+  // Telefon düzeninde el alttan sayfa: alttaki çubuktaki ele dokununca açılır, yeniden dokununca kapanır.
+  hand() {
+    app.ui.handOpen = !app.ui.handOpen;
+    G.updateGame();
   },
   theme() {
     const dark = !document.body.classList.contains('dark');
@@ -822,6 +826,7 @@ document.addEventListener('rant:card', (e) => {
   const { uid, how } = e.detail;
   if (how === 'click' || (v.pending && v.pending.type === 'discard')) return A.openCard({ dataset: { uid } });
   if (!G.canPlay(v, uid)) return;
+  if (how === 'drop') app.ui.handOpen = false; // telefonda el sayfası tahtayı boşaltır
   const target = E.CARDS[E.cardId(uid)].target;
   if (target === 'none') return act({ type: 'playCard', uid, target: {} });
   if (isBoardPickable(uid)) return A.pickBoard({ dataset: { uid } });
@@ -884,6 +889,7 @@ document.addEventListener('keydown', (e) => {
     return G.updateGame();
   }
   if (e.key === 'Escape' && (app.ui.dialog || app.ui.menuModal)) return closeDialog();
+  if (e.key === 'Escape' && app.ui.handOpen) return A.hand();
   if (e.key === 'Escape' && app.ui.resultsOpen) return A.resultsClose();
   if (e.key === 'Escape' && app.ui.pick) return A.pickCancel();
   if (e.key === 'Escape' && app.ui.popSq !== null && app.ui.popSq !== undefined) return closePop();

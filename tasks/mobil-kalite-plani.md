@@ -43,7 +43,7 @@ commit + push (main'e birleştirme yok). Haftalar tahmin.
 3. [x] **Dik yazılar, simgeler** (v0.41): `ui/board.js`, `styles/tahta.css` dönme kalkar; kare simgeleri `assets/kare/`;
    `ui/deed.js`; CLAUDE.md + TASARIM.md §3. Bitti: dört kenardaki adlar başı çevirmeden okunur.
 4. [x] **İhale** (v0.41): çubuk + çipler (`ui/gameview.js`, `styles/main.css`).
-5. [ ] **Telefon iskeleti** (v0.42): `styles/telefon.css` + `body.tel`, `ui/sheet.js` (alttan sayfa yığını, geri hareketi),
+5. [x] **Telefon iskeleti** (v0.42): `styles/telefon.css` + `body.tel`, `ui/sheet.js` (alttan sayfa yığını, geri hareketi),
    `ui/phone.js` (dikey perde kalkar), CLAUDE.md telefon maddesi yeniden. Bitti: 390x844 ve 360x740'ta kaydırmasız tur.
 6. [ ] **Eğik tahta, kamera** (v0.43): `ui/camera.js` (masa, izle, odak, hedef); tahta görünümü soyutlanır (hücre yerleri, piyon
    noktaları, kamera odakları) ki Mahalle arazisi da kullansın. Bitti: 60 fps, kamera bütçeyi uzatmaz.
