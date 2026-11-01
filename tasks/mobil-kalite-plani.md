@@ -30,7 +30,7 @@ commit + push (main'e birleştirme yok). Haftalar tahmin.
 | 21 Ara | Mahalle modu K4 |
 
 ## Adımlar
-0. [ ] **Görseller** (bu hafta, kredi ~2026-11-08'de sıfırlanır; ~150 / 202): tahta simgeleri 8 (~20), dayının 6 tepki videosu (~36),
+0. [x] **Görseller** (bitti 2026-11-01, ~34 kredi; dayının tepki videoları kullanıcı kararıyla ertelendi) (bu hafta, kredi ~2026-11-08'de sıfırlanır; ~150 / 202): tahta simgeleri 8 (~20), dayının 6 tepki videosu (~36),
    jeton + toz + masa zemini + tepki çıkartmaları (~30), şehirlerin simge yapıları 8 (~32), Mahalle modu için arazi zemini, park, AVM, torpil (~12);
    kalırsa kaçak eklentileri, konfeti, iskele, banknot, kepçe, bekleyen dayı (~22). İlk gün iki simge, zemin, jeton, toz ile stil
    denemesi onaya. GORSEL_STIL.md güncellenir ("özel kareler SVG" kuralı değişir).
@@ -55,7 +55,7 @@ commit + push (main'e birleştirme yok). Haftalar tahmin.
    çıkartmaları (`assets/tepki`), İtiraz anı (`T.itiraz`), giriş, lobi, oyun sonu telefonda dikey (sayarak açılan oyun sonu, lobide
    sabit Oyunu başlat), masa zemini (`assets/masa`); kurallarda Klasik/Mahalle seçici; 667x320'de pencereler kaymadan sığar,
    Mahalle'de atılan zar gündemin altında. Bitti: iki tür bot oyunu sonuna kadar, 1440x900, 844x340, 667x320, 390x844, 360x740.
-K. [ ] **Mahalle modu** (v0.47): ayrı plan.
+K. [x] **Mahalle modu** (v0.45-0.47): K0-K3 ve K4 kod kısmı bitti; arkadaş oyunu kullanıcıda.
 
 ## Kalite dokunuşları (adımların içinde)
 Sayan rakamlar, desteden dönerek gelen kart, set anı, "Satıldı" anında tapu ve jeton akışı, büyük anda müziğin kısılması, göçen
