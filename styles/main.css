@@ -70,6 +70,8 @@ body.dark .ic.c { filter: drop-shadow(0 0 0.7px rgba(255, 255, 255, 0.9)) drop-s
 .m { display: inline-flex; align-items: baseline; gap: 0.06em; white-space: nowrap; }
 .m .tl { width: 0.72em; height: 0.72em; vertical-align: 0; align-self: baseline; transform: translateY(0.02em); opacity: 0.8; }
 .ico { width: 100%; height: 100%; display: block; }
+/* tahta karesi simgeleri resim (assets/kare); kontur resme işli, filtre yok */
+img.ic, img.ico { object-fit: contain; user-select: none; }
 
 /* ---------- piyon: oyuncu rengi figürün kendi kenarında ---------- */
 .pawn { display: inline-flex; width: var(--s); height: var(--s); align-items: flex-end; justify-content: center; flex: none; line-height: 0; overflow: visible; }
@@ -264,7 +266,6 @@ body.dark .pawn-pick button.on { background: color-mix(in srgb, #fff 14%, var(--
 }
 .cell .art { width: calc(var(--ch) * 0.4); height: calc(var(--ch) * 0.4); flex: none; }
 .cell.corner .art { width: calc(var(--ch) * 0.45); height: calc(var(--ch) * 0.45); }
-body.dark .cell.k-rail .art { filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.4)); }
 .cell .stepn { position: absolute; right: 6px; top: 6px; min-width: 26px; height: 26px; padding: 0 5px; border-radius: 999px; background: var(--me); color: #fff; display: grid; place-items: center; font-family: var(--hf); font-weight: 800; font-size: 14px; box-shadow: 0 0 0 2px #fff, var(--sh-2); z-index: 4; }
 .cell.hl { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }
 .cell.pick { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }

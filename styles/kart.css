@@ -77,6 +77,8 @@ body.dark .deed { --paper: #3e3328; --dline: #574735; --dmuted: #c9b89c; backgro
 .deed .d-top { background: var(--dc); color: var(--di); padding: 9px 12px 8px; display: flex; flex-direction: column; gap: 2px; }
 .deed .d-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .deed .d-title .ic { font-size: 18px; flex: none; }
+/* ulaşım tapusunda karenin simgesi (assets/kare) büyükçe durur */
+.deed .d-title img.ic { font-size: 26px; margin: -4px 0; }
 .deed .d-name {
   flex: 1; min-width: 0; white-space: nowrap; overflow: hidden;
   font-family: var(--hf); font-weight: 800; font-size: min(10cqw, calc(86cqw / var(--ne, 6))); line-height: 1.05; letter-spacing: -0.01em;
