@@ -29,8 +29,10 @@ body.dark {
   --d: calc(min(var(--bw), var(--bh)) * 0.118); --cw: var(--d); --ch: var(--d);
   grid-template-columns: var(--d) repeat(8, minmax(0, 1fr)) var(--d); grid-template-rows: var(--d) repeat(8, minmax(0, 1fr)) var(--d);
   --band: max(5px, calc(var(--ch) * 0.13)); --nmf: max(9px, calc(var(--ch) * 0.165));
-  /* sahiplik şeridi: banttan uzaklığı ve sahipliyken kalınlığı */
-  --so: 3px; --sw-on: 7px;
+  /* sahiplik şeridi: banttan uzaklığı, sahipliyken kalınlığı ve uçlarının karenin kenarından uzaklığı */
+  --so: 3px; --sw-on: 7px; --se: 9px; --sg: 3px;
+  /* kilit, terazi ve tam set yıldızının boyu */
+  --mk: max(11px, calc(var(--ch) * 0.18)); --star: max(10px, calc(var(--band) * 1.2));
 }
 .cell {
   display: block; padding: 0; container-type: size;
@@ -40,9 +42,12 @@ body.dark {
 .cell .face {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 3px calc(var(--ch) * 0.05);
-  /* --in: ortaya bakan kenarda bant + şerit payı (simgede --in-art); yan sütunda --in-side (şeridin hemen yanı);
+  /* --in: ortaya bakan kenarda bant + şerit payı (bina ve simge şeridin beyaz kenarından sonra başlar); yan sütunda --in-side
+     (şerit, beyaz kenarı ve --sg boşluk);
      --out: öteki kenarlarda küçük pay */
-  --in: calc(var(--band) + 12px); --in-art: calc(var(--band) + 6px); --in-side: calc(var(--band) + var(--so) + var(--sw-on) + 2px); --out: 4px;
+  --in: calc(var(--band) + var(--so) + var(--sw-on) + 2px); --in-side: calc(var(--band) + var(--so) + var(--sw-on) + 2px + var(--sg)); --out: 4px;
+  /* simge kutusu (ulaşım, Fırsat/Sürpriz): şeridin hemen yanında başlar (beyaz kenarına değebilir, şeridi örtmez); --ag adla arası */
+  --in-art: calc(var(--band) + var(--so) + var(--sw-on)); --ag: 2px;
 }
 /* üstüne gelince kare dış kenarına yaslı hafifçe büyüyüp ortaya doğru çıkıntı yapar, gölgelenir ve altın kenar alır
    (kullanıcı kararı; canlandırmalarda kare yine büyümez). Kart sürüklerken ve kare seçerken olmaz. */
@@ -60,6 +65,8 @@ body.dark {
 }
 /* setin rengi: ortaya bakan kenarda tam doygun bant */
 .cell .band { position: absolute; left: 0; right: 0; top: 0; height: var(--band); background: var(--gc); border-radius: 2px 2px 0 0; pointer-events: none; }
+/* koyu temada koyu set renkleri (Çorum kahvesi, İstanbul laciverti) zeminde kaybolmasın: bandın içinde ince açık çizgi */
+body.dark .cell .band { box-shadow: inset 0 0 0 1px rgba(244, 234, 214, .3); }
 .cell.side-t .band { top: auto; bottom: 0; border-radius: 0 0 2px 2px; }
 .cell.side-l .band { left: auto; width: var(--band); height: auto; bottom: 0; border-radius: 0 2px 2px 0; }
 .cell.side-r .band { right: auto; width: var(--band); height: auto; bottom: 0; border-radius: 2px 0 0 2px; }
@@ -79,7 +86,7 @@ body.dark {
 /* ulaşım ve Fırsat/Sürpriz: mülk karesinin düzeni; simge binanın yerinde, ad mülkünkiyle aynı yerde ve aynı yazıyla.
    Ad hep iki satırlık yer ayırır (tek satırlık ad alta oturur): simge her karede aynı boyda ve aynı yükseklikte durur. */
 .cell .art { flex: none; }
-.cell:not(.k-prop, .corner) .art { position: relative; flex: 1 1 0; width: 100%; height: auto; min-height: 0; margin-top: var(--in-art); margin-bottom: 2px; pointer-events: none; }
+.cell:not(.k-prop, .corner) .art { position: relative; flex: 1 1 0; width: 100%; height: auto; min-height: 0; margin-top: var(--in-art); margin-bottom: var(--ag); pointer-events: none; }
 .cell:not(.k-prop, .corner) .art .ico { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: min(100%, calc(var(--ch) * 0.46)); height: min(100%, calc(var(--ch) * 0.46)); object-fit: contain; }
 .cell:not(.k-prop, .corner) .nm { font-size: var(--nmf); line-height: 1.08; min-height: 2.06em; display: flex; flex-direction: column; justify-content: flex-end; }
 .cell:not(.k-prop, .corner) .nm.two { line-height: 1; }
@@ -88,42 +95,41 @@ body.dark {
 .cell.side-t .nm { order: -1; }
 .cell.side-t:not(.k-prop) .nm { justify-content: flex-start; }
 .cell.side-t .bld { margin: 0 0 var(--in); }
-.cell.side-t:not(.k-prop) .art { margin: 2px 0 var(--in-art); }
+.cell.side-t:not(.k-prop) .art { margin: var(--ag) 0 var(--in-art); }
 /* yan sütunlar: bant ve şerit yanda; içerik kalan genişlikte, adı ve binası alt sıradaki gibi dizilir */
 .cell.side-l .face { padding: 0 var(--in-side) calc(var(--ch) * 0.05) 2px; }
 .cell.side-r .face { padding: 0 2px calc(var(--ch) * 0.05) var(--in-side); }
-/* yan sütunda ad bandın yanına kadar uzanır; şerit adın üstünde biter (board.js fitNames --nmh) */
-.cell:is(.side-l, .side-r) .nm { width: auto; align-self: stretch; }
-.cell.side-l .nm { margin-right: calc(var(--band) + 2px - var(--in-side)); }
-.cell.side-r .nm { margin-left: calc(var(--band) + 2px - var(--in-side)); }
+/* yan sütunda ad da şeridin yanında biter: şerit alt ve üst sıradaki gibi kenarın boyunca uzanır, adı örtmez */
 .cell:is(.side-l, .side-r) .bld, .cell:is(.side-l, .side-r):not(.k-prop) .art { margin-top: var(--out); }
 
-/* sahiplik şeridi: bandın hemen yanında (ortaya bakan kenar); sahipliyken kalın, sahibinin renginde, beyaz kenarlı
-   (beyaz/kömür oyuncu ince koyu kenarla) */
+/* sahiplik şeridi: bandın hemen yanında (ortaya bakan kenar); her karede kenarın boyunca aynı boyda (uçlarda --se pay),
+   sahipliyken kalın, sahibinin renginde, beyaz kenarlı (beyaz/kömür oyuncu ince koyu kenarla) */
 .strip {
   --sw: 3px;
-  position: absolute; z-index: 2; top: calc(var(--band) + var(--so)); left: 9px; right: 9px; height: var(--sw); border-radius: 99px; background: var(--strip-off); pointer-events: none; transition: background 0.3s;
+  position: absolute; z-index: 2; top: calc(var(--band) + var(--so)); left: var(--se); right: var(--se); height: var(--sw); border-radius: 99px; background: var(--strip-off); pointer-events: none; transition: background 0.3s;
 }
 .cell.side-t .strip { top: auto; bottom: calc(var(--band) + var(--so)); }
-.cell:is(.side-l, .side-r) .strip { top: 9px; bottom: calc(var(--nmh, 9px) + 2px); left: auto; right: auto; width: var(--sw); height: auto; }
+.cell:is(.side-l, .side-r) .strip { top: var(--se); bottom: var(--se); left: auto; right: auto; width: var(--sw); height: auto; }
 .cell.side-l .strip { right: calc(var(--band) + var(--so)); }
 .cell.side-r .strip { left: calc(var(--band) + var(--so)); }
 .cell.owned .strip { --sw: var(--sw-on); background: var(--pc); box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px #fff, 0 0 8px color-mix(in srgb, var(--pc) 70%, transparent); }
 body.dark .cell.owned .strip { box-shadow: inset 0 0 0 1px var(--pedge), 0 0 0 2px var(--page), 0 0 8px color-mix(in srgb, var(--pc) 70%, transparent); }
 
 /* tam set yıldızı bandın ortasında; ipotek ve tedbir binanın dış köşesinde (adı örtmez) */
-.cell .fullstar { position: absolute; left: 50%; top: calc(var(--band) / 2); transform: translate(-50%, -50%); z-index: 4; font-size: max(10px, calc(var(--band) * 1.2)); line-height: 0; }
+.cell .fullstar { position: absolute; left: 50%; top: calc(var(--band) / 2); transform: translate(-50%, -50%); z-index: 4; font-size: var(--star); line-height: 0; }
 .cell.side-t .fullstar { top: auto; bottom: calc(var(--band) / 2); transform: translate(-50%, 50%); }
 .cell.side-l .fullstar { left: auto; top: 50%; right: calc(var(--band) / 2); transform: translate(50%, -50%); }
 .cell.side-r .fullstar { top: 50%; left: calc(var(--band) / 2); }
+/* kilit ve terazi şeridin ötesinde başlar (--mp), şeridin ucunu örtmez */
 .cell .mort {
-  position: absolute; inset: var(--band) 0 0 0; z-index: 2; display: flex; align-items: flex-start; justify-content: flex-start; padding: 3px; pointer-events: none;
-  background: repeating-linear-gradient(135deg, var(--hatch) 0 6px, transparent 6px 12px); font-size: max(11px, calc(var(--ch) * 0.18));
+  --mp: calc(var(--so) + var(--sw-on) + 3px);
+  position: absolute; inset: var(--band) 0 0 0; z-index: 2; display: flex; align-items: flex-start; justify-content: flex-start; padding: var(--mp) 3px 3px; pointer-events: none;
+  background: repeating-linear-gradient(135deg, var(--hatch) 0 6px, transparent 6px 12px); font-size: var(--mk);
 }
-.cell.side-t .mort { inset: 0 0 var(--band) 0; align-items: flex-end; }
-.cell.side-l .mort { inset: 0 var(--band) 0 0; }
-.cell.side-r .mort { inset: 0 0 0 var(--band); }
-.cell .ted { position: absolute; right: 3px; top: calc(var(--band) + 12px); z-index: 2; line-height: 0; font-size: max(11px, calc(var(--ch) * 0.18)); }
+.cell.side-t .mort { inset: 0 0 var(--band) 0; align-items: flex-end; padding: 3px 3px var(--mp); }
+.cell.side-l .mort { inset: 0 var(--band) 0 0; padding: 3px; }
+.cell.side-r .mort { inset: 0 0 0 var(--band); padding: 3px 3px 3px var(--mp); }
+.cell .ted { position: absolute; right: 3px; top: var(--in); z-index: 2; line-height: 0; font-size: var(--mk); }
 .cell.side-t .ted { top: auto; bottom: var(--in); }
 .cell:is(.side-l, .side-r) .ted { top: 3px; }
 .cell.side-l .ted { right: var(--in-side); }
@@ -289,10 +295,8 @@ body.dark .citymap .city:not(.owned) { box-shadow: 0 0 0 1.5px var(--cell-bg), 0
 /* dikey telefon: styles/telefon.css */
 /* yatay telefon: kare boyu ekranın yüksekliğiyle ölçeklenir; yazılar okunur kalsın diye en az 8 px */
 @media (orientation: landscape) and (max-height: 520px) {
-  .cell .face { padding: 0 1px 2px; --in: calc(var(--band) + 6px); --in-art: calc(var(--band) + 1px); --out: 1px; }
+  .cell .face { padding: 0 1px 2px; --out: 1px; --ag: 0px; }
   .cell:not(.k-prop, .corner) .nm { min-height: 2em; }
-  .board { --nmf: max(8px, calc(var(--ch) * 0.22)); --so: 1px; --sw-on: 4px; }
+  .board { --nmf: max(8px, calc(var(--ch) * 0.22)); --so: 1px; --sw-on: 4px; --se: 4px; --sg: 1px; --mk: max(7px, calc(var(--ch) * 0.17)); --star: max(6px, calc(var(--band) * 1.2)); }
   .cell.corner .nm { font-size: 7px; letter-spacing: 0; }
-  .strip { left: 4px; right: 4px; }
-  .cell:is(.side-l, .side-r) .strip { top: 4px; }
 }
