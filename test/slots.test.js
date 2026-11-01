@@ -42,8 +42,10 @@ test('koseler: tek piyon ic kosede, kalabalikta karenin oteki koselerinde, tahta
   const c18 = { x: 0, y: 0, w: 100, h: 70 }; // sol ust
   const [a] = feet('c', c0, s, 1, W, H);
   const [b] = feet('c', c18, s, 1, W, H);
-  assert.ok(a.x < c0.x + c0.w * 0.2 && a.y - s / 2 < c0.y + c0.h * 0.2, 'sag alt kose: sol ust ic kosede');
-  assert.ok(b.x > c18.x + c18.w * 0.8 && b.y - s / 2 > c18.y + c18.h * 0.8, 'sol ust kose: sag alt ic kosede');
+  // ayak (kaide) köşe karesinin içinde, ortaya bakan köşeye yakın: komşu karede duruyor gibi görünmez
+  const inside = (f, c) => f.x > c.x && f.x < c.x + c.w && f.y > c.y && f.y < c.y + c.h;
+  assert.ok(inside(a, c0) && a.x < c0.x + c0.w * 0.3 && a.y < c0.y + c0.h * 0.3, 'sag alt kose: ayak sol ust ic kosede');
+  assert.ok(inside(b, c18) && b.x > c18.x + c18.w * 0.7 && b.y > c18.y + c18.h * 0.55, 'sol ust kose: ayak sag alt ic kosede');
   for (const c of [c0, c18]) {
     const six = feet('c', c, s, 6, W, H);
     assert.equal(new Set(six.map((f) => `${f.x},${f.y}`)).size, 6, 'herkesin ayri yeri var');

@@ -465,13 +465,13 @@ function resolveAuction(s, ctx) {
   const winner = pd.leader;
   s.lastAuction = { sq: pd.sq, high: pd.high, winner };
   if (winner === null) {
-    emit(s, ctx, { type: 'auction', sq: pd.sq, winner, text: `Açık artırma bitti: teklif yok, ${sqName(pd.sq)} sahipsiz kaldı.` });
+    emit(s, ctx, { type: 'auction', sq: pd.sq, winner, high: 0, text: `Açık artırma bitti: teklif yok, ${sqName(pd.sq)} sahipsiz kaldı.` });
     return;
   }
   transfer(s, ctx, winner, null, pd.high, `İhale: ${sqName(pd.sq)}`, true);
   s.props[pd.sq].owner = winner;
   stat(s, winner, 'ihale');
-  emit(s, ctx, { type: 'auction', sq: pd.sq, winner, text: `Açık artırma bitti: ${sqName(pd.sq)} → ${nm(s, winner)} (${fmt(pd.high)}).` });
+  emit(s, ctx, { type: 'auction', sq: pd.sq, winner, high: pd.high, text: `Açık artırma bitti: ${sqName(pd.sq)} → ${nm(s, winner)} (${fmt(pd.high)}).` });
 }
 
 // ---------- Sürpriz ----------

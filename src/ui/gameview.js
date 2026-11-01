@@ -362,11 +362,11 @@ function renderPop(v) {
 }
 
 const waitHTML = (v, i, text, sub = '') =>
-  html`<div class="stagebox"><span class="wait-ring" style="--pc:${P(v, i).color}">${PW(P(v, i), 64)}</span><span class="h22">${text}</span>${sub ? html`<span class="muted">${sub}</span>` : ''}<div style="width:260px">${timerHTML(v, [i])}</div></div>`;
+  html`<div class="stagebox"><span class="wait-ring" style="--pc:${P(v, i).color}">${PW(P(v, i), 64)}</span><span class="h22">${text}</span>${sub ? (typeof sub === 'string' ? html`<span class="muted">${sub}</span>` : sub) : ''}<div style="width:260px">${timerHTML(v, [i])}</div></div>`;
 
 // İtiraz zinciri tek görselde: asıl kart solda, gelen itirazlar sağa doğru kayarak üstüne biner (yazısız, yalnız kart).
-const chainHTML = (id, n) =>
-  n ? html`<div class="chain" style="--n:${n}">${cardFace(id, 'big')}${[...Array(n).keys()].map((k) => html`<div class="chain-it" style="--k:${k + 1}">${cardFace('itiraz', 'big')}</div>`)}<span class="chain-n">${n} itiraz</span></div>` : cardFace(id, 'big');
+const chainHTML = (id, n, cls = '') =>
+  n ? html`<div class="chain ${cls}" style="--n:${n}">${cardFace(id, 'big')}${[...Array(n).keys()].map((k) => html`<div class="chain-it" style="--k:${k + 1}">${cardFace('itiraz', 'big')}</div>`)}<span class="chain-n">${n} itiraz</span></div>` : cardFace(id, 'big');
 
 const vs = (v, a, b) => html`<div class="row" style="gap:8px">${PW(P(v, a), 32)}<span class="muted">${I('arrow')}</span>${PW(P(v, b), 32)}</div>`;
 
@@ -385,11 +385,14 @@ function promptHTML(v) {
     const step = c.target === 'swap' ? (app.ui.swapMine === null ? '1) Vereceğin mülkü seç' : `2) ${BOARD[app.ui.swapMine].name} karşılığı alacağını seç`) : 'Parlayan bir mülke tıkla';
     return html`<div class="card-prompt">${cardFace(id, 'big glow')}<div class="opt-col"><span class="h22">${c.name}</span><span class="hint">${I('target')}${step}</span><span class="body">${c.text}</span><button class="btn sec" data-act="pickCancel" style="align-self:flex-start">Vazgeç</button>${timerHTML(v, [me])}</div></div>`;
   }
+  if (auctionEnding()) return auctionEndHTML(v);
   if (pd) return pendingHTML(v, pd);
   const t = v.turn;
   if (t.p !== me) {
+    const who = P(v, t.p);
+    if (t.step === 'free' && who.cash < 0) return waitHTML(v, t.p, `${who.name} borcunu kapatıyor`, html`<span class="h22 neg">${M(who.cash)}</span>`);
     const doing = { preroll: 'zar atmak üzere', choose: 'zarına bakıyor', free: 'işlerini hallediyor' }[t.step];
-    return waitHTML(v, t.p, `${P(v, t.p).name} ${doing}`);
+    return waitHTML(v, t.p, `${who.name} ${doing}`, noteHTML(v));
   }
   const pl = P(v, me);
   if (t.step === 'preroll') {
@@ -408,6 +411,8 @@ function promptHTML(v) {
   // serbest evre
   if (pl.cash < 0) return debtHTML(v);
   const hints = [];
+  const note = noteHTML(v);
+  if (note) hints.push(note);
   if (!t.hamle && pl.hand.some((u) => canPlay(v, u))) hints.push(html`<span class="hint">${I('bolt')}Kart oynayabilirsin</span>`);
   if (E.propsOf(v, me).some((q) => !E.buildBlock(v, me, q, false))) hints.push(html`<span class="hint">${I('home')}Kat dikebilirsin</span>`);
   return html`<div class="stagebox"><div class="who">${BOARD[pl.pos].name}</div>${hints.length ? html`<div class="row">${hints}</div>` : ''}
@@ -563,11 +568,13 @@ function auctionHTML(v, pd) {
     const say = st === 'out' ? 'çekildi' : st === 'lead' ? 'en yüksek teklif' : st === 'turn' ? 'sırada' : 'bekliyor';
     return html`<span class="bidder ${st}" style="--pc:${P(v, i).color}" data-tip="${meName(v, i)}: ${say}">${PW(P(v, i), 30)}</span>`;
   });
-  const high = html`<div class="col" style="align-items:flex-end;gap:2px"><span class="kicker">En yüksek</span>${lead ? html`<span class="row" style="gap:6px">${PW(lead, 24)}<span class="h22">${M(pd.high)}</span></span>` : html`<span class="muted">henüz yok</span>`}</div>`;
+  const high = html`<div class="col" style="align-items:flex-end;gap:2px"><span class="kicker">En yüksek</span>${lead ? html`<span class="row" style="gap:6px">${PW(lead, 24)}<span class="h22 bid-high">${M(pd.high)}</span></span>` : html`<span class="muted">henüz yok</span>`}</div>`;
+  // son teklifi kim verdi (teklif sesi ve sayının büyümesi present'te)
+  const said = lead ? html`<span class="muted">${pd.leader === me ? `${fmt(pd.high)} verdin` : `${lead.name} ${fmt(pd.high)} verdi`}</span>` : '';
   const card = html`<div class="deed-wrap">${deed(v, pd.sq, { w: 230 })}${deed(v, pd.sq, { w: 230, ladder: true, cls: 'hoverladder' })}</div>`;
   const head = html`<div class="row">${I('gavel')}<span class="h22">Açık artırma</span></div><div class="bidders">${bidders}</div>`;
   if (pd.turn !== me) {
-    return html`<div class="card-prompt">${card}<div class="opt-col wide">${head}<div class="row" style="align-items:flex-end"><span class="h18">${P(v, pd.turn).name} düşünüyor</span><span class="grow"></span>${high}</div>${timerHTML(v, [pd.turn])}</div></div>`;
+    return html`<div class="card-prompt">${card}<div class="opt-col wide">${head}<div class="row" style="align-items:flex-end"><div class="col" style="gap:4px;min-width:0"><span class="h18">${P(v, pd.turn).name} düşünüyor</span>${said}</div><span class="grow"></span>${high}</div>${timerHTML(v, [pd.turn])}</div></div>`;
   }
   const cash = P(v, me).cash;
   app.ui.binds ||= {};
@@ -579,6 +586,77 @@ function auctionHTML(v, pd) {
     <div class="row" style="align-items:flex-end;gap:16px"><div class="col" style="gap:2px"><span class="kicker">Teklifin</span><span class="big-num" data-show="raise">${M(bid)}</span></div><span class="delta" data-delta="raise" data-base="${pd.high}">+${bid - pd.high}</span><span class="grow"></span>${high}</div>
     ${can ? html`<input type="range" class="rng" min="${min}" max="${cash}" step="5" data-bind="raise" aria-label="Toplam teklif" style="--c:${P(v, me).color}"><div class="rng-scale"><span>en az ${fmt(min).replace(' ₺', '')}</span><span>nakdin ${fmt(cash).replace(' ₺', '')}</span></div>` : html`<p class="reason">Nakdin en az teklife (${fmt(min)}) yetmiyor.</p>`}
     <div class="row"><button class="btn L pri flex" data-act="raiseCustom" ${can ? '' : 'disabled'} data-primary><span data-show="raise">${M(bid)}</span> ile artır</button><button class="btn L gho" data-act="auctionPass">Çekil</button></div>${timerHTML(v, [me])}</div></div>`;
+}
+
+// Açık artırma bitti: teklif penceresi kapanmadan yerinde sonuca döner. Önce "Gidiyor... gidiyor..." (CALL), "Satıldı!"
+// vuruşunda tapuda yeni sahip, altta kazananın piyonu, adı ve fiyatı. Teklif gelmediyse tapu solar. Tıklayınca kapanır.
+const AUCTION_HOLD = 1500; // "Satıldı!"dan sonra pencerenin açık kaldığı süre
+function auctionEnding() {
+  const e = app.ui.auctionEnd;
+  return !!e && Date.now() < e.until;
+}
+
+export function closeAuctionEnd() {
+  app.ui.auctionEnd = null;
+  if (els) updateGame();
+}
+
+function startAuctionEnd(prev, ev) {
+  const e = { sq: ev.sq, winner: ev.winner, high: ev.high || 0, order: prev.pending?.order || [], call: '', sold: false };
+  const sold = e.winner !== null && e.winner !== undefined;
+  e.until = Date.now() + (sold ? 2 * CALL.beat + CALL.lead + AUCTION_HOLD : AUCTION_HOLD) * spd();
+  app.ui.auctionEnd = e;
+  setTimeout(() => app.ui.auctionEnd === e && closeAuctionEnd(), e.until - Date.now() + 20);
+  if (!sold) return;
+  auctionFx((w, last) => {
+    if (app.ui.auctionEnd !== e) return;
+    Object.assign(e, { call: w, sold: last });
+    if (els) updateGame();
+  });
+}
+
+function auctionEndHTML(v) {
+  const e = app.ui.auctionEnd;
+  const sold = e.winner !== null && e.winner !== undefined;
+  const card = html`<div class="deed-wrap" style="${sold ? '' : 'opacity:.45'}">${deed(v, e.sq, { w: 230 })}</div>`;
+  const bidders = html`<div class="bidders">${e.order.map((i) => html`<span class="bidder ${i === e.winner ? 'lead' : 'out'}" style="--pc:${P(v, i).color}">${PW(P(v, i), 30)}</span>`)}</div>`;
+  if (!sold) {
+    return html`<div class="card-prompt au-end" data-act="auctionEndClose">${card}<div class="opt-col wide"><div class="row">${I('gavel')}<span class="h22">Açık artırma</span></div>${bidders}
+      <div class="col au-res" style="gap:4px"><span class="h22">Teklif gelmedi</span><span class="muted">${BOARD[e.sq].name} sahipsiz kaldı</span></div></div></div>`;
+  }
+  const w = P(v, e.winner);
+  const head = html`<div class="row"><span class="au-art ${e.call ? 'hit' : ''}" aria-hidden="true"></span><span class="h22">${e.call || CALL.words[0]}</span></div>`;
+  const res = e.sold
+    ? html`<div class="row au-res" style="gap:12px">${PW(w, 48)}<div class="col" style="gap:2px;min-width:0"><span class="h22">${e.winner === v.you ? 'Sen aldın' : `${w.name} aldı`}</span><span class="muted">liste fiyatı ${fmt(E.price(v, e.sq))}</span></div><span class="grow"></span><span class="big-num">${M(e.high)}</span></div>`
+    : html`<div class="row au-res wait" style="gap:6px"><span class="muted">En yüksek</span><span class="grow"></span>${PW(w, 24)}<span class="h22">${M(e.high)}</span></div>`;
+  return html`<div class="card-prompt au-end" data-act="auctionEndClose">${card}<div class="opt-col wide">${head}${bidders}${res}</div></div>`;
+}
+
+// Pazarlık anlaştı: kimin ne aldığı, pazarlık penceresinin kutularıyla. t: anlaşmadan önceki teklif (from verir give, alır take).
+function showDeal(v, t) {
+  const box = (i, x) => html`<div class="trade-box"><div class="row" style="gap:8px">${PW(P(v, i), 34)}<span class="h18">${i === v.you ? 'Sen aldın' : `${P(v, i).name} aldı`}</span></div><div class="row" style="gap:8px;flex-wrap:wrap;justify-content:center">${tradeSide(v, x)}</div></div>`;
+  return stageShow(html`<div class="sheet W deal"><div class="sheet-head">${I('deal')}<span class="h22">Anlaşma</span><span class="grow"></span><span class="muted small">kapatmak için tıkla</span></div>
+    <div class="row" style="align-items:stretch;gap:14px">${box(t.to, t.give)}${box(t.from, t.take)}</div></div>`, Math.round(PACE.card * spd()));
+}
+
+// İtiraz zinciri kartı düşürdü: asıl kart soluk, itirazlar üstünde; ne olmadığı tek cümle. pd: zincirden önceki tepki bekleyişi.
+function showDropped(v, pd, n) {
+  const c = pd.card;
+  const t = c.target || {};
+  const sq = (q) => BOARD[q].name;
+  const what = t.sq !== undefined ? `${sq(t.sq)} el değiştirmedi.` : t.theirs !== undefined ? `${sq(t.mine)} ve ${sq(t.theirs)} el değiştirmedi.` : 'Kart etkisiz kaldı.';
+  return stageShow(html`<div class="card-prompt reveal">${chainHTML(c.id, n, 'dropped')}<div class="opt-col">${vs(v, c.by, pd.victim)}<span class="h22">${CARDS[c.id].name} itirazla düştü</span><span class="line-row">${I('shield')}<span class="grow">${what}</span></span><span class="muted small">kapatmak için tıkla</span></div></div>`, Math.round(PACE.card * spd()));
+}
+
+// Tur notu: kira ya da maaş neden gelmedi (ortadaki istemde, oyuncunun adının altında; karelere bir şey yazılmaz).
+const NOTES = [
+  [/ipotekli, kira yok/, 'ipotek', 'Kira yok: mülk ipotekli'],
+  [/tedbir var, kira yok/, 'tedbir', 'Kira yok: ihtiyati tedbir'],
+  [/maaş yatmadı/, 'coin', 'Maaş yok: bankacılar grevde'],
+];
+function noteHTML(v) {
+  const n = app.ui.turnNote;
+  return n && n.key === turnKey(v) ? html`<span class="hint">${I(n.icon)}${n.text}</span>` : '';
 }
 
 function tradeSide(v, x) {
@@ -1579,17 +1657,43 @@ export async function present(prev, v, events, fast) {
         } else sfx('sad');
         toast(`${P(v, ev.p).name} iflas etti, oyundan çıktı`, 'error', 'iflas');
         break;
+      case 'bid':
+        // teklif: kısa tok ses, en yüksek sayı bir an büyür (yalnız artıranlarda; çekilen sessiz)
+        if (live && ev.amount > 0) {
+          sfx('thud');
+          post.push(() => !calm() && els.prompt.querySelector('.bid-high')?.animate([{ transform: 'scale(1.3)' }, { transform: 'none' }], { duration: 260, easing: 'ease-out' }));
+        }
+        break;
       case 'auction':
-        if (ev.winner !== null) {
-          if (live) later.push(() => auctionFx(els.board));
-          else sfx('sold');
+        if (live && prev.pending?.type === 'auction') startAuctionEnd(prev, ev);
+        else if (ev.winner !== null) {
+          sfx('sold');
           toast(`${BOARD[ev.sq].name}: ${P(v, ev.winner).name} aldı`, '', 'gavel');
         }
         break;
       case 'tradeDone':
         sfx('coin', flight);
-        toast('Anlaşma sağlandı', '', 'deal');
+        if (live && prev.pending?.type === 'trade') {
+          const t = prev.pending;
+          later.push(() => showDeal(v, t));
+        } else toast('Anlaşma sağlandı', '', 'deal');
         break;
+      case 'log': {
+        const tx = ev.text || '';
+        const note = NOTES.find(([re]) => re.test(tx));
+        if (note) app.ui.turnNote = { key: turnKey(v), icon: note[1], text: note[2] };
+        // pazarlık cevabı: teklifi yapana (ya da teklif edilene) köşede bildirim; olay satırına bakmak gerekmesin
+        const pt = prev && prev.pending;
+        if (pt && pt.type === 'trade') {
+          const mine = (/teklifi reddetti/.test(tx) && pt.from === me) || (/geri çekti/.test(tx) && pt.to === me) || (/teklifi düştü/.test(tx) && (pt.from === me || pt.to === me));
+          if (mine) toast(tx.replace(/\.$/, ''), '', 'deal');
+        }
+        if (live && /itirazla düştü/.test(tx) && pt && pt.type === 'react') {
+          const n = (pt.chain || 0) + events.filter((e) => e.type === 'card' && e.card === 'itiraz').length;
+          later.push(() => showDropped(v, pt, Math.max(1, n)));
+        }
+        break;
+      }
       case 'gundem':
         if (!fast) {
           play('news');
@@ -1619,7 +1723,7 @@ export async function present(prev, v, events, fast) {
     const sets = new Map();
     for (const q of gained) if (BOARD[q].group && E.inFullSet(v, q) && !E.inFullSet(prev, q)) sets.set(BOARD[q].group, v.props[q].owner);
     // İhalede şerit "Satıldı!" ile aynı anda dolar.
-    const wait = has('auction') ? Math.max(0, 2 * CALL.beat - T.own.draw) : 0;
+    const wait = has('auction') ? Math.max(0, 2 * CALL.beat + CALL.lead - T.own.draw) : 0;
     post.push(() => setTimeout(() => els && gained.forEach((q, k) => ownFx(els.board, cells[q], P(v, v.props[q].owner).color, buy && k === 0)), wait));
     if (sets.size) {
       post.push(() => setTimeout(() => {

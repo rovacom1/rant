@@ -283,22 +283,16 @@ export function coinSounds(n, landAt, salary, board, startCell) {
   for (let i = 0; i < n; i++) hit('clink', landAt(i), { rate: rates[i % rates.length], vol: i ? 0.75 : 1 });
 }
 
-// Açık artırma bitti: tahtanın ortasında "Gidiyor... gidiyor... Satıldı!"; iki tok vuruş, üçüncüsünde mühür ve satış sesi.
-export const CALL = { ms: 1700, beat: 450 };
-export function auctionFx(board) {
-  const { ms, beat } = CALL;
-  const el = layer(board, 'fx-call', { x: 0, y: 0, w: 0, h: 0 }, ms, '<span></span>');
-  Object.assign(el.style, { left: '', top: '', width: '', height: '' });
-  const span = el.firstElementChild;
-  ['Gidiyor...', 'gidiyor...', 'Satıldı!'].forEach((w, i) => {
-    setTimeout(() => {
-      span.textContent = w;
-      el.classList.toggle('sold', i === 2);
-      if (!calm()) span.animate([{ transform: 'scale(1.35)' }, { transform: 'none' }], { duration: 180, easing: 'ease-out' });
-    }, i * beat);
-    if (i < 2) hit('thud', i * beat, { vol: 0.8 });
+// Açık artırma bitti: teklif penceresi yerinde "Gidiyor... gidiyor... Satıldı!" der (say ile); iki tok vuruş, üçüncüsünde
+// mühür ve satış sesi. Sözü pencereye yazmak çağıranın işi. Her sözde tokmak bir kez iner (assets/ihale/tokmak-vurus.webp);
+// bloğa değdiği an sözün başından lead ms sonra, ses o ana çalar.
+export const CALL = { beat: 450, lead: 240, words: ['Gidiyor...', 'gidiyor...', 'Satıldı!'] };
+export function auctionFx(say) {
+  const { beat, lead, words } = CALL;
+  words.forEach((w, i) => {
+    setTimeout(() => say(w, i === words.length - 1), i * beat);
+    if (i < 2) hit('thud', lead + i * beat, { vol: 0.8 });
   });
-  hit('stamp', 2 * beat);
-  from('sold', 2 * beat);
-  el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.05 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], { duration: ms, fill: 'both' });
+  hit('stamp', lead + 2 * beat);
+  from('sold', lead + 2 * beat);
 }

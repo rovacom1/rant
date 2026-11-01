@@ -28,6 +28,10 @@ Square board game card illustration, artwork only: no frame, no border, no text,
 
 - Kartta resmin altında krem yazı alanı var (ad ve kısa kural); resim yazı taşımaz.
 
+## Açık artırma tokmağı
+
+- `assets/ihale/tokmak-vurus.webp`: sekiz karelik yatay şerit (her kare 126x120, saydam), teklif penceresinde her "Gidiyor... gidiyor... Satıldı!" sözünde bir kez oynar (`styles/main.css` `.au-art`). Resim `gpt_image_2_5` (piyon komut kalıbı, beyaz zemin, `itiraz.jpg` referans), vuruş Kling 4.0 image-to-video, başlangıç ve bitiş karesi aynı resim, 3 sn, 720p, 1:1; komutta "küçük hareket, tokmak hep çerçevenin içinde, kesme yok" denir. İlk denemede tokmak çerçeveden çıktı ve başka bir tokmağa atladı; kareler mutlaka tek tek denetlenir, taşan ve bulanık kareler atılır. Seçilen kareler: dinlenme, kalkış, tepeden iniş, vuruş (darbe çizgileri), oturma. Ham dosyalar `tasks/gorsel-ham/ihale/`.
+
 ## Gündem kartları
 
 - `assets/gundem/<gündemId>.jpg`, 360x360. Kart görseliyle aynı araç, aynı stil referansı (`assets/kart/itiraz.jpg`) ve aynı komut kalıbı; sahne gündemin esprisini anlatır. Komutun sonuna: "No portraits, no pictures on walls, no banknotes, no signs with writing."

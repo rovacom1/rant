@@ -703,6 +703,7 @@ const A = {
     if (e.target === el) closeDialog();
   },
   closeStage: () => G.stageClose(),
+  auctionEndClose: () => G.closeAuctionEnd(),
   results() {
     app.ui.resultsOpen = true;
     G.updateGame();

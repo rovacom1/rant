@@ -38,8 +38,8 @@ export function feet(side, b, s, n, W, H) {
   return out;
 }
 
-// Köşe karesi: tek piyon karenin ortaya bakan köşesinde (ortaya hafifçe taşar); kalabalıkta sırayla karenin öteki
-// köşelerine, beş ve altı kişide karenin ortasına geçer. Tahtanın kenarından taşmaz, ortaya dizilmez.
+// Köşe karesi: tek piyonun ayağı karenin ortaya bakan köşesinde, karenin içinde (komşu karede duruyor gibi görünmesin);
+// kalabalıkta sırayla karenin öteki köşelerine, beş ve altı kişide karenin ortasına geçer. Tahtanın kenarından taşmaz.
 function cornerFeet(b, s, n, W, H) {
   const right = b.x + b.w / 2 > W / 2;
   const bottom = b.y + b.h / 2 > H / 2;
@@ -49,12 +49,13 @@ function cornerFeet(b, s, n, W, H) {
   const sy = bottom ? -1 : 1;
   const ox = b.w * 0.21; // öteki köşe noktalarının karenin ortasından uzaklığı (piyon tahtanın kenarından taşmaz)
   const oy = b.h * 0.21;
-  const inner = { x: cx + sx * b.w * 0.42, y: cy + sy * b.h * 0.42 };
-  const spots = [inner, { x: cx + sx * ox, y: cy - sy * oy }, { x: cx - sx * ox, y: cy + sy * oy }, { x: cx - sx * ox, y: cy - sy * oy }];
+  const spots = [{ x: cx + sx * ox, y: cy - sy * oy }, { x: cx - sx * ox, y: cy + sy * oy }, { x: cx - sx * ox, y: cy - sy * oy }];
   if (n === 5) spots.push({ x: cx, y: cy });
   else spots.push({ x: cx - s * 0.32, y: cy }, { x: cx + s * 0.32, y: cy });
-  // Nokta figürün ortası; ayak onun yarım piyon altında.
-  return spots.slice(0, n).map((c) => ({ x: c.x, y: c.y + s * 0.5 }));
+  // Nokta figürün ortası; ayak onun yarım piyon altında. İç köşedeki ilk yer doğrudan ayak noktasıdır.
+  // üst köşelerde ad karenin altında: ayak biraz yukarıda durur ki figür adı kapatmasın
+  const inner = { x: cx + sx * b.w * 0.3, y: cy + (bottom ? -b.h * 0.3 : b.h * 0.12) };
+  return [inner, ...spots.map((c) => ({ x: c.x, y: c.y + s * 0.5 }))].slice(0, n);
 }
 
 // Yürüyüşte adım süreleri: kalkışta yavaş, ortada hızlı, varışta yavaş; toplamı total (ms).

@@ -33,6 +33,12 @@ Motorun her olayı `present()` (src/ui/gameview.js) içinde nasıl gösterildiğ
 İyi çalışanlar (dokunulmayacak): kira (jetonlar piyondan piyona uçar, iki uçta tutar), satın alma (kare renkle dolanır,
 şerit dolar), dava düellosu, rakip kartı, sürpriz, haber, yıkım ve iflas.
 
+## Durum (2026-11-01, v0.38.0)
+
+1-5 uygulandı. Ek: köşe karesindeki piyonun ayağı köşenin içine alındı (`src/ui/slots.js`). Tokmak Higgsfield ile: resim
+`gpt_image_2_5`, vuruşu Kling 4.0 (Krea Higgsfield'da yok); kareler tek tek denetlendi, sekiz temiz kare şerit resim oldu
+(`assets/ihale/tokmak-vurus.webp`, ham `tasks/gorsel-ham/ihale/`). 6 (rakip kart çekince) yapılmadı.
+
 ## Adımlar (öncelik sırasıyla)
 
 ### 1. Açık artırma: teklifler görünür olsun
