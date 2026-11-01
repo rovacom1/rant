@@ -1,29 +1,42 @@
 // State'ten türetilen değerler: fiyatlar, kiralar, inşaat kuralları, net değer.
 // Buradaki fonksiyonlar state'i değiştirmez.
 
-import { BOARD, GROUPS, GROUP_SQUARES, MODE_SQUARES, TRANSPORT_RENT, OWNABLE } from './data.js';
+import { TRANSPORT_RENT } from './data.js';
+import { boardOf } from './board.js';
+
+// Karenin verisi (tahta oyunun durumuna bağlı, board.js).
+export const sqOf = (s, sq) => boardOf(s).squares[sq];
+// Hamleden gelen kare numarası bu tahtada sahip olunabilir bir kare mi.
+export const isOwnable = (s, sq) => Number.isInteger(sq) && boardOf(s).ownable.includes(sq);
 
 export const round5 = (x) => Math.round(x / 5) * 5;
 export const fmt = (n) => `${n < 0 ? '-' : ''}${String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} ₺`;
 export const money = (s, base) => round5((base * s.index) / 100);
 export const cardId = (uid) => uid.split(':')[0];
 
-const groupMult = (s, sq) => (BOARD[sq].group ? s.groupMult[BOARD[sq].group] || 1 : 1);
+const groupMult = (s, sq) => {
+  const g = sqOf(s, sq).group;
+  return g ? s.groupMult[g] || 1 : 1;
+};
 
 export function price(s, sq) {
-  return round5(((BOARD[sq].price * s.index) / 100) * groupMult(s, sq));
+  return round5(((sqOf(s, sq).price * s.index) / 100) * groupMult(s, sq));
 }
 
 // Yeni kat dikme bedeli (kampanya indirimi dahil).
 export function katCost(s, sq) {
-  const base = (GROUPS[BOARD[sq].group].kat * s.index) / 100;
+  const B = boardOf(s);
+  const base = (B.groups[B.squares[sq].group].kat * s.index) / 100;
   return round5(s.mods.kampanya ? base / 2 : base);
 }
 
 export const kacakCost = (s, sq) => round5(katCost(s, sq) / 2);
 
 // Katın değer olarak karşılığı (kampanyadan etkilenmez).
-export const katValue = (s, sq) => round5((GROUPS[BOARD[sq].group].kat * s.index) / 100);
+export const katValue = (s, sq) => {
+  const B = boardOf(s);
+  return round5((B.groups[B.squares[sq].group].kat * s.index) / 100);
+};
 
 export const mortgageValue = (s, sq) => round5(price(s, sq) / 2);
 export const unmortgageCost = (s, sq) => round5(price(s, sq) * 0.55 * (s.mods.faizIndirimi ? 0.5 : 1));
@@ -31,15 +44,16 @@ export const unmortgageCost = (s, sq) => round5(price(s, sq) * 0.55 * (s.mods.fa
 export const level = (ps) => ps.kat + ps.kacak;
 
 export function ownsGroup(s, p, group) {
-  return GROUP_SQUARES[group].every((q) => s.props[q].owner === p);
+  return boardOf(s).groupSquares[group].every((q) => s.props[q].owner === p);
 }
 
 export const inFullSet = (s, sq) => {
   const ps = s.props[sq];
-  return BOARD[sq].kind === 'prop' && ps.owner !== null && ownsGroup(s, ps.owner, BOARD[sq].group);
+  const sqd = sqOf(s, sq);
+  return sqd.kind === 'prop' && ps.owner !== null && ownsGroup(s, ps.owner, sqd.group);
 };
 
-export const propsOf = (s, p) => OWNABLE.filter((q) => s.props[q].owner === p);
+export const propsOf = (s, p) => boardOf(s).ownable.filter((q) => s.props[q].owner === p);
 // İflas modunda kira çarpanı her tur iflasKira kadar artar (1. tur 1, 10. tur 4,6 kat), oyun sonsuza uzamasın diye.
 export const iflasMult = (s) => (s.config.iflas ? 1 + Math.max(0, s.round - 1) * s.config.iflasKira : 1);
 // Oyunda kalan oyuncular (iflas modunda elenenler çıkar).
@@ -47,14 +61,14 @@ export const activePlayers = (s) => s.players.map((_, i) => i).filter((i) => !s.
 
 // Oyuncunun bu türden (air | rail) ipoteksiz ulaşım sayısı.
 export function transportCount(s, p, mode) {
-  return MODE_SQUARES[mode].filter((q) => s.props[q].owner === p && !s.props[q].ipotek).length;
+  return boardOf(s).modeSquares[mode].filter((q) => s.props[q].owner === p && !s.props[q].ipotek).length;
 }
 
 // Bu kareye gelen bir rakibin ödeyeceği kira (Kira Zammı hariç).
 export function rentFor(s, sq) {
   const ps = s.props[sq];
   if (!ps || ps.owner === null || ps.ipotek || ps.tedbir > 0) return 0;
-  const sqd = BOARD[sq];
+  const sqd = sqOf(s, sq);
   let base;
   let mult = 1;
   if (sqd.kind === 'transport') {
@@ -66,7 +80,7 @@ export function rentFor(s, sq) {
     const full = ownsGroup(s, ps.owner, sqd.group);
     base = L === 0 ? sqd.rents[0] * (full ? 2 : 1) : sqd.rents[L] * (full ? 1 : 0.5);
     mult *= groupMult(s, sq);
-    if (s.mods.turizm && GROUPS[sqd.group].sahil) mult *= 2;
+    if (s.mods.turizm && boardOf(s).groups[sqd.group].sahil) mult *= 2;
   }
   if (s.mods.kiraTavani) mult *= 0.5;
   if (s.mods.kiraArtisi) mult *= 1.5;
@@ -77,7 +91,8 @@ export function rentFor(s, sq) {
 
 // Engel varsa Türkçe sebep döndürür, yoksa null.
 export function buildBlock(s, p, sq, kacak) {
-  const sqd = BOARD[sq];
+  const B = boardOf(s);
+  const sqd = B.squares[sq];
   const ps = s.props[sq];
   if (!ps || sqd.kind !== 'prop') return 'Buraya kat dikilemez.';
   if (ps.owner !== p) return 'Bu mülk senin değil.';
@@ -90,8 +105,8 @@ export function buildBlock(s, p, sq, kacak) {
     if (s.players[p].cash < kacakCost(s, sq)) return 'Paran yetmiyor.';
     return null;
   }
-  if (!ownsGroup(s, p, sqd.group)) return `Yasal kat için ${GROUPS[sqd.group].gen} tüm mülkleri gerekir.`;
-  if (GROUP_SQUARES[sqd.group].some((q) => s.props[q].ipotek)) return 'Şehirde ipotekli mülk var.';
+  if (!ownsGroup(s, p, sqd.group)) return `Yasal kat için ${B.groups[sqd.group].gen} tüm mülkleri gerekir.`;
+  if (B.groupSquares[sqd.group].some((q) => s.props[q].ipotek)) return 'Şehirde ipotekli mülk var.';
   const uneven = unevenBlock(s, sq);
   if (uneven) return uneven;
   if (s.players[p].cash < katCost(s, sq)) return 'Paran yetmiyor.';
@@ -102,11 +117,12 @@ export function buildBlock(s, p, sq, kacak) {
 // en az katlı mülkünkini geçemez; seviyesi 4'e dolmuş (kaçak katla) mülk beklenmez. Kaçak kat bu kurala bağlı değildir.
 // plan: { kare: yasal kat farkı } henüz dikilmemiş planı da sayar (İnşaat paneli).
 export function unevenBlock(s, sq, plan = {}) {
-  const g = BOARD[sq].group;
+  const B = boardOf(s);
+  const g = B.squares[sq].group;
   const kat = (q) => s.props[q].kat + (plan[q] || 0);
   const room = (q) => q === sq || level(s.props[q]) + (plan[q] || 0) < 4;
-  const low = Math.min(...GROUP_SQUARES[g].filter(room).map(kat));
-  return kat(sq) > low ? `Katlar eşit çıkar: önce ${GROUPS[g].gen} öteki mülklerine kat dik.` : null;
+  const low = Math.min(...B.groupSquares[g].filter(room).map(kat));
+  return kat(sq) > low ? `Katlar eşit çıkar: önce ${B.groups[g].gen} öteki mülklerine kat dik.` : null;
 }
 
 export function floorsOf(s, p) {
@@ -125,7 +141,7 @@ export function netWorthParts(s, p) {
   for (const q of propsOf(s, p)) {
     const ps = s.props[q];
     mulk += ps.ipotek ? mortgageValue(s, q) : price(s, q);
-    if (BOARD[q].kind === 'prop') katlar += ps.kat * katValue(s, q) + ps.kacak * round5(katValue(s, q) / 2);
+    if (sqOf(s, q).kind === 'prop') katlar += ps.kat * katValue(s, q) + ps.kacak * round5(katValue(s, q) / 2);
   }
   return { nakit: s.players[p].cash, mulk, katlar };
 }

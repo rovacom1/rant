@@ -45,6 +45,8 @@ Ev sahibi lobide üç kuralı açıp kapatabilir; hepsi varsayılan olarak açı
 
 Ayrıca **Oyun hızı** (Yavaş / Normal / Hızlı): ev sahibi her hamleden sonra ekrandaki canlandırma (zar, yürüyüş, kart, sürpriz, haber) bitene kadar bekler; bot sonraki hamlesini, insanın süresi de o zaman başlar. Hız bu beklemeyi, canlandırmaları ve tepki pencerelerini 1,5 / 1 / 0,5 katına çeker: İtiraz ve Dayın Çıktı penceresi yavaşta 15, normalde 10, hızlıda 5 saniye; Kestirme penceresi (zardan sonra) yavaşta 2,25, normalde 1,5, hızlıda 0,75 saniye; rakibin oynadığı kart normalde 5,5 saniye ortada kalır.
 
+**Oyun türü** (Klasik / Mahalle): Klasik bu belgenin 3-9. bölümlerindeki şehir tahtasıdır; Mahalle 6x6 arsalık ikinci oyun türüdür (bkz. §13; kuralları onaylandı, kodu henüz yok).
+
 **Bot seviyesi** (Kolay / Normal / Zor) masadaki bütün botlara uygulanır. Kolay bot pazarlık önermez, kaçak kat dikmez, kat dikmeyi ve kart oynamayı yarı yarıya unutur, yedeğini bozacak arsayı almaz, artırmada çabuk çekilir. Zor bot kaçak kat dikmez (zabıta ve ihbar riskine girmez), eksik parçayı karşı tarafın kabul edeceği en düşük parayla ister, para yetmezse kendi işine yaramayan bir mülkü takasa koyar; artırmada tavanını şaşmadan hesaplar ve her seferinde en az artışla teklif verir.
 
 ## 3. Tahta (36 kare)
@@ -310,3 +312,131 @@ Ev sahibi -> istemci: `welcome {seat}`, `reject {reason}`, `lobby {...}`, `state
 
 **Tepki çıkartmaları:** masadaki her oyuncu altı hazır çıkartmadan birini (Yuh!, Helal!, Olmaz öyle, Hadi ya, Dayııı!, Kira geldi) gönderebilir; herkesin ekranında o oyuncunun piyonundan yükselir. Serbest yazı yoktur. Ev sahibi kimliği ve listeyi doğrular, oyuncu başına 2 saniyede birden fazlasını yaymaz; çıkartma oyun durumuna ve kayda girmez, botlar göndermez.
 Sürüm uyuşmazsa istemciye "sayfayı yenile" denir.
+
+## 13. Mahalle modu (ikinci oyun türü)
+
+> Kurallar onaylandı (2026-11-01, `tasks/mahalle-modu-plani.md`). Motoru K2'de (`src/engine/mahalle.js`), arayüzü K3'te gelir.
+> Bu bölümdeki **bütün sayılar ilk değerdir, simülasyonla ayarlanır** (`node tools/sim.js` mod argümanıyla; hedef: konkordato
+> klasikten fazla değil, 20 tur, park, AVM ve gecekondu oyun başına kullanılıyor). Burada yazmayan her kural klasikle aynıdır.
+
+### Arazi
+
+- Şehir yok; köşe ve özel kare yok (Başlangıç, Tapu Dairesi, Çay Ocağı, Zabıta, Fırsat, Sürpriz, gar, havalimanı yok). 6x6 = 36 adsız
+  arsa vardır, her biri yeriyle anılır: "3. satır 5. sütun". Satırlar yukarıdan aşağı, sütunlar soldan sağa 1-6. 6. sütun denize bakar.
+- Komşu: bir arsanın dört yanındaki arsalar (sağ, sol, üst, alt). Yalnız AVM çevredeki 8 arsaya (çaprazlar dahil) bakar.
+- Bölgeler ve fiyatlar (Endeks ile ölçeklenir, ilk değer):
+
+| Bölge | Arsalar | Adet | Fiyat | Kat fiyatı | Kira cetveli (boş / 1-4 kat) | Binalar |
+|---|---|---|---|---|---|---|
+| Dış halka | 1. ve 6. satır, 1. sütun (kıyı hariç) | 14 | 80 | 50 | 4 / 20 / 60 / 180 / 320 (Çorum) | Çorum seti (sade ev) |
+| İç halka | 2-5. satır x 2-5. sütun, merkez hariç | 12 | 140 | 100 | 10 / 50 / 150 / 450 / 625 (Balıkesir) | Bursa seti |
+| Merkez | 3-4. satır x 3-4. sütun | 4 | 200 | 100 | 16 / 80 / 220 / 600 / 800 (Konya) | İstanbul seti (kule) |
+| Kıyı | 6. sütun, 6 satırın hepsi | 6 | 160 | 100 | 12 / 60 / 180 / 500 / 700 (Bursa), sonra +%25 | Antalya seti (sahil binası) |
+
+Her bölge, fiyatı ona en yakın bugünkü mülkün kira cetvelini ve o setin kat fiyatını kullanır; bina resmi bölgenin setinden gelir.
+Arazinin toplam fiyatı 4.560.
+
+### Başlangıç
+
+- Nakit, oturma bonusu, el (3 kart), el sınırı (6), tur sayısı, bitiş seçenekleri (tur, değer hedefi, son kalan) klasikle aynıdır.
+- Piyonlar arazinin dışında başlar; ilk zarla araziye iner.
+- Her oyuncu 1 **Torpil** jetonuyla başlar (en çok 3).
+
+### Bir sıra
+
+1. **Sıra başı: hakediş.** Maaşın yerine her sıra başında bankadan **50 hakediş** gelir (Endeksle ölçeklenmez, klasikteki maaş gibi).
+   Gecekondu geliri de burada gelir (aşağıda). Kira Zammı burada biter, İhtiyati Tedbir burada azalır (klasik gibi).
+2. **Zar öncesi:** klasikteki gibi Hamle kartı (turda 1), inşaat (aşağıdaki sınırla), ipotek, pazarlık.
+3. **Zar:** iki zar atılır. Çift değilse zarlar iki arsa gösterir: (satır, sütun) ya da (sütun, satır), örneğin 3 ve 5: "3. satır 5. sütun"
+   ya da "5. satır 3. sütun". Oyuncu birini seçer, piyon oraya zıplar (yol yok, aradaki arsalar işlemez). Seçim süresi dolarsa ilki
+   (birinci zar satır) seçilir.
+   - **Torpil:** zar atıldıktan sonra, seçimden önce bir jeton harcanıp bir zar 1 artırılır ya da azaltılır (1 ile 6 arası, 6'dan 1'e
+     dönmez). Sırada en çok 1 torpil. Torpille çift yapılabilir.
+   - **Çift:** (n, n) gelirse n. satırda ya da n. sütunda istediğin arsayı seçersin (11 arsa) ve elinde 5'ten az kart varsa 1 kart
+     çekersin. **Ek atış yok** (klasikteki "bir daha oyna" bu modda yok).
+4. **Arsaya varış:**
+   - Sahipsiz arsa: liste fiyatına **Satın Al**, **İhaleye Çıkar** (klasik açık artırma) ya da **Gecekondu Kondur** (aşağıda).
+     Gecekondulu sahipsiz arsayı alan tahliye bedelini de öder.
+   - Rakibin yapılı arsası: kira. Rakibin boş arsası: **küçük arsa kirası** (cetvelin "boş" sütunu, çarpanlarla). Kira en az 5'tir.
+     Dayın Çıktı, ipotek ve İhtiyati Tedbir klasikteki gibi işler.
+   - Kendi arsan: bir şey olmaz. Park arsasına gelmek kira doğurmaz.
+5. **Serbest evre** ve **Turu Bitir** klasikteki gibi.
+
+**Her 3 turda** (4., 7., 10., 13., 16., 19. tur başı, yeni gündemle birlikte) herkes 1 kart çeker (elinde 5'ten az kart varsa) ve
+1 Torpil alır (en çok 3). Gündem masada kapalıysa kart ve torpil yine 3 turda bir gelir.
+
+### İnşaat
+
+- İnşaat (kat, kaçak kat, park, AVM) yalnız **piyonunun durduğu arsada ve ona komşu kendi arsalarında** yapılır. Zar öncesinde piyon
+  önceki sıradaki yerindedir. Kat satma ve ipotek her arsada serbesttir.
+- **Yasal kat:** arsanın komşularından en az biri de senin olmalı. Kat fiyatı bölgeden gelir. Seviye en fazla 4. Klasikteki eşitlik
+  kuralı yoktur.
+- **Kaçak kat:** komşu şartı yok, kat fiyatının yarısına, arsa başına en fazla 1. İhbar ve Belediye Operasyonu ile yıkılır, İmar
+  Affı ile yasallaşır (klasik gibi).
+- Kat satma, ipotek ve ipotek kaldırma klasikteki gibi; ipotekli arsaya kat dikilmez.
+
+### Yapılar ve komşuluk
+
+Bütün etkiler kiraya **çarpan** olarak eklenir ve birbiriyle çarpılır (iki park komşusu 1,5 x 1,5). Arsaya dokununca hangi etkilerin
+işlediği görünür.
+
+| Yapı | Nasıl | Etki |
+|---|---|---|
+| **Site** | 2x2'lik bir bloğun dört arsası da senin ve hepsinde en az 1 kat (yasal ya da kaçak) var | Bu dört arsanın kirası **x2** (bir arsa birkaç sitede olsa da bir kez) |
+| **Blok** | Arsanın komşularından en az ikisi de senin | Kirası **+%25** |
+| **Park** | Kendi boş (katsız, ipoteksiz) arsana, bedeli o arsanın 1 kat fiyatı | Park arsası kira almaz; dört komşusunun kirası **+%50**, kimin olursa olsun. Parka kat dikilmez, park kaldırılmaz, ipotek edilmez |
+| **AVM** | 4 yasal katlı arsan AVM'ye çevrilir, bedeli 1 kat fiyatı | Kendi kirası 4 katlı arsa kirası. Çevresindeki 8 arsada ödenen her kiranın **%20'si** kiradan kesilip AVM sahibine gider. AVM'den kat satılırsa önce 4 katlı arsaya döner (bedeli geri gelmez) |
+| **Gecekondu** | Sahipsiz arsaya, kaçak kat bedelinin yarısına (dış 15, öteki bölgeler 25) | Konduranına her sıra başında bankadan **10** (Endeksle ölçeklenir). Komşu arsaların kirası **-%25**. Kira almaz. Oyuncu başına en çok 3 |
+
+**Gecekondu ayrıntısı:**
+- Arsa sahipsiz kalır; gecekondu konduranındır. Kondurulan arsaya gelip alan ya da artırmada alan, fiyatın üstüne **tahliye bedeli**
+  öder: kondurma bedelinin 2 katı, kondurana gider. Arsayı konduran kendisi alırsa tahliye yoktur, gecekondu yıkılır.
+- **İhbar** gecekonduları da yıkar: hedef oyuncunun bütün kaçak katları ve gecekonduları gider, her biri için 25 ceza.
+- **İmar Affı:** gecekondulu her sahipsiz arsa bedavaya kondurana geçer; gecekondu 1 yasal kata döner (affedilmiş kaçak kat gibi
+  çirkin görünür).
+- **Belediye Operasyonu:** bütün kaçak katlar ve bütün gecekondular yıkılır.
+- **Deprem Yönetmeliği:** gecekondu başı kaçak kat gibi 30.
+- Gecekondu net değere girmez.
+
+### Kira hesabı
+
+Kira = cetvel (boş arsa ya da 1-4 kat) x kıyı (+%25) x site (x2) x blok (+%25) x park komşusu (+%50 her biri) x gecekondu komşusu
+(-%25 her biri) x gündem (Kira İndirimi, Kira Artışı, Turizm Sezonu, Metro) x iflas çarpanı; Endeks ile ölçeklenir, 5'e yuvarlanır,
+en az 5. Klasikteki "set tamamlanmamışsa kat kirası yarı" kuralı yoktur (yasal kat zaten komşu ister). Kira Zammı ve AVM payı
+bundan sonra uygulanır.
+
+### Kartlar
+
+Kartlar ve adetleri klasikle aynıdır; arsa ve hareket kartları şöyle uyarlanır:
+
+| Kart | Mahalle'de |
+|---|---|
+| Taksi | Zar atmadan: piyonunun satırında ya da sütununda istediğin arsaya git (piyon henüz dışarıdayken oynanamaz) |
+| Kestirme | Zar attıktan sonra, seçimden önce: zarlardan birini yeniden at |
+| Geri Vites | Zar atmadan: zar yerine bir önceki arsana dön (önceki arsa yoksa oynanamaz) |
+| Kamulaştırma, Zorla Takas | "Tam set" yerine "site": sitedeki arsaya oynanmaz; katlı, parklı ya da AVM'li arsaya da oynanmaz |
+| Müteahhit Dostu | "Aynı şehirde 2 mülk" yerine: komşularından biri de senin olan bir arsana bedava 1 yasal kat (inşaat yeri sınırına bağlı değil) |
+| İhbar | Kaçak katlarla birlikte gecekonduları da yıkar (Zabıta karesinin işini İhbar ve Operasyon görür) |
+| Öbürleri | Klasikteki gibi |
+
+### Gündem
+
+Gündem destesi aynıdır; tahtaya bağlı kartlar bölgeye bağlanır:
+
+| Kart | Mahalle'de |
+|---|---|
+| Turizm Sezonu | Bu dönem kıyı kiraları 2 katı |
+| Metro Müjdesi | Rastgele bir bölgenin (dış, iç, merkez, kıyı) fiyat ve kiraları kalıcı olarak %25 artar |
+| Kentsel Dönüşüm | Rastgele bir bölgede sahipli her arsaya bedava 1 yasal kat (park, AVM ve 4 seviyeli arsa hariç) |
+| Asgari Ücrete Zam | Hakediş kalıcı olarak +10 |
+| Bankacılar Grevde | Bu dönem hakediş ödenmez |
+| Zabıta İzinde | Bu dönem İhbar oynanamaz |
+| İmar Affı, Belediye Operasyonu, Deprem Yönetmeliği | Gecekondu ile birlikte (yukarıda) |
+| Ulaşıma Zam | Mahalle destesinde yok (ulaşım yok) |
+| Öbürleri | Klasikteki gibi |
+
+### Puan
+
+Net değer ve puan klasikteki gibi: nakit + arsa fiyatı (ipotekliyse yarısı) + yasal kat x kat fiyatı + kaçak kat x kat fiyatının
+yarısı - konkordato cezası. AVM 4 yasal kat sayılır; park ve AVM dönüşüm bedeli ile gecekondu değere girmez. Oyun sonu sayaçlarına
+kurulan gecekondu, park ve AVM de eklenir (dayının yorumu için; puanı etkilemez).

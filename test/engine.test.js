@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, applyAction, defaultAction, botAction, cardBlock, cardTargets, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, level, unevenBlock, BOARD, SURPRIZ, GameError } from '../src/engine/index.js';
+import { createGame, applyAction, defaultAction, botAction, cardBlock, cardTargets, viewFor, waitingFor, rentFor, price, netWorth, scoreOf, level, unevenBlock, BOARD, SURPRIZ, GameError, GAME_MODES, boardOf } from '../src/engine/index.js';
 import { makePlayers } from '../tools/simlib.js';
 import { started, act, actEv, give, strip, stripAll, own } from './helpers.js';
 
@@ -13,6 +13,26 @@ function calm(s) {
   for (const pl of s.players) pl.cash = 1500;
   return s;
 }
+
+test('oyun türü: varsayılan klasik, bilinmeyen tür reddedilir, mode alanı olmayan eski kayıt aynı oynar', () => {
+  const s = createGame({ players: makePlayers(3), seed: 11 });
+  assert.equal(s.mode, 'klasik');
+  assert.ok(GAME_MODES.includes('klasik'));
+  assert.equal(boardOf(s).squares, BOARD);
+  assert.throws(() => createGame({ players: makePlayers(3), seed: 11, mode: 'yok' }), GameError);
+  const old = structuredClone(s);
+  delete old.mode;
+  let a = s;
+  let b = old;
+  for (let i = 0; i < 200 && a.phase !== 'over'; i++) {
+    const seat = waitingFor(a)[0];
+    const r = applyAction(a, seat, botAction(a, seat));
+    const r2 = applyAction(b, seat, botAction(b, seat));
+    assert.deepEqual(r2.events, r.events);
+    a = r.state;
+    b = r2.state;
+  }
+});
 
 const taksi = (s, p, steps) => act(s, p, { type: 'playCard', uid: give(s, p, 'taksi'), target: { steps } });
 
@@ -398,7 +418,9 @@ test('pazarlık: kabul, ret ve katlı mülk yasağı', () => {
   own(s, 0, 12);
   s = act(s, 0, { type: 'proposeTrade', to: 1, give: { cash: 200, props: [] }, take: { cash: 0, props: [10] } });
   assert.deepEqual(waitingFor(s), [1]);
-  s = act(s, 1, { type: 'tradeRespond', accept: true });
+  const done = actEv(s, 1, { type: 'tradeRespond', accept: true });
+  s = done.state;
+  assert.match(done.events.find((e) => e.type === 'tradeDone').text, new RegExp(BOARD[10].name));
   assert.equal(s.props[10].owner, 0);
   assert.equal(s.players[0].cash, 1300);
   assert.equal(s.players[1].cash, 1700);

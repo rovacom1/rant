@@ -2,6 +2,7 @@
 
 Her hatadan sonra buraya kısa bir kural yaz; oturum başında oku.
 
+- **Motoru bölerken sim raporu yetmez (2026-11-01):** `sqName(sq)` imzası `sqName(s, sq)` olunca `props.map(sqName)` sessizce dizin numarasını state sandı; pazarlık metni "BAŞLANGIÇ NOKTASI" yazdı, sim raporu ve testler aynı kaldı. Davranışı korunması gereken yeniden düzenlemede eski motoru (`git archive HEAD src/engine`) yeni motorla aynı tohumlarla oynatıp her hamledeki olayları ve state'i karşılaştır; imzası değişen fonksiyonun noktasız kullanımını (`map(fn)`) ayrıca ara.
 - **Zar seçimi kirayı öldürdü (2026-10-25):** "İki zardan birini ya da toplamı seç" kuralı oyuncuya kirayı neredeyse her zaman atlatma imkanı verdi (oyun başına 8 kira ödemesi). Hareket özgürlüğü veren her mekanik kira sayısını düşürür; sim raporundaki "Kira: oyun başına N ödeme" satırını izle (sağlıklı aralık ~15-25). Seçim hakkını karta (Kestirme, Taksi) bağla.
 - **Sınıf adı çakışması (2026-10-25):** `.center` hem tahta ortası hem hizalama yardımcısıydı; düğmelerin arkasında kutu çıktı. Bölge sınıflarına önek ver (`board-center`), log satırlarında `t-` öneki kullan (`.dice` gibi düzen sınıflarıyla çakışmasın).
 - **Ev sahibi önce planlar, sonra yayınlar:** `schedule()` süre bilgisini (`deadlines`) üretir; `broadcast()`'tan önce çağrılmazsa istemciler bir adım eski süreyi görür.

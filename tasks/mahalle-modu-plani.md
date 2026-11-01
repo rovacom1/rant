@@ -35,8 +35,9 @@ oyununa sonra başka ad bulunur. Bütün sayılar simülasyonla ayarlanır (kull
   bölgeye (kıyı, merkez) bağlanır. Mekanik planı onaylanırsa iki türde de geçerli.
 
 ## Adımlar
-- [ ] K0 Kurallar (2-3 gün): TASARIM.md'ye "Mahalle modu" bölümü, ilk sayılarla.
-- [ ] K1 Çekirdek (1 hafta): motorun ortak parçaları (para, kart, artırma, pazarlık, borç, gündem) tahtadan ayrılır, tahta verisi
+- [x] K0 Kurallar (2-3 gün): TASARIM.md'ye "Mahalle modu" bölümü, ilk sayılarla (§13).
+- [x] K1 Çekirdek (bitti: `engine/core.js` ortak parçalar, `engine/klasik.js` klasik tahtanın mod nesnesi, `engine/board.js` tahta
+      verisi `s.mode`'a bağlı; sim raporu ve 120 oyunluk olay olay karşılaştırma aynı) (1 hafta): motorun ortak parçaları (para, kart, artırma, pazarlık, borç, gündem) tahtadan ayrılır, tahta verisi
       oyunun durumuna bağlanır. Klasik oyun değişmez: bütün testler, 125 bot oyunu ve sim raporu aynı.
 - [ ] K2 Mahalle motoru (1,5 hafta): `engine/mahalle.js`; 36 arsa, bölge fiyatları, `pick` hamlesi ve zıplama olayı, hakediş,
       torpil, kat kuralı, site, park, AVM, blok, gecekondu, tahliye, af; kart ve gündem uyarlamaları; botlar;

@@ -1,180 +1,37 @@
 // Oyun durum makinesi. applyAction(state, oyuncu, hamle) yeni state ve olay listesi döndürür.
 // Olaylar (events) herkese gider; bu yüzden asla gizli bilgi (el, deste) içermez.
+// Burada tahtadan bağımsız akış durur (tur, gündem, kartlar, pazarlık, inşaat, borç, puan); tahtaya özel olan her şey
+// (yürüyüş, kareye varış, zar hamleleri, köşe kararları) oyunun modundan gelir: klasik.js, sonra mahalle.js.
 
-import { BOARD, CARDS, GUNDEM, GUNDEM_PERIOD, SURPRIZ, GROUPS, GROUP_SQUARES, OWNABLE, MODE_SQUARES, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP, IFLAS_ROUND_CAP } from './data.js';
+import { CARDS, GUNDEM, GUNDEM_PERIOD, AMOUNTS, DEFAULT_CONFIG, RULES_VERSION, TARGET_ROUND_CAP, IFLAS_ROUND_CAP } from './data.js';
 import { randInt, rollDie, shuffle } from './rng.js';
 import * as R from './rules.js';
+import { boardOf, modeOf, GAME_MODES } from './board.js';
+import { GameError, need, emit, say, nm, sqName, others, hasCard, tableHolds, hasUid, newStats, stat, discardCard, drawCards, transfer, acquire, demolishKacak, payRent, goBroke, sellFloorAt, mortgageAt, autoLiquidate, auctionStep, startAuction, nextBidder } from './core.js';
+import { klasik } from './klasik.js';
+
+export { GameError, hasCard, auctionStep };
 
 const { fmt, cardId } = R;
 
-export class GameError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'GameError';
-  }
-}
+// Oyun türleri: tahtaya özel davranış (mahalle K2'de eklenir, docs/TASARIM.md "Mahalle modu").
+const MODES = { klasik };
+const M = (s) => MODES[modeOf(s)];
 
-const need = (cond, msg) => {
-  if (!cond) throw new GameError(msg);
-};
-
-const N = BOARD.length;
-const LOG_MAX = 150;
 const MANAGE_STEPS = ['preroll', 'free'];
-
-// ---------- yardımcılar ----------
-
-function emit(s, ctx, ev) {
-  ctx.events.push(ev);
-  if (ev.text) {
-    // Kart olaylarında kart ve oynayan da saklanır: akışta kart adı çip olur, üzerine gelince kart görünür.
-    s.log.push(ev.card ? { r: s.round, text: ev.text, type: ev.type, card: ev.card, p: ev.p } : { r: s.round, text: ev.text, type: ev.type });
-    if (s.log.length > LOG_MAX) s.log.splice(0, s.log.length - LOG_MAX);
-  }
-}
-
-const say = (s, ctx, text) => emit(s, ctx, { type: 'log', text });
-const nm = (s, p) => s.players[p].name;
-const sqName = (sq) => BOARD[sq].name;
-const others = (s, p) => R.activePlayers(s).filter((i) => i !== p);
-
-export const hasCard = (s, p, id) => s.players[p].hand.some((u) => cardId(u) === id);
-// Masada bu karttan biri var mı: tepki beklemeleri buna göre açılır, kimin elinde olduğu sızmaz.
-const tableHolds = (s, id) => s.players.some((_, p) => hasCard(s, p, id));
-const hasUid = (s, p, uid) => typeof uid === 'string' && s.players[p].hand.includes(uid);
-
-// Oyun sonu dayı yorumu için sayaçlar; eski kayıtlarda stats yoksa burada açılır. Puanı etkilemez.
-const STAT_KEYS = ['kacak', 'ihale', 'dava', 'gasp', 'yikim', 'kira'];
-const newStats = () => Object.fromEntries(STAT_KEYS.map((k) => [k, 0]));
-function stat(s, p, key, n = 1) {
-  const pl = s.players[p];
-  pl.stats ??= newStats();
-  pl.stats[key] = (pl.stats[key] || 0) + n;
-}
-
-function discardCard(s, p, uid) {
-  const hand = s.players[p].hand;
-  hand.splice(hand.indexOf(uid), 1);
-  s.discard.push(uid);
-}
-
-function drawCards(s, ctx, p, n, quiet = false) {
-  let got = 0;
-  for (let i = 0; i < n; i++) {
-    if (!s.deck.length) {
-      if (!s.discard.length) break;
-      s.deck = shuffle(s, s.discard);
-      s.discard = [];
-      say(s, ctx, 'Hamle destesi karıştırıldı.');
-    }
-    s.players[p].hand.push(s.deck.pop());
-    got++;
-  }
-  if (got) emit(s, ctx, { type: 'draw', p, n: got, text: quiet ? undefined : `${nm(s, p)} ${got} kart çekti.` });
-}
-
-// from/to: oyuncu sırası ya da null (banka).
-function transfer(s, ctx, from, to, amount, why, quiet = false) {
-  if (amount <= 0) return;
-  if (from !== null) s.players[from].cash -= amount;
-  if (to !== null) s.players[to].cash += amount;
-  let text;
-  if (!quiet) {
-    if (from === null) text = `${nm(s, to)} +${fmt(amount)} (${why})`;
-    else if (to === null) text = `${nm(s, from)} ${fmt(amount)} ödedi (${why})`;
-    else text = `${nm(s, from)} → ${nm(s, to)}: ${fmt(amount)} (${why})`;
-  }
-  emit(s, ctx, { type: 'money', from, to, amount, why, text });
-}
-
-function acquire(s, ctx, p, sq, cost, how) {
-  transfer(s, ctx, p, null, cost, `Tapu: ${sqName(sq)}`, true);
-  s.props[sq].owner = p;
-  emit(s, ctx, { type: 'own', p, sq, text: `${nm(s, p)} ${sqName(sq)} mülkünü ${how} ${fmt(cost)}.` });
-}
-
-function demolishKacak(s, ctx, victim, finePer, why, by) {
-  let n = 0;
-  for (const q of R.propsOf(s, victim)) {
-    if (s.props[q].kacak) {
-      s.props[q].kacak = 0;
-      n++;
-    }
-  }
-  if (!n) return say(s, ctx, `${why}: ${nm(s, victim)} oyuncusunda kaçak kat bulunamadı.`);
-  if (by !== victim) stat(s, by, 'yikim', n);
-  emit(s, ctx, { type: 'demolish', p: victim, n, text: `${why}: ${nm(s, victim)} oyuncusunun ${n} kaçak katı yıkıldı!` });
-  if (finePer) transfer(s, ctx, victim, null, finePer * n, `${why} cezası`);
-}
-
-// Borcunu kapatamayan oyuncu: iflas modunda elenir, diğer modlarda konkordato ilan eder.
-function goBroke(s, ctx, p) {
-  return s.config.iflas ? iflas(s, ctx, p) : konkordato(s, ctx, p);
-}
-
-// İflas: mülkler katsız ve ipoteksiz bankaya döner, kartlar desteye gider, oyuncu oyundan çıkar.
-function iflas(s, ctx, p) {
-  const pl = s.players[p];
-  for (const q of R.propsOf(s, p)) Object.assign(s.props[q], { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 });
-  s.discard.push(...pl.hand);
-  pl.hand = [];
-  pl.cash = 0;
-  for (const ps of s.props) if (ps && ps.tedbirBy === p) ps.tedbir = 0; // sırası gelmeyecek, tedbiri düşer
-  pl.out = s.players.filter((o) => o.out).length + 1; // kaçıncı elenen
-  emit(s, ctx, { type: 'iflas', p, text: `${nm(s, p)} iflas etti ve oyundan çekildi! Mülkleri bankaya döndü.` });
-}
-
-function konkordato(s, ctx, p) {
-  s.players[p].cash = 0;
-  s.players[p].konkordato++;
-  emit(s, ctx, {
-    type: 'konkordato',
-    p,
-    text: `${nm(s, p)} konkordato ilan etti! Borcu silindi, oyunda kalıyor; sonda ${s.config.konkordatoPenalty} puan ceza.`,
-  });
-}
-
-function sellFloorAt(s, ctx, p, sq) {
-  const ps = s.props[sq];
-  let refund;
-  if (ps.kacak) {
-    ps.kacak = 0;
-    refund = R.round5(R.katValue(s, sq) / 4);
-  } else {
-    ps.kat--;
-    refund = R.round5(R.katValue(s, sq) / 2);
-  }
-  transfer(s, ctx, null, p, refund, `Kat satışı: ${sqName(sq)}`);
-}
-
-function mortgageAt(s, ctx, p, sq) {
-  s.props[sq].ipotek = true;
-  transfer(s, ctx, null, p, R.mortgageValue(s, sq), `İpotek: ${sqName(sq)}`);
-}
-
-function autoLiquidate(s, ctx, p) {
-  const byKat = (a, b) => R.katValue(s, a) - R.katValue(s, b);
-  while (s.players[p].cash < 0) {
-    const mine = R.propsOf(s, p);
-    const kacak = mine.filter((q) => s.props[q].kacak).sort(byKat)[0];
-    const kat = mine.filter((q) => s.props[q].kat > 0).sort(byKat)[0];
-    const free = mine.filter((q) => !s.props[q].ipotek && R.level(s.props[q]) === 0).sort((a, b) => R.price(s, a) - R.price(s, b))[0];
-    if (kacak !== undefined) sellFloorAt(s, ctx, p, kacak);
-    else if (kat !== undefined) sellFloorAt(s, ctx, p, kat);
-    else if (free !== undefined) mortgageAt(s, ctx, p, free);
-    else break;
-  }
-}
 
 // ---------- kurulum ----------
 
-export function createGame({ players, config = {}, seed = 1 }) {
+// mode: oyun türü (board.js GAME_MODES); verilmezse klasik.
+export function createGame({ players, config = {}, seed = 1, mode = 'klasik' }) {
   need(players.length >= 2 && players.length <= 6, 'Oyun 2-6 kişiyle oynanır.');
+  need(GAME_MODES.includes(mode), 'Bilinmeyen oyun türü.');
   const cfg = { ...DEFAULT_CONFIG, ...config, rules: { ...DEFAULT_CONFIG.rules, ...config.rules } };
   if (cfg.iflas) Object.assign(cfg, { targetScore: 0, maxRounds: IFLAS_ROUND_CAP });
   if (cfg.targetScore) cfg.maxRounds = TARGET_ROUND_CAP;
   const s = {
     v: RULES_VERSION,
+    mode,
     seq: 0,
     rng: seed >>> 0,
     config: cfg,
@@ -186,7 +43,7 @@ export function createGame({ players, config = {}, seed = 1 }) {
     mods: {},
     gundem: null,
     players: [],
-    props: BOARD.map((q) => (q.kind === 'prop' || q.kind === 'transport' ? { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 } : null)),
+    props: boardOf({ mode }).squares.map((q) => (q.kind === 'prop' || q.kind === 'transport' ? { owner: null, kat: 0, kacak: 0, ipotek: false, tedbir: 0 } : null)),
     deck: [],
     discard: [],
     gundemDeck: [],
@@ -284,7 +141,7 @@ function summarizeRound(s, ctx) {
   (s.worth ||= []).push(s.players.map((_, p) => R.netWorth(s, p)));
   const sign = (x) => `${x > 0 ? '+' : ''}${fmt(x)}`;
   const parts = [flat ? 'Herkes yerinde saydı' : `En çok kazanan ${nm(s, best)} (${sign(deltas[best])}), en çok kaybeden ${nm(s, worst)} (${sign(deltas[worst])})`];
-  if (changes.length) parts.push(`El değiştiren: ${changes.map((c) => `${sqName(c.sq)} (${nm(s, c.from)} → ${c.to === null ? 'Banka' : nm(s, c.to)})`).join(', ')}`);
+  if (changes.length) parts.push(`El değiştiren: ${changes.map((c) => `${sqName(s, c.sq)} (${nm(s, c.from)} → ${c.to === null ? 'Banka' : nm(s, c.to)})`).join(', ')}`);
   emit(s, ctx, { type: 'summary', round: s.round, text: `${s.round}. tur özeti: ${parts.join('. ')}.` });
 }
 
@@ -299,8 +156,6 @@ function checkTarget(s, ctx) {
   emit(s, ctx, { type: 'target', p, text: `${nm(s, p)} ${fmt(t)} değer hedefini geçti! Bu tur bitince Seçim Günü.` });
 }
 
-// Çift zar atan, turunu bitirince bir daha zar atar (Monopoly gibi); üçüncü çiftte ek hak yok.
-const MAX_DOUBLES = 2;
 
 function finishTurn(s, ctx) {
   const t = s.turn;
@@ -337,239 +192,7 @@ function endGame(s, ctx) {
 }
 
 export function moveOptions(s) {
-  const d = s.turn?.dice;
-  return d ? [d[0] + d[1]] : [];
-}
-
-function travel(s, ctx, p, steps, backward) {
-  const pl = s.players[p];
-  const path = [];
-  let pos = pl.pos;
-  let passed = 0;
-  for (let i = 0; i < steps; i++) {
-    pos = (pos + (backward ? N - 1 : 1)) % N;
-    path.push(pos);
-    if (!backward && pos === 0) passed++;
-  }
-  pl.pos = pos;
-  emit(s, ctx, { type: 'move', p, path, backward, text: `${nm(s, p)} ${steps} kare ${backward ? 'geri gitti' : 'ilerledi'} → ${sqName(pos)}` });
-  for (let i = 0; i < passed; i++) {
-    if (s.mods.grev) say(s, ctx, 'Bankacılar grevde: maaş yatmadı.');
-    else transfer(s, ctx, null, p, s.salary, 'Maaş');
-    // Monopoly'deki gibi tur atlamanın küçük ödülü: kart yalnız buradan (ve FIRSAT'tan) gelir.
-    if (pl.hand.length < s.config.drawCap) drawCards(s, ctx, p, 1, true);
-  }
-  s.turn.step = 'free';
-  land(s, ctx, p);
-}
-
-function land(s, ctx, p) {
-  const pos = s.players[p].pos;
-  const sq = BOARD[pos];
-  switch (sq.kind) {
-    case 'prop':
-    case 'transport': {
-      const ps = s.props[pos];
-      if (ps.owner === null) s.pending = { type: 'buy', p, sq: pos };
-      else if (ps.owner !== p) chargeRent(s, ctx, p, pos);
-      return;
-    }
-    case 'chance':
-      return drawCards(s, ctx, p, 2);
-    case 'surpriz':
-      if (!s.config.rules.surpriz) return say(s, ctx, 'Sürprizler bu masada kapalı.');
-      return applySurpriz(s, ctx, p, pick(s, Object.keys(SURPRIZ)));
-    case 'tapu': {
-      const cash = s.players[p].cash;
-      if (OWNABLE.some((q) => s.props[q].owner === null && R.price(s, q) <= cash)) s.pending = { type: 'tapu', p };
-      else {
-        say(s, ctx, 'Tapu Dairesi: alınabilecek arsa yok, teselli olarak 1 kart.');
-        drawCards(s, ctx, p, 1);
-      }
-      return;
-    }
-    case 'cay': {
-      const amt = R.money(s, AMOUNTS.cay);
-      for (const o of others(s, p)) {
-        const c = s.players[o].cash;
-        if (c > 0) transfer(s, ctx, o, p, Math.min(amt, c), 'Çay parası');
-      }
-      return;
-    }
-    case 'zabita': {
-      if (s.mods.zabitaIzinde) return say(s, ctx, 'Zabıta izinde, kimse ihbar edilemedi.');
-      const options = others(s, p).filter((o) => R.floorsOf(s, o).kacak > 0);
-      if (!options.length) return say(s, ctx, 'Zabıta turladı ama kaçak kat bulamadı.');
-      s.pending = { type: 'zabita', p, options };
-      return;
-    }
-    default:
-  }
-}
-
-function chargeRent(s, ctx, p, sq) {
-  const ps = s.props[sq];
-  if (ps.ipotek) return say(s, ctx, `${sqName(sq)} ipotekli, kira yok.`);
-  if (ps.tedbir > 0) return say(s, ctx, `${sqName(sq)} için ihtiyati tedbir var, kira yok.`);
-  const owner = ps.owner;
-  const zam = s.players[owner].kiraZammi;
-  const amount = R.rentFor(s, sq) * (zam ? 2 : 1);
-  if (amount <= 0) return;
-  const r = { type: 'rent', p, owner, sq, amount, zam };
-  // Kartı olsun olmasın aynı karar beklenir; yalnız masada hiç Dayın Çıktı yoksa beklenmez (kimde olduğu belli olmasın).
-  if (tableHolds(s, 'dayi')) s.pending = r;
-  else payRent(s, ctx, r);
-}
-
-function payRent(s, ctx, r) {
-  if (r.zam) s.players[r.owner].kiraZammi = false;
-  stat(s, r.owner, 'kira', r.amount);
-  transfer(s, ctx, r.p, r.owner, r.amount, `Kira: ${sqName(r.sq)}${r.zam ? ', zamlı' : ''}`);
-}
-
-// Açık artırma (Monopoly gibi): reddedenden sonraki oyuncudan başlayıp sırayla herkes ya artırır ya çekilir;
-// lider dışında herkes çekilince lider kazanır. Reddeden de katılır, nakdi olmayan katılamaz.
-export const auctionStep = (s) => R.money(s, 10);
-
-function startAuction(s, ctx, sq, from) {
-  const n = s.players.length;
-  const order = Array.from({ length: n }, (_, k) => (from + 1 + k) % n).filter((i) => s.players[i].cash > 0);
-  if (!order.length) return say(s, ctx, `${sqName(sq)} için teklif verebilecek kimse yok.`);
-  s.pending = { type: 'auction', sq, order, out: [], high: 0, leader: null, turn: order[order.length - 1] };
-  emit(s, ctx, { type: 'auctionStart', sq, text: `${sqName(sq)} açık artırmaya çıktı! Liste fiyatı ${fmt(R.price(s, sq))}.` });
-  nextBidder(s, ctx);
-}
-
-// Sırayı lider olmayan, çekilmemiş sonraki oyuncuya verir; en düşük teklife nakdi yetmeyen kendiliğinden çekilir.
-function nextBidder(s, ctx) {
-  const pd = s.pending;
-  const min = pd.high + auctionStep(s);
-  const at = pd.order.indexOf(pd.turn);
-  for (let k = 1; k <= pd.order.length; k++) {
-    const q = pd.order[(at + k) % pd.order.length];
-    if (pd.out.includes(q) || q === pd.leader) continue;
-    if (s.players[q].cash < min) {
-      pd.out.push(q);
-      say(s, ctx, `${nm(s, q)} artıramıyor, çekildi.`);
-      continue;
-    }
-    pd.turn = q;
-    return;
-  }
-  resolveAuction(s, ctx);
-}
-
-function resolveAuction(s, ctx) {
-  const pd = s.pending;
-  s.pending = null;
-  const winner = pd.leader;
-  s.lastAuction = { sq: pd.sq, high: pd.high, winner };
-  if (winner === null) {
-    emit(s, ctx, { type: 'auction', sq: pd.sq, winner, high: 0, text: `Açık artırma bitti: teklif yok, ${sqName(pd.sq)} sahipsiz kaldı.` });
-    return;
-  }
-  transfer(s, ctx, winner, null, pd.high, `İhale: ${sqName(pd.sq)}`, true);
-  s.props[pd.sq].owner = winner;
-  stat(s, winner, 'ihale');
-  emit(s, ctx, { type: 'auction', sq: pd.sq, winner, high: pd.high, text: `Açık artırma bitti: ${sqName(pd.sq)} → ${nm(s, winner)} (${fmt(pd.high)}).` });
-}
-
-// ---------- Sürpriz ----------
-
-const pick = (s, arr) => arr[randInt(s, arr.length)];
-
-// Sürpriz etkisi seçim beklemeden hemen uygulanır; gerekirse oyuncuyu başka kareye taşıyıp oraya indirir.
-function applySurpriz(s, ctx, p, id) {
-  const pl = s.players[p];
-  const sur = SURPRIZ[id];
-  const amt = (k) => R.money(s, AMOUNTS[k]);
-  emit(s, ctx, { type: 'surpriz', p, id, text: `${nm(s, p)} için Sürpriz: ${sur.name}! ${sur.text}` });
-  switch (id) {
-    case 'miras':
-      return transfer(s, ctx, null, p, amt('surMiras'), 'Miras');
-    case 'radar':
-      return transfer(s, ctx, p, null, amt('surRadar'), 'Hız cezası');
-    case 'dugun':
-      for (const o of others(s, p)) {
-        const c = s.players[o].cash;
-        if (c > 0) transfer(s, ctx, o, p, Math.min(amt('surDugun'), c), 'Düğün takısı');
-      }
-      return;
-    case 'hesap':
-      for (const o of others(s, p)) transfer(s, ctx, p, o, amt('surHesap'), 'Kebap hesabı');
-      return;
-    case 'robin': {
-      const all = R.activePlayers(s);
-      const rich = all.reduce((a, b) => (s.players[b].cash > s.players[a].cash ? b : a));
-      const poor = all.reduce((a, b) => (s.players[b].cash < s.players[a].cash ? b : a));
-      if (s.players[rich].cash === s.players[poor].cash) return say(s, ctx, 'Herkesin nakdi eşit, Robin Hood eli boş döndü.');
-      return transfer(s, ctx, rich, poor, Math.min(amt('surRobin'), Math.max(0, s.players[rich].cash)), 'Robin Hood');
-    }
-    case 'catlak': {
-      const built = R.propsOf(s, p).filter((q) => R.level(s.props[q]) > 0);
-      if (!built.length) return say(s, ctx, 'Neyse ki çökecek katın yoktu.');
-      const q = built.sort((a, b) => R.level(s.props[b]) - R.level(s.props[a]) || R.katValue(s, b) - R.katValue(s, a))[0];
-      const ps = s.props[q];
-      if (ps.kacak) ps.kacak = 0;
-      else ps.kat--;
-      return emit(s, ctx, { type: 'collapse', p, sq: q, text: `${sqName(q)} üstündeki 1 kat çöktü.` });
-    }
-    case 'jest': {
-      const ok = s.mods.durgunluk ? [] : R.propsOf(s, p).filter((q) => BOARD[q].kind === 'prop' && !s.props[q].ipotek && !s.props[q].tedbir && R.level(s.props[q]) < 4);
-      if (!ok.length) return transfer(s, ctx, null, p, amt('surTeselli'), 'Belediye tesellisi');
-      const q = pick(s, ok);
-      s.props[q].kat++;
-      return emit(s, ctx, { type: 'build', p, sq: q, text: `${sqName(q)} üstüne belediyeden bedava kat çıktı.` });
-    }
-    case 'tarla': {
-      const free = OWNABLE.filter((q) => s.props[q].owner === null);
-      if (!free.length) return transfer(s, ctx, null, p, amt('surTarla'), 'Tarla satışı');
-      const q = free.reduce((a, b) => (R.price(s, b) < R.price(s, a) ? b : a));
-      s.props[q].owner = p;
-      return emit(s, ctx, { type: 'own', p, sq: q, text: `${nm(s, p)} dededen kalan ${sqName(q)} tapusunu bedavaya aldı.` });
-    }
-    case 'ucak': {
-      const steps = Math.min(...MODE_SQUARES.air.map((q) => (q - pl.pos + N) % N || N));
-      return travel(s, ctx, p, steps, false);
-    }
-    case 'isinlan': {
-      const to = pick(s, BOARD.map((_, i) => i).filter((i) => BOARD[i].kind !== 'surpriz'));
-      pl.pos = to;
-      emit(s, ctx, { type: 'move', p, path: [to], jump: true, text: `${nm(s, p)} ışınlandı → ${sqName(to)}` });
-      return land(s, ctx, p);
-    }
-    case 'tersKose': {
-      const o = pick(s, others(s, p));
-      const [a, b] = [pl.pos, s.players[o].pos];
-      pl.pos = b;
-      s.players[o].pos = a;
-      emit(s, ctx, { type: 'move', p, path: [b], jump: true });
-      emit(s, ctx, { type: 'move', p: o, path: [a], jump: true, text: `${nm(s, p)} ile ${nm(s, o)} yer değiştirdi.` });
-      return;
-    }
-    case 'kapkac': {
-      const victims = others(s, p).filter((o) => s.players[o].hand.length);
-      if (!victims.length) return drawCards(s, ctx, p, 1);
-      const o = pick(s, victims);
-      const hand = s.players[o].hand;
-      pl.hand.push(hand.splice(randInt(s, hand.length), 1)[0]);
-      return say(s, ctx, `${nm(s, p)}, ${nm(s, o)} oyuncusunun elinden bir kart kaptı.`);
-    }
-    case 'bavul': {
-      if (!pl.hand.length) return say(s, ctx, 'Bavul zaten boştu.');
-      const uid = pick(s, pl.hand);
-      discardCard(s, p, uid);
-      return say(s, ctx, `${nm(s, p)} elindeki ${CARDS[cardId(uid)].name} kartını kaybetti.`);
-    }
-    case 'haciz':
-      return transfer(s, ctx, p, null, R.round5(Math.max(0, pl.cash) * 0.1), 'Haciz');
-    case 'vergiIade': {
-      const n = R.propsOf(s, p).length;
-      if (!n) return say(s, ctx, 'Mülkün olmadığı için iade çıkmadı.');
-      return transfer(s, ctx, null, p, n * amt('surVergi'), 'Vergi iadesi');
-    }
-    default:
-  }
+  return M(s).moveOptions(s);
 }
 
 // ---------- Gündem ----------
@@ -631,15 +254,16 @@ function applyGundem(s, ctx, id) {
       break;
     case 'kentsel': {
       const eligible = (q) => s.props[q].owner !== null && !s.props[q].ipotek && R.level(s.props[q]) < 4;
-      const groups = Object.keys(GROUPS).filter((gr) => GROUP_SQUARES[gr].some(eligible));
+      const B = boardOf(s);
+      const groups = Object.keys(B.groups).filter((gr) => B.groupSquares[gr].some(eligible));
       if (!groups.length) {
         s.gundem.detail = 'Dönüşecek sahipli mülk yok.';
         break;
       }
       const gr = groups[randInt(s, groups.length)];
-      const qs = GROUP_SQUARES[gr].filter(eligible);
+      const qs = B.groupSquares[gr].filter(eligible);
       for (const q of qs) s.props[q].kat++;
-      s.gundem.detail = `${GROUPS[gr].name}: ${qs.length} mülke bedava kat.`;
+      s.gundem.detail = `${B.groups[gr].name}: ${qs.length} mülke bedava kat.`;
       break;
     }
     case 'secimVaadi': {
@@ -659,10 +283,11 @@ function applyGundem(s, ctx, id) {
       }
       break;
     case 'metro': {
-      const groups = Object.keys(GROUPS);
+      const { groups: G } = boardOf(s);
+      const groups = Object.keys(G);
       const gr = groups[randInt(s, groups.length)];
       s.groupMult[gr] = Math.round((s.groupMult[gr] || 1) * 1.25 * 100) / 100;
-      s.gundem.detail = `${GROUPS[gr].name} değerlendi.`;
+      s.gundem.detail = `${G[gr].name} değerlendi.`;
       break;
     }
     case 'komsuluk': {
@@ -686,14 +311,12 @@ const victimOf = (s, id, t) => {
   return t.player;
 };
 
-const isOwnable = (sq) => Number.isInteger(sq) && sq >= 0 && sq < N && s_ownable[sq];
-const s_ownable = BOARD.map((q) => q.kind === 'prop' || q.kind === 'transport');
 const isOpp = (s, p, o) => Number.isInteger(o) && o >= 0 && o < s.players.length && o !== p && !s.players[o].out;
 
 // Kartın verilen hedefle oynanamama sebebi; oynanabiliyorsa null.
 export function cardBlock(s, p, id, t = {}) {
   const pl = s.players[p];
-  const ps = isOwnable(t.sq) ? s.props[t.sq] : null;
+  const ps = R.isOwnable(s, t.sq) ? s.props[t.sq] : null;
   switch (id) {
     case 'taksi':
       return Number.isInteger(t.steps) && t.steps >= 1 && t.steps <= 12 ? null : '1 ile 12 arasında bir kare sayısı seç.';
@@ -708,8 +331,8 @@ export function cardBlock(s, p, id, t = {}) {
       if (pl.cash < R.price(s, t.sq)) return 'Kamulaştırma bedeline paran yetmiyor.';
       return null;
     case 'takas': {
-      const mine = isOwnable(t.mine) ? s.props[t.mine] : null;
-      const theirs = isOwnable(t.theirs) ? s.props[t.theirs] : null;
+      const mine = R.isOwnable(s, t.mine) ? s.props[t.mine] : null;
+      const theirs = R.isOwnable(s, t.theirs) ? s.props[t.theirs] : null;
       if (!mine || mine.owner !== p || R.level(mine) > 0) return 'Vereceğin katsız bir mülkünü seç.';
       if (!theirs || !isOpp(s, p, theirs.owner) || R.level(theirs) > 0) return 'Rakibin katsız bir mülkünü seç.';
       if (R.inFullSet(s, t.theirs)) return 'Tamamlanmış şehir setinden mülk alınamaz.';
@@ -725,8 +348,8 @@ export function cardBlock(s, p, id, t = {}) {
     case 'kiraZammi':
       return pl.kiraZammi ? 'Kira Zammı zaten etkin.' : null;
     case 'muteahhit':
-      if (!ps || ps.owner !== p || BOARD[t.sq].kind !== 'prop') return 'Kendi mülklerinden birini seç.';
-      if (GROUP_SQUARES[BOARD[t.sq].group].filter((q) => s.props[q].owner === p).length < 2) return 'Müteahhit için o şehirden en az 2 mülkün olmalı.';
+      if (!ps || ps.owner !== p || R.sqOf(s, t.sq).kind !== 'prop') return 'Kendi mülklerinden birini seç.';
+      if (boardOf(s).groupSquares[R.sqOf(s, t.sq).group].filter((q) => s.props[q].owner === p).length < 2) return 'Müteahhit için o şehirden en az 2 mülkün olmalı.';
       if (s.mods.durgunluk) return 'Piyasa durgun: bu dönem kat dikilemez.';
       if (ps.ipotek || ps.tedbir > 0) return 'İpotekli ya da tedbirli mülke kat dikilemez.';
       return R.level(ps) >= 4 ? 'Bu mülk en üst seviyede.' : null;
@@ -747,7 +370,7 @@ export function cardBlock(s, p, id, t = {}) {
 // Arayüz ve botlar için: kartın geçerli hedefleri.
 export function cardTargets(s, p, id) {
   const opps = others(s, p);
-  const oppProps = OWNABLE.filter((q) => opps.includes(s.props[q].owner));
+  const oppProps = boardOf(s).ownable.filter((q) => opps.includes(s.props[q].owner));
   switch (CARDS[id].target) {
     case 'steps':
       return Array.from({ length: 12 }, (_, i) => ({ steps: i + 1 }));
@@ -779,9 +402,9 @@ function cardText(s, p, id, t) {
       return `${who} Kestirme kullandı: ${s.turn.dice[t.die]} kare.`;
     case 'kamulastirma':
     case 'tedbir':
-      return `${who} → ${nm(s, s.props[t.sq].owner)}: ${name} (${sqName(t.sq)})`;
+      return `${who} → ${nm(s, s.props[t.sq].owner)}: ${name} (${sqName(s, t.sq)})`;
     case 'takas':
-      return `${who} → ${nm(s, s.props[t.theirs].owner)}: Zorla Takas (${sqName(t.mine)} ↔ ${sqName(t.theirs)})`;
+      return `${who} → ${nm(s, s.props[t.theirs].owner)}: Zorla Takas (${sqName(s, t.mine)} ↔ ${sqName(s, t.theirs)})`;
     case 'ihbar':
     case 'dava':
       return `${who} → ${nm(s, t.player)}: ${name}`;
@@ -851,25 +474,25 @@ function applyCard(s, ctx, card, victim) {
   switch (card.id) {
     case 'taksi':
       s.turn.dice = null;
-      return travel(s, ctx, p, t.steps, false);
+      return M(s).travel(s, ctx, p, t.steps, false);
     case 'geriVites':
       s.turn.backward = true;
       return;
     case 'kestirme':
-      return travel(s, ctx, p, s.turn.dice[t.die], s.turn.backward);
+      return M(s).travel(s, ctx, p, s.turn.dice[t.die], s.turn.backward);
     case 'kamulastirma':
-      transfer(s, ctx, p, victim, R.price(s, t.sq), `Kamulaştırma bedeli: ${sqName(t.sq)}`);
+      transfer(s, ctx, p, victim, R.price(s, t.sq), `Kamulaştırma bedeli: ${sqName(s, t.sq)}`);
       s.props[t.sq].owner = p;
       stat(s, p, 'gasp');
-      return emit(s, ctx, { type: 'own', p, sq: t.sq, text: `${sqName(t.sq)} kamulaştırıldı, artık ${nm(s, p)} oyuncusunun.` });
+      return emit(s, ctx, { type: 'own', p, sq: t.sq, text: `${sqName(s, t.sq)} kamulaştırıldı, artık ${nm(s, p)} oyuncusunun.` });
     case 'takas':
       s.props[t.mine].owner = victim;
       s.props[t.theirs].owner = p;
       stat(s, p, 'gasp');
-      return emit(s, ctx, { type: 'own', p, sq: t.theirs, text: `Takas tamam: ${sqName(t.theirs)} ↔ ${sqName(t.mine)}.` });
+      return emit(s, ctx, { type: 'own', p, sq: t.theirs, text: `Takas tamam: ${sqName(s, t.theirs)} ↔ ${sqName(s, t.mine)}.` });
     case 'tedbir':
       Object.assign(s.props[t.sq], { tedbir: 2, tedbirBy: card.by });
-      return say(s, ctx, `${sqName(t.sq)} için ihtiyati tedbir kararı: 2 tur kira yok.`);
+      return say(s, ctx, `${sqName(s, t.sq)} için ihtiyati tedbir kararı: 2 tur kira yok.`);
     case 'ihbar':
       return demolishKacak(s, ctx, victim, R.money(s, AMOUNTS.ihbarFine), 'İhbar', p);
     case 'kiraZammi':
@@ -877,7 +500,7 @@ function applyCard(s, ctx, card, victim) {
       return;
     case 'muteahhit':
       s.props[t.sq].kat++;
-      return emit(s, ctx, { type: 'build', p, sq: t.sq, text: `${sqName(t.sq)} üstüne ruhsatlı bedava kat çıktı.` });
+      return emit(s, ctx, { type: 'build', p, sq: t.sq, text: `${sqName(s, t.sq)} üstüne ruhsatlı bedava kat çıktı.` });
     case 'piyango':
       return transfer(s, ctx, null, p, R.money(s, AMOUNTS.piyango), 'Piyango');
     case 'aidat':
@@ -952,7 +575,7 @@ export function tradeBlock(s, from, t) {
   const tp = s.players[t.to];
   if (t.give.cash > Math.max(0, fp.cash)) return 'Teklif ettiğin para nakdinden fazla.';
   if (t.take.cash > Math.max(0, tp.cash)) return 'Karşı tarafın o kadar nakdi yok.';
-  const okProps = (list, owner) => list.every((q) => isOwnable(q) && s.props[q].owner === owner && R.level(s.props[q]) === 0);
+  const okProps = (list, owner) => list.every((q) => R.isOwnable(s, q) && s.props[q].owner === owner && R.level(s.props[q]) === 0);
   if (!okProps(t.give.props, from)) return 'Verdiğin mülkler senin ve katsız olmalı.';
   if (!okProps(t.take.props, t.to)) return 'İstediğin mülkler onun ve katsız olmalı.';
   if (!t.give.cash && !t.take.cash && !t.give.props.length && !t.take.props.length) return 'Boş teklif olmaz.';
@@ -964,34 +587,17 @@ function executeTrade(s, ctx, pd) {
   transfer(s, ctx, pd.to, pd.from, pd.take.cash, 'Pazarlık', true);
   for (const q of pd.give.props) s.props[q].owner = pd.to;
   for (const q of pd.take.props) s.props[q].owner = pd.from;
-  const side = (x) => [...x.props.map(sqName), ...(x.cash ? [fmt(x.cash)] : [])].join(' + ') || 'hiçbir şey';
+  const side = (x) => [...x.props.map((q) => sqName(s, q)), ...(x.cash ? [fmt(x.cash)] : [])].join(' + ') || 'hiçbir şey';
   emit(s, ctx, { type: 'tradeDone', text: `Anlaşma! ${nm(s, pd.from)} verdi: ${side(pd.give)}; aldı: ${side(pd.take)} (${nm(s, pd.to)}).` });
 }
 
 // ---------- hamle işleyicileri ----------
 
 const needManage = (s) => need(MANAGE_STEPS.includes(s.turn.step), 'Şu an bunu yapamazsın.');
-const needMine = (s, p, sq) => need(isOwnable(sq) && s.props[sq].owner === p, 'Bu mülk senin değil.');
+const needMine = (s, p, sq) => need(R.isOwnable(s, sq) && s.props[sq].owner === p, 'Bu mülk senin değil.');
 
+// Sıranın tahtadan bağımsız hamleleri; zar ve yürüyüş hamleleri moddan gelir (klasik.actions).
 const TURN = {
-  roll(s, p, a, ctx) {
-    need(s.turn.step === 'preroll', 'Zar zaten atıldı.');
-    const d = [rollDie(s), rollDie(s)];
-    s.turn.dice = d;
-    s.turn.step = 'choose';
-    emit(s, ctx, { type: 'dice', p, dice: d, text: `${nm(s, p)} zar attı: ${d[0]} ve ${d[1]}${d[0] === d[1] ? ', çift' : ''}` });
-    if (d[0] === d[1]) {
-      s.turn.doubles = (s.turn.doubles || 0) + 1;
-      s.turn.again = s.turn.doubles <= MAX_DOUBLES;
-    }
-    // Masada Kestirme varsa oyuncu (kartı olsun olmasın) zarı görüp karar verir; yoksa doğrudan ilerler.
-    if (s.turn.hamle || !tableHolds(s, 'kestirme')) travel(s, ctx, p, d[0] + d[1], s.turn.backward);
-  },
-  move(s, p, a, ctx) {
-    need(s.turn.step === 'choose', 'Önce zar at.');
-    need(moveOptions(s).includes(a.steps), 'Zar toplamı kadar ilerlenir.');
-    travel(s, ctx, p, a.steps, s.turn.backward);
-  },
   playCard,
   build(s, p, a, ctx) {
     needManage(s);
@@ -1000,7 +606,7 @@ const TURN = {
     const cost = R.katCost(s, a.sq);
     s.props[a.sq].kat++;
     transfer(s, ctx, p, null, cost, 'Kat', true);
-    emit(s, ctx, { type: 'build', p, sq: a.sq, text: `${nm(s, p)} ${sqName(a.sq)} üstüne kat dikti (${fmt(cost)}).` });
+    emit(s, ctx, { type: 'build', p, sq: a.sq, text: `${nm(s, p)} ${sqName(s, a.sq)} üstüne kat dikti (${fmt(cost)}).` });
   },
   buildKacak(s, p, a, ctx) {
     needManage(s);
@@ -1010,7 +616,7 @@ const TURN = {
     s.props[a.sq].kacak = 1;
     stat(s, p, 'kacak');
     transfer(s, ctx, p, null, cost, 'Kaçak kat', true);
-    emit(s, ctx, { type: 'build', p, sq: a.sq, kacak: true, text: `${nm(s, p)} ${sqName(a.sq)} üstüne gece yarısı kaçak kat çıktı (${fmt(cost)}).` });
+    emit(s, ctx, { type: 'build', p, sq: a.sq, kacak: true, text: `${nm(s, p)} ${sqName(s, a.sq)} üstüne gece yarısı kaçak kat çıktı (${fmt(cost)}).` });
   },
   sellFloor(s, p, a, ctx) {
     needManage(s);
@@ -1033,7 +639,7 @@ const TURN = {
     const cost = R.unmortgageCost(s, a.sq);
     need(s.players[p].cash >= cost, 'Paran yetmiyor.');
     s.props[a.sq].ipotek = false;
-    transfer(s, ctx, p, null, cost, `İpotek kaldırma: ${sqName(a.sq)}`);
+    transfer(s, ctx, p, null, cost, `İpotek kaldırma: ${sqName(s, a.sq)}`);
   },
   settleDebt(s, p, a, ctx) {
     needManage(s);
@@ -1072,7 +678,7 @@ const PENDING = {
       const sq = s.pending.sq;
       s.pending = null;
       if (s.config.rules.ihale) startAuction(s, ctx, sq, p);
-      else say(s, ctx, `${nm(s, p)} ${sqName(sq)} arsasını almadı, sahipsiz kaldı.`);
+      else say(s, ctx, `${nm(s, p)} ${sqName(s, sq)} arsasını almadı, sahipsiz kaldı.`);
     },
     playCard,
   },
@@ -1084,7 +690,7 @@ const PENDING = {
       need(a.amount <= s.players[p].cash, 'Nakdinden fazla teklif veremezsin.');
       pd.high = a.amount;
       pd.leader = p;
-      emit(s, ctx, { type: 'bid', p, amount: a.amount, text: `${nm(s, p)} ${sqName(pd.sq)} için ${fmt(a.amount)} verdi.` });
+      emit(s, ctx, { type: 'bid', p, amount: a.amount, text: `${nm(s, p)} ${sqName(s, pd.sq)} için ${fmt(a.amount)} verdi.` });
       nextBidder(s, ctx);
     },
     pass(s, p, a, ctx) {
@@ -1118,30 +724,10 @@ const PENDING = {
       if (a.uid) {
         need(cardId(a.uid) === 'dayi' && hasUid(s, p, a.uid), 'Dayın Çıktı kartın yok.');
         discardCard(s, p, a.uid);
-        emit(s, ctx, { type: 'card', p, card: 'dayi', text: `${nm(s, p)}: "Dayım çıktı!" ${sqName(r.sq)} kirası ödenmedi.` });
+        emit(s, ctx, { type: 'card', p, card: 'dayi', text: `${nm(s, p)}: "Dayım çıktı!" ${sqName(s, r.sq)} kirası ödenmedi.` });
         return;
       }
       payRent(s, ctx, r);
-    },
-  },
-  tapu: {
-    tapuBuy(s, p, a, ctx) {
-      if (a.sq === null || a.sq === undefined) {
-        s.pending = null;
-        return say(s, ctx, `${nm(s, p)} tapuda bir şey almadı.`);
-      }
-      need(isOwnable(a.sq) && s.props[a.sq].owner === null, 'Bu arsa sahipsiz değil.');
-      const cost = R.price(s, a.sq);
-      need(s.players[p].cash >= cost, 'Paran yetmiyor.');
-      s.pending = null;
-      acquire(s, ctx, p, a.sq, cost, 'tapudan aldı:');
-    },
-  },
-  zabita: {
-    zabitaTarget(s, p, a, ctx) {
-      need(s.pending.options.includes(a.target), 'Bu oyuncu ihbar edilemez.');
-      s.pending = null;
-      demolishKacak(s, ctx, a.target, R.money(s, AMOUNTS.zabitaFine), 'Zabıta', p);
     },
   },
   trade: {
@@ -1194,6 +780,14 @@ export function waitingFor(s) {
   return s.turn ? [s.turn.p] : [];
 }
 
+// Hamlenin işleyicisi: önce ortak tablo, sonra oyunun modundaki tablo.
+function handlerFor(s, pd, type) {
+  const m = M(s);
+  const tables = pd ? [PENDING[pd.type], m.pending[pd.type]] : [TURN, m.actions];
+  for (const table of tables) if (table && Object.hasOwn(table, type)) return table[type];
+  return null;
+}
+
 function handle(s, actor, a, ctx) {
   need(s.phase !== 'over', 'Oyun bitti.');
   need(Number.isInteger(actor) && actor >= 0 && actor < s.players.length, 'Geçersiz oyuncu.');
@@ -1208,8 +802,7 @@ function handle(s, actor, a, ctx) {
   }
   if (a.type === 'proposeTrade') return proposeTrade(s, actor, a, ctx); // herkes her an teklif yapabilir
   need(waitingFor(s).includes(actor), 'Şu an hamle sırası sende değil.');
-  const table = pd ? PENDING[pd.type] : TURN;
-  const h = Object.hasOwn(table, a.type) ? table[a.type] : null;
+  const h = handlerFor(s, pd, a.type);
   need(h, pd ? 'Önce bekleyen kararı ver.' : 'Bu hamle şu an yapılamaz.');
   h(s, actor, a, ctx);
 }
@@ -1246,20 +839,16 @@ export function defaultAction(s, seat) {
       case 'react':
       case 'rent':
         return { type: 'react', uid: null };
-      case 'tapu':
-        return { type: 'tapuBuy', sq: null };
-      case 'zabita':
-        return { type: 'zabitaTarget', target: pd.options[0] };
       case 'trade':
         return { type: 'tradeRespond', accept: false };
       case 'discard':
         return { type: 'discard', uids: pl.hand.slice(-pd.count) };
       default:
-        return null;
+        return M(s).defaults[pd.type]?.(pd, s) ?? null;
     }
   }
   if (s.turn.step === 'preroll') return { type: 'roll' };
-  if (s.turn.step === 'choose') return { type: 'move', steps: moveOptions(s)[0] };
+  if (s.turn.step === 'choose') return M(s).defaults.choose(null, s);
   if (pl.cash < 0 && R.hasLiquidAssets(s, seat)) return { type: 'settleDebt' };
   return { type: 'endTurn' };
 }
