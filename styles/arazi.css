@@ -1,0 +1,105 @@
+/* ---------- Mahalle arazisi (src/ui/arazi.js, geometri arazigeom.js) ----------
+   Kuşbakışı arazi resmi tahtanın solunda, sağı deniz rengi; 6x6 arsa ve zar yüzlü başlıklar kodla çizilir.
+   Tahtanın ortası (istem, zar, gündem) masaüstünde ve yatay telefonda arazinin sağında kağıt sütun (--mx/--my/--mw/--mh). */
+.board.mh { display: block; --sea: #3b8fc7; background: var(--sea); background-image: none; }
+body.dark .board.mh { --sea: #324e57; }
+.board.mh .arazi-bg { position: absolute; z-index: 0; pointer-events: none; }
+.arazi-bg img { display: block; width: 100%; height: 100%; }
+.board.mh > .center {
+  position: absolute; left: var(--mx); top: var(--my); width: var(--mw); height: var(--mh); grid-area: auto; z-index: 4; padding: 12px; gap: 8px;
+  border-radius: var(--r-l); background: color-mix(in srgb, var(--center) 94%, transparent);
+  box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--center), inset 0 0 0 4px var(--line), var(--sh-2);
+}
+/* dar sütunda kart ve seçenekler alt alta */
+.board.mh > .center .card-prompt { flex-direction: column; align-items: stretch; gap: 10px; }
+.board.mh > .center .card-prompt > :is(.deed, .deed-wrap, .kart, .chain) { align-self: center; }
+.board.mh > .center .opt-col { width: 100% !important; }
+.board.mh > .center .events { width: 100%; }
+.board.mh .layer { inset: 10px; }
+.board.mh .pop { flex-direction: column; overflow: hidden auto; overscroll-behavior: contain; }
+.board.mh .pop .deed { --dw: 100% !important; }
+
+/* arsalar */
+.plot {
+  position: absolute; z-index: 1; border-radius: var(--r-s); cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(60, 45, 20, .32);
+  transition: scale var(--t-tap) var(--e-out), box-shadow var(--t-tap), opacity var(--t-ui);
+}
+body.dark .plot { box-shadow: inset 0 0 0 1px rgba(255, 240, 210, .18); }
+.plot .tint { position: absolute; inset: 0; border-radius: inherit; background: var(--gc); opacity: .2; pointer-events: none; }
+body.dark .plot .tint { opacity: .24; }
+.plot .bld { position: absolute; left: 8%; right: 8%; top: 4%; bottom: 13%; display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
+.plot .bld.wide { left: 3%; right: 3%; }
+.plot .bld img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: 50% 100%; filter: drop-shadow(0 1px 1px rgba(27, 34, 51, .3)); }
+.plot .bld img[hidden] { display: none; }
+.plot.mort .bld { opacity: .5; }
+/* sahiplik şeridi: sahipsizken ince ve soluk, sahipliyken kalın ve sahibinin renginde (beyaz ve kömür ince koyu kenarla) */
+.plot .strip { position: absolute; z-index: 2; left: 7%; right: 7%; top: auto; bottom: 5%; height: 3px; transition: none; border-radius: 3px; background: rgba(40, 30, 15, .2); pointer-events: none; }
+.plot.owned .strip { height: max(5px, calc(var(--cell) * 0.065)); background: var(--pc); box-shadow: 0 0 0 1px rgba(27, 34, 51, .6); }
+.plot.site { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--pc) 75%, transparent); }
+/* gecekondu: arsa sahipsiz, kenarı kesik kırmızı çizgi */
+.plot.gk::before { content: ''; position: absolute; inset: 2px; border: 2px dashed #b3261e; border-radius: inherit; pointer-events: none; }
+body.dark .plot.gk::before { border-color: #ff7a7a; }
+.plot .mk { position: absolute; top: 4%; font-size: max(11px, calc(var(--cell) * 0.15)); line-height: 1; pointer-events: none; }
+.plot .mk.imort { right: 5%; }
+.plot .mk.ted { left: 5%; }
+.plot.hl { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }
+.plot.open { box-shadow: 0 0 0 3px var(--accent); z-index: 3; }
+.plot.turnsq { box-shadow: 0 0 0 3px var(--tc), 0 0 0 4px var(--pedge); z-index: 2; }
+.plot.pick { box-shadow: 0 0 0 3px var(--gold); z-index: 3; }
+/* avoid-ai-design-ignore: C5 (seçilecek arsanın nabzı işlevsel bir işaret; yalnız opaklık canlanır) */
+.plot.pick::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: 0 0 16px rgba(245, 197, 66, .9); animation: pickPulse 1.2s ease-in-out infinite; }
+/* sıra başkasındayken zarın gösterdiği arsalar: herkes ne seçilebileceğini görür */
+.plot.cand { box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 80%, transparent); z-index: 2; }
+.board.mh.picking .plot:not(.pick, .hl) { opacity: .45; }
+.board.mh.pfocus .plot:not(.phit) { opacity: .4; }
+@media (hover: hover) {
+  body:not(.carddrag) .board.mh .plot:hover { scale: 1.06; z-index: 4; box-shadow: 0 0 0 2px rgba(237, 174, 73, .95), var(--sh-3); }
+}
+
+/* zar yüzlü satır ve sütun başlıkları; istemde de aynı yüz */
+.dhead { position: absolute; z-index: 1; pointer-events: none; }
+.dhead[hidden] { display: none; }
+.dface { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); width: 100%; height: 100%; padding: 14%; box-sizing: border-box; border-radius: 22%; background: #fffaf0; box-shadow: inset 0 -2px 0 #d9c9a0, 0 0 0 1px #9c8a62; }
+.dface i { border-radius: 50%; background: #1b2233; margin: 14%; }
+.dface i.no { visibility: hidden; }
+/* yüzde dolgu kapsayan kutuya göredir: istemdeki küçük yüzde px */
+:is(.mh-choose, .mh-torpil, .mh-kes) .dface { display: inline-grid; width: 28px; height: 28px; padding: 4px; flex: none; }
+:is(.mh-choose, .mh-torpil, .mh-kes) .dface i { margin: 1px; }
+
+/* piyon arazinin dışındayken görünmez (ilk zarla iner) */
+.board.mh .token.off { opacity: 0; }
+
+/* istem: arsa seç, torpil, kestirme */
+.mh-choose { width: 100%; }
+.mh-torpil { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.mh-torpil.used { opacity: .5; }
+.tjet { position: relative; width: 44px; height: 44px; flex: none; }
+.tjet img { width: 100%; height: 100%; object-fit: contain; }
+.tjet b { position: absolute; right: -4px; bottom: -4px; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 999px; background: var(--ink); color: var(--panel); font-size: 12px; display: grid; place-items: center; }
+.tdie { display: inline-flex; align-items: center; gap: 4px; }
+.mh-kes { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.mh-kes .btn { gap: 4px; }
+
+/* arsa penceresi: tapu, kira ve etkiler, işlemler */
+.mh-pop { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.mh-rent { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.fxrow { display: flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }
+.fxchip { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px 0 6px; border-radius: 999px; background: var(--chip); font-size: 14px; }
+.fxchip.neg b { color: var(--neg); }
+.fxi { width: 1.5em; height: 1.5em; object-fit: contain; flex: none; }
+.btn .fxi { margin-left: -2px; }
+
+/* lobi: oyun türünün kısa anlatımı bilgi düğmesinin arkasında */
+.mode-info { position: relative; }
+.mode-info summary { list-style: none; cursor: pointer; display: inline-flex; color: var(--muted); border-radius: var(--r-s); }
+.mode-info summary::-webkit-details-marker { display: none; }
+.mode-info .note { position: absolute; left: 0; top: 72px; z-index: 5; width: min(300px, 70vw); background: var(--panel); box-shadow: 0 0 0 1px var(--line), var(--sh-2); }
+
+/* yatay telefon: başlıklar yok (arazigeom), sütun dar */
+@media (orientation: landscape) and (max-height: 520px) {
+  .board.mh > .center { padding: 6px; gap: 4px; }
+  .tjet { width: 34px; height: 34px; }
+  :is(.mh-choose, .mh-torpil, .mh-kes) .dface { width: 22px; height: 22px; padding: 3px; }
+  .mh-choose .btn.L { height: 40px; font-size: 15px; }
+}

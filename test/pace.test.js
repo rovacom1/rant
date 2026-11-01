@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { paceOf, PACE } from '../src/net/host.js';
 import { COINS, FLIGHT_GAP, MAX_FLIGHTS } from '../src/ui/coins.js';
 import { addSample, clockOffset, rushFor, MAX_RUSH } from '../src/ui/sync.js';
+import { JUMP_FLY, JUMP_SETTLE } from '../src/ui/arazigeom.js';
 
 // boardfx.js ses modülünü yükler; o da sayfaya dinleyici bağlar. Zaman çizelgelerini okumak için boş sayfa yeter.
 globalThis.window ??= { addEventListener() {}, matchMedia: () => ({ matches: false }) };
@@ -23,6 +24,8 @@ const own = T.own.ms + T.set.ms; // mülk ve tamamlanan setin parıltısı
 const EFFECTS = [
   ['zar', [{ type: 'dice' }], PACE.dice],
   ['yürüyüş (7 kare)', [{ type: 'move', path: [1, 2, 3, 4, 5, 6, 7] }], PACE.step * 7 + Math.round(PACE.step * 0.8)],
+  ['Mahalle zıplaması', [{ type: 'move', path: [14], jump: true }], JUMP_FLY + JUMP_SETTLE],
+  ['Mahalle: park, AVM, gecekondu', [{ type: 'park' }], T.build.ms],
   ['dava düellosu', [{ type: 'dava' }], PACE.dice + PACE.card],
   ['sürpriz', [{ type: 'surpriz' }], PACE.surpriz],
   ['rakibin kartı', [{ type: 'card' }], PACE.card],

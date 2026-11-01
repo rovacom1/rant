@@ -10,6 +10,7 @@ export const PACE = {
   dice: 2300, // zar atışı (dönme + okuma)
   roll: 2000, // zarın dönme süresi (gerçek hızında en çok ~1,9 sn); zar sesi de bu kadar
   step: 220, // piyonun kare başı yürüyüşü
+  jump: 900, // Mahalle: piyon arsaya yay çizerek zıplar (uçuş ve iniş)
   surpriz: 4500,
   card: 5500, // rakibin oynadığı kart ortada
   news: 5000,
@@ -26,8 +27,9 @@ export const PACE = {
 // Tepki beklemeleri (İtiraz, Dayın Çıktı, Kestirme yolu) kartı olana da olmayana da aynı pencere: kimde kart olduğu sızmaz.
 // İtiraz ve Dayın Çıktı normal hızda 10 sn (yavaşta 15, hızlıda 5). Kestirme yolu (choose) kısa ve tıklamasızdır:
 // 1,5 sn içinde Kestirme oynanmazsa piyon zar toplamı kadar kendiliğinden yürür. Açık artırma ve tepki süreleri oyun hızıyla ölçeklenir.
-const PASSIVE_TIMEOUT = { auction: 15, react: 10, rent: 10, choose: 1.5, trade: 45, discard: 45 }; // sn
-const SCALED = new Set(['auction', 'react', 'rent', 'choose']);
+// Mahalle'de zar sonrası arsa seçimi (pick) gerçek bir karardır: süre dolarsa ilk arsa seçilir.
+const PASSIVE_TIMEOUT = { auction: 15, react: 10, rent: 10, choose: 1.5, pick: 20, trade: 45, discard: 45 }; // sn
+const SCALED = new Set(['auction', 'react', 'rent', 'choose', 'pick']);
 const DISCONNECT_GRACE = 20; // sn
 // Hazır tepki çıkartmaları: oyuncu birini seçer, herkesin ekranında o oyuncunun piyonundan yükselir. Serbest yazı yok
 // (sohbet bilerek kaldırıldı). Oyun durumunun parçası değildir; ev sahibi yalnız doğrular, sınırlar ve yayar.
@@ -57,7 +59,7 @@ export function paceOf(events) {
         block += PACE.dice + PACE.card; // iki zar ve sonucu ortada okunur
         break;
       case 'move':
-        block += PACE.step * (e.path.length + 1);
+        block += e.jump ? PACE.jump : PACE.step * (e.path.length + 1);
         break;
       case 'surpriz':
         block += PACE.surpriz;
@@ -82,6 +84,9 @@ export function paceOf(events) {
         read = Math.max(read, PACE.read);
         break;
       case 'build':
+      case 'park':
+      case 'avm':
+      case 'gecekondu':
         read = Math.max(read, PACE.build);
         break;
       case 'own':
@@ -441,7 +446,7 @@ export class Host {
       }
       const since = (this.waitSince[pl.id] ??= ready);
       const pd = g.pending;
-      const kind = pd ? pd.type : g.turn.step === 'choose' ? 'choose' : null;
+      const kind = pd ? pd.type : g.turn.step === 'choose' ? (E.isMahalle(g) ? 'pick' : 'choose') : null;
       const passive = kind && PASSIVE_TIMEOUT[kind] ? Math.round(PASSIVE_TIMEOUT[kind] * 1000 * (SCALED.has(kind) ? this.speed() : 1)) : 0; // ms
       let limit = passive || this.config.turnLimit * 1000;
       if (!seat.connected) limit = Math.min(limit || DISCONNECT_GRACE * 1000, DISCONNECT_GRACE * 1000);

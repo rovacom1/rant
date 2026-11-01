@@ -9,6 +9,7 @@ import { toggleNotify, watchTurn } from './notify.js';
 import { app, profile, send, act, isHost } from './state.js';
 import * as G from './gameview.js';
 import { pickClick, isBoardPickable } from './pick.js';
+import { ACTIONS as MAHALLE_ACTIONS, squareClick } from './arazi.js';
 import { ic } from './icons.js';
 import { pawn, onPawnsReady } from './pawns.js';
 import { mountIntro } from './intro.js';
@@ -99,6 +100,7 @@ function lobbyHTML() {
         ${mine ? html`<div class="label">Piyonun<div class="pawn-pick">${E.AVATARS.map(pick)}</div></div>` : ''}
       </section>
       <section class="panel lobby-cfg"><span class="h18">Masa${host ? '' : html` <span class="muted small">(ev sahibi seçer)</span>`}</span>
+        ${modePick(L, host)}
         ${seg('cfgEnd', [['rounds', 'Tur'], ['score', 'Değer hedefi'], ['iflas', 'Son kalan']], L.config.endMode || 'rounds', 'Oyun sonu')}
         ${L.config.endMode === 'score'
           ? seg('cfgTarget', E.TARGET_OPTIONS.map((t) => [t, E.fmt(t).replace(' ₺', '')]), L.config.targetScore, 'Hedef değer')
@@ -108,12 +110,20 @@ function lobbyHTML() {
         ${seg('cfgTurn', [[60, '60 sn'], [120, '2 dk'], [180, '3 dk'], [0, 'Yok']], L.config.turnLimit, 'Sıra süresi')}
         ${seg('cfgSpeed', [['slow', 'Yavaş'], ['normal', 'Normal'], ['fast', 'Hızlı']], L.config.speed || 'normal', 'Oyun hızı')}
         ${seg('cfgBot', E.BOT_LEVELS.map((b) => [b, levelName(b)]), L.config.botLevel || 'normal', 'Botlar')}
-        <div class="col" style="gap:6px"><span class="label">Kurallar</span><div class="rules-row">${Object.entries(E.RULE_LABELS).map(([k, r]) => html`<button class="btn S sec ${rules[k] ? '' : 'off'}" data-act="cfgRule" data-k="${k}" ${host ? '' : 'disabled'} data-tip="${rules[k] ? 'Açık' : `Kapalı: ${r.off}`}">${I(RULE_IC[k])}${r.name}</button>`)}</div></div>
+        <div class="col" style="gap:6px"><span class="label">Kurallar</span><div class="rules-row">${Object.entries(E.RULE_LABELS).filter(([k]) => k !== 'surpriz' || L.config.mode !== 'mahalle').map(([k, r]) => html`<button class="btn S sec ${rules[k] ? '' : 'off'}" data-act="cfgRule" data-k="${k}" ${host ? '' : 'disabled'} data-tip="${rules[k] ? 'Açık' : `Kapalı: ${r.off}`}">${I(RULE_IC[k])}${r.name}</button>`)}</div></div>
       </section>
     </div>
     ${app.error ? html`<div class="box-err">${I('warning')}<span>${app.error}</span></div>` : ''}
     <div class="lobby-foot">${host ? html`<span class="muted">${humans} oyuncu · ${L.seats.length - humans} bot</span><span class="grow"></span><button class="btn L pri" data-act="start" ${L.seats.length < 2 ? 'disabled' : ''}>${I('play')}Oyunu başlat</button>` : html`<div class="box-note grow"><span class="spinner"></span><span>Ev sahibinin oyunu başlatması bekleniyor</span></div>`}</div>
   </div>${modalShell()}<div class="version">Rantçı Dayı ${APP_VERSION}</div>`;
+}
+
+// Oyun türü: Klasik ya da Mahalle (ev sahibi seçer, herkes görür). Mahalle'nin kısa anlatımı bilgi düğmesinin arkasında.
+function modePick(L, host) {
+  const cur = L.config.mode || 'klasik';
+  const opts = [['klasik', 'Klasik'], ['mahalle', 'Mahalle']];
+  return html`<div class="col" style="gap:6px"><div class="row" style="gap:6px"><span class="label">Oyun türü</span><details class="mode-info"><summary aria-label="Oyun türleri nedir">${I('info')}</summary><span class="note">Klasik: illerle dolu tahtada zarla yürürsün. Mahalle: 6x6 arazide zarlar iki arsa gösterir, birini seçip zıplarsın; park, AVM, site ve gecekondu komşularını etkiler.</span></details></div>
+    <div class="seg">${opts.map(([v, t]) => html`<button class="btn S ${cur === v ? 'on' : ''}" data-act="cfgMode" data-v="${v}" ${host ? '' : 'disabled'}>${t}</button>`)}</div></div>`;
 }
 
 const modalShell = () => (app.ui.menuModal ? html`<div class="screen" style="position:fixed;inset:0;background:color-mix(in srgb, var(--page) 70%, transparent);z-index:60" data-act="backdrop">${G.rulesSheet()}</div>` : '');
@@ -581,6 +591,7 @@ const A = {
   cfgSpeed: (el) => send({ t: 'lobby', cmd: 'config', speed: el.dataset.v }),
   cfgBot: (el) => send({ t: 'lobby', cmd: 'config', botLevel: el.dataset.v }),
   cfgEnd: (el) => send({ t: 'lobby', cmd: 'config', endMode: el.dataset.v }),
+  cfgMode: (el) => send({ t: 'lobby', cmd: 'config', mode: el.dataset.v }),
   cfgTarget: (el) => send({ t: 'lobby', cmd: 'config', targetScore: Number(el.dataset.v) }),
   cfgBot: (el) => send({ t: 'lobby', cmd: 'config', botLevel: el.dataset.v }),
   cfgRule: (el) => {
@@ -694,6 +705,7 @@ const A = {
   },
   square(el) {
     const sq = Number(el.dataset.sq);
+    if (squareClick(V(), sq)) return; // Mahalle: zarın gösterdiği arsayı seç
     if (!app.ui.pick) {
       app.ui.popSq = app.ui.popSq === sq ? null : sq;
       return G.updateGame();
@@ -818,6 +830,7 @@ const A = {
     else render();
   },
 };
+Object.assign(A, MAHALLE_ACTIONS); // Mahalle: arsa seç, torpil, park, AVM, gecekondu (arazi.js)
 
 // Elden gelen kart olayları: tıklayınca ayrıntı, tahtaya sürükleyip bırakınca oyna.
 document.addEventListener('rant:card', (e) => {
@@ -829,7 +842,7 @@ document.addEventListener('rant:card', (e) => {
   if (how === 'drop') app.ui.handOpen = false; // telefonda el sayfası tahtayı boşaltır
   const target = E.CARDS[E.cardId(uid)].target;
   if (target === 'none') return act({ type: 'playCard', uid, target: {} });
-  if (isBoardPickable(uid)) return A.pickBoard({ dataset: { uid } });
+  if (isBoardPickable(uid, v)) return A.pickBoard({ dataset: { uid } });
   A.openCard({ dataset: { uid } });
 });
 
@@ -839,7 +852,7 @@ document.addEventListener('click', (e) => {
     G.updateGame();
   }
   // Kira penceresi dışına tıklanınca kapanır.
-  if (app.ui.popSq !== null && app.ui.popSq !== undefined && !e.target.closest('.pop, .cell, #prompt')) closePop();
+  if (app.ui.popSq !== null && app.ui.popSq !== undefined && !e.target.closest('.pop, .cell, .plot, #prompt')) closePop();
   if (app.ui.stickerOpen && !e.target.closest('.sticker-wrap')) {
     app.ui.stickerOpen = false;
     G.updateGame();
