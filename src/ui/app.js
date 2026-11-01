@@ -13,7 +13,7 @@ import { ic } from './icons.js';
 import { pawn, onPawnsReady } from './pawns.js';
 import { mountIntro } from './intro.js';
 import { withDialog, trapTab } from './focus.js';
-import { setShake } from './boardfx.js';
+import { setShake, setVibrate } from './fx.js';
 import { phoneGame, canShare } from './phone.js';
 import { addSample, clockOffset, rushFor, PILE } from './sync.js';
 
@@ -600,6 +600,9 @@ const A = {
   },
   shakeToggle(el) {
     setShake(el.checked);
+  },
+  vibrateToggle(el) {
+    setVibrate(el.checked);
   },
   audioToggle(el) {
     setAudio({ [`${el.dataset.k}On`]: el.checked });

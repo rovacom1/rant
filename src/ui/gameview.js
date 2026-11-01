@@ -3,7 +3,10 @@
 import * as E from '../engine/index.js';
 import { html, raw, setHTML, sleep } from './dom.js';
 import { play, isMuted, getAudio, setMusic } from './sound.js';
-import { T, CALL, calm, turnFx, ownFx, setFx, buildFx, demolishFx, iflasFx, coinSounds, shakeFx, auctionFx, shakeEnabled } from './boardfx.js';
+import { T, CALL, turnFx, ownFx, setFx, buildFx, demolishFx, iflasFx, coinSounds, auctionFx } from './boardfx.js';
+import { calm, impact, shakeEnabled, canVibrate, vibrateEnabled, FREEZE } from './fx.js';
+import { flyCoins, preloadFx, confettiPiece, stripHTML, LAND } from './sprite.js';
+import { count, shown } from './counter.js';
 import { Hand, cardFace, playFx, WHEN } from './hand.js';
 import { deed } from './deed.js';
 import { Dice } from './dice.js';
@@ -16,14 +19,14 @@ import { initTips } from './tip.js';
 import { withDialog } from './focus.js';
 import { SPEEDS, PACE, STICKERS, STICKER_GAP } from '../net/host.js';
 import { isBoardPickable, pickSquares, tapuSquares } from './pick.js';
-import { coinFlights, coinCount, arcPeak, COIN_GAP, FLIGHT_GAP } from './coins.js';
+import { coinFlights, coinsFor, moneyTier, COINS, FLIGHT_GAP } from './coins.js';
 import { worthLines } from './chart.js';
 import { ic, money, CARD_IC, GUNDEM_IC, SURPRIZ_IC } from './icons.js';
 import { pawn, warmPawns } from './pawns.js';
 import { verdict } from './verdict.js';
 import { canShare } from './phone.js';
 import { mountDayi } from './dayi.js';
-import { dayiMoment, dayiSay, BIG_RENT } from './dayisay.js';
+import { dayiMoment, dayiSay } from './dayisay.js';
 import { canPlay, idleTurn, AUTO_END_MS } from './idle.js';
 
 const { BOARD, CARDS, GROUPS, GROUP_SQUARES, GUNDEM, GUNDEM_PERIOD, fmt, cardId } = E;
@@ -96,6 +99,7 @@ export function mountGame(root) {
     modal: g('modal'), stage: g('stage'), results: g('results'), stick: g('stick'), feedcol: g('feedcol'),
   };
   cells = buildBoard(els.board);
+  preloadFx();
   // Masaüstünde yer varsa son olaylar tahtanın solunda, altta durur (oyunlardaki sohbetin yeri); tahta en az 1,2 oranında
   // kalır. Yer yoksa ortanın altında kalır.
   const game = root.querySelector('.game');
@@ -625,7 +629,7 @@ function auctionEndHTML(v) {
       <div class="col au-res" style="gap:4px"><span class="h22">Teklif gelmedi</span><span class="muted">${BOARD[e.sq].name} sahipsiz kaldı</span></div></div></div>`;
   }
   const w = P(v, e.winner);
-  const head = html`<div class="row"><span class="au-art ${e.call ? 'hit' : ''}" aria-hidden="true"></span><span class="h22">${e.call || CALL.words[0]}</span></div>`;
+  const head = html`<div class="row">${raw(stripHTML('assets/ihale/tokmak-vurus.webp', 8, `au-art ${e.call ? 'hit' : ''}`))}<span class="h22">${e.call || CALL.words[0]}</span></div>`;
   const res = e.sold
     ? html`<div class="row au-res" style="gap:12px">${PW(w, 48)}<div class="col" style="gap:2px;min-width:0"><span class="h22">${e.winner === v.you ? 'Sen aldın' : `${w.name} aldı`}</span><span class="muted">liste fiyatı ${fmt(E.price(v, e.sq))}</span></div><span class="grow"></span><span class="big-num">${M(e.high)}</span></div>`
     : html`<div class="row au-res wait" style="gap:6px"><span class="muted">En yüksek</span><span class="grow"></span>${PW(w, 24)}<span class="h22">${M(e.high)}</span></div>`;
@@ -717,7 +721,7 @@ function renderPlayers(v) {
     if (pl.kiraZammi) tags.push(html`<span data-tip="Kira Zammı: tahsil edeceği ilk kira 2 katı">${I('up')}</span>`);
     const wait = waiting.has(i) && !turn && v.phase !== 'over' ? html`<span class="pwait" data-tip="Karar vermesi bekleniyor"></span>` : '';
     setHTML(row.lastElementChild, html`<span class="pname">${pl.name}</span><span class="ptag">${tags}</span>${wait}<span class="grow"></span>
-      <span class="pcash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${pl.out ? 'elendi' : cashText(pl.cash)}</span>`);
+      <span class="pcash ${pl.cash < 0 ? 'neg' : ''}" data-cash="${i}">${pl.out ? 'elendi' : cashText(shown(`cash${i}`, pl.cash))}</span>`);
   });
 }
 
@@ -805,6 +809,7 @@ function drawAudioPop() {
   const online = app.mode !== 'local';
   setHTML(els.audioPop, html`<div class="sound-pop" role="dialog" aria-label="Ses ayarları"><span class="h16">Ses</span>${row('music', 'music', 'Müzik', '#c8912f')}${row('sfx', 'sound', 'Efektler', '#2475e8')}
     <div class="row" style="gap:8px">${I('shake')}<span style="font-weight:600">Sarsıntı</span><span class="grow"></span><input type="checkbox" class="sw" data-act="shakeToggle" ${shakeEnabled() ? 'checked' : ''} aria-label="Büyük anlarda tahta sarsılsın"></div>
+    ${canVibrate() ? html`<div class="row" style="gap:8px">${I('vibrate')}<span style="font-weight:600">Titreşim</span><span class="grow"></span><input type="checkbox" class="sw" data-act="vibrateToggle" ${vibrateEnabled() ? 'checked' : ''} aria-label="Önemli anlarda telefon titresin"></div>` : ''}
     ${notifySupported() ? html`<div class="row" style="gap:8px;padding-top:8px;border-top:1px solid var(--line)">${I(isNotifyOn() ? 'bell' : 'bellOff')}<span class="small">Sıra bana gelince bildir</span><span class="grow"></span><input type="checkbox" class="sw" data-act="notify" ${isNotifyOn() ? 'checked' : ''} aria-label="Bildirim"></div>` : ''}
     ${online ? html`<button class="btn S ton" data-act="copyLink">${I('link')}Davet linkini ${canShare() ? 'gönder' : 'kopyala'} · ${app.code}</button>` : ''}</div>`);
 }
@@ -1302,67 +1307,57 @@ function showToast(text, kind = '', icon = '') {
   setTimeout(() => el.remove(), 3800);
 }
 
-function floatMoney(p, delta) {
+// Tutar yazısı: kademeye göre boy (küçük, orta, büyük). Paneldeki sayının solunda belirir, sayıyı kapatmaz.
+function floatMoney(p, delta, tier = 'small') {
   const anchor = document.querySelector(`[data-cash="${p}"]`);
   if (!anchor) return;
   const r = anchor.getBoundingClientRect();
-  const el = document.createElement('div');
-  el.className = `float ${delta > 0 ? 'plus' : 'minus'}`;
-  el.textContent = `${delta > 0 ? '+' : '−'}${Math.abs(delta)}`;
-  // Paneldeki sayının solunda belirir, sayıyı kapatmaz.
+  const el = floatEl(delta, tier);
   el.style.left = `${r.left - 70}px`;
   el.style.top = `${r.top}px`;
-  document.body.appendChild(el);
   setTimeout(() => el.remove(), 1500);
 }
 
-const FLIGHT_MS = PACE.flight;
-
-// Bakiye sayacı: para el değiştirince oyuncu listesindeki bakiye jetonlar uçarken sayarak değişir, birden atlamaz.
-const counts = new Map(); // oyuncu -> { from, to, t0, ms }
-const cashText = (n) => fmt(n).replace(' ₺', '');
-const easeIO = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
-
-function shownCash(p, cash) {
-  const c = counts.get(p);
-  if (!c || c.to !== cash) return cash;
-  const t = Math.min(1, (performance.now() - c.t0) / c.ms);
-  return Math.round(c.from + (c.to - c.from) * easeIO(t));
+function floatEl(delta, tier, down = false) {
+  const el = document.createElement('div');
+  el.className = `float ${delta > 0 ? 'plus' : 'minus'} t-${tier} ${down ? 'down' : ''}`;
+  el.textContent = `${delta > 0 ? '+' : '−'}${Math.abs(delta)}`;
+  document.body.appendChild(el);
+  return el;
 }
 
+const FLIGHT_MS = PACE.flight;
+const cashText = (n) => fmt(n).replace(' ₺', '');
+
+// Bakiye sayacı (counter.js): para el değiştirince oyuncu listesindeki bakiye jetonlar uçarken sayarak değişir.
 export function countCash(prev, v, ms) {
   if (calm() || !prev) return;
   v.players.forEach((pl, i) => {
     const before = prev.players[i]?.cash;
     if (before === undefined || before === pl.cash || pl.out) return;
-    counts.set(i, { from: shownCash(i, before), to: pl.cash, t0: performance.now(), ms: Math.max(1, ms) });
+    const find = () => (els && !app.view?.players[i]?.out ? document.querySelector(`[data-cash="${i}"]`) : null);
+    count(`cash${i}`, before, pl.cash, ms, find, cashText);
   });
-  if (counts.size && !countCash.raf) countCash.raf = requestAnimationFrame(countTick);
-}
-
-function countTick() {
-  countCash.raf = 0;
-  const now = performance.now();
-  for (const [p, c] of counts) {
-    const el = els && document.querySelector(`[data-cash="${p}"]`);
-    const done = now - c.t0 >= c.ms;
-    const s = cashText(done ? c.to : shownCash(p, c.to));
-    if (el && !app.view?.players[p]?.out && el.textContent !== s) el.textContent = s;
-    if (done) counts.delete(p);
-  }
-  if (counts.size) countCash.raf = requestAnimationFrame(countTick);
 }
 
 // Tutar, tahtadaki bir noktanın yanında: üst yarıda aşağı, alt yarıda yukarı kayıp söner.
-function floatAt(pt, delta) {
+function floatAt(pt, delta, tier = 'small') {
   const down = pt.y < els.board.getBoundingClientRect().top + els.board.clientHeight / 2;
-  const el = document.createElement('div');
-  el.className = `float ${delta > 0 ? 'plus' : 'minus'} ${down ? 'down' : ''}`;
-  el.textContent = `${delta > 0 ? '+' : '−'}${Math.abs(delta)}`;
+  const el = floatEl(delta, tier, down);
   el.style.left = `${pt.x - 24}px`;
   el.style.top = `${down ? pt.y + 18 : pt.y - 44}px`;
-  document.body.appendChild(el);
   setTimeout(() => el.remove(), 1500);
+}
+
+// Büyük kirada tutar tahtanın ortasında büyük, eğik ve kenarlı patlar; okuma etiketidir, bütçeye girmez.
+function bigAmount(delta) {
+  if (!els) return;
+  const r = els.center.getBoundingClientRect();
+  const el = floatEl(delta, 'big');
+  el.classList.add('burst');
+  el.style.left = `${r.left + r.width / 2}px`;
+  el.style.top = `${r.top + r.height * 0.42}px`;
+  setTimeout(() => el.remove(), 1700);
 }
 
 const centerOf = (el) => {
@@ -1372,59 +1367,60 @@ const centerOf = (el) => {
 };
 
 // Oyuncunun para kutusu ya da banka (tahtanın ortası) ekrandaki merkez noktası.
-function moneyPoint(p) {
-  const el = p === null ? els && els.center : document.querySelector(`[data-cash="${p}"]`);
-  if (!el) return null;
-  const r = el.getBoundingClientRect();
-  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-}
+const moneyPoint = (p) => centerOf(p === null ? els && els.center : document.querySelector(`[data-cash="${p}"]`));
 
-// Kira ve transferlerde ödeyenden alana kavis çizerek uçan jetonlar.
-function flyCoins({ from, to, amount, n, delay }) {
+// Kart, gündem ve vergi parası: oyuncu panelleri ve banka arasında kavis çizerek uçan jetonlar (küçük kademe).
+function flyPanel({ from, to, amount, tier, n, delay }) {
   const F = FLIGHT_MS * spd();
+  const c = COINS[tier];
   const a = moneyPoint(from);
   const b = moneyPoint(to);
-  setTimeout(() => from !== null && floatMoney(from, -amount), delay);
-  setTimeout(() => to !== null && floatMoney(to, amount), delay + (a && b && !calm() ? F + (n - 1) * COIN_GAP : 0));
+  setTimeout(() => from !== null && floatMoney(from, -amount, tier), delay);
+  setTimeout(() => to !== null && floatMoney(to, amount, tier), delay + (a && b && !calm() ? F + (n - 1) * c.gap * spd() : 0));
   if (!a || !b || calm()) return;
-  flyBetween(a, b, n, delay, F);
+  flyCoins(a, b, { n, delay, ms: F, gap: c.gap * spd(), size: c.size, spread: c.spread });
 }
 
-// a'dan b'ye (ekran noktaları) kavis çizerek uçan n jeton; ms: uçuş süresi.
-function flyBetween(a, b, n, delay, ms) {
-  const m = arcPeak(a, b);
-  const at = (q, s) => `translate(${q.x}px, ${q.y}px) translate(-50%, -50%) scale(${s})`;
-  for (let i = 0; i < n; i++) {
-    const el = document.createElement('div');
-    el.className = 'coin';
-    document.body.appendChild(el);
-    const k = el.animate([
-      { transform: at(a, 0.6), opacity: 0 },
-      { transform: at(m, 1.15), opacity: 1, offset: 0.5 },
-      { transform: at(b, 0.8), opacity: 1, offset: 0.92 },
-      { transform: at(b, 0.4), opacity: 0 },
-    ], { duration: ms, delay: delay + i * COIN_GAP, easing: 'ease-in-out', fill: 'both' });
-    k.onfinish = () => el.remove();
-  }
+// Alanın piyonu ilk jeton konunca sekip oturur (orta ve büyük kademe).
+function pawnPop(tok, big) {
+  const fig = tok && tok.firstElementChild;
+  if (!fig || calm()) return;
+  const s = big ? 1.3 : 1.16;
+  fig.animate([{ transform: 'none' }, { transform: `scale(${s}, ${2 - s})`, offset: 0.3 }, { transform: `translateY(-12%) scale(${2 - s * 0.95}, ${s * 0.95})`, offset: 0.6 }, { transform: 'none' }], { duration: big ? 420 : 320, easing: 'ease-out' });
 }
 
-// Kira ve maaş: jetonlar piyonlar arasında (maaşta Başlangıç köşesinden piyona) uçar; kalkışta fırlatma, her jeton
-// konduğunda jeton sesi çalar (boardfx.coinSounds).
-function pawnFlight(v, e, delay) {
-  const ms = T.flight;
-  const n = coinCount(e.amount);
-  const tok = (p) => centerOf(tokens.els.get(P(v, p).id));
+// Kira ve maaş: jetonlar piyonlar arasında (maaşta Başlangıç köşesinden piyona) uçar. Kademe (fx.js) jeton sayısını,
+// sesi, tutarın boyunu ve darbe anını (ilk jetonun konduğu an) belirler: maaş küçük, kira orta, büyük kira büyük.
+// quiet: aynı anda başka bir büyük an var (ör. kirayı ödeyemeyen iflas etti); kira orta kademede kalır, tek darbe olur.
+function pawnFlight(v, e, delay, quiet = false) {
+  const ms = T.flight * spd();
+  const tier = quiet && moneyTier(e) === 'big' ? 'medium' : moneyTier(e);
+  const c = COINS[tier];
+  const gap = c.gap * spd();
+  const n = coinsFor(tier, e.amount);
+  const tok = (p) => tokens.els.get(P(v, p).id);
   const salary = e.from === null;
-  const a = salary ? centerOf(cells[0]) : tok(e.from);
-  const b = tok(e.to);
-  const land = (i) => i * COIN_GAP + ms * 0.92; // flyBetween'de jeton varış noktasına %92'de gelir
+  const a = salary ? centerOf(cells[0]) : centerOf(tok(e.from));
+  const toTok = tok(e.to);
+  const b = centerOf(toTok);
+  const hitAt = ms * LAND; // ilk jetonun konduğu an
+  // Büyük kirada ilk jetonda bütün canlandırmalar FREEZE ms durur; sonraki jetonlar o kadar geç konar.
+  const late = tier === 'big' && !calm() ? FREEZE : 0;
+  const land = (i) => i * gap + hitAt + (i ? late : 0);
+  const me = v.you === e.from || v.you === e.to;
   setTimeout(() => {
     if (!els) return;
-    coinSounds(n, land, salary, els.board, cells[0]);
-    if (!salary && a) floatAt(a, -e.amount);
+    coinSounds({ n, landAt: land, tier, board: els.board, startCell: salary ? cells[0] : null, flight: ms });
+    if (!salary && a) floatAt(a, -e.amount, tier);
   }, delay);
-  if (a && b && !calm()) flyBetween(a, b, n, delay, ms);
-  if (b) setTimeout(() => floatAt(b, e.amount), delay + (calm() ? 0 : ms));
+  setTimeout(() => {
+    if (!els) return;
+    impact(tier, els.board, { me });
+    if (tier !== 'small') pawnPop(toTok, tier === 'big');
+    if (tier === 'big') bigAmount(me && v.you === e.from ? -e.amount : e.amount);
+    if (b) floatAt(b, e.amount, tier);
+  }, delay + (a && b && !calm() ? hitAt : 0));
+  if (a && b && !calm()) flyCoins(a, b, { n, delay, ms, gap, size: c.size, spread: c.spread });
 }
 
 // Sahne katmanı: haber, sürpriz ve rakip kartı tahtanın ortasında, kareleri kapatmadan gösterilir.
@@ -1585,13 +1581,11 @@ async function revealCard(pv, v, ev) {
   await stageShow(html`<div class="card-prompt reveal">${cardFace(ev.card, 'big')}<div class="opt-col">${who}<span class="h22">${title}</span><span class="line-row">${I(CARD_IC[ev.card] || 'hamle')}<span class="grow">${cardEffect(v, ev)}</span></span><span class="muted small">kapatmak için tıkla</span></div></div>`, Math.round(PACE.card * spd()));
 }
 
+// Oyun sonu: konfeti şeridinin (assets/fx/konfeti.webp) on iki parçası ekranın üstünden dönerek düşer.
 export function confetti() {
-  const colors = [...E.PLAYER_COLORS, '#c8912f', '#f5c542'];
   for (let i = 0; i < 90; i++) {
-    const el = document.createElement('div');
-    el.className = 'confetti';
+    const el = confettiPiece(i);
     el.style.left = `${Math.random() * 100}vw`;
-    el.style.background = colors[i % colors.length];
     el.style.animationDuration = `${2 + Math.random() * 2.5}s`;
     el.style.animationDelay = `${Math.random() * 0.8}s`;
     document.body.appendChild(el);
@@ -1629,7 +1623,10 @@ export async function present(prev, v, events, fast) {
         else if (ev.from === me) sfx('pay', flight);
         break;
       case 'build':
-        if (live) post.push(() => buildFx(els.board, cells[ev.sq]));
+        if (live) {
+          post.push(() => buildFx(els.board, cells[ev.sq]));
+          post.push(() => setTimeout(() => els && impact('medium', els.board, { me: ev.p === me }), T.build.impact));
+        }
         else sfx('build');
         break;
       case 'demolish': {
@@ -1725,6 +1722,7 @@ export async function present(prev, v, events, fast) {
     // İhalede şerit "Satıldı!" ile aynı anda dolar.
     const wait = has('auction') ? Math.max(0, 2 * CALL.beat + CALL.lead - T.own.draw) : 0;
     post.push(() => setTimeout(() => els && gained.forEach((q, k) => ownFx(els.board, cells[q], P(v, v.props[q].owner).color, buy && k === 0)), wait));
+    post.push(() => setTimeout(() => els && impact('medium', els.board, { me: gained.some((q) => v.props[q].owner === me) }), wait + T.own.draw));
     if (sets.size) {
       post.push(() => setTimeout(() => {
         if (!els) return;
@@ -1760,19 +1758,19 @@ export async function present(prev, v, events, fast) {
     if (seq.some((e) => e.type === 'dice')) dice.home();
   }
   for (const f of later) f();
-  // Büyük anda tahta, darbenin geldiği an kısa sarsılır (boardfx.js kademeler).
+  // Büyük anda darbenin geldiği an donma, sarsıntı ve titreşim (fx.js kademeler). Büyük kira pawnFlight'ta.
   const jolt = live ? bigJolt(prev, v, events) : null;
-  if (jolt !== null) setTimeout(() => els && shakeFx(els.board), jolt);
+  if (jolt !== null) setTimeout(() => els && impact('big', els.board), jolt);
   // Büyük anda dayı köşeden bir laf eder (hızlı oyunda ve yetişmeye çalışırken susar); ortadaki sahne kapanınca.
   const moment = live && spd() >= 1 ? dayiMoment(events) : null;
   if (moment) afterStage().then(() => els && dayiSay(els.board, moment));
-  pawnFlights.forEach((e, i) => pawnFlight(v, e, i * FLIGHT_GAP));
+  pawnFlights.forEach((e, i) => pawnFlight(v, e, i * FLIGHT_GAP, jolt !== null));
   if (flights.length && els) {
-    for (const f of flights) flyCoins(f);
+    for (const f of flights) flyPanel(f);
   }
   if ((flights.length || pawnFlights.length) && els) {
     // Bakiyeler ilk jeton kalkınca saymaya başlar, son jeton konunca biter.
-    const lastDelay = Math.max(0, ...flights.map((f) => f.delay + (f.n - 1) * COIN_GAP), (pawnFlights.length - 1) * FLIGHT_GAP);
+    const lastDelay = Math.max(0, ...flights.map((f) => f.delay + (f.n - 1) * COINS[f.tier].gap), (pawnFlights.length - 1) * FLIGHT_GAP);
     countCash(prev, v, FLIGHT_MS * spd() + lastDelay);
   }
   if ((flights.length || pawnFlights.length) && els) await sleep(FLIGHT_MS * spd() * 0.6); // jetonlar yola çıksın, sayılar sonra değişsin
@@ -1784,15 +1782,14 @@ export async function present(prev, v, events, fast) {
   if (els) for (const f of post) f();
 }
 
-// Büyük an varsa sarsıntının gecikmesi (ms, darbeyle aynı ana), yoksa null. Sıra: iflas, yıkım, el koyma, büyük kira,
-// konkordato ve imar affı.
+// Büyük an varsa darbenin gecikmesi (ms), yoksa null. Sıra: iflas, yıkım, el koyma, konkordato ve imar affı (büyük kira
+// jetonlarla birlikte, pawnFlight).
 function bigJolt(prev, v, events) {
   const has = (f) => events.some(f);
   if (has((e) => e.type === 'iflas')) return T.iflas.fall;
   if (has((e) => e.type === 'demolish')) return T.demolish.burst;
   const traded = has((e) => e.type === 'tradeDone' || e.type === 'auction');
   if (!traded && BOARD.some((_, q) => prev.props[q]?.owner !== null && prev.props[q]?.owner !== undefined && v.props[q] && v.props[q].owner !== prev.props[q].owner)) return T.own.draw;
-  if (has((e) => e.type === 'money' && /^Kira/.test(e.why || '') && e.amount >= BIG_RENT)) return FLIGHT_MS * spd();
   if (has((e) => e.type === 'konkordato' || (e.type === 'gundem' && e.id === 'imarAffi'))) return 0;
   return null;
 }

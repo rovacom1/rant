@@ -38,7 +38,7 @@ commit + push (main'e birleştirme yok). Haftalar tahmin.
    (`meta.now` saat farkı), geç kalan kalan süreye göre hızlanır (en çok 2x, `gameview.js` `spd()`), 3+ durum birikirse son duruma
    geçer + tek satır özet; `test/pace.test.js` her efektin `paceOf` bütçesini aşmadığını denetler; `?debug` gecikme göstergesi;
    PROTOCOL 14. Bitti: iki cihaz, 300 ms gecikme, 4x yavaş işlemci, 20 tur, bitiş farkı < 200 ms.
-2. [ ] **Efekt katmanı** (v0.40): `ui/fx.js` (üç kademe, donma, sarsıntı, titreşim), `ui/sprite.js` (jeton, toz, tokmak şeritleri),
+2. [x] **Efekt katmanı** (v0.40): `ui/fx.js` (üç kademe, donma, sarsıntı, titreşim), `ui/sprite.js` (jeton, toz, tokmak şeritleri),
    `ui/counter.js` (sayan sayaç); `boardfx.js` efektleri taşınır; ses penceresine Titreşim. Bitti: maaş küçük, kira orta, büyük kira büyük.
 3. [ ] **Dik yazılar, simgeler** (v0.41): `ui/board.js`, `styles/tahta.css` dönme kalkar; kare simgeleri `assets/kare/`;
    `ui/deed.js`; CLAUDE.md + TASARIM.md §3. Bitti: dört kenardaki adlar başı çevirmeden okunur.

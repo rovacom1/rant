@@ -1,19 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { paceOf, PACE } from '../src/net/host.js';
-import { COIN_GAP, FLIGHT_GAP, MAX_FLIGHTS } from '../src/ui/coins.js';
+import { COINS, FLIGHT_GAP, MAX_FLIGHTS } from '../src/ui/coins.js';
 import { addSample, clockOffset, rushFor, MAX_RUSH } from '../src/ui/sync.js';
 
 // boardfx.js ses modülünü yükler; o da sayfaya dinleyici bağlar. Zaman çizelgelerini okumak için boş sayfa yeter.
 globalThis.window ??= { addEventListener() {}, matchMedia: () => ({ matches: false }) };
 globalThis.document ??= { addEventListener() {}, hidden: true };
-const { T, CALL, SHAKE } = await import('../src/ui/boardfx.js');
+const { T, CALL } = await import('../src/ui/boardfx.js');
+const { SHAKE, FREEZE, BIG_TAIL } = await import('../src/ui/fx.js');
+const { LAND } = await import('../src/ui/sprite.js');
 
 // Her efektin istemcide normal hızda ne kadar sürdüğü (ms), gameview.js present ve boardfx.js çizelgelerine göre.
 // Ev sahibi bir sonraki hamleyi paceOf kadar bekler; efekt ondan uzun sürerse ekranlar arası fark birikir.
 // Dayı balonu ve uçan "+120" sayıları okuma etiketidir, sonraki duruma engel olmaz; bütçeye girmez.
 const money = (n) => Array.from({ length: n }, () => ({ type: 'money', amount: 600 }));
-const flights = (n) => (Math.min(n, MAX_FLIGHTS) - 1) * FLIGHT_GAP + 5 * COIN_GAP + T.flight; // 6 jetonlu uçuşlar
+const coinsMs = (c) => (c.max - 1) * c.gap + T.flight; // bir uçuşun bütün jetonları
+const flights = (n) => (Math.min(n, MAX_FLIGHTS) - 1) * FLIGHT_GAP + Math.max(coinsMs(COINS.small), coinsMs(COINS.medium));
+// Büyük kira: ilk jeton konunca donma ve sarsıntı; sağanağın son jetonu donma kadar geç konar.
+const bigRent = Math.max(T.flight * LAND + BIG_TAIL, coinsMs(COINS.big) + FREEZE);
 const own = T.own.ms + T.set.ms; // mülk ve tamamlanan setin parıltısı
 const EFFECTS = [
   ['zar', [{ type: 'dice' }], PACE.dice],
@@ -30,9 +35,9 @@ const EFFECTS = [
   ['ihale: Satıldı', [{ type: 'auction', winner: 0 }], 2 * CALL.beat + CALL.lead + CALL.hold],
   ['ihale: şerit ve set', [{ type: 'auction', winner: 0 }], Math.max(0, 2 * CALL.beat + CALL.lead - T.own.draw) + own],
   ['pazarlık anlaşması', [{ type: 'tradeDone' }], Math.max(PACE.card, own)],
-  ['yıkım', [{ type: 'demolish' }], Math.max(T.demolish.ms, T.demolish.burst + SHAKE.ms)],
-  ['iflas', [{ type: 'iflas' }], Math.max(T.iflas.ms, T.iflas.fall + SHAKE.ms)],
-  ['büyük kira (sarsıntı)', money(1), T.flight + SHAKE.ms],
+  ['yıkım', [{ type: 'demolish' }], Math.max(T.demolish.ms, T.demolish.burst + BIG_TAIL) + FREEZE],
+  ['iflas', [{ type: 'iflas' }], Math.max(T.iflas.ms + FREEZE, T.iflas.fall + BIG_TAIL)],
+  ['büyük kira (donma, sarsıntı)', money(1), bigRent],
   ...[1, 2, 3, 6, 8].map((n) => [`${n} para hareketi`, money(n), flights(n)]),
 ];
 
@@ -41,6 +46,11 @@ for (const [name, events, ms] of EFFECTS) {
     assert.ok(ms <= paceOf(events), `${name}: ${ms} ms > paceOf ${paceOf(events)} ms`);
   });
 }
+
+test('donma kısa, büyük an sarsıntıyla birlikte', () => {
+  assert.ok(FREEZE <= 120, 'donma en çok 120 ms');
+  assert.equal(BIG_TAIL, FREEZE + SHAKE.ms);
+});
 
 test('jeton uçuşu ev sahibinde ve tahtada aynı süre', () => {
   assert.equal(PACE.flight, T.flight);

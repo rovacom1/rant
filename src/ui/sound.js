@@ -22,6 +22,7 @@ const cfg = { music: 0.35, sfx: 0.75, musicOn: true, sfxOn: true, ...store.get('
 let ctx = null;
 let sfxGain = null;
 let musicGain = null;
+let duckGain = null; // büyük anda müziği bir an kısan ara kazanç (duck)
 const buffers = {};
 let current = null;
 let loopTimer = null;
@@ -34,7 +35,8 @@ function ac() {
     sfxGain = ctx.createGain();
     musicGain = ctx.createGain();
     sfxGain.connect(ctx.destination);
-    musicGain.connect(ctx.destination);
+    duckGain = ctx.createGain();
+    musicGain.connect(duckGain).connect(ctx.destination);
     applyVolumes();
     load();
   }
@@ -198,6 +200,18 @@ export function setMusic(m) {
   turn = 0;
   stopLoop();
   if (m && cfg.musicOn && ac()) startLoop(true);
+}
+
+// Büyük anda müzik bir an kısılır (yüzde 30'a), sec saniyede eski düzeyine döner.
+export function duck(sec = 1.2) {
+  if (!ctx || !duckGain) return;
+  const g = duckGain.gain;
+  const t = ctx.currentTime;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(0.3, t + 0.06);
+  g.setValueAtTime(0.3, t + sec * 0.5);
+  g.linearRampToValueAtTime(1, t + sec);
 }
 
 // ---- ayarlar ----

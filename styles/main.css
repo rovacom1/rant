@@ -313,10 +313,10 @@ body.dark .delta { background: color-mix(in srgb, var(--me) 26%, transparent); c
 .bidder.out { opacity: 0.3; filter: grayscale(1); }
 /* açık artırma sonu: aynı pencere yerinde sonuca döner (gameview auctionEndHTML); tokmak resmi başlığın yanında */
 .au-end { cursor: pointer; }
-.au-art { width: 59px; height: 56px; flex: none; margin: -10px 0; background: url(../assets/ihale/tokmak-vurus.webp) 0 0 / 800% 100% no-repeat; }
-/* tokmak bir kez iner: sekiz kare, sonda darbe çizgili duruşta kalır */
-.au-art.hit { animation: auHit 0.42s steps(8, jump-none) forwards; }
-@keyframes auHit { to { background-position: 100% 0; } }
+.au-art { width: 59px; height: 56px; flex: none; margin: -10px 0; }
+/* tokmak bir kez iner: sekiz kare (sprite.js stripHTML), sonda darbe çizgili duruşta kalır */
+.au-art.hit img { animation: auHit 0.42s steps(8, jump-none) forwards; }
+@keyframes auHit { to { transform: translateX(-87.5%); } }
 .au-res { padding-top: 10px; border-top: 1px solid var(--line); }
 .row.au-res { align-items: center; }
 .au-res:not(.wait) { animation: popIn 0.22s ease-out; }
@@ -522,8 +522,22 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 /* ---------- uçan efektler ---------- */
 .float { position: fixed; z-index: 70; font-family: var(--hf); font-weight: 800; pointer-events: none; animation: floatUp 1.4s ease-out forwards; font-size: 16px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25); }
 .float.plus { color: var(--pos); } .float.minus { color: var(--neg); }
+/* kademeler (fx.js): küçük 16, orta 19 ve kenarlı, büyük 24 ve kenarlı */
+.float.t-medium, .float.t-big { text-shadow: 2px 2px 0 var(--panel), -2px 2px 0 var(--panel), 2px -2px 0 var(--panel), -2px -2px 0 var(--panel), 0 3px 6px rgba(0, 0, 0, 0.3); }
+.float.t-medium { font-size: 19px; }
+.float.t-big { font-size: 24px; }
+/* büyük kira: tahtanın ortasında eğik, büyüyüp oturan tutar */
+.float.burst { font-size: 30px; translate: -50% -50%; rotate: -4deg; animation: burst 1.6s ease-out forwards; text-shadow: 3px 3px 0 var(--panel), -3px 3px 0 var(--panel), 3px -3px 0 var(--panel), -3px -3px 0 var(--panel), 0 8px 14px rgba(27, 34, 51, 0.3); }
+@keyframes burst { 0% { transform: scale(0.4); opacity: 0; } 12% { transform: scale(1.9); opacity: 1; } 24% { transform: scale(1.55); } 80% { transform: scale(1.6); opacity: 1; } 100% { transform: translateY(-20px) scale(1.6); opacity: 0; } }
 @keyframes floatUp { to { transform: translateY(-40px); opacity: 0; } }
-.coin { position: fixed; left: 0; top: 0; z-index: 71; width: 22px; height: 22px; border-radius: 50%; pointer-events: none; background: radial-gradient(circle at 35% 30%, #fff6c8, #f4c542 45%, #c98a12 100%); border: 2px solid #a86f08; box-shadow: var(--sh-2); }
+/* jetonlar resim (assets/fx/jeton-a, jeton-b), havuzdan (sprite.js) */
+.coin { position: fixed; left: 0; top: 0; z-index: 71; width: 26px; height: auto; pointer-events: none; user-select: none; }
+/* kare şeridi (sprite.js): kutu taşanı gizler, içindeki n kare genişliğindeki resim transform ile kayar */
+.spr { display: block; overflow: hidden; pointer-events: none; }
+.spr > img { display: block; }
+.fx-puff > img { display: block; width: 100%; height: 100%; filter: none; }
+/* sayan bakiye (counter.js): artan yeşil, azalan kırmızı */
+.cnt-up { color: var(--pos) !important; } .cnt-down { color: var(--neg) !important; }
 /* tahta animasyonları (src/ui/boardfx.js): piyonların altında, kare büyümez */
 .fx { position: absolute; z-index: 4; pointer-events: none; box-sizing: border-box; }
 .fx-edge { border-radius: 3px; opacity: 0; box-shadow: inset 0 0 0 3px var(--c), 0 0 0 3px var(--c), 0 0 18px color-mix(in srgb, var(--c) 70%, transparent); }
@@ -532,13 +546,10 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .fx-trace rect { fill: none; stroke: var(--c); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; }
 .fx-tag { display: flex; align-items: center; gap: 8px; width: auto; height: auto; padding: 4px 14px 4px 6px; border-radius: 999px; background: var(--c); color: #fff; font-family: var(--hf); font-weight: 700; font-size: 16px; white-space: nowrap; box-shadow: 0 0 0 2px var(--panel), var(--sh-3); opacity: 0; }
 .fx-tag .pawn img { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35)); }
-.fx-drop { display: grid; place-items: center; transform-origin: 50% 100%; }
-.fx-drop .ic { width: 1.2em; height: 1.2em; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.3)); }
-.fx-dust { border-radius: 50%; background: var(--muted); opacity: 0; }
 .fx-ghost { display: flex; align-items: flex-end; transform-origin: 50% 100%; }
 .float.down { animation-name: floatDown; }
 @keyframes floatDown { to { transform: translateY(40px); opacity: 0; } }
-.confetti { position: fixed; top: -10px; width: 9px; height: 14px; z-index: 80; pointer-events: none; animation: fall linear forwards; }
+.confetti { position: fixed; top: -40px; width: 23px; height: 32px; z-index: 80; animation: fall linear forwards; }
 @keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
 .kart-ghost { position: fixed; z-index: 75; pointer-events: none; }
 .kart-ghost .kart { width: 100%; height: 100%; }
@@ -605,6 +616,8 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
 /* yatay telefonda giriş yan yana kalır: solda başlık, sağda kart; dayı kartın solundan bakar */
 @media (orientation: landscape) and (max-height: 520px) {
   .au-art { width: 42px; height: 40px; margin: -6px 0; }
+  .coin { width: 20px; }
+  .float.burst { font-size: 24px; }
   .au-res .big-num { font-size: 26px; }
   .au-res .h22 { font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .au-res > .pawn { display: none; }
@@ -717,7 +730,7 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
   .player-panel { padding: 10px; border-radius: var(--r-l); }
   .tools { gap: 4px; container-type: inline-size; }
   .tools .btn { height: 36px; padding: 0 6px; gap: 4px; font-size: 13px; border-radius: var(--r-m); }
-  .sound-pop { left: 0; right: 0; top: 42px; width: auto; }
+  .sound-pop { left: 0; right: 0; top: 42px; width: auto; max-height: calc(100dvh - 50px); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
   .gdetail { position: fixed; left: 8px; top: 8px; z-index: 56; width: min(420px, calc(var(--bw) - 8px)); }
   .layer, .layer.modal-layer, .layer.stage-layer { position: fixed; inset: 0; z-index: 60; padding: 8px; border-radius: 0; }
   .layer { grid-template-columns: minmax(0, 1fr); justify-items: center; }

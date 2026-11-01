@@ -2,11 +2,12 @@
 // (zıplama, konma, mühür, jeton...) çizelgedeki anlara denk çalar: sesin en yüksek yeri görüntüdeki darbeyle aynı ana
 // gelir (sound.js play, hit). Efektler tahtanın içinde, piyonların altında (z 4); kare büyümez, vurgu kenardadır.
 // Hareket azaltma açıksa zıplama, halka, kenar çizgisi ve uçuş yok; parlama, etiket ve sesler kalır.
+// Kademeler, donma, sarsıntı ve titreşim fx.js'te; toz ve jeton resimleri sprite.js'te.
 import { pawn } from './pawns.js';
 import { play } from './sound.js';
-import { store } from './dom.js';
+import { calm, FREEZE } from './fx.js';
+import { dust, puff } from './sprite.js';
 
-export const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const LABEL_MS = 2400;
 
 // Zaman çizelgeleri (ms).
@@ -17,7 +18,7 @@ export const T = {
   flight: 900, // jetonların uçuşu (kira, maaş)
   build: { ms: 800, impact: 440, bounce: 600 },
   demolish: { ms: 1300, shake: 450, shakeMs: 320, burst: 800 },
-  iflas: { ms: 1800, fall: 430, strips: 900, stripsSpread: 700 },
+  iflas: { ms: 1710, fall: 430, strips: 900, stripsSpread: 600 }, // büyük an: fall'da FREEZE ms donar, sonrası o kadar kayar
 };
 
 // Darbe sesi: sesin en yüksek anı ms sonraya denk gelir. Sürekli ses (süzülme, düşüş, düdük...): ms sonra başlar.
@@ -100,31 +101,6 @@ export function turnFx(board, cell, token, pl, me) {
   tag.animate([{ opacity: 0, transform: `translateY(${dy}px) scale(0.9)` }, { opacity: 1, transform: 'none', offset: 0.08 }, { opacity: 1, transform: 'none', offset: 0.88 }, { opacity: 0, transform: `translateY(${-dy / 2}px)` }], { duration: LABEL_MS, easing: 'ease-out', fill: 'both' });
 }
 
-// Geri bildirim kademeleri: küçük olay (maaş, küçük kira, kart çekme) yalnız ses ve sayı; orta olay (satın alma, kat,
-// ihale, kart) ayrıca kare çerçevesi; büyük olay (el koyma, yıkım, iflas, konkordato, büyük kira, imar affı)
-// ayrıca tahtanın kısa sarsıntısı ve dayı balonu. Sarsıntının şiddeti buradan, açıp kapaması ses penceresinden.
-export const SHAKE = { ms: 420, px: 7, deg: 0.6 };
-let shakeOn = store.get('shake', true);
-export const shakeEnabled = () => shakeOn;
-export function setShake(on) {
-  shakeOn = !!on;
-  store.set('shake', shakeOn);
-}
-
-// Tahtanın görsel kabı sönerek sarsılır (yalnız transform; oyunun durumu ve piyonların yeri değişmez).
-export function shakeFx(board, k = 1) {
-  if (calm() || !shakeOn) return;
-  const n = 8;
-  const frames = [];
-  for (let i = 0; i <= n; i++) {
-    const a = (1 - i / n) ** 2 * k; // sert başlar, yumuşak biter
-    const x = SHAKE.px * a * Math.sin(i * 2.1);
-    const y = SHAKE.px * 0.6 * a * Math.sin(i * 2.9 + 1);
-    frames.push({ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${(SHAKE.deg * a * Math.sin(i * 1.7)).toFixed(3)}deg)` });
-  }
-  board.animate(frames, { duration: SHAKE.ms, easing: 'linear' });
-}
-
 // Mülk alındı: kenar alıcının renginde dolanır (süzülme sesi), 600. ms'de mühür vurulur ve şerit o renkle dolar.
 // sound: false ise (ihale, pazarlık) kendi sesleri zaten çalıyor.
 export function ownFx(board, cell, color, sound = true) {
@@ -190,6 +166,8 @@ export function buildFx(board, cell) {
     ],
     { duration: ms, fill: 'both' },
   );
+  const b = boxOf(img);
+  puff(img.parentElement, b.x + b.w / 2, b.y + b.h + 2, b.w * 0.9, impact - 20);
 }
 
 // Bina resmi seviyesi L iken binanın tepesi kutunun üstünden yüzde kaç aşağıda (resimler aynı kutuda kırpılı: 1 kat %40, 4 kat %0).
@@ -227,18 +205,16 @@ export function demolishFx(board, cell, sound = true) {
   );
   const ruin = copyOf(img, ms, src.replace(/[^/]+\.png$/, 'yikik.png'));
   ruin.animate([{ opacity: 0 }, { opacity: 0, offset: at(burst - 20) }, { opacity: 1, offset: at(burst + 60) }, { opacity: 1, offset: 0.85 }, { opacity: 0 }], { duration: ms, fill: 'both' });
-  const cy = b.y + (b.h * cut) / 100 - b.h * 0.08;
-  const dirs = [[-26, -14], [0, -24], [22, -12], [-22, 12], [4, 18], [20, 10]];
-  for (const [dx, dy] of dirs) {
-    const p = layer(img.parentElement, 'fx-dust', { x: b.x + b.w / 2 - 5, y: cy - 5, w: 10, h: 10 }, ms);
-    p.animate([{ opacity: 0, transform: 'none' }, { opacity: 0.9, transform: `translate(${dx * 0.3}px, ${dy * 0.3}px) scale(0.8)` }, { opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(2)` }], { duration: ms - burst, delay: burst, easing: 'ease-out', fill: 'both' });
-  }
+  // Kaçak tepenin yerinde toz bulutu kabarır (sekiz karelik şerit), yıkıntıyı bir an örter.
+  dust(img.parentElement, b.x + b.w / 2, b.y + (b.h * cut) / 100 + b.h * 0.12, b.w * 0.95, burst - 40, ms - burst);
 }
 
 // İflas (kare ve piyon güncellenmeden önce çağrılır): piyon sallanır (sallanma sesi), 430. ms'de renksizleşip düşer
-// (hüzünlü trombon), 900. ms'den sonra mülklerinin şeritleri sırayla griye döner (her birinde çıt).
+// (hüzünlü trombon), 900. ms'den sonra mülklerinin şeritleri sırayla griye döner (her birinde çıt). Düşüş büyük an:
+// tahta orada FREEZE ms donar (fx.impact), şeritlerin çıtları da o kadar sonra çalar.
 export function iflasFx(board, token, ownedCells) {
   const { ms, fall, strips, stripsSpread } = T.iflas;
+  const late = calm() ? 0 : FREEZE;
   from('wobble', 0);
   from('sad', fall);
   const at = (t) => t / ms;
@@ -263,7 +239,7 @@ export function iflasFx(board, token, ownedCells) {
     const strip = cell.querySelector('.strip');
     if (!strip) return;
     const when = strips + (n > 1 ? (k * stripsSpread) / (n - 1) : 0);
-    hit('click', when);
+    hit('click', when + late);
     const cs = getComputedStyle(strip);
     const s = layer(board, 'fx-strip', inCell(cell, strip), ms);
     Object.assign(s.style, { background: cs.backgroundColor, boxShadow: cs.boxShadow, borderRadius: cs.borderRadius, transformOrigin: vertical(cell) ? '0 50%' : '50% 0' });
@@ -271,16 +247,24 @@ export function iflasFx(board, token, ownedCells) {
   });
 }
 
-// Jetonlar a'dan b'ye uçarken: kalkışta fırlatma sesi, her jeton konduğunda bir jeton sesi (perdesi hafif değişir).
-// landAt(i): i. jetonun konduğu an (ms). Maaşta Başlangıç köşesi altın renkte parlar, kasa zili ilk parlamada.
-export function coinSounds(n, landAt, salary, board, startCell) {
-  if (salary) {
-    blink(board, startCell, 'var(--gold)', T.flight);
-    hit('ding', T.flight * 0.15);
+// Jetonların sesleri, kademeye göre (fx.js). landAt(i): i. jetonun konduğu an (ms). Küçükte (maaş) fırlatma yok, en
+// çok üç kısık jeton; maaşta Başlangıç köşesi altın renkte parlar, kasa zili ilk parlamada. Ortada fırlatma ve her
+// jetona bir ses. Büyükte ilk jeton tok bir vuruş ve kasa ziliyle düşer, sağanağın her üç jetonundan biri çınlar.
+export function coinSounds({ n, landAt, tier, board, startCell, flight = T.flight }) {
+  if (startCell) {
+    blink(board, startCell, 'var(--gold)', flight);
+    hit('ding', flight * 0.15);
   }
-  from('toss', 0);
   const rates = [1, 1.06, 0.95, 1.1, 0.92, 1.03];
-  for (let i = 0; i < n; i++) hit('clink', landAt(i), { rate: rates[i % rates.length], vol: i ? 0.75 : 1 });
+  if (tier !== 'small') from('toss', 0);
+  if (tier === 'big') {
+    hit('thud', landAt(0));
+    hit('ding', landAt(0));
+  }
+  for (let i = 0; i < n; i++) {
+    if (tier === 'big' && i % 3 && i !== n - 1) continue;
+    hit('clink', landAt(i), { rate: rates[i % rates.length], vol: tier === 'small' ? 0.55 : i ? 0.75 : 1 });
+  }
 }
 
 // Açık artırma bitti: teklif penceresi yerinde "Gidiyor... gidiyor... Satıldı!" der (say ile); iki tok vuruş, üçüncüsünde
