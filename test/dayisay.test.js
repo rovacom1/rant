@@ -25,3 +25,16 @@ test('dayı lafları kısa, her an için 4 tane (şapkalı harfi npm run check y
     }
   }
 });
+
+test('dayı balonu Mahalle anları: tahliye, AVM, operasyon yalnız Mahalle oyununda', () => {
+  const evict = { type: 'evict', p: 0, by: 1, sq: 3 };
+  assert.equal(dayiMoment([evict]), null);
+  assert.equal(dayiMoment([evict], true), 'tahliye');
+  assert.equal(dayiMoment([{ ...evict, by: 0 }], true), null, 'kendi arsasını alan tahliye ettirmedi');
+  assert.equal(dayiMoment([{ type: 'avm', p: 0, sq: 3 }], true), 'avm');
+  assert.equal(dayiMoment([{ type: 'avm', p: 0, sq: 3 }]), null);
+  const op = [{ type: 'gundem', id: 'operasyon' }, { type: 'demolish', p: 1, n: 2 }];
+  assert.equal(dayiMoment(op, true), 'operasyon');
+  assert.equal(dayiMoment(op), 'yikim', 'klasik değişmedi');
+  assert.equal(dayiMoment([{ type: 'iflas', p: 2 }, evict], true), 'iflas');
+});

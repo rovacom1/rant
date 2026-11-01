@@ -48,3 +48,37 @@ export const RULES_HTML = `
 <li>Oyuncuya tıklayınca nakdi, değeri, kart sayısı ve mülkleri görünür. Simgelerin üzerine gelince açıklaması çıkar.</li>
 </ul>
 </div>`;
+
+// Mahalle'nin "Bütün kurallar" bölümü (kısa; ayrıntı docs/TASARIM.md §13).
+export const MAHALLE_RULES_HTML = `
+<div class="rules">
+<p><b>Mahalle</b>da şehir yok: 6x6 adsız arsa var, her biri yeriyle anılır ("3. satır 5. sütun"). Tur dolunca ya da değer hedefine ulaşılınca <b>Seçim Günü</b> gelir; en yüksek puan (nakit + arsalar + katlar) kazanır.</p>
+<h3>Sıran geldiğinde</h3>
+<ul>
+<li>Sıra başında bankadan <b>50 hakediş</b> gelir. Her 3 turda herkes 1 kart çeker; 10. ve 19. turda 1 torpil alırsın.</li>
+<li>İki zar atılır. Çift değilse zarlar iki arsa gösterir (satır-sütun ya da sütun-satır); birini seçersin, piyon oraya zıplar, aradaki arsalar işlemez. <b>Çift</b> gelirse o numaralı satırda ya da sütunda istediğin arsayı seçersin; ek atış yok.</li>
+<li><b>Torpil</b> zar atıldıktan sonra bir zarı 1 artırır ya da azaltır (turda 1 kez, en çok 2 jeton tutarsın).</li>
+<li>Sahipsiz arsada: <b>satın al</b>, <b>ihaleye çıkar</b> ya da <b>gecekondu kondur</b>. Rakibin arsasında kira ödersin; boş arsanın da küçük kirası vardır.</li>
+</ul>
+<h3>İnşaat</h3>
+<ul>
+<li>Kat yalnız piyonunun durduğu arsada ve ona komşu kendi arsalarında dikilir. <b>Yasal kat</b> için arsanın komşularından biri de senin olmalı (en fazla 4 kat).</li>
+<li><b>Kaçak kat</b> komşu istemez, yarı fiyatına, arsa başına 1. İhbar ve Belediye Operasyonu yıkar, İmar Affı yasallaştırır.</li>
+</ul>
+<h3>Yapılar ve komşuluk</h3>
+<ul>
+<li><b>Site:</b> 2x2 bloğun dört arsası da senin ve hepsinde kat var: kiraları x2. <b>Blok:</b> iki komşun da senin: arsanın kirası +%25.</li>
+<li><b>Park:</b> kendi boş arsana. Park kira almaz, dört komşusunun kirasını +%50 yapar (kimin olursa olsun).</li>
+<li><b>AVM:</b> 4 katlı arsan AVM olur. Çevresindeki 8 arsada ödenen her kiranın %20'si AVM sahibine gider.</li>
+<li><b>Gecekondu:</b> sahipsiz arsaya kondurulur, arsa sahipsiz kalır. Konduran her sıra başı 10 alır, komşu arsaların kirası -%25 olur. Arsayı alan, kondurana tahliye bedeli (kondurma bedelinin 2 katı) öder. Oyuncu başına en çok 3.</li>
+</ul>
+<h3>Kartlar ve gündem</h3>
+<p>Kartlar ve gündem klasikteki gibi; arsaya bağlı olanlar uyarlanır (Taksi satırda ya da sütunda gider, Kamulaştırma siteye oynanmaz, İhbar ve Operasyon gecekonduyu da yıkar, Turizm Sezonu kıyı kiralarını artırır). Ulaşım ve Sürpriz yoktur.</p>
+<h3>Borç ve Konkordato</h3>
+<p>Klasikteki gibi: borcunu kat satarak, ipotekle ya da pazarlıkla kapatırsın; satacak bir şeyin kalmazsa konkordato ilan edersin, borç silinir, sonda 300 puan ceza.</p>
+<h3>Arazideki işaretler</h3>
+<ul>
+<li>Arsanın iç kenarındaki şerit sahibini gösterir. Üstündeki bina kat sayısıdır (çirkin kat kaçaktır).</li>
+<li>Arsaya tıklayınca hangi etkilerin kirasını değiştirdiği görünür.</li>
+</ul>
+</div>`;

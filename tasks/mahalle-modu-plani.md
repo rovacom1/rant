@@ -47,7 +47,7 @@ oyununa sonra başka ad bulunur. Bütün sayılar simülasyonla ayarlanır (kull
       park/AVM/gecekondu oyun başına kullanılıyor. PROTOCOL ve SAVE_VERSION artar.
 - [x] K3 Arayüz (2 hafta, mevcut planın 6. adımından sonra): lobide oyun türü; `ui/arazi.js` (masaüstünde 6x6, telefonda eğik);
       zar sonrası iki arsa parlar, dokunarak seçilir; yay çizen zıplama; arsa penceresinde kira ve etkiler; park, AVM, gecekondu, torpil.
-- [ ] K4 Deneme (1 hafta): arkadaş oyunu, Nasıl oynanır, dayının yorumları. v0.47.
+- [ ] K4 Deneme (1 hafta): arkadaş oyunu (kullanıcı); [x] Nasıl oynanır, dayının yorumları (Mahalle kural kartları, oyun sonu yorumları, dayı balonları). v0.47.
 
 ## Higgsfield (bu hafta, ~12 kredi)
 Arazi zemini (6x6 kuşbakışı, bir kenarı kıyı, iki tema), park, AVM, torpil jetonu. Ev ve apartman için bugünkü set binaları,

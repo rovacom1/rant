@@ -97,7 +97,10 @@ export function evict(s, ctx, p, sq) {
   const fee = R.evictCost(s, sq, p);
   s.props[sq].gk = null;
   emit(s, ctx, { type: 'evict', p: g.p, by: p, sq, text: `${sqName(s, sq)} üstündeki gecekondu yıkıldı.` });
-  if (fee) transfer(s, ctx, p, g.p, fee, `Tahliye: ${sqName(s, sq)}`);
+  if (fee) {
+    stat(s, g.p, 'tahliye');
+    transfer(s, ctx, p, g.p, fee, `Tahliye: ${sqName(s, sq)}`);
+  }
 }
 
 export function demolishKacak(s, ctx, victim, finePer, why, by) {
