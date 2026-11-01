@@ -16,7 +16,7 @@ import { classicView, araziView } from './boardview.js';
 import { Camera } from './camera.js';
 import { CityMap } from './map.js';
 import { app, isHost, act } from './state.js';
-import { RULES_HTML } from './rules.js';
+import { RULES_HTML, MAHALLE_RULES_HTML } from './rules.js';
 import { initTips } from './tip.js';
 import { withDialog } from './focus.js';
 import { SPEEDS, PACE, STICKERS, STICKER_GAP } from '../net/host.js';
@@ -1180,9 +1180,24 @@ const RULE_ITEMS = [
   ['trophy', 'Seçim Günü', 'Son turun sonunda puanı en yüksek olan kazanır.'],
 ];
 
-export const rulesSheet = () =>
-  html`<div class="sheet XL" style="max-height:100%">${sheetHead('book', 'Nasıl oynanır?')}<div class="sheet-body"><div class="rules-grid">${RULE_ITEMS.map(([icn, h, t]) => html`<div class="rule-item">${I(icn)}<span class="col" style="gap:2px"><b class="h16">${h}</b><span class="body" style="font-size:14px">${t}</span></span></div>`)}</div>
-    <details class="rules-more"><summary>Bütün kurallar</summary>${raw(RULES_HTML)}</details></div></div>`;
+const FXI = (src) => raw(`<img class="fxi" src="${src}" alt="">`);
+const MAHALLE_RULE_ITEMS = [
+  ['dice', 'Zar at, arsa seç', 'Zarlar satır ve sütun gösterir: iki arsadan birini seç. Çiftte o satırdan ya da sütundan istediğin.'],
+  [FXI('assets/mahalle/torpil.webp'), 'Torpil', 'Zardan birini 1 artır ya da azalt. Turda 1, en çok 2 jeton.'],
+  ['house', 'Kat dik', 'Piyonunun arsasında ya da komşu arsanda. Yasal kat için bir komşun da senin olsun.'],
+  ['kacak', 'Kaçak kat', 'Komşu şart değil, yarı fiyat; ama İhbar ve Operasyon yıkar.'],
+  ['home', 'Gecekondu', 'Sahipsiz arsaya kondur: her tur 10 gelir, komşu kirası -%25. Arsayı alan tahliye öder.'],
+  [FXI('assets/mahalle/park.webp'), 'Park', 'Boş arsana: park kira almaz, komşularının kirası +%50.'],
+  [FXI('assets/mahalle/avm.webp'), 'AVM', '4 katlı arsan AVM olur: çevrede ödenen kiranın %20 si sana.'],
+  ['star', 'Site ve blok', '2x2 blok hep senin ve katlıysa kira x2. İki komşun da seninse +%25.'],
+  ['coin', 'Hakediş', 'Her sıra başı bankadan 50 gelir.'],
+  ['news', 'Gündem', `${GUNDEM_PERIOD} turda bir haber çıkar, kuralları değiştirir.`],
+  ['trophy', 'Seçim Günü', 'Son turun sonunda puanı en yüksek olan kazanır.'],
+];
+
+export const rulesSheet = (mahalle = false) =>
+  html`<div class="sheet XL" style="max-height:100%">${sheetHead('book', 'Nasıl oynanır?')}<div class="sheet-body"><div class="rules-grid">${(mahalle ? MAHALLE_RULE_ITEMS : RULE_ITEMS).map(([icn, h, t]) => html`<div class="rule-item">${typeof icn === 'string' ? I(icn) : icn}<span class="col" style="gap:2px"><b class="h16">${h}</b><span class="body" style="font-size:14px">${t}</span></span></div>`)}</div>
+    <details class="rules-more"><summary>Bütün kurallar</summary>${raw(mahalle ? MAHALLE_RULES_HTML : RULES_HTML)}</details></div></div>`;
 
 export function renderModal() {
   if (els) withDialog(els.modal, drawModal);
@@ -1218,7 +1233,7 @@ function drawModal() {
       body = tradeDialog(v);
       break;
     case 'rules':
-      body = rulesSheet();
+      body = rulesSheet(mh);
       break;
     case 'history':
       body = historyHTML();
@@ -1962,7 +1977,7 @@ export async function present(prev, v, events, fast) {
   const jolt = live ? bigJolt(prev, v, events) : null;
   if (jolt !== null) setTimeout(() => els && impact('big', els.board), jolt);
   // Büyük anda dayı köşeden bir laf eder (hızlı oyunda ve yetişmeye çalışırken susar); ortadaki sahne kapanınca.
-  const moment = live && spd() >= 1 ? dayiMoment(events) : null;
+  const moment = live && spd() >= 1 ? dayiMoment(events, mh) : null;
   if (moment) afterStage().then(() => els && dayiSay(isTel() ? els.game : els.board, moment));
   const pawnEnds = pawnFlights.map((e, i) => pawnFlight(v, e, i * FLIGHT_GAP, jolt !== null));
   if (flights.length && els) {

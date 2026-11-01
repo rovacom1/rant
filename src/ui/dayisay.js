@@ -38,17 +38,39 @@ export const DAYI_LINES = {
     'Zabıta uyurken çalışan kazanır.',
     'Kolonu az, kazancı çok!',
   ],
+  // Mahalle'ye özgü anlar.
+  tahliye: [
+    'Gecekondunu yıktırdın, bedelini de aldın. Aferin!',
+    'Tahliye bedeli dediğin, sabırlının kazancıdır.',
+    'Kondur, bekle, sat. Mahalle dersi budur.',
+    'Gece kondurdun, sabah parasını aldın.',
+  ],
+  avm: [
+    'AVM açıldı, mahallenin kirası artık senin cebinde.',
+    'Kurdele kesildi, komisyon başladı.',
+    'Herkes alışveriş etsin, sen kira say.',
+    'Açılışa belediye başkanını da çağırdın mı?',
+  ],
+  operasyon: [
+    'Kepçeler geldi, gecekondular gitti.',
+    'Mahalleyi temizlediler. Boş arsa daha pahalı, bilirsin.',
+    'Operasyon kimin mahallesine denk geldi, o da ders aldı.',
+    'Yıkılan kaçaklar yarın yeniden dikilir.',
+  ],
 };
 
 export const BIG_RENT = 300;
 
-// Olaylardan dayının konuşacağı an (en önemlisi), yoksa null. Sıra: iflas, konkordato, af, yıkım, büyük kira, kaçak kat.
-export function dayiMoment(events) {
+// Olaylardan dayının konuşacağı an (en önemlisi), yoksa null. Sıra: iflas, konkordato, af, (Mahalle: operasyon), yıkım, (Mahalle: tahliye, AVM), büyük kira, kaçak kat.
+export function dayiMoment(events, mahalle = false) {
   const has = (f) => events.some(f);
   if (has((e) => e.type === 'iflas')) return 'iflas';
   if (has((e) => e.type === 'konkordato')) return 'konkordato';
   if (has((e) => e.type === 'gundem' && e.id === 'imarAffi')) return 'af';
+  if (mahalle && has((e) => e.type === 'gundem' && e.id === 'operasyon')) return 'operasyon';
   if (has((e) => e.type === 'demolish')) return 'yikim';
+  if (mahalle && has((e) => e.type === 'evict' && e.p !== e.by)) return 'tahliye';
+  if (mahalle && has((e) => e.type === 'avm')) return 'avm';
   if (has((e) => e.type === 'money' && e.from !== null && e.to !== null && /^Kira/.test(e.why || '') && e.amount >= BIG_RENT)) return 'kira';
   if (has((e) => e.type === 'build' && e.kacak)) return 'kacak';
   return null;

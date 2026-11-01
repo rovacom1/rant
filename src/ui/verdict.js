@@ -45,11 +45,37 @@ const WIN = {
   ]],
 };
 
+// Mahalle'ye özgü işler (yalnız Mahalle oyununda aranır); videolar aynı dört klip.
+const WIN_M = {
+  gecekondu: ['gurur', [
+    'Gece kondurdun, sabah tapu istediler, sen çay ikram ettin. Aslan yeğenim!',
+    'Arsa sahipsizdi, sen sahiplendin. Tahliye gelene kadar da kira gibi gelir yedin.',
+    'Ben ilk gecekonduyu bir gecede kondurmuştum. Sen kaç tane kondurdun, saymadım bile.',
+  ]],
+  tahliye: ['para', [
+    'Gecekonduna göz dikenler tahliye bedelini ödedi, üstüne teşekkür de etti. Tam dayı işi!',
+    'Gecekondunu satın almak isteyen çok çıktı. Hepsi bedelini ödedi, sen hepsine gülümsedin.',
+  ]],
+  avm: ['para', [
+    'Mahallenin her kirasından pay aldın. Belediye başkanı bile bu kadar kazanmaz.',
+    'AVM açtın, komşuların kirasından komisyon kestin. İş bilirsin yeğenim!',
+    'Herkes alışveriş etti, sen para saydın. AVM dediğin böyle olur.',
+  ]],
+  park: ['alkis', [
+    'Park yaptın, komşunun kirası yükseldi. Yeşil alan bahanesiyle zam yaptın, zekasına hayranım.',
+    'Bir banka iki ağaç dikip bütün mahalleye zam yaptırdın. Buna imar planı denir.',
+  ]],
+};
+
 const LOSE = {
   sonuncu: [
     'Herkes kaçak kat çıktı, sen ruhsat bekledin. Bu saflık kime çekti, anlamadım.',
     'Sen bu işlere girme. Git memur ol, hiç değilse maaşın yatar.',
     'Arkanda dayın varken sonuncu olmak da marifet. Ailede bunu senden başka beceren çıkmadı.',
+  ],
+  mahalle: [
+    'Mahallede tek bir gecekondun yok, tek bir AVM açmadın. Bu mahalle seni yutar, yeğenim.',
+    'Arsaya bir kez bile torpil yapmadın. Böyle mahalle olmaz, böyle yolsuzluk olmaz.',
   ],
   konkordato: ['Konkordato ilan ettin, kimseye borcunu ödemiyorsun. Sonunda bir şeyi doğru yaptın.'],
   iflas: [
@@ -60,17 +86,23 @@ const LOSE = {
 
 // Kazananın öne çıktığı sayılmak için en az bu kadar yapmış ve masanın toplamından bu payı almış olmalı.
 const MIN = { kacak: 2, ihale: 2, dava: 2, gasp: 2, yikim: 2, kira: 1 };
+const MIN_M = { gecekondu: 2, tahliye: 2, avm: 1, park: 2 };
 const SHARE = 0.4;
+const isM = (v) => v.mode === 'mahalle';
+
+// Mahalle'de hiç gecekondu, park ya da AVM yapmayan sonuncu "yeterince yolsuz olmadığı" için ayrıca azarlanır.
+export const noMahalle = (pl) => !['gecekondu', 'park', 'avm'].some((k) => ((pl.stats || {})[k] || 0) > 0);
 
 function trait(v, w) {
   if (v.players.filter((pl) => !pl.out).length === 1 && v.players.length > 1) return 'son';
   const st = (pl, k) => (pl.stats || {})[k] || 0;
   let best = 'genel', top = 0;
-  for (const k of Object.keys(MIN)) {
+  const min = isM(v) ? { ...MIN, ...MIN_M } : MIN;
+  for (const k of Object.keys(min)) {
     const mine = st(v.players[w], k);
     const all = v.players.reduce((t, pl) => t + st(pl, k), 0);
     const share = all ? mine / all : 0;
-    if (mine >= MIN[k] && share >= SHARE && share > top) (best = k), (top = share);
+    if (mine >= min[k] && share >= SHARE && share > top) (best = k), (top = share);
   }
   return best;
 }
@@ -83,10 +115,10 @@ export function verdict(v) {
   const w = r.ranking[0];
   const last = r.ranking[r.ranking.length - 1];
   const seed = r.ranking.reduce((t, p) => t + Math.round(r.scores[p].total), 0) + v.round;
-  const [clip, lines] = WIN[trait(v, w)];
+  const [clip, lines] = (isM(v) ? { ...WIN, ...WIN_M } : WIN)[trait(v, w)];
   const win = { p: w, text: lower(lines[seed % lines.length]), clip };
   if (last === w) return { win, lose: null };
   const pl = v.players[last];
-  const lose = LOSE[pl.out ? 'iflas' : pl.konkordato ? 'konkordato' : 'sonuncu'];
+  const lose = LOSE[pl.out ? 'iflas' : pl.konkordato ? 'konkordato' : isM(v) && noMahalle(pl) ? 'mahalle' : 'sonuncu'];
   return { win, lose: { p: last, text: lower(lose[(seed + 1) % lose.length]) } };
 }

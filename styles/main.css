@@ -483,6 +483,7 @@ body.dark .prow.turn { background: color-mix(in srgb, var(--pc) 24%, transparent
 .rules-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; overflow: auto; }
 .rule-item { display: flex; gap: 12px; align-items: flex-start; }
 .rule-item > .ic { font-size: 24px; }
+.rule-item > .fxi { width: 28px; height: 28px; }
 .rules-more { font-size: 14px; color: var(--muted); line-height: 1.5; }
 .rules-more summary { cursor: pointer; font-family: var(--hf); font-weight: 700; color: var(--ink); }
 .news-card { width: 640px; max-width: 100%; display: flex; border-radius: var(--r-l); overflow: hidden; background: var(--panel); box-shadow: 0 0 0 1px var(--line), inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--line), var(--shadow); cursor: pointer; animation: newsIn 0.4s cubic-bezier(0.2, 0.8, 0.3, 1); }
