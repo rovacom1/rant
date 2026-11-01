@@ -389,9 +389,10 @@ export class Host {
   apply(seat, action) {
     const { state, events } = E.applyAction(this.game, seat, action);
     this.game = state;
-    this.readyAt = Date.now() + this.lead() + Math.round(paceOf(events) * this.speed());
+    const at = Date.now() + this.lead();
+    this.readyAt = at + Math.round(paceOf(events) * this.speed());
     this.schedule();
-    this.broadcast(events);
+    this.broadcast(events, at);
     this.persist();
   }
 
@@ -407,8 +408,7 @@ export class Host {
   }
 
   // at: durumun bütün ekranlarda oynamaya başlayacağı an (ev sahibinin saati).
-  broadcast(events = []) {
-    const at = Date.now() + this.lead();
+  broadcast(events = [], at = Date.now() + this.lead()) {
     for (const c of this.clients) {
       if (!c.playerId) continue;
       if (!this.game) {
