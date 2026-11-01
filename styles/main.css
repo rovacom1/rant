@@ -146,6 +146,8 @@ body.dark .disc { background: color-mix(in srgb, var(--pc) 22%, transparent); }
 .rng::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -7px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px var(--c), 0 0 0 5px var(--pedge), 0 2px 6px rgba(0, 0, 0, 0.3); }
 .rng::-moz-range-thumb { width: 24px; height: 24px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px var(--c), 0 0 0 5px var(--pedge), 0 2px 6px rgba(0, 0, 0, 0.3); }
 .rng:disabled { opacity: 0.4; cursor: default; }
+.chips { display: flex; gap: 6px; min-width: 0; max-width: 100%; }
+.chips .btn { flex: 1 1 auto; min-width: 0; padding: 0 8px; }
 .rng-scale { display: flex; justify-content: space-between; margin-top: -4px; font-size: 14px; color: var(--muted); }
 
 /* açma-kapama anahtarı */
@@ -736,3 +738,5 @@ body.dark .tip { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sh-3); }
 @container (max-width: 250px) { .tools .btn .ic { display: none; } }
 /* en alçak yatay telefonda (320 px) ortadaki istem kaydırma çubuğu çıkarmasın */
 @media (orientation: landscape) and (max-height: 330px) { .center .btn.L { height: 42px; } }
+.bidrow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.bidrow .rng { flex: 1 1 160px; width: auto; min-width: 0; }

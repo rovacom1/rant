@@ -645,6 +645,14 @@ const A = {
   decline: () => act({ type: 'decline' }),
   pazarlik: (el) => act({ type: 'playCard', uid: el.dataset.uid }),
   raise: (el) => act({ type: 'raise', amount: Number(el.dataset.amt) }),
+  raiseAdd(el) {
+    const inp = document.querySelector('input[data-bind="raise"]');
+    if (!inp) return;
+    const lo = Number(inp.min), hi = Number(inp.max);
+    const cur = Number(app.ui.binds.raise) || lo;
+    inp.value = String(Math.min(hi, Math.max(lo, Math.round((cur + Number(el.dataset.add)) / 5) * 5)));
+    G.bindsInput({ target: inp });
+  },
   raiseCustom() {
     act({ type: 'raise', amount: Math.floor(Number(app.ui.binds.raise) || 0) });
     app.ui.binds.raise = '';
@@ -839,7 +847,7 @@ document.addEventListener('click', (e) => {
   if (el.tagName !== 'INPUT') e.preventDefault();
   fn(el, e);
   // İstemdeki düğme bir kez basılır; istem yeni durumla yeniden çizilene kadar kilitli kalır (çift tıklama hata vermesin).
-  if (el.tagName === 'BUTTON' && el.closest('#prompt')) el.disabled = true;
+  if (el.tagName === 'BUTTON' && el.closest('#prompt') && el.dataset.act !== 'raiseAdd') el.disabled = true;
 });
 
 document.addEventListener('input', (e) => {
