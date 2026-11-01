@@ -65,8 +65,18 @@ Flat 2D cartoon animation in the exact same style, static camera. He keeps holdi
 
 ## Tahta kareleri
 
-- Özel kareler (Başlangıç Noktası, Fırsat, SÜRPRİZ, Tapu, Çay Ocağı, Zabıta) ve ulaşım (gar, havalimanı) resim değil, `src/ui/icons.js` içindeki elle çizilmiş SVG ikonlardır (64x64). Kullanıcı yapay zeka resimlerini kalabalık buldu (v0.6); istenen, orijinal Monopoly gibi tek bakışta okunan, kalın hatlı sade ikon.
-- Yeni ikon: tek nesne, 2-3 ana renk, koyu dış çizgi (1.6-2.4), hafif gradyan; açık ve koyu zeminde okunmalı.
+- Özel kareler ve ulaşım (2026-11-01, mobil kalite planı adım 0): `src/ui/icons.js`'teki elle çizilmiş SVG'lerin yerine
+  üretilmiş resimler gelir: `assets/kare/<tür>.webp` (`baslangic`, `tapu`, `cay`, `zabita`, `firsat`, `surpriz`, `gar`,
+  `havalimani`), saydam, görünen nesneye kırpılmış, uzun kenarı 256 px. Koda bağlanana kadar SVG'ler kullanılır (adım 3).
+  v0.6'daki "yapay zeka resmi kalabalık" sorunu sahneli resimlerdi; bunlar tek nesne, piyon tarzında.
+- Nesneler: Başlangıç banknot dolu maaş zarfı, Tapu Dairesi kırmızı mühürlü rulo tapu, Çay Ocağı ince belli çay bardağı, Zabıta
+  rozetli kasket, Fırsat altın dolu sandık, Sürpriz içinden konfeti fışkıran hediye kutusu, gar önden lokomotif, havalimanı
+  üstten uçak. Resimde yazı, rakam, soru işareti ya da lira işareti yok; para gereken yerde tek SVG `tl` kodla konur.
+- Komut piyon kalıbıdır ("Board game square icon, a single compact iconic object ... readable at 40 px ... Subject: ..."). İlk iki
+  simge (`baslangic`, `gar`) `itiraz.jpg` ve `galata.png` referansıyla, kalan altısı bu iki simge referans verilerek üretildi
+  (aynı çizgi kalınlığı, aynı palet: domates kırmızısı, turkuaz, hardal, krem). Yeni simge de bu ikisini referans alır.
+- Koyu temada lacivert dış çizgi zeminle birleşir; simge krem dolgusuyla okunur, kodda ince açık kontur verilir (`.ic.c` gibi).
+- 40 px'te denenir; ayrıntılı bina (ör. gar binası) küçükte bulanır, tek büyük nesne seçilir.
 - Mülk kareleri simgesiz: üstte setin tam doygun renginde bant, altta il adı, arada bina resmi (aşağıda); sahiplik yalnız iç kenardaki şeritte. Kare zemini sahibin rengine boyanmaz.
 
 ## Bina görselleri
@@ -84,3 +94,47 @@ Flat 2D cartoon animation in the exact same style, static camera. He keeps holdi
 
 - Efektler ve müzik ElevenLabs ile üretildi (`assets/ses/*.mp3`). Yeni efekt: kısa (1-2 sn), temiz, "close mic" komutlu. Kod sesi kendisi kırpar ve düzeyini eşitler (`src/ui/sound.js`).
 - Müzik: `assets/ses/muzik.mp3`, 60 sn, döngüde 3 sn geçişle çalar.
+
+## Üretim aracı ve fiyat (2026-11-01)
+
+- Higgsfield `gpt_image_2_5`, `quality: medium`, 1k: resim başına 0,5 kredi (high 2k 2,75). Saydam zemin için
+  `background: "transparent"` verilir; ayrıca arka plan silme gerekmez. Her nesne için iki varyant üretilir, iyisi seçilir.
+- Referanslar Higgsfield'a yüklenir (`media_upload`); önceki bir üretimin iş kimliği de referans olarak verilebilir.
+- Ham dosyalar `tasks/gorsel-ham/stil-denemesi/` ve `tasks/gorsel-ham/faz2/` (repoya girmez), önizleme sayfaları `onizleme/` altında.
+- Saydam resimler görünen kısma kırpılır, uzun kenarı 256 px WebP (kalite 88) olur.
+
+## Efektler
+
+- `assets/fx/`: `jeton-a` (düz para), `jeton-b` (dönerken eğik para), `toz` (tek toz bulutu, kodla büyütülüp soldurulur),
+  `toz-sayfa` (8 karelik yatay şerit, kare 181x160, ortak taban çizgisi; patlama çizgisi yok), `konfeti` (12 parçalık şerit,
+  kare 45x64), `banknot`, `iskele`, `kepce`, `kacak` (binanın üstüne konan 4 kaçak eklenti: briket oda, sac oda, kapatılmış
+  balkon, su deposu; kare 200x192).
+- Paranın ortası boştur, lira işareti çizilmez. Rengi kart hardalına (`#e9b10c`) kodla değil, resimde çevrildi.
+- Şerit isteyince model ızgarayı tutturur ama karelerin yeri kayar; kareler ayrı ayrı kırpılıp ortak tabana dizilir.
+
+## Masa zemini
+
+- `assets/masa/acik.jpg` (açık meşe tahta) ve `koyu.jpg` (ceviz/tütün), 1024 px döşenebilir doku. Model dikişsiz doku üretemiyor;
+  kenarlar yarım kaydırılmış kopyasıyla 96 px'te harmanlandı. Kraft kağıt denemesi düz renkten farksızdı, CSS rengi yeter.
+
+## Tepki çıkartmaları
+
+- `assets/tepki/<ad>.webp`, `STICKERS` sırasıyla: `yuh` (fırlatılmış domates), `helal` (başparmak), `olmaz` (girilmez levhası),
+  `hadiya` (sıçrayan çay bardağı), `dayi` (güneş gözlüğü, bıyık, tespih), `kira` (çatısına para yağan ev). Yazı resimde değil,
+  kodla altına. Kalın krem çıkartma kenarı iki temada da okunur. Komut kart kalıbı + "Die-cut reaction sticker ... thick cream
+  sticker border"; insan yüzü yok.
+
+## Simge yapılar
+
+- `assets/simge/<set>.webp`: `corum` Amasya Yalıboyu evleri, `trabzon` Sümela, `bursa` Irgandı Köprüsü, `konya` Kapadokya
+  peribacaları (balonla), `antalya` Hadrian Kapısı, `ankara` Ankara Kalesi, `izmir` Tarihi Asansör, `istanbul` Boğaziçi Köprüsü.
+  Referans: İstanbul bina sayfası ve `galata.png`; bina resimleriyle aynı üç çeyrek bakış, küçük zemin parçası üstünde.
+
+## Mahalle modu
+
+- Arazi ızgarasız üretilir: model 6x6 ızgarayı sayamıyor (iki denemede 5 sütun çizdi). Resim yalnız arazi ve kıyıdır; 36 arsa,
+  yollar ve seçim kodla üstüne çizilir. Kıyı (kum + deniz) sağ kenarda genişliğin yaklaşık beşte biri (yüzde 18), iki temada
+  aynı yerde, 6. sütun kıyıya bakar. `assets/mahalle/arazi-acik.webp` gündüz (çayır, toprak, soluk patikalar),
+  `arazi-koyu.webp` alacakaranlık (zeytin ve ceviz kahvesi, arduvaz deniz; lacivert ya da siyah değil), 960 px.
+- Kıyı yerini tutturmak için açık sürüm koyu sürüm referans verilerek yeniden çizildi ve sağdan kırpıldı.
+- `park`, `avm` bina resimleriyle aynı bakışta; `torpil` el sıkışma kabartmalı turkuaz jeton.
