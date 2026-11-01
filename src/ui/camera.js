@@ -4,7 +4,7 @@
 // sarsıntı (fx.js) transform'a eklenir, ikisi çakışmaz. Kipler ("Hissiyat kılavuzu", tasks/mobil-kalite-plani.md 6):
 //   masa   bütün tahta (karar öncesi, tur başı)
 //   izle   yürüyen piyonu 1,7 kat yakından, bir kare önünden izler
-//   takip  sıra başkasındayken (izleyici) onun piyonunu 1,3 kat yakından gösterir
+//   takip  sıra başkasındayken (izleyici) zar atıldıktan sonra onun karesine hafifçe (1,15 kat) yaklaşır; atmadan önce masa
 //   odak   bir kareye yaklaşır; kare alttan sayfanın üstünde kalan alanın ortasında durur
 //   hedef  bütün tahta alttan sayfanın üstündeki alana sığar (geçerli hedefler parlar, ötekiler kararır: board .picking)
 // Kamera hiçbir şeyi beklemez, hiçbir canlandırma onu beklemez: ev sahibinin süre bütçesini (net/host.js PACE) uzatmaz.
@@ -13,7 +13,7 @@
 
 export const TILT = 30; // derece; telefon.css --stand = 1 / cos(TILT) buradan yazılır
 export const PERSP = 1300; // px
-export const ZOOM = { izle: 1.7, odak: 1.6, takip: 1.3 };
+export const ZOOM = { izle: 1.7, odak: 1.6, takip: 1.15 };
 const MS = 420; // kip geçişi
 const rad = (d) => (d * Math.PI) / 180;
 
@@ -56,26 +56,33 @@ export function fitTilt(slot, { tilt = TILT, persp = PERSP, amin = 1, amax = 1.4
   return { w, h, x: slot.x + (slot.w - w) / 2, y: slot.y + spare / 2 - top - h / 2 };
 }
 
-// Kameranın duruşu: düz tahtadaki p noktası, s kat yakınlaşınca pencerede at noktasına gelsin. box: tahtanın penceredeki
-// düz kutusu; view: görünen alan { w, top, bottom } (pencerede px). Tahta görünen alanı doldurur: yatayda kenarı içeri
-// kaçmaz (sığmıyorsa ortalanır), dikeyde kenarıyla alanın kenarı arasında en çok boşluğun %12'si kadar boşluk kalır
-// (alt sıradaki kare sayfanın hemen üstüne iner, üstünde tahta görünür); dikeyde sığıyorsa ortalanır. Döner { x, y, s }.
-export function pose(box, p, s, at, view) {
-  const q = project(p.x - box.w / 2, p.y - box.h / 2);
-  const cx = box.x + box.w / 2;
-  const cy = box.y + box.h / 2;
-  let bx = at.x - s * q.x; // tahta merkezinin ekrandaki yeri
-  const half = (s * box.w * q.k) / 2; // o satırda tahtanın yarı genişliği
-  bx = half * 2 > view.w ? Math.min(half, Math.max(view.w - half, bx)) : view.w / 2;
-  let by = at.y - s * q.y;
+// Düz tahtanın merkezine göre ekrandaki (eğik) y'nin düz tahtadaki karşılığı (project'in tersi, yalnız y).
+const unproject = (y, tilt = TILT, persp = PERSP) => (y * persp) / (Math.cos(rad(tilt)) * persp + y * Math.sin(rad(tilt)));
+
+// Pencerenin kenarına bırakılan pay (fit ile aynı): üstte piyon başları, altta ince bir çizgi.
+const PAD_T = 8;
+const PAD_B = 4;
+
+// Yakınlaşan tahta pencereyi doldurur: tahtanın merkezi (bx, by) ekranda, s kat. Tahta görünen alandan büyükse kenarı
+// içeri kaçmaz (üstte ve altta yalnız fit kadar pay); yatayda alttaki görünen sıranın (en geniş görünen sıra) iki ucu
+// pencerenin dışında kalır. Sığıyorsa ortalanır: içinde boş masa kalmaz. Döner { x, y, s } (tahtanın kendi yerine göre).
+export function place(box, s, bx, by, view) {
   const t = s * project(0, -box.h / 2).y; // tahtanın üst ve alt kenarı, merkezine göre
   const u = s * project(0, box.h / 2).y;
   const room = view.bottom - view.top;
-  if (u - t > room) {
-    const g = room * 0.12;
-    by = Math.min(view.top + g - t, Math.max(view.bottom - g - u, by));
-  } else by = view.top + (room - (u - t)) / 2 - t; // sığıyorsa dikeyde ortada: altında ya da üstünde boş masa kalmaz
-  return { x: bx - cx, y: by - cy, s };
+  if (u - t + PAD_T + PAD_B > room) by = Math.min(view.top + PAD_T - t, Math.max(view.bottom - PAD_B - u, by));
+  else by = view.top + (room - (u - t)) / 2 - t;
+  const yb = Math.min(box.h / 2, unproject((view.bottom - by) / s)); // pencerenin altındaki sıra (düz, merkeze göre)
+  const half = (s * box.w * project(0, yb).k) / 2;
+  bx = half * 2 > view.w ? Math.min(half, Math.max(view.w - half, bx)) : view.w / 2;
+  return { x: bx - (box.x + box.w / 2), y: by - (box.y + box.h / 2), s };
+}
+
+// Kameranın duruşu: düz tahtadaki p noktası, s kat yakınlaşınca pencerede at noktasına gelsin (place'in sınırları içinde).
+// box: tahtanın penceredeki düz kutusu; view: görünen alan { w, top, bottom } (pencerede px).
+export function pose(box, p, s, at, view) {
+  const q = project(p.x - box.w / 2, p.y - box.h / 2);
+  return place(box, s, at.x - s * q.x, at.y - s * q.y, view);
 }
 
 const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -142,7 +149,7 @@ export class Camera {
     this.set({ mode: 'izle', sq }, Math.max(260, ms * 1.6), 'cubic-bezier(.3,.6,.4,1)');
   }
 
-  // İzleyici (sıra başkasında): sıradakinin piyonu biraz yakından, pencerenin ortasında; çevresi de görünür.
+  // İzleyici (sıra başkasında): sıradakinin durduğu kareye hafifçe yaklaşır; tahtanın çoğu görünür kalır.
   takip(sq) {
     this.set({ mode: 'takip', sq });
   }
@@ -190,9 +197,7 @@ export class Camera {
       const room = Math.max(40, bottom - 16);
       const s = Math.max(0.5, Math.min(ZOOM.odak, (W - 24) / (x1 - x0), room / (y1 - y0 + 24)));
       const mid = { x: (x0 + x1) / 2, y: (y0 + y1) / 2 }; // eğik düzlemde, tahtanın merkezine göre
-      const cx = box.x + box.w / 2;
-      const cy = box.y + box.h / 2;
-      return { x: W / 2 - s * mid.x - cx, y: 8 + room / 2 - s * mid.y - cy, s };
+      return place(box, s, W / 2 - s * mid.x, 8 + room / 2 - s * mid.y, view);
     }
     if (want.mode === 'hedef' && bottom < H - 4) {
       // tahtanın eğik boyu (düz kutunun üst ve alt kenarı) sayfanın üstündeki alana sığar

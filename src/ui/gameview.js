@@ -1500,8 +1500,9 @@ function aimCamera(v) {
   if (steps && cover < innerHeight) return camera.hedef(cover, [...Object.keys(steps).map(Number), P(v, v.you).pos]);
   const sq = app.ui.popSq ?? (els.center.classList.contains('big') ? highlightOf(v) : -1);
   if (sq !== null && sq >= 0 && cover < innerHeight) return camera.odak(sq, cover);
-  // izlerken kamera sıradakinin piyonunu biraz yakından izler (Mahalle'de ilk zardan önce piyon tahtada değil)
-  const pos = spectating(v) && !app.ui.handOpen ? P(v, v.turn.p).pos : null;
+  // izlerken bütün masa; sıradaki zarını atıp durunca kamera onun karesine hafifçe yaklaşır (Mahalle'de ilk zardan önce
+  // piyon tahtada değil)
+  const pos = spectating(v) && !app.ui.handOpen && v.turn.step !== 'preroll' ? P(v, v.turn.p).pos : null;
   if (pos !== null && pos !== undefined && cover >= innerHeight) return camera.takip(pos);
   camera.masa();
 }

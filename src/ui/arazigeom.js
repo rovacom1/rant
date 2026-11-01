@@ -28,7 +28,9 @@ export function layout(W, H, panel = true) {
   const gap = Math.max(2, Math.round(cell * GAP));
   const size = SIDE * cell + (SIDE - 1) * gap;
   const gx = pad + head;
-  const gy = Math.round((H - size - head) / 2) + head;
+  // dikey telefonda tahta eğik durur: uzak (üst) pay kısa, yakın (alt) pay uzun görünür; arsalar biraz aşağıda durur ki
+  // ekranda iki pay denk görünsün
+  const gy = Math.round((H - size - head) * (panel ? 0.5 : 0.64)) + head;
   let center = null;
   if (panel) {
     const w = Math.min(460, W - gx - size - 2 * pad);

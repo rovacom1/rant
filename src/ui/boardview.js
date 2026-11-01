@@ -40,8 +40,8 @@ export function classicView(el, cells) {
 }
 
 // Mahalle arazisi: 6x6 arsa (arazigeom.js). Yerleşim Arazi.layout'tan (tahtanın boyu ve ortanın yeri değişince yenilenir);
-// henüz ölçülmediyse boş bir yerleşim, piyonlar ilk ölçümde yerine geçer. Telefonda tahta kareye yakın durur (arazi kare,
-// sağda kıyı payı).
+// henüz ölçülmediyse boş bir yerleşim, piyonlar ilk ölçümde yerine geçer. Telefonda arazi kare (sağda kıyı payı); tahta
+// pencerenin boyunu doldurana kadar uzar, arsaların üstünde ve altında arazi resmi görünür (pencerede boş masa kalmaz).
 export function araziView(arazi) {
   const L = () => arazi.L || layout(1, 1, false);
   return {
@@ -51,6 +51,6 @@ export function araziView(arazi) {
     focus: (i) => focusPoint(L(), i),
     pawnSize: () => pawnSize(L()),
     feet: (i, s, n) => pawnFeet(L(), i, n, s),
-    aspect: { amin: 0.9, amax: 1 },
+    aspect: { amin: 0.9, amax: 1.4 },
   };
 }

@@ -47,6 +47,26 @@ test('kamera odak noktasini istenen yere getirir; tahta pencereyi yatayda doldur
   // köşedeki kare: tahtanın kenarı pencerenin içine kaçmaz
   const corner = { x: 5, y: box.h - 5 };
   const k = pose(box, corner, s, at, view);
-  const left = box.x + box.w / 2 + k.x - (s * box.w * project(0, corner.y - box.h / 2).k) / 2;
+  const left = box.x + box.w / 2 + k.x - (s * box.w * project(0, box.h / 2).k) / 2; // görünen en alt sıra: yakın kenar
   assert.ok(left <= 0.5, 'sol kenar pencerenin solunda ya da tam kenarda');
+});
+
+test('yakin kamerada tahtanin ust ve alt kenari pencerenin icine kacmaz (bos masa kalmaz)', () => {
+  const box = fitTilt({ x: 6, y: 8, w: 378, h: 422 });
+  const view = { w: 390, top: 0, bottom: 438 };
+  for (const s of [1.15, 1.3, 1.7]) {
+    for (const y of [5, box.h / 2, box.h - 5]) {
+      for (const x of [5, box.w / 2, box.w - 5]) {
+        const c = pose(box, { x, y }, s, { x: 195, y: 219 }, view);
+        const cy = box.y + box.h / 2 + c.y;
+        const top = cy + s * project(0, -box.h / 2).y;
+        const bottom = cy + s * project(0, box.h / 2).y;
+        assert.ok(top <= view.top + 8.5, `ust kenar ${top}`);
+        assert.ok(bottom >= view.bottom - 4.5, `alt kenar ${bottom}`);
+        const near = box.x + box.w / 2 + c.x;
+        const half = (s * box.w * project(0, box.h / 2).k) / 2;
+        assert.ok(near - half <= 0.5 && near + half >= view.w - 0.5, 'yakin kenar pencereyi yatayda doldurur');
+      }
+    }
+  }
 });
