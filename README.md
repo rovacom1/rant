@@ -28,7 +28,7 @@ src/net/      ev sahibi (Host) ve bağlantı katmanı (PeerJS / yerel)
 src/ui/       arayüz (bağımlılıksız, derleme adımı yok)
 test/         node:test birim testleri ve bot simülasyonları
 tools/        yerel sunucu, denge simülasyonu
-otomasyon/    sürekli geliştirme döngüsünün talimatları
+otomasyon/    masaüstü kısayollarını kuran kur.ps1 ve bekleyen CI dosyası
 ```
 
 ## Geliştirme

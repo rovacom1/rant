@@ -59,4 +59,4 @@ Tam plan ve ölçümler: kullanıcı onaylı plan (sohbet). Özet ve takip burad
 - [x] Sürekli geliştirme döngüsü (zamanlanmış görev + otomasyon/GOREV.md)
 
 ## Sonuç
-İlk sürüm yayında. Sonraki işler ROADMAP.md'de; otomatik döngü oradan devam eder.
+İlk sürüm yayında. Sonraki işler ROADMAP.md'de. Otomatik döngü 2026-11-03'te kaldırıldı.

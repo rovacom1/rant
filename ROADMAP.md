@@ -1,8 +1,6 @@
 # RANT Yol Haritası
 
-Otomatik geliştirme döngüsü her oturumda **Sıradaki** listesinin en üstündeki işaretsiz maddeyi alır.
-Liste 8 maddenin altına düşerse döngü yeni fikirler ekler (oyun eğlencesini artıran, basit tutulabilen işler).
-Her 5. oturum bakım oturumudur (bkz. otomasyon/GOREV.md).
+Otomatik geliştirme döngüsü 2026-11-03'te kaldırıldı; işler artık elle, istenince yapılır. **Sıradaki** listesi fikir havuzudur.
 
 ## Sıradaki
 

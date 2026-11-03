@@ -1,4 +1,4 @@
-﻿# RANT yerel kurulumu: simge, aç-kapat düğmesi, masaüstü klasörü ve açılışta Claude'u başlatan Windows görevi.
+﻿# RANT yerel kurulumu: simge ve masaüstü klasörü.
 # Çalıştırma: powershell -ExecutionPolicy Bypass -File C:\Dev\Rant\otomasyon\kur.ps1
 $ErrorActionPreference = 'Stop'
 $repo = 'C:\Dev\Rant'
@@ -24,14 +24,7 @@ $bw.Write([uint16]0); $bw.Write([uint16]1); $bw.Write([uint16]1)
 $bw.Write([byte]0); $bw.Write([byte]0); $bw.Write([byte]0); $bw.Write([byte]0); $bw.Write([uint16]1); $bw.Write([uint16]32); $bw.Write([uint32]$png.Length); $bw.Write([uint32]22)
 $bw.Write($png); $bw.Close(); $g.Dispose(); $bmp.Dispose()
 
-# 2) Aç-kapat düğmesi (yerleşik C# derleyicisi)
-$csc = Join-Path ([Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'csc.exe'
-$exe = Join-Path $oto 'OtomatikGelistirme.exe'
-$src = Join-Path $oto 'Anahtar.cs'
-& $csc /nologo /codepage:65001 /target:winexe "/win32icon:$ico" /r:System.Windows.Forms.dll "/out:$exe" $src
-if ($LASTEXITCODE -ne 0) { throw 'Derleme başarısız' }
-
-# 3) Masaüstü klasörü
+# 2) Masaüstü klasörü
 New-Item -ItemType Directory -Force $desk | Out-Null
 function UrlShortcut($name, $url) {
   $lines = @('[InternetShortcut]', "URL=$url", "IconFile=$ico", 'IconIndex=0')
@@ -43,15 +36,6 @@ UrlShortcut 'Yol Haritası' 'https://github.com/rovacom1/rant/blob/main/ROADMAP.
 UrlShortcut 'Geliştirme Günlüğü' 'https://github.com/rovacom1/rant/blob/main/GELISTIRME_GUNLUGU.md'
 $sh = New-Object -ComObject WScript.Shell
 $l = $sh.CreateShortcut((Join-Path $desk 'Kaynak Kod.lnk')); $l.TargetPath = $repo; $l.IconLocation = "$ico,0"; $l.Save()
-$l = $sh.CreateShortcut((Join-Path $desk 'Otomatik Geliştirme Aç-Kapat.lnk')); $l.TargetPath = (Join-Path $oto 'OtomatikGelistirme.exe'); $l.WorkingDirectory = $oto; $l.IconLocation = "$ico,0"; $l.Save()
 Copy-Item (Join-Path $oto 'BENI_OKU.txt') (Join-Path $desk 'BENİ OKU.txt') -Force
 
-# 4) Windows açılışında Claude uygulamasını başlat (zamanlanmış geliştirme uygulama açıkken çalışır)
-$action = New-ScheduledTaskAction -Execute 'explorer.exe' -Argument 'shell:AppsFolder\Claude_pzs8sxrjxfjjc!Claude'
-$me = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-$trigger = New-ScheduledTaskTrigger -AtLogOn -User $me
-$principal = New-ScheduledTaskPrincipal -UserId $me -LogonType Interactive -RunLevel Limited
-$trigger.Delay = 'PT1M'
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
-Register-ScheduledTask -TaskName 'RANT - Claude acilista baslasin' -Description 'RANT otomatik gelistirme dongusu icin Claude masaustu uygulamasini oturum acilisinda baslatir. Kaldirmak icin bu gorevi silin.' -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
 'Kurulum tamam.'

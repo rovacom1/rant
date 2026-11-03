@@ -1,9 +1,5 @@
 node_modules/
 .DS_Store
 Thumbs.db
-otomasyon/gunluk/
-otomasyon/*.lock
 *.log
-otomasyon/DURDUR
-otomasyon/*.exe
 tasks/gorsel-ham/
